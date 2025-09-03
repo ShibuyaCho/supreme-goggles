@@ -1,0 +1,103 @@
+services:
+  # Main Laravel Web Service
+  - type: web
+    name: cannabis-pos-web
+    env: php
+    buildCommand: |
+      # Install PHP dependencies
+      composer install --no-dev --optimize-autoloader
+      
+      # Install Node dependencies and build assets
+      npm ci
+      npm run build:production
+      
+      # Set up Laravel optimizations
+      php artisan config:cache || echo "Config cache skipped"
+      php artisan route:cache || echo "Route cache skipped"
+      php artisan view:cache || echo "View cache skipped"
+      
+      # Set permissions for storage and cache
+      chmod -R 775 storage bootstrap/cache || echo "Permissions already set"
+    startCommand: |
+      # Start PHP-FPM and Nginx
+      php-fpm -D && nginx -g "daemon off;"
+    plan: starter
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: false
+      - key: APP_URL
+        fromService:
+          type: web
+          name: cannabis-pos-web
+          property: url
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_DRIVER
+        value: file
+      - key: QUEUE_CONNECTION
+        value: database
+      - key: METRC_ENABLED
+        value: true
+      - key: SECURITY_FORCE_HEADERS
+        value: true
+      - key: FORCE_HTTPS
+        value: true
+      - key: SESSION_SECURE_COOKIES
+        value: true
+    # These need to be set in Render dashboard
+    secretFiles:
+      - name: .env
+        contents: |
+          APP_NAME="Cannabis POS System"
+          APP_ENV=production
+          APP_DEBUG=false
+          APP_KEY=${{APP_KEY}}
+          APP_URL=${{RENDER_EXTERNAL_URL}}
+          
+          DB_CONNECTION=mysql
+          DB_HOST=${{DATABASE_HOST}}
+          DB_PORT=${{DATABASE_PORT}}
+          DB_DATABASE=${{DATABASE_NAME}}
+          DB_USERNAME=${{DATABASE_USERNAME}}
+          DB_PASSWORD=${{DATABASE_PASSWORD}}
+          
+          METRC_BASE_URL=https://api-or.metrc.com
+          METRC_USER_KEY=${{METRC_USER_KEY}}
+          METRC_VENDOR_KEY=${{METRC_VENDOR_KEY}}
+          METRC_USERNAME=${{METRC_USERNAME}}
+          METRC_PASSWORD=${{METRC_PASSWORD}}
+          METRC_FACILITY=${{METRC_FACILITY}}
+          METRC_ENABLED=true
+          
+          SECURITY_FORCE_HEADERS=true
+          FORCE_HTTPS=true
+          SESSION_SECURE_COOKIES=true
+          SESSION_DRIVER=file
+          CACHE_DRIVER=file
+          QUEUE_CONNECTION=database
+          LOG_CHANNEL=stderr
+          
+          ADMIN_EMAIL=${{ADMIN_EMAIL}}
+          MANAGER_EMAIL=${{MANAGER_EMAIL}}
+
+  # MySQL Database
+  - type: pserv
+    name: cannabis-pos-db
+    env: docker
+    dockerfilePath: ./Dockerfile.mysql
+    plan: starter
+    disk:
+      name: cannabis-pos-db-disk
+      mountPath: /var/lib/mysql
+      sizeGB: 10
+
+# Optional: Redis for caching and sessions
+  - type: redis
+    name: cannabis-pos-redis
+    plan: starter
+    maxmemoryPolicy: allkeys-lru

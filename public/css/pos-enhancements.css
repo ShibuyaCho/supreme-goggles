@@ -1,0 +1,188 @@
+/* POS Interface Enhancements */
+
+/* Cart Expansion Styles */
+.sticky-cart {
+    transition: width 0.3s ease-in-out;
+    height: 100vh;
+    overflow-y: auto;
+}
+
+/* High Contrast Text for Cashier Interface */
+.pos-high-contrast h1,
+.pos-high-contrast h2,
+.pos-high-contrast h3,
+.pos-high-contrast h4 {
+    font-weight: 900 !important;
+    color: #1f2937 !important;
+}
+
+.pos-high-contrast .text-lg {
+    font-weight: 700 !important;
+}
+
+.pos-high-contrast .text-base {
+    font-weight: 600 !important;
+}
+
+.pos-high-contrast .text-sm {
+    font-weight: 500 !important;
+}
+
+/* Enhanced Button Styles */
+.pos-button-primary {
+    background: linear-gradient(135deg, #059669, #047857);
+    border: 2px solid #065f46;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
+}
+
+.pos-button-primary:hover {
+    background: linear-gradient(135deg, #047857, #065f46);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.pos-button-secondary {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    border: 2px solid #374151;
+}
+
+.pos-button-danger {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    border: 2px solid #991b1b;
+}
+
+/* Product Card Enhancements */
+.product-card {
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+}
+
+.product-card:hover {
+    transform: translateY(-2px);
+    border-color: #10b981;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+/* Cart Item Enhancements */
+.cart-item {
+    border-left: 4px solid #10b981;
+    transition: all 0.2s ease;
+}
+
+.cart-item:hover {
+    background-color: #f3f4f6;
+    border-left-color: #059669;
+}
+
+/* Payment Method Button Styles */
+.payment-method-btn {
+    transition: all 0.3s ease;
+    border: 3px solid transparent;
+    position: relative;
+    overflow: hidden;
+}
+
+.payment-method-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.payment-method-btn:hover::before {
+    left: 100%;
+}
+
+/* Count Drawer Animation */
+@keyframes slideInUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.count-drawer {
+    animation: slideInUp 0.3s ease;
+}
+
+/* Responsive Cart Width */
+@media (min-width: 1024px) {
+    .cart-expanded .flex-1 {
+        width: 25%;
+    }
+    
+    .cart-expanded .sticky-cart.w-3/4 {
+        width: 75%;
+    }
+}
+
+/* Enhanced Focus States */
+input:focus,
+select:focus,
+button:focus {
+    outline: 3px solid #3b82f6;
+    outline-offset: 2px;
+}
+
+/* Loading States */
+.loading {
+    position: relative;
+    pointer-events: none;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #f3f3f3;
+    border-top: 2px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* High Visibility Status Indicators */
+.status-pending {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.status-preparing {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.status-ready {
+    background: linear-gradient(135deg, #10b981, #059669);
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.status-completed {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    color: white;
+    font-weight: bold;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}

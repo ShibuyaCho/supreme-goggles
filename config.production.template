@@ -1,0 +1,118 @@
+# Cannabis POS Production Environment Configuration Template
+# Copy this file to .env and update all values before deploying to production!
+
+# Application
+APP_NAME="Cannabis POS System"
+APP_ENV=production
+APP_KEY=base64:CHANGE_THIS_KEY_BEFORE_PRODUCTION
+APP_DEBUG=false
+APP_URL=https://yourdomain.com
+
+# Database Configuration
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=cannabis_pos_production
+DB_USERNAME=cannabis_user
+DB_PASSWORD=CHANGE_THIS_SECURE_PASSWORD
+
+# Security Configuration
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=true
+SESSION_SECURE_COOKIES=true
+SESSION_SAME_SITE=strict
+
+# Cache Configuration
+CACHE_DRIVER=redis
+QUEUE_CONNECTION=redis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+# Mail Configuration (for notifications)
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.yourmailserver.com
+MAIL_PORT=587
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@yourdomain.com
+MAIL_FROM_NAME="${APP_NAME}"
+
+# METRC Integration (Oregon Cannabis Tracking)
+METRC_BASE_URL=https://api-or.metrc.com
+METRC_USER_KEY=YOUR_METRC_USER_KEY
+METRC_VENDOR_KEY=YOUR_METRC_VENDOR_KEY
+METRC_USERNAME=YOUR_METRC_USERNAME
+METRC_PASSWORD=YOUR_METRC_PASSWORD
+METRC_FACILITY=YOUR_FACILITY_LICENSE
+METRC_ENABLED=true
+
+# Security Headers
+SECURITY_FORCE_HEADERS=true
+FORCE_HTTPS=true
+HSTS_MAX_AGE=31536000
+CSP_ENABLED=true
+
+# Admin Configuration
+ADMIN_EMAIL=admin@yourdomain.com
+MANAGER_EMAIL=manager@yourdomain.com
+ADMIN_PHONE=
+MANAGER_PHONE=
+
+# Backup Configuration
+BACKUP_ENABLED=true
+BACKUP_RETENTION_DAYS=30
+BACKUP_STORAGE_PATH=/var/backups/cannabis-pos
+
+# Monitoring
+LOG_CHANNEL=stack
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=error
+
+# Rate Limiting
+RATE_LIMIT_ENABLED=true
+API_RATE_LIMIT=60
+LOGIN_RATE_LIMIT=5
+LOGIN_RATE_LIMIT_DECAY=300
+
+# Payment Gateway (if using external payment processing)
+PAYMENT_GATEWAY=null
+PAYMENT_GATEWAY_KEY=null
+PAYMENT_GATEWAY_SECRET=null
+
+# Third-party Integrations
+ANALYTICS_ENABLED=false
+GOOGLE_ANALYTICS_ID=
+SENTRY_DSN=
+
+# File Upload Configuration
+MAX_FILE_SIZE=10240
+ALLOWED_FILE_TYPES=jpg,jpeg,png,pdf,txt
+
+# Cannabis Compliance Settings
+CANNABIS_COMPLIANCE_MODE=strict
+AGE_VERIFICATION_REQUIRED=true
+ID_SCAN_REQUIRED=false
+METRC_SYNC_INTERVAL=300
+
+# POS Hardware Integration
+RECEIPT_PRINTER_ENABLED=false
+CASH_DRAWER_ENABLED=false
+BARCODE_SCANNER_ENABLED=false
+SCALE_INTEGRATION_ENABLED=false
+
+# Inventory Management
+LOW_STOCK_THRESHOLD=10
+AUTO_REORDER_ENABLED=false
+METRC_AUTO_SYNC=true
+
+# Customer Features
+LOYALTY_PROGRAM_ENABLED=true
+SMS_NOTIFICATIONS_ENABLED=false
+EMAIL_NOTIFICATIONS_ENABLED=true
+
+# Reporting
+REPORT_CACHE_TTL=3600
+EXPORT_FORMATS=pdf,csv,xlsx

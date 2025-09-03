@@ -1,0 +1,213 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /**
+   * Tailwind CSS theme
+   * tailwind.config.ts expects the following color variables to be expressed as HSL values.
+   * A different format will require also updating the theme in tailwind.config.ts.
+  */
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 210 10% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 10% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 10% 15%;
+
+    --primary: 210 100% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 200 20% 96%;
+    --secondary-foreground: 210 10% 15%;
+
+    --muted: 200 20% 96%;
+    --muted-foreground: 210 10% 55%;
+
+    --accent: 155 100% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 200 20% 88%;
+    --input: 200 20% 94%;
+    --ring: 210 100% 45%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 210 20% 15%;
+    --sidebar-foreground: 200 10% 95%;
+    --sidebar-primary: 210 100% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 25%;
+    --sidebar-accent-foreground: 200 10% 95%;
+    --sidebar-border: 210 20% 25%;
+    --sidebar-ring: 210 100% 45%;
+
+    /* POS specific colors */
+    --success: 155 100% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 95% 55%;
+    --warning-foreground: 0 0% 100%;
+    --pos-header: 210 15% 7%;
+    --pos-header-foreground: 0 0% 100%;
+  }
+
+  .dark {
+    --background: 210 15% 7%;
+    --foreground: 200 10% 85%;
+
+    --card: 210 15% 10%;
+    --card-foreground: 200 10% 85%;
+
+    --popover: 210 15% 10%;
+    --popover-foreground: 200 10% 85%;
+
+    --primary: 210 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 15% 15%;
+    --secondary-foreground: 200 10% 85%;
+
+    --muted: 210 15% 15%;
+    --muted-foreground: 200 10% 65%;
+
+    --accent: 155 100% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 210 15% 20%;
+    --input: 210 15% 15%;
+    --ring: 210 100% 50%;
+
+    --sidebar-background: 210 15% 5%;
+    --sidebar-foreground: 200 10% 85%;
+    --sidebar-primary: 210 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 15% 10%;
+    --sidebar-accent-foreground: 200 10% 85%;
+    --sidebar-border: 210 15% 15%;
+    --sidebar-ring: 210 100% 50%;
+
+    /* POS specific colors */
+    --success: 155 100% 50%;
+    --success-foreground: 0 0% 100%;
+    --warning: 40 95% 60%;
+    --warning-foreground: 0 0% 100%;
+    --pos-header: 210 15% 5%;
+    --pos-header-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  /* Enhanced header button visibility */
+  .pos-header-button {
+    @apply border-2 border-white/60 bg-white/40 text-white/95 hover:bg-white/60 hover:text-white transition-all duration-200;
+    backdrop-filter: blur(8px);
+  }
+
+  /* Enhanced sidebar styling */
+  .pos-sidebar {
+    @apply bg-sidebar border-r-2 border-sidebar-border shadow-xl;
+  }
+
+  .pos-sidebar-button {
+    @apply text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground border border-transparent hover:border-sidebar-border transition-all duration-200;
+  }
+
+  /* Improve button contrast in headers */
+  .header-button-visible {
+    @apply bg-gradient-to-br from-white/70 to-white/60 border-2 border-white/80 text-gray-900 font-semibold shadow-lg backdrop-blur-sm transition-all duration-200;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), 0 0 0 1px rgba(255, 255, 255, 0.3);
+  }
+
+  .header-button-visible:hover {
+    @apply from-white/85 to-white/75 border-white/90 -translate-y-0.5;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.4);
+  }
+
+  /* High visibility button enhancements */
+  .btn-high-contrast {
+    @apply font-semibold shadow-md border-2 transition-all duration-200;
+  }
+
+  .btn-high-contrast:hover {
+    @apply -translate-y-0.5 shadow-lg;
+  }
+
+  /* Primary buttons */
+  button[data-variant="default"],
+  .btn-primary {
+    @apply bg-gradient-to-br from-blue-600 to-blue-700 text-white border-2 border-blue-800 font-semibold shadow-md;
+  }
+
+  button[data-variant="default"]:hover,
+  .btn-primary:hover {
+    @apply from-blue-700 to-blue-800 border-blue-900 -translate-y-0.5 shadow-lg;
+  }
+
+  /* Outline buttons */
+  button[data-variant="outline"],
+  .btn-outline {
+    @apply bg-white text-gray-900 border-2 border-gray-400 font-semibold shadow-md;
+  }
+
+  button[data-variant="outline"]:hover,
+  .btn-outline:hover {
+    @apply bg-gray-50 border-gray-600 text-gray-800 -translate-y-0.5 shadow-lg;
+  }
+
+  /* Destructive buttons */
+  button[data-variant="destructive"],
+  .btn-destructive {
+    @apply bg-gradient-to-br from-red-600 to-red-700 text-white border-2 border-red-800 font-semibold shadow-md;
+  }
+
+  button[data-variant="destructive"]:hover,
+  .btn-destructive:hover {
+    @apply from-red-700 to-red-800 border-red-900 -translate-y-0.5 shadow-lg;
+  }
+
+  /* Success buttons */
+  .btn-success {
+    @apply bg-gradient-to-br from-green-600 to-green-700 text-white border-2 border-green-800 font-semibold shadow-md;
+  }
+
+  .btn-success:hover {
+    @apply from-green-700 to-green-800 border-green-900 -translate-y-0.5 shadow-lg;
+  }
+
+  /* Secondary buttons */
+  button[data-variant="secondary"] {
+    @apply bg-gradient-to-br from-gray-200 to-gray-300 text-gray-900 border-2 border-gray-400 font-semibold shadow-md;
+  }
+
+  button[data-variant="secondary"]:hover {
+    @apply from-gray-300 to-gray-400 border-gray-500 -translate-y-0.5 shadow-lg;
+  }
+
+  /* Disabled button styling */
+  button:disabled {
+    @apply opacity-50 cursor-not-allowed transform-none shadow-none;
+  }
+
+  button:disabled:hover {
+    @apply transform-none shadow-none;
+  }
+}

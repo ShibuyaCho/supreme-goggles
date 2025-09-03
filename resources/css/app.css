@@ -1,0 +1,340 @@
+/* Cannabis POS Application Styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom Cannabis POS Variables */
+:root {
+    --cannabis-green: #16a34a;
+    --cannabis-green-hover: #15803d;
+    --cannabis-green-light: #dcfce7;
+    --cannabis-green-dark: #14532d;
+}
+
+/* Base Styles */
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+    
+    body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+    
+    * {
+        box-sizing: border-box;
+    }
+}
+
+/* Component Styles */
+@layer components {
+    /* Cannabis-specific colors */
+    .text-cannabis-green { 
+        color: var(--cannabis-green); 
+    }
+    
+    .bg-cannabis-green { 
+        background-color: var(--cannabis-green); 
+    }
+    
+    .border-cannabis-green { 
+        border-color: var(--cannabis-green); 
+    }
+    
+    .hover\:bg-cannabis-green:hover {
+        background-color: var(--cannabis-green-hover);
+    }
+
+    /* Form Elements */
+    .form-input {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-lg 
+               focus:outline-none focus:ring-2 focus:ring-cannabis-green 
+               focus:border-transparent transition-colors;
+    }
+    
+    .form-select {
+        @apply w-full px-3 py-2 border border-gray-300 rounded-lg 
+               focus:outline-none focus:ring-2 focus:ring-cannabis-green 
+               focus:border-transparent bg-white transition-colors;
+    }
+
+    /* Button Styles */
+    .btn-primary {
+        @apply bg-cannabis-green text-white px-4 py-2 rounded-lg 
+               hover:bg-green-700 transition-colors font-medium 
+               focus:outline-none focus:ring-2 focus:ring-green-500 
+               focus:ring-offset-2;
+    }
+    
+    .btn-secondary {
+        @apply bg-gray-100 text-gray-700 px-4 py-2 rounded-lg 
+               hover:bg-gray-200 transition-colors font-medium 
+               focus:outline-none focus:ring-2 focus:ring-gray-400 
+               focus:ring-offset-2;
+    }
+    
+    .btn-danger {
+        @apply bg-red-600 text-white px-4 py-2 rounded-lg 
+               hover:bg-red-700 transition-colors font-medium 
+               focus:outline-none focus:ring-2 focus:ring-red-500 
+               focus:ring-offset-2;
+    }
+
+    /* POS specific utilities */
+    .product-card {
+        @apply bg-white border border-gray-200 rounded-lg hover:shadow-md 
+               transition-all duration-200 cursor-pointer;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-1px);
+    }
+    
+    .cart-item {
+        @apply border-l-4 border-transparent transition-colors;
+    }
+    
+    .cart-item.selected {
+        @apply border-l-cannabis-green bg-green-50;
+    }
+
+    /* Modal animations */
+    .modal {
+        @apply transition-all duration-150 ease-out;
+    }
+    
+    .modal.hidden {
+        @apply opacity-0 scale-95 pointer-events-none;
+    }
+    
+    .modal:not(.hidden) {
+        @apply opacity-100 scale-100;
+    }
+
+    /* Loading states */
+    .skeleton {
+        @apply animate-pulse bg-gray-200 rounded;
+    }
+    
+    .loading-spinner {
+        @apply inline-block w-4 h-4 border-2 border-white border-t-transparent 
+               rounded-full animate-spin;
+    }
+
+    /* Navigation */
+    .nav-link {
+        @apply px-4 py-3 text-sm font-medium flex items-center transition-colors 
+               rounded-md focus:outline-none focus:ring-2 focus:ring-cannabis-green 
+               focus:ring-offset-2;
+    }
+    
+    .nav-link.active {
+        @apply bg-cannabis-green text-white;
+    }
+    
+    .nav-link:not(.active) {
+        @apply text-gray-700 hover:bg-gray-100;
+    }
+
+    /* Tables */
+    .data-table {
+        @apply w-full border-collapse border border-gray-200 rounded-lg overflow-hidden;
+    }
+    
+    .data-table th {
+        @apply bg-gray-50 px-4 py-3 text-left text-sm font-medium text-gray-700 
+               border-b border-gray-200;
+    }
+    
+    .data-table td {
+        @apply px-4 py-3 text-sm text-gray-900 border-b border-gray-100;
+    }
+    
+    .data-table tr:hover {
+        @apply bg-gray-50;
+    }
+
+    /* Cards */
+    .card {
+        @apply bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden;
+    }
+    
+    .card-header {
+        @apply px-6 py-4 border-b border-gray-200 bg-gray-50;
+    }
+    
+    .card-body {
+        @apply px-6 py-4;
+    }
+    
+    .card-footer {
+        @apply px-6 py-4 border-t border-gray-200 bg-gray-50;
+    }
+
+    /* Badges */
+    .badge {
+        @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    }
+    
+    .badge-success {
+        @apply bg-green-100 text-green-800;
+    }
+    
+    .badge-warning {
+        @apply bg-yellow-100 text-yellow-800;
+    }
+    
+    .badge-danger {
+        @apply bg-red-100 text-red-800;
+    }
+    
+    .badge-info {
+        @apply bg-blue-100 text-blue-800;
+    }
+
+    /* Alerts */
+    .alert {
+        @apply p-4 rounded-lg border;
+    }
+    
+    .alert-success {
+        @apply bg-green-50 border-green-200 text-green-800;
+    }
+    
+    .alert-warning {
+        @apply bg-yellow-50 border-yellow-200 text-yellow-800;
+    }
+    
+    .alert-danger {
+        @apply bg-red-50 border-red-200 text-red-800;
+    }
+    
+    .alert-info {
+        @apply bg-blue-50 border-blue-200 text-blue-800;
+    }
+}
+
+/* Utility Styles */
+@layer utilities {
+    .transition-all { 
+        transition: all 0.2s ease-in-out; 
+    }
+    
+    .shadow-xs { 
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); 
+    }
+    
+    .shadow-sm { 
+        box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); 
+    }
+    
+    .shadow-md { 
+        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); 
+    }
+    
+    .shadow-xl { 
+        box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); 
+    }
+
+    /* Layout utilities */
+    .layout-transition {
+        @apply transition-all duration-300 ease-in-out;
+    }
+    
+    .fade-in {
+        @apply animate-in fade-in duration-200;
+    }
+    
+    .slide-in {
+        @apply animate-in slide-in-from-right duration-300;
+    }
+
+    /* Custom scrollbars */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+
+    /* Print styles */
+    @media print {
+        .no-print {
+            display: none !important;
+        }
+        
+        .print-only {
+            display: block !important;
+        }
+        
+        body {
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+        }
+    }
+
+    /* Responsive utilities */
+    @media (max-width: 640px) {
+        .mobile-full {
+            width: 100% !important;
+        }
+        
+        .mobile-hidden {
+            display: none !important;
+        }
+    }
+}
+
+/* Dark mode support (for future implementation) */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --cannabis-green: #22c55e;
+        --cannabis-green-hover: #16a34a;
+        --cannabis-green-light: #15803d;
+        --cannabis-green-dark: #166534;
+    }
+}
+
+/* Focus styles for accessibility */
+.focus-visible {
+    @apply focus:outline-none focus:ring-2 focus:ring-cannabis-green focus:ring-offset-2;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .bg-cannabis-green {
+        background-color: #0f5132 !important;
+    }
+    
+    .text-cannabis-green {
+        color: #0f5132 !important;
+    }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+    .transition-all,
+    .layout-transition,
+    .fade-in,
+    .slide-in {
+        transition: none !important;
+        animation: none !important;
+    }
+    
+    .product-card:hover {
+        transform: none !important;
+    }
+}

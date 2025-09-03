@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="robots" content="noindex, nofollow">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    
+    <title>{{ config('app.name', 'Cannabis POS System') }}</title>
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="/dist/css/app.css" as="style">
+    <link rel="preload" href="/dist/js/app.js" as="script">
+    
+    <!-- Local CSS (no CDN dependencies) -->
+    <link rel="stylesheet" href="/dist/css/app.css">
+    
+    <!-- Security Headers via Meta -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: https:;
+        font-src 'self';
+        connect-src 'self';
+        frame-ancestors 'none';
+        form-action 'self';
+        base-uri 'self';
+    ">
+    
+    <!-- Favicon and App Icons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <meta name="theme-color" content="#16a34a">
+    
+    <style>
+        /* Critical CSS for above-the-fold content */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #f8fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e5e7eb;
+            border-top: 4px solid #16a34a;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Hide content until Alpine.js loads */
+        [x-cloak] { 
+            display: none !important; 
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">Loading Cannabis POS...</p>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="app" class="min-h-screen" x-data="cannabisPOS()" x-init="init()" x-cloak>
+        <!-- Security Notice for Development -->
+        @if(config('app.env') !== 'production')
+        <div class="bg-yellow-500 text-yellow-900 px-4 py-2 text-center text-sm font-medium">
+            ⚠️ DEVELOPMENT ENVIRONMENT - NOT FOR PRODUCTION USE
+        </div>
+        @endif
+
+        <!-- Authentication Modal -->
+        <div x-show="showAuthModal || !isAuthenticated" 
+             class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0">
+            
+            <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md mx-4"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 scale-100"
+                 x-transition:leave-end="opacity-0 scale-95"
+                 @click.stop>
+                
+                <div class="text-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-900">Cannabis POS Login</h2>
+                    <p class="text-gray-600 mt-2">Sign in to access the point of sale system</p>
+                </div>
+
+                <!-- Login Type Toggle -->
+                <div class="flex rounded-lg border border-gray-300 overflow-hidden mb-6">
+                    <button @click="loginType = 'email'" 
+                            :class="loginType === 'email' ? 'bg-cannabis-green text-white' : 'bg-white text-gray-700'"
+                            class="flex-1 px-4 py-2 text-sm font-medium transition-colors">
+                        Email Login
+                    </button>
+                    <button @click="loginType = 'pin'" 
+                            :class="loginType === 'pin' ? 'bg-cannabis-green text-white' : 'bg-white text-gray-700'"
+                            class="flex-1 px-4 py-2 text-sm font-medium border-l border-gray-300 transition-colors">
+                        PIN Login
+                    </button>
+                </div>
+
+                <!-- Email Login Form -->
+                <div x-show="loginType === 'email'" x-transition class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-700 mb-2">
+                            Email Address
+                        </label>
+                        <input id="login-email" 
+                               type="email" 
+                               x-model="loginEmail"
+                               class="form-input"
+                               placeholder="Enter your email"
+                               autocomplete="username"
+                               required>
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-700 mb-2">
+                            Password
+                        </label>
+                        <input id="login-password" 
+                               type="password" 
+                               x-model="loginPassword"
+                               class="form-input"
+                               placeholder="Enter your password"
+                               autocomplete="current-password"
+                               @keydown.enter="handleLogin(loginEmail, loginPassword)"
+                               required>
+                    </div>
+                    <button @click="handleLogin(loginEmail, loginPassword)" 
+                            class="btn-primary w-full">
+                        Sign In
+                    </button>
+                </div>
+
+                <!-- PIN Login Form -->
+                <div x-show="loginType === 'pin'" x-transition class="space-y-4">
+                    <div>
+                        <label for="employee-id" class="block text-sm font-medium text-gray-700 mb-2">
+                            Employee ID
+                        </label>
+                        <input id="employee-id" 
+                               type="text" 
+                               x-model="employeeId"
+                               class="form-input"
+                               placeholder="Enter Employee ID"
+                               autocomplete="username"
+                               required>
+                    </div>
+                    <div>
+                        <label for="employee-pin" class="block text-sm font-medium text-gray-700 mb-2">
+                            PIN
+                        </label>
+                        <input id="employee-pin" 
+                               type="password" 
+                               maxlength="4" 
+                               x-model="employeePin"
+                               class="form-input text-center text-2xl tracking-widest"
+                               placeholder="••••"
+                               autocomplete="current-password"
+                               @keydown.enter="handlePinLogin(employeeId, employeePin)"
+                               required>
+                    </div>
+                    <button @click="handlePinLogin(employeeId, employeePin)" 
+                            class="btn-primary w-full">
+                        Sign In with PIN
+                    </button>
+                </div>
+
+                <!-- Error Display -->
+                <div x-show="loginError" 
+                     x-text="loginError" 
+                     class="alert alert-danger mt-4"
+                     x-transition></div>
+            </div>
+        </div>
+
+        <!-- Main Application Content -->
+        <div x-show="isAuthenticated" x-transition>
+            <!-- Navigation -->
+            <nav class="bg-white shadow-sm border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center h-16">
+                        <!-- Logo and Navigation -->
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <h1 class="text-xl font-bold text-cannabis-green">
+                                    {{ config('app.name', 'Cannabis POS') }}
+                                </h1>
+                            </div>
+                        </div>
+
+                        <!-- User Menu -->
+                        <div class="flex items-center space-x-4">
+                            <span x-text="currentUser?.name || 'User'" class="text-sm text-gray-700"></span>
+                            <button @click="logout()" 
+                                    class="btn-secondary text-sm">
+                                Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Main Content Area -->
+            <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <div class="text-center">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">
+                        Welcome to Cannabis POS
+                    </h2>
+                    <p class="text-gray-600 mb-8">
+                        Your production-ready point of sale system is now secure and operational.
+                    </p>
+                    
+                    <!-- Quick Stats -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h3 class="text-lg font-semibold text-gray-900">System Status</h3>
+                                <div class="badge badge-success mt-2">Operational</div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h3 class="text-lg font-semibold text-gray-900">METRC Integration</h3>
+                                <div class="badge" :class="metrcConnected ? 'badge-success' : 'badge-warning'">
+                                    <span x-text="metrcConnected ? 'Connected' : 'Checking...'"></span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <h3 class="text-lg font-semibold text-gray-900">Environment</h3>
+                                <div class="badge badge-info">Production</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Local JavaScript (no CDN dependencies) -->
+    <script src="/dist/js/app.js"></script>
+    
+    <!-- Initialize Application -->
+    <script>
+        // Hide loading screen when Alpine.js is ready
+        document.addEventListener('alpine:init', () => {
+            document.getElementById('loading-screen').style.display = 'none';
+        });
+
+        // Fallback error handling
+        window.addEventListener('error', (event) => {
+            console.error('Application Error:', event.error);
+            // In production, you might want to send this to a logging service
+        });
+
+        // Security: Clear sensitive data on page unload
+        window.addEventListener('beforeunload', () => {
+            // Clear any sensitive form data
+            document.querySelectorAll('input[type="password"]').forEach(input => {
+                input.value = '';
+            });
+        });
+    </script>
+
+    <!-- Service Worker for offline functionality (optional) -->
+    <script>
+        if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('SW registered: ', registration);
+                })
+                .catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+version: '3.8'
+
+services:
+  # Laravel Application
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.laravel
+    image: cannabis-pos-laravel
+    container_name: cannabis_pos_app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    networks:
+      - cannabis_pos_network
+    depends_on:
+      - database
+      - redis
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_HOST=database
+      - DB_DATABASE=cannabis_pos
+      - DB_USERNAME=cannabis_user
+      - DB_PASSWORD=cannabis_password
+      - REDIS_HOST=redis
+
+  # Nginx Web Server
+  webserver:
+    image: nginx:alpine
+    container_name: cannabis_pos_webserver
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./:/var/www/html
+      - ./docker/nginx/conf.d/:/etc/nginx/conf.d/
+      - ./docker/nginx/ssl/:/etc/nginx/ssl/
+    networks:
+      - cannabis_pos_network
+    depends_on:
+      - app
+
+  # MySQL Database
+  database:
+    image: mysql:8.0
+    container_name: cannabis_pos_database
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: cannabis_pos
+      MYSQL_USER: cannabis_user
+      MYSQL_PASSWORD: cannabis_password
+      MYSQL_ROOT_PASSWORD: root_password
+    volumes:
+      - cannabis_pos_db_data:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/my.cnf
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    networks:
+      - cannabis_pos_network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: cannabis_pos_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - cannabis_pos_redis_data:/data
+    networks:
+      - cannabis_pos_network
+
+  # Queue Worker
+  queue:
+    build:
+      context: .
+      dockerfile: Dockerfile.laravel
+    container_name: cannabis_pos_queue
+    restart: unless-stopped
+    command: php artisan queue:work --verbose --tries=3 --timeout=90
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - cannabis_pos_network
+    depends_on:
+      - app
+      - database
+      - redis
+    environment:
+      - APP_ENV=local
+      - DB_HOST=database
+      - REDIS_HOST=redis
+
+  # Scheduler (Cron)
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.laravel
+    container_name: cannabis_pos_scheduler
+    restart: unless-stopped
+    command: php artisan schedule:work
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - cannabis_pos_network
+    depends_on:
+      - app
+      - database
+    environment:
+      - APP_ENV=local
+      - DB_HOST=database
+
+  # Node.js for Asset Building
+  node:
+    image: node:18-alpine
+    container_name: cannabis_pos_node
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+      - /var/www/html/node_modules
+    command: sh -c "npm install && npm run dev"
+    ports:
+      - "5173:5173"
+    networks:
+      - cannabis_pos_network
+    environment:
+      - NODE_ENV=development
+
+  # MailHog (Email Testing)
+  mailhog:
+    image: mailhog/mailhog
+    container_name: cannabis_pos_mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - cannabis_pos_network
+
+  # Adminer (Database Management)
+  adminer:
+    image: adminer
+    container_name: cannabis_pos_adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    networks:
+      - cannabis_pos_network
+    depends_on:
+      - database
+
+networks:
+  cannabis_pos_network:
+    driver: bridge
+
+volumes:
+  cannabis_pos_db_data:
+    driver: local
+  cannabis_pos_redis_data:
+    driver: local

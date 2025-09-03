@@ -1,0 +1,65 @@
+{
+  "name": "cannabis-pos-laravel",
+  "description": "Cannabis Point of Sale System - Laravel Backend",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "vite --config vite.config.js",
+    "build": "vite build",
+    "build:production": "node build-production.js && npm run build",
+    "preview": "vite preview",
+    "watch": "vite build --watch",
+    "hot": "vite --host",
+    "prod": "npm run build:production && php artisan optimize",
+    "production:setup": "./scripts/setup-production.sh",
+    "production:build": "npm run build:production && php artisan config:cache && php artisan route:cache && php artisan view:cache",
+    "fresh": "php artisan migrate:fresh --seed && npm run dev",
+    "setup": "composer install && npm install && cp .env.example .env && php artisan key:generate && php artisan migrate --seed"
+  },
+  "dependencies": {
+    "alpinejs": "^3.14.9",
+    "axios": "^1.6.0",
+    "express": "^5.1.0",
+    "laravel-vite-plugin": "^0.8.0",
+    "qrious": "^4.0.2",
+    "tailwindcss-animate": "^1.0.7",
+    "vite": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ],
+  "keywords": [
+    "cannabis",
+    "pos",
+    "point-of-sale",
+    "laravel",
+    "php",
+    "metrc",
+    "oregon",
+    "dispensary",
+    "retail"
+  ],
+  "author": "Cannabis POS Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/cannabis-pos-laravel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-org/cannabis-pos-laravel/issues"
+  },
+  "homepage": "https://github.com/your-org/cannabis-pos-laravel#readme"
+}

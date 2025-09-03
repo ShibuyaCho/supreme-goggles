@@ -1,0 +1,25 @@
+# MySQL Docker configuration for Render
+FROM mysql:8.0
+
+# Set environment variables
+ENV MYSQL_DATABASE=cannabis_pos_production
+ENV MYSQL_USER=cannabis_user
+ENV MYSQL_ALLOW_EMPTY_PASSWORD=false
+
+# Copy initialization scripts
+COPY database/init/ /docker-entrypoint-initdb.d/
+
+# Configure MySQL for production
+RUN echo "[mysqld]" > /etc/mysql/conf.d/production.cnf && \
+    echo "innodb_buffer_pool_size = 128M" >> /etc/mysql/conf.d/production.cnf && \
+    echo "max_connections = 100" >> /etc/mysql/conf.d/production.cnf && \
+    echo "innodb_log_file_size = 64M" >> /etc/mysql/conf.d/production.cnf && \
+    echo "slow_query_log = 1" >> /etc/mysql/conf.d/production.cnf && \
+    echo "long_query_time = 2" >> /etc/mysql/conf.d/production.cnf
+
+# Set proper permissions
+RUN chmod -R 755 /docker-entrypoint-initdb.d/
+
+EXPOSE 3306
+
+CMD ["mysqld"]
