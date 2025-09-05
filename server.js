@@ -1,4 +1,4 @@
-// server.js (ESM, Express v5-safe)
+// server.js (ESM, Express 5, uses RegExp routes to avoid path-to-regexp string quirks)
 import express from 'express';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -14,24 +14,25 @@ app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Static assets (no auto-index so we control '/')
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir, { index: false }));
 
+// Healthcheck
 app.get('/health', (_req, res) => res.type('text').send('ok'));
 
+// Root: serve ./index.html if present, else inline HTML
 app.get('/', (_req, res) => {
   const indexPath = path.join(__dirname, 'index.html');
   fs.access(indexPath, fs.constants.F_OK, (err) => {
     if (!err) return res.sendFile(indexPath);
-    res.type('html').send(`<!DOCTYPE html> <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Cannabis POS System - Laravel Converted</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-</head>
-<body class="bg-gray-50">
+    res.type('html').send(`<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Cannabis POS System - Laravel Converted</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+</head><body class="bg-gray-50">
   <div class="min-h-screen flex items-center justify-center">
     <div class="max-w-2xl mx-auto text-center p-8">
       <h1 class="text-4xl font-bold text-green-600 mb-4">🌿 Cannabis POS System</h1>
@@ -77,12 +78,12 @@ app.get('/', (_req, res) => {
       </div>
     </div>
   </div>
-</body> </html>`);
+</body></html>`);
   });
 });
 
-// ✅ Correct catch-all on Express 5 (path-to-regexp v6)
-app.get('/api/:rest(.*)', (_req, res) => {
+// ✅ API catch-all using RegExp (matches /api and any subpath)
+app.get(/^\/api(?:\/.*)?$/, (_req, res) => {
   res.json({
     message: 'Laravel API ready - all controllers converted',
     endpoints: [
@@ -97,12 +98,17 @@ app.get('/api/:rest(.*)', (_req, res) => {
   });
 });
 
-// Optional SPA fallback (pick ONE style if you need it):
-// app.get('/:rest(.*)', (_req, res) => res.redirect('/'));
-// app.get(/.*/, (_req, res) => res.redirect('/'));
+// Optional SPA fallback (serve index.html for any non-API route):
+// app.get(/^(?!\/api(?:\/|$)).*$/, (_req, res) => {
+//   const indexPath = path.join(__dirname, 'index.html');
+//   if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
+//   res.redirect('/');
+// });
 
+// 404 (for anything not matched above)
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
+// 500 error handler
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);
