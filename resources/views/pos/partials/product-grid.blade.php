@@ -37,18 +37,6 @@
                         @endif
                     </div>
 
-                    <!-- Category and Weight -->
-                    <div class="flex items-center gap-2 text-sm text-gray-600 mb-2">
-                        <span>{{ $product->category }}</span>
-                        @if($product->weight)
-                            <span>•</span>
-                            <span>{{ $product->weight }}</span>
-                        @endif
-                        @if($product->metrc_tag)
-                            <span>•</span>
-                            <span class="font-mono text-xs">...{{ substr($product->metrc_tag, -5) }}</span>
-                        @endif
-                    </div>
 
                     <!-- Room Status -->
                     @if($product->room)
@@ -79,13 +67,19 @@
 
                     <!-- Action Buttons -->
                     <div class="flex gap-1 mb-3">
-                        <button class="print-barcode text-gray-600 hover:text-gray-800 p-1 rounded" 
+                        <button class="print-barcode text-gray-600 hover:text-gray-800 p-1 rounded"
                                 data-product-id="{{ $product->id }}" title="Print Barcode">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1v-1a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1z"/>
                             </svg>
                         </button>
-                        
+                        <button class="delete-product text-red-600 hover:text-red-800 p-1 rounded"
+                                data-product-id="{{ $product->id }}" data-product-name="{{ $product->name }}" title="Delete Product">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
+
                         @if($product->metrc_tag)
                             <button class="print-exit-label text-gray-600 hover:text-gray-800 p-1 rounded" 
                                     data-product-id="{{ $product->id }}" title="Print Exit Label">
@@ -211,17 +205,6 @@
                                 @endif
                             </div>
 
-                            <div class="flex items-center gap-2 text-xs text-gray-600">
-                                <span>{{ $product->category }}</span>
-                                @if($product->weight)
-                                    <span>•</span>
-                                    <span>{{ $product->weight }}</span>
-                                @endif
-                                @if($product->metrc_tag)
-                                    <span>•</span>
-                                    <span class="font-mono">...{{ substr($product->metrc_tag, -5) }}</span>
-                                @endif
-                            </div>
 
                             <!-- Room status in compact form -->
                             @if($product->room)
@@ -256,10 +239,16 @@
                     <div class="flex items-center gap-2 flex-shrink-0">
                         <!-- Action Buttons Row - Compact for list view -->
                         <div class="flex gap-1">
-                            <button class="print-barcode h-8 w-8 p-0 text-gray-600 hover:text-gray-800 border border-gray-300 rounded" 
+                            <button class="print-barcode h-8 w-8 p-0 text-gray-600 hover:text-gray-800 border border-gray-300 rounded"
                                     data-product-id="{{ $product->id }}" title="Print Barcode">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V6a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1V6a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1zM5 20h2a1 1 0 001-1v-1a1 1 0 00-1-1H5a1 1 0 00-1 1v1a1 1 0 001 1zm12 0h2a1 1 0 001-1v-1a1 1 0 00-1-1h-2a1 1 0 00-1 1v1a1 1 0 001 1z"/>
+                                </svg>
+                            </button>
+                            <button class="delete-product h-8 w-8 p-0 text-red-600 hover:text-red-800 border border-red-300 rounded"
+                                    data-product-id="{{ $product->id }}" data-product-name="{{ $product->name }}" title="Delete Product">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
                             </button>
                             
