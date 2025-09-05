@@ -1,27 +1,48 @@
-// ESM version
-import express from 'express';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+// server.cjs
+// If your package.json has `"type": "module"`, keep this filename as .cjs.
+// Otherwise you can rename to server.js and remove "type": "module".
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const express = require('express');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-// Render sets PORT via env; default to 3000 for local dev
+
+// Render provides PORT via env; default for local dev.
 const PORT = process.env.PORT || 3000;
 
-// Serve static files from public directory
-app.use(express.static(path.join(__dirname, 'public')));
+// --- Paths ---
+const ROOT_DIR = __dirname;
+const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
+const ROOT_INDEX = path.join(ROOT_DIR, 'index.html');
+const PUBLIC_INDEX = path.join(PUBLIC_DIR, 'index.html');
 
-// Main route serves our Cannabis POS system
+// --- Middleware ---
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Serve static assets from /public if present
+if (fs.existsSync(PUBLIC_DIR)) {
+  app.use(express.static(PUBLIC_DIR));
+}
+
+// --- Healthcheck (Render friendly) ---
+app.get(['/health', '/healthz', '/_health'], (_req, res) => {
+  res.json({ ok: true, uptime: process.uptime() });
+});
+
+// --- Root route ---
+// Prefer /public/index.html, else fall back to /index.html, else inline HTML.
 app.get('/', (req, res) => {
-  const indexPath = path.join(__dirname, 'index.html');
-  if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
-  } else {
-    res.send(`
-<!DOCTYPE html>
+  if (fs.existsSync(PUBLIC_INDEX)) {
+    return res.sendFile(PUBLIC_INDEX);
+  }
+  if (fs.existsSync(ROOT_INDEX)) {
+    return res.sendFile(ROOT_INDEX);
+  }
+
+  // Fallback inline HTML
+  res.type('html').send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -35,6 +56,7 @@ app.get('/', (req, res) => {
     <div class="max-w-2xl mx-auto text-center p-8">
       <h1 class="text-4xl font-bold text-green-600 mb-4">🌿 Cannabis POS System</h1>
       <h2 class="text-2xl font-semibold text-gray-800 mb-6">Successfully Converted to Laravel/PHP!</h2>
+
       <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h3 class="text-lg font-semibold mb-4 text-gray-900">✅ Conversion Complete</h3>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
@@ -58,6 +80,7 @@ app.get('/', (req, res) => {
           </div>
         </div>
       </div>
+
       <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
         <h3 class="font-semibold text-green-800 mb-2">🌿 Cannabis Features Ready</h3>
         <div class="text-sm text-green-700 grid grid-cols-2 gap-2">
@@ -69,6 +92,7 @@ app.get('/', (req, res) => {
           <div>• Product Actions</div>
         </div>
       </div>
+
       <div class="space-y-2 text-sm text-gray-600">
         <p><strong>Laravel/PHP Conversion:</strong> All React/TypeScript files converted to Laravel Blade views</p>
         <p><strong>Cannabis POS:</strong> Complete dispensary management system ready for production</p>
@@ -77,13 +101,13 @@ app.get('/', (req, res) => {
     </div>
   </div>
 </body>
-</html>
-    `);
-  }
+</html>`);
 });
 
-// API routes placeholder
-app.get('/api/*', (_req, res) => {
+// --- API placeholder ---
+// Express 5 uses path-to-regexp v6; avoid bare '*' patterns.
+// Use a named wildcard (':rest(*)') or a regex instead.
+app.get('/api/:rest(*)', (req, res) => {
   res.json({
     message: 'Laravel API ready - all controllers converted',
     endpoints: [
@@ -92,12 +116,27 @@ app.get('/api/*', (_req, res) => {
       'POST /api/sales - SalesController',
       'GET /api/analytics - AnalyticsController',
       'POST /api/products/transfer-room - ProductActionsController',
-      'GET /api/settings - SettingsController'
+      'GET /api/settings - SettingsController',
     ],
-    status: 'Laravel/PHP conversion complete'
+    status: 'Laravel/PHP conversion complete',
+    pathMatched: req.params.rest || '',
   });
 });
 
+// OPTIONAL: SPA catch-all to serve index.html for non-API routes.
+// Comment this in if you have a front-end router.
+/*
+app.get('/:rest(*)', (req, res, next) => {
+  if (req.path.startsWith('/api/')) return next();
+
+  if (fs.existsSync(PUBLIC_INDEX)) return res.sendFile(PUBLIC_INDEX);
+  if (fs.existsSync(ROOT_INDEX)) return res.sendFile(ROOT_INDEX);
+
+  return res.status(404).send('Not Found');
+});
+*/
+
+// --- Start server ---
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Cannabis POS System (Laravel/PHP) running on http://localhost:${PORT}`);
+  console.log(`Cannabis POS System (Laravel/PHP) running on http://0.0.0.0:${PORT}`);
 });

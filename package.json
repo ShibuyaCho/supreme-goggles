@@ -5,6 +5,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "start": "node server.js",
     "dev": "vite --config vite.config.js",
     "build": "vite build",
     "build:production": "node build-production.js && npm run build",
