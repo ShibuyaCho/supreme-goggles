@@ -52,6 +52,7 @@ Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/pin-login', [AuthController::class, 'pinLogin']);
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/self-register', [AuthController::class, 'selfRegister']);
 });
 
 /*
