@@ -155,8 +155,8 @@
                     </div>
                     <div class="hidden md:block ml-10">
                         <div class="flex items-baseline space-x-4">
-                            <a href="{{ route('pos.index') }}" 
-                               class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('pos.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
+                            <a href="/"
+                               class="px-3 py-2 rounded-md text-sm font-medium {{ request()->is('/') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                                 Point of Sale
                             </a>
                             <a href="{{ route('customers.index') }}" 
@@ -401,10 +401,23 @@
     <script>
     // POS product-card tweaks applied globally
     (function(){
-      // hide category / sold by line directly under product name
+      // Hide "category / sold by" info lines on product cards (robust)
       const style = document.createElement('style');
       style.textContent = `.product-card h3 + p{display:none!important}`;
       document.head.appendChild(style);
+      function hideSoldByLines(){
+        document.querySelectorAll('.product-card').forEach(card => {
+          card.querySelectorAll('p, .text-sm, .text-xs').forEach(el => {
+            const t = (el.textContent || '').toLowerCase();
+            if (t.includes('sold by') || t.includes('sold-by') || t.includes('sold•by') || t.includes('???') || /flower\s*•/i.test(t)) {
+              el.style.display = 'none';
+            }
+          });
+        });
+      }
+      document.addEventListener('DOMContentLoaded', hideSoldByLines);
+      const mo = new MutationObserver(hideSoldByLines);
+      mo.observe(document.documentElement, { subtree: true, childList: true });
 
       function injectDeleteButtons(){
         const cards = document.querySelectorAll('.product-card');
