@@ -139,6 +139,7 @@
     <!-- Core libraries -->
     <script src="{{ asset('lib/axios/axios.min.js') }}" defer></script>
     <script src="{{ asset('js/auth.js') }}" defer></script>
+    <script src="{{ asset('js/pos.js') }}" defer></script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </head>
 
