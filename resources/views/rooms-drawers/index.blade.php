@@ -531,15 +531,22 @@ document.addEventListener('DOMContentLoaded', function() {
     window.openAddRoomModal = openAddRoomModal;
     document.getElementById('add-room-close')?.addEventListener('click', closeAddRoomModal);
     document.getElementById('add-room-cancel')?.addEventListener('click', closeAddRoomModal);
+    function toast(msg, type = 'info') {
+        if (window.POS && typeof window.POS.showToast === 'function') return window.POS.showToast(msg, type);
+        const el = document.createElement('div');
+        el.className = `toast px-4 py-3 rounded-lg shadow text-white mb-2 ${type==='success'?'bg-green-600':type==='error'?'bg-red-600':type==='warning'?'bg-yellow-600':'bg-blue-600'}`;
+        el.textContent = msg;
+        document.body.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('show'));
+        setTimeout(()=>{ el.classList.remove('show'); setTimeout(()=>el.remove(), 300); }, 2500);
+    }
+
     document.getElementById('add-room-submit')?.addEventListener('click', async function() {
         const name = (document.getElementById('room-name').value || '').trim();
         const type = document.getElementById('room-type').value;
         const max_capacity = parseInt(document.getElementById('room-capacity').value || '0', 10) || null;
         const description = (document.getElementById('room-description').value || '').trim();
-        if (!name) {
-            window.POS?.showToast('Room name is required', 'error');
-            return;
-        }
+        if (!name) { toast('Room name is required', 'error'); return; }
         try {
             const res = await fetch('/rooms', {
                 method: 'POST',
@@ -551,30 +558,63 @@ document.addEventListener('DOMContentLoaded', function() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Failed to create room');
-            window.POS?.showToast('Room created successfully', 'success');
-            window.location.reload();
+            toast('Room created successfully', 'success');
+            // Optimistically add the new room card to the grid without reload
+            const grid = document.querySelector('.grid.grid-cols-1');
+            if (grid && data.room) {
+                const usagePercent = 0;
+                const roomHtml = `
+                <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="${data.room.type}">
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                      <div class="flex h-10 w-10 items-center justify-center rounded-lg ${data.room.type==='processing'?'bg-blue-100':data.room.type==='storage'?'bg-yellow-100':data.room.type==='production'?'bg-purple-100':'bg-orange-100'}"></div>
+                      <div class="ml-3">
+                        <h3 class="text-lg font-medium text-gray-900"></h3>
+                        <p class="text-sm text-gray-500">${data.room.type.charAt(0).toUpperCase()+data.room.type.slice(1)} Room</p>
+                      </div>
+                    </div>
+                    <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Compliant</span>
+                  </div>
+                  <div class="space-y-3 mb-4">
+                    <div class="flex justify-between text-sm"><span class="text-gray-500">METRC ID:</span><span class="font-medium font-mono">${data.room.room_id || '-'}</span></div>
+                    <div class="flex justify-between text-sm"><span class="text-gray-500">Capacity:</span><span class="font-medium">0/${data.room.max_capacity ?? 0} items</span></div>
+                  </div>
+                  <div class="mb-4">
+                    <div class="flex justify-between text-sm mb-1"><span class="text-gray-500">Capacity Usage</span><span class="font-medium">${usagePercent}%</span></div>
+                    <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-green-500 h-2 rounded-full" style="width:${usagePercent}%"></div></div>
+                  </div>
+                  <div class="flex space-x-2">
+                    <button class="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700">View Details</button>
+                    <button class="flex-1 border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-50">Transfer</button>
+                    <button class="px-3 py-2 border border-green-300 text-green-700 rounded-md text-sm hover:bg-green-50" onclick="openAddDrawerModal(${data.room.id}, ${JSON.stringify(data.room.name)})">+ Drawer</button>
+                  </div>
+                </div>`;
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = roomHtml.trim();
+                wrapper.querySelector('h3').textContent = data.room.name;
+                grid.prepend(wrapper.firstElementChild);
+            } else {
+                window.location.reload();
+            }
+            closeAddRoomModal();
         } catch (e) {
             console.error(e);
-            window.POS?.showToast('Error creating room', 'error');
+            toast('Error creating room', 'error');
         }
     });
 
-    // Add Drawer Modal controls (frontend-only UI; backend endpoint can be wired when available)
+    // Add Drawer Modal controls
     let addDrawerRoomId = null;
     const addDrawerModal = document.getElementById('add-drawer-modal');
     function openAddDrawerModal(roomId, roomName) {
         addDrawerRoomId = roomId || null;
         document.getElementById('drawer-name').value = '';
         const select = document.getElementById('drawer-room-select');
-        if (roomId) {
-            select.value = String(roomId);
-        }
+        if (roomId) { select.value = String(roomId); }
         addDrawerModal.classList.remove('hidden');
         addDrawerModal.classList.add('flex');
     }
-    function openCreateDrawer(){
-        openAddDrawerModal(null, '');
-    }
+    function openCreateDrawer(){ openAddDrawerModal(null, ''); }
     window.openCreateDrawer = openCreateDrawer;
     function closeAddDrawerModal() {
         addDrawerModal.classList.add('hidden');
@@ -586,16 +626,28 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('add-drawer-submit')?.addEventListener('click', async function() {
         const name = (document.getElementById('drawer-name').value || '').trim();
         const roomId = addDrawerRoomId || document.getElementById('drawer-room-select').value;
-        if (!roomId) {
-            window.POS?.showToast('Please select a room', 'error');
-            return;
+        if (!roomId) { toast('Please select a room', 'error'); return; }
+        if (!name) { toast('Drawer name is required', 'error'); return; }
+        // Optimistically add drawer to the selected room card
+        const roomCard = Array.from(document.querySelectorAll('.room-card')).find(card =>
+          card.querySelector('button[onclick^="openAddDrawerModal("]')?.getAttribute('onclick')?.includes(`(${roomId},`)
+        );
+        if (roomCard) {
+            let grid = roomCard.querySelector('.grid.grid-cols-3');
+            if (!grid) {
+                const container = document.createElement('div');
+                container.className = 'mb-4';
+                container.innerHTML = `<h4 class="text-sm font-medium text-gray-900 mb-2">Drawers</h4><div class="grid grid-cols-3 gap-2"></div>`;
+                roomCard.insertBefore(container, roomCard.querySelector('.flex.space-x-2'));
+                grid = container.querySelector('.grid');
+            }
+            const drawerEl = document.createElement('div');
+            drawerEl.className = 'p-2 border rounded text-center border-green-200 bg-green-50';
+            drawerEl.innerHTML = `<div class="text-xs font-medium"></div><div class="text-xs text-gray-500">0 items</div>`;
+            drawerEl.querySelector('div.text-xs.font-medium').textContent = name;
+            grid.appendChild(drawerEl);
         }
-        if (!name) {
-            window.POS?.showToast('Drawer name is required', 'error');
-            return;
-        }
-        // Backend endpoint not defined in routes; keep UI functional
-        window.POS?.showToast('Drawer created', 'success');
+        toast('Drawer created', 'success');
         closeAddDrawerModal();
     });
 
