@@ -59,7 +59,7 @@ class ProductsController extends Controller
 
         $products = $query->paginate(24);
         $categories = Product::select('category')->distinct()->pluck('category');
-        $rooms = (object)[]; // In a real app, load rooms model
+        $rooms = Room::all();
 
         // Simple analytics placeholders
         $analytics = [
