@@ -551,7 +551,7 @@ function bulkDelete() {
     openSecureDelete('bulk', { ids: Array.from(selectedProducts) });
 }
 
-function deleteProduct(productId, productName) {
+function deleteProductSecure(productId, productName) {
     openSecureDelete('single', { id: productId, name: productName });
 }
 
