@@ -379,9 +379,10 @@
     btn.addEventListener('click', async function(){
       try {
         window.POS?.showLoading?.();
-        const res = await (window.axios || axios).get('/api/metrc/packages');
+        const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
         if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
-        window.POS?.showToast?.('METRC data refreshed', 'success');
+        const count = Array.isArray(res.data?.transfers) ? res.data.transfers.length : (res.data?.count || 0);
+        window.POS?.showToast?.(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
       } catch(e){
         window.POS?.showToast?.('Failed to refresh METRC data', 'error');
       } finally {
