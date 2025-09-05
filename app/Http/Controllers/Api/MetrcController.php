@@ -85,7 +85,7 @@ class MetrcController extends Controller
                 $request->last_modified_start,
                 $request->last_modified_end
             );
-            
+
             return response()->json([
                 'packages' => $packages,
                 'count' => count($packages),
@@ -98,6 +98,46 @@ class MetrcController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to retrieve packages',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get incoming transfers
+     */
+    public function getIncomingTransfers(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'last_modified_start' => 'nullable|date',
+            'last_modified_end' => 'nullable|date|after_or_equal:last_modified_start'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $transfers = $this->metrcService->getIncomingTransfers(
+                $request->last_modified_start,
+                $request->last_modified_end
+            );
+
+            return response()->json([
+                'transfers' => $transfers,
+                'count' => is_array($transfers) ? count($transfers) : 0,
+                'retrieved_at' => now()->toISOString(),
+                'filters' => [
+                    'last_modified_start' => $request->last_modified_start,
+                    'last_modified_end' => $request->last_modified_end
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to retrieve incoming transfers',
                 'message' => $e->getMessage()
             ], 500);
         }
