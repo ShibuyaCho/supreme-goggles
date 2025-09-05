@@ -706,6 +706,10 @@ function cannabisPOS() {
                         isAuthenticated: true,
                         currentUser: response.data.user
                     }));
+                    // Update global auth helper as well
+                    if (window.posAuth && typeof window.posAuth.setAuth === 'function') {
+                        window.posAuth.setAuth(response.data.user, response.data.token);
+                    }
                     this.currentUser = response.data.user;
                     this.isAuthenticated = true;
                     this.showRegisterModal = false;
