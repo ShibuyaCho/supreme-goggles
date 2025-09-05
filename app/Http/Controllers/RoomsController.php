@@ -25,18 +25,26 @@ class RoomsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:rooms,name',
-            'type' => 'required|in:storage,vault,sales_floor,processing,quarantine',
-            'capacity' => 'nullable|integer|min:0',
-            'temperature_controlled' => 'boolean',
-            'security_level' => 'required|in:low,medium,high,maximum',
-            'description' => 'nullable|string|max:500'
+            'type' => 'required|in:production,storage,processing,sales',
+            'max_capacity' => 'nullable|integer|min:0',
+            'description' => 'nullable|string|max:500',
+            'is_active' => 'nullable|boolean'
         ]);
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
-        $room = Room::create($request->all());
+        $data = [
+            'name' => $request->name,
+            'type' => $request->type,
+            'max_capacity' => $request->max_capacity,
+            'current_stock' => 0,
+            'description' => $request->description,
+            'is_active' => $request->boolean('is_active', true),
+        ];
+        $data['room_id'] = 'RM-' . strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $request->name), 0, 4)) . '-' . strtoupper(substr(uniqid(), -4));
+        $room = Room::create($data);
         
         return response()->json([
             'message' => 'Room created successfully',
@@ -50,18 +58,23 @@ class RoomsController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:rooms,name,' . $id,
-            'type' => 'required|in:storage,vault,sales_floor,processing,quarantine',
-            'capacity' => 'nullable|integer|min:0',
-            'temperature_controlled' => 'boolean',
-            'security_level' => 'required|in:low,medium,high,maximum',
-            'description' => 'nullable|string|max:500'
+            'type' => 'required|in:production,storage,processing,sales',
+            'max_capacity' => 'nullable|integer|min:0',
+            'description' => 'nullable|string|max:500',
+            'is_active' => 'nullable|boolean'
         ]);
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
-        $room->update($request->all());
+        $room->update([
+            'name' => $request->name,
+            'type' => $request->type,
+            'max_capacity' => $request->max_capacity,
+            'description' => $request->description,
+            'is_active' => $request->boolean('is_active', $room->is_active),
+        ]);
         
         return response()->json([
             'message' => 'Room updated successfully',
