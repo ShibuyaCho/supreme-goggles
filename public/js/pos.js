@@ -2967,7 +2967,13 @@ function cannabisPOS() {
     // Placeholder functions for complex operations
     async addEmployee() {
       try {
-        if (!this.employeeForm.name || !this.employeeForm.email || !this.employeeForm.role || !this.employeeForm.hireDate || this.employeeForm.payRate === "") {
+        if (
+          !this.employeeForm.name ||
+          !this.employeeForm.email ||
+          !this.employeeForm.role ||
+          !this.employeeForm.hireDate ||
+          this.employeeForm.payRate === ""
+        ) {
           this.showToast("Please fill in all required fields", "error");
           return;
         }
@@ -2975,19 +2981,30 @@ function cannabisPOS() {
         const first_name = parts.shift() || "";
         const last_name = parts.join(" ") || "";
         const role = this.employeeForm.role;
-        const deptMap = { manager: "management", budtender: "sales", security: "security", admin: "admin" };
+        const deptMap = {
+          manager: "management",
+          budtender: "sales",
+          security: "security",
+          admin: "admin",
+        };
         const department = deptMap[role] || "operations";
-        const employee_id = `EMP-${Date.now().toString(36)}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+        const employee_id = `EMP-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
         const hourly_rate = parseFloat(this.employeeForm.payRate || 0) || 0;
         const hire_date = this.employeeForm.hireDate;
         const permissionsByRole = {
-          manager: ["employees:read","employees:write","sales","inventory","reports"],
+          manager: [
+            "employees:read",
+            "employees:write",
+            "sales",
+            "inventory",
+            "reports",
+          ],
           admin: ["*"],
-          budtender: ["sales","customers","inventory:read"],
-          security: ["sales:read","inventory:read"],
+          budtender: ["sales", "customers", "inventory:read"],
+          security: ["sales:read", "inventory:read"],
         };
         const permissions = permissionsByRole[role] || ["sales:read"];
-        const tempPassword = `Canna${Math.random().toString(36).slice(2,8)}!${Math.floor(10+Math.random()*89)}`;
+        const tempPassword = `Canna${Math.random().toString(36).slice(2, 8)}!${Math.floor(10 + Math.random() * 89)}`;
 
         const payload = {
           first_name,
@@ -3004,14 +3021,17 @@ function cannabisPOS() {
           password_confirmation: tempPassword,
         };
 
-        const token = localStorage.getItem("auth_token") || localStorage.getItem("pos_token");
+        const token =
+          localStorage.getItem("auth_token") ||
+          localStorage.getItem("pos_token");
         const res = await axios.post("/api/employees", payload, {
           headers: {
             Accept: "application/json",
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
         });
-        const created = res.data && res.data.employee ? res.data.employee : null;
+        const created =
+          res.data && res.data.employee ? res.data.employee : null;
         const uiEmployee = {
           id: created && created.id ? created.id : employee_id,
           name: `${first_name} ${last_name}`.trim(),
@@ -3027,8 +3047,12 @@ function cannabisPOS() {
         this.employees.unshift(uiEmployee);
         this.showAddEmployeeModal = false;
         this.resetEmployeeForm();
-        const pinMsg = created && created.pin ? ` Temporary PIN: ${created.pin}.` : "";
-        this.showToast(`Employee created. Temp password: ${tempPassword}.${pinMsg}`, "success");
+        const pinMsg =
+          created && created.pin ? ` Temporary PIN: ${created.pin}.` : "";
+        this.showToast(
+          `Employee created. Temp password: ${tempPassword}.${pinMsg}`,
+          "success",
+        );
       } catch (error) {
         if (error.response && error.response.status === 422) {
           this.showToast("Validation failed. Please check the form.", "error");
