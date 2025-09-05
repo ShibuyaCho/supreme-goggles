@@ -1104,6 +1104,53 @@
                 </div>
             </div>
 
+            <!-- Register Account Modal -->
+            <div x-show="showRegisterModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-transition @keydown.escape="showRegisterModal = false" @keydown.enter="handleRegister()" x-init="showRegisterModal && $el.focus()" tabindex="0">
+                <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900">Create Account</h3>
+                            <button @click="showRegisterModal = false" class="text-gray-400 hover:text-gray-600 text-2xl">×</button>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label for="reg-name" class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                                <input id="reg-name" name="reg-name" type="text" x-model="registerForm.name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter your full name">
+                            </div>
+                            <div>
+                                <label for="reg-email" class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                                <input id="reg-email" name="reg-email" type="email" x-model="registerForm.email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="you@example.com">
+                            </div>
+                            <div>
+                                <label for="reg-password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                                <input id="reg-password" name="reg-password" type="password" x-model="registerForm.password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Create a password">
+                            </div>
+                            <div>
+                                <label for="reg-password-confirm" class="block text-sm font-medium text-gray-700 mb-2">Confirm Password</label>
+                                <input id="reg-password-confirm" name="reg-password-confirm" type="password" x-model="registerForm.passwordConfirm" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Re-enter password">
+                            </div>
+                            <div>
+                                <label for="reg-pin" class="block text-sm font-medium text-gray-700 mb-2">4-Digit PIN</label>
+                                <input id="reg-pin" name="reg-pin" type="password" maxlength="4" x-model="registerForm.pin" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green text-center tracking-widest" placeholder="••••">
+                                <p class="text-xs text-gray-500 mt-1">Used for quick PIN login at the register</p>
+                            </div>
+
+                            <!-- Error Display -->
+                            <div x-show="registerError"
+                                 x-text="registerError"
+                                 class="mt-2 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg"
+                                 x-transition></div>
+                        </div>
+
+                        <div class="mt-6 flex gap-3">
+                            <button @click="showRegisterModal = false" class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">Cancel</button>
+                            <button @click="handleRegister()" class="flex-1 px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-700">Create Account</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Recreational Customer Verification Modal -->
             <div x-show="showRecreationalModal" class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50" x-transition @keydown.escape="cancelNewSale()" @keydown.enter="ageVerified ? confirmRecreationalSale() : null" x-init="showRecreationalModal && $el.focus()" tabindex="0">
                 <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
@@ -6298,7 +6345,7 @@
                                 </div>
                                 <div>
                                     <span class="text-purple-700">Oregon OLCC:</span>
-                                    <span class="ml-2 text-green-600 font-medium">���� Compliant</span>
+                                    <span class="ml-2 text-green-600 font-medium">�� Compliant</span>
                                 </div>
                                 <div>
                                     <span class="text-purple-700">Receipt ID:</span>
