@@ -185,6 +185,9 @@ Route::prefix('employees')->name('employees.')->group(function () {
     Route::post('/{employee}/update-permissions', [EmployeesController::class, 'updatePermissions'])->name('update-permissions');
 });
 
+// Rooms & Drawers Page (Blade)
+Route::get('/rooms-drawers', [\App\Http\Controllers\RoomsDrawersController::class, 'index'])->name('rooms-drawers.index');
+
 // Room and Drawer Management Routes
 Route::prefix('rooms')->name('rooms.')->group(function () {
     Route::get('/', [RoomsController::class, 'index'])->name('index');
@@ -192,12 +195,17 @@ Route::prefix('rooms')->name('rooms.')->group(function () {
     Route::get('/{room}', [RoomsController::class, 'show'])->name('show');
     Route::patch('/{room}', [RoomsController::class, 'update'])->name('update');
     Route::delete('/{room}', [RoomsController::class, 'destroy'])->name('destroy');
-    
+
     // Room Actions
     Route::get('/{room}/products', [RoomsController::class, 'products'])->name('products');
     Route::post('/{room}/transfer-all', [RoomsController::class, 'transferAll'])->name('transfer-all');
     Route::get('/{room}/audit', [RoomsController::class, 'audit'])->name('audit');
 });
+
+// METRC Transfers Page (Blade)
+Route::get('/metrc/transfers', function() {
+    return view('metrc.transfers');
+})->name('metrc.transfers');
 
 // Deals and Promotions Routes
 Route::prefix('deals')->name('deals.')->group(function () {
