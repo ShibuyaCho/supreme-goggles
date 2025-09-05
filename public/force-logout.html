@@ -29,6 +29,7 @@
         step('Revoking session…');
         try { await fetch('/api/auth/logout', { method:'POST', headers:{ 'Accept':'application/json' }, credentials:'include' }); } catch(e) {}
         step('Clearing local data…');
+        try { localStorage.setItem('pos_force_reauth','1'); } catch(e) {}
         try { localStorage.removeItem('pos_token'); } catch(e) {}
         try { localStorage.removeItem('pos_user'); } catch(e) {}
         try { localStorage.removeItem('auth_token'); } catch(e) {}
