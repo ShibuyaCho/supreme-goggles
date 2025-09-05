@@ -14,27 +14,16 @@ app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Absolute path to /public next to this file
 const publicDir = path.join(__dirname, 'public');
-
-// Serve static files (don’t auto-serve index so we can control '/')
 app.use(express.static(publicDir, { index: false }));
 
-// Healthcheck
 app.get('/health', (_req, res) => res.type('text').send('ok'));
 
-// Main route serves our Cannabis POS system
 app.get('/', (_req, res) => {
   const indexPath = path.join(__dirname, 'index.html');
-
   fs.access(indexPath, fs.constants.F_OK, (err) => {
-    if (!err) {
-      res.sendFile(indexPath);
-      return;
-    }
-
-    res.type('html').send(`<!DOCTYPE html>
-<html lang="en">
+    if (!err) return res.sendFile(indexPath);
+    res.type('html').send(`<!DOCTYPE html> <html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -88,13 +77,12 @@ app.get('/', (_req, res) => {
       </div>
     </div>
   </div>
-</body>
-</html>`);
+</body> </html>`);
   });
 });
 
-// ✅ path-to-regexp v6-compatible catch-all for /api/*
-app.get('/api/:rest(*)', (_req, res) => {
+// ✅ Correct catch-all on Express 5 (path-to-regexp v6)
+app.get('/api/:rest(.*)', (_req, res) => {
   res.json({
     message: 'Laravel API ready - all controllers converted',
     endpoints: [
@@ -109,16 +97,12 @@ app.get('/api/:rest(*)', (_req, res) => {
   });
 });
 
-// If you later need a SPA fallback, use one of these (uncomment ONE):
-// 1) Param+wildcard:
-// app.get('/:rest(*)', (_req, res) => res.redirect('/'));
-// 2) Regex (also valid on v5):
+// Optional SPA fallback (pick ONE style if you need it):
+// app.get('/:rest(.*)', (_req, res) => res.redirect('/'));
 // app.get(/.*/, (_req, res) => res.redirect('/'));
 
-// 404
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
-// 500
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);
