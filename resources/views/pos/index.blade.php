@@ -10,7 +10,23 @@
         <div class="bg-white border-b border-gray-200 p-4">
             <div class="flex items-center justify-between mb-4">
                 <h1 class="text-2xl font-bold text-gray-900">Point of Sale</h1>
-                
+
+                <!-- Quick Actions -->
+                <div class="flex items-center gap-2">
+                    <button id="refresh-metrc" class="inline-flex items-center rounded-lg bg-cannabis-green px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/></svg>
+                        Refresh METRC
+                    </button>
+                    <a href="{{ route('rooms-drawers.index') }}" class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                        Create Room
+                    </a>
+                    <a href="{{ route('rooms-drawers.index') }}" class="inline-flex items-center rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800">
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2M4 7h16M6 11h12M9 15h6M9 19h3"/></svg>
+                        Create Drawer
+                    </a>
+                </div>
+
                 <!-- Search and Filters -->
                 <div class="flex items-center gap-4">
                     <div class="relative">
