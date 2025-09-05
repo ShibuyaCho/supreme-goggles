@@ -228,6 +228,40 @@
 <script src="{{ asset('js/pos.js') }}"></script>
 @endpush
 
+@push('scripts')
+<script>
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.delete-product');
+        if (!btn) return;
+        e.preventDefault();
+        const id = btn.getAttribute('data-product-id');
+        const name = btn.getAttribute('data-product-name') || 'this product';
+        if (!id) return;
+        if (!confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) return;
+        if (window.POS && typeof POS.showLoading === 'function') POS.showLoading();
+        (window.axios || axios).delete(`/api/products/${id}/delete`)
+            .then(function(res) {
+                if (res.data && res.data.success) {
+                    if (window.POS && typeof POS.showToast === 'function') POS.showToast('Product deleted successfully', 'success');
+                    const card = btn.closest('.product-card');
+                    if (card) card.remove();
+                    setTimeout(function(){ location.reload(); }, 300);
+                } else {
+                    const msg = (res.data && res.data.message) || 'Failed to delete product';
+                    if (window.POS && typeof POS.showToast === 'function') POS.showToast(msg, 'error');
+                }
+            })
+            .catch(function(err){
+                const msg = err?.response?.data?.message || 'Failed to delete product';
+                if (window.POS && typeof POS.showToast === 'function') POS.showToast(msg, 'error');
+            })
+            .finally(function(){
+                if (window.POS && typeof POS.hideLoading === 'function') POS.hideLoading();
+            });
+    });
+</script>
+@endpush
+
 @push('styles')
 <link href="{{ asset('css/pos-enhancements.css') }}" rel="stylesheet">
 @endpush
