@@ -11,17 +11,17 @@ class Room extends Model
 
     protected $fillable = [
         'name',
+        'room_id',
         'type',
-        'capacity',
-        'temperature_controlled',
-        'security_level',
-        'description',
-        'is_active'
+        'is_active',
+        'max_capacity',
+        'current_stock',
+        'description'
     ];
 
     protected $casts = [
-        'capacity' => 'integer',
-        'temperature_controlled' => 'boolean',
+        'max_capacity' => 'integer',
+        'current_stock' => 'integer',
         'is_active' => 'boolean'
     ];
 
