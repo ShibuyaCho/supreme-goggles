@@ -262,6 +262,28 @@
 </script>
 @endpush
 
+@push('scripts')
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('refresh-metrc');
+    if (!btn) return;
+    btn.addEventListener('click', async function(){
+      try {
+        if (window.POS && typeof POS.showLoading === 'function') POS.showLoading();
+        const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
+        const count = Array.isArray(res?.data?.transfers) ? res.data.transfers.length : (res?.data?.count || 0);
+        if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
+        if (window.POS && typeof POS.showToast === 'function') POS.showToast(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
+      } catch (e) {
+        if (window.POS && typeof POS.showToast === 'function') POS.showToast('Failed to refresh METRC data', 'error');
+      } finally {
+        if (window.POS && typeof POS.hideLoading === 'function') POS.hideLoading();
+      }
+    });
+  });
+</script>
+@endpush
+
 @push('styles')
 <link href="{{ asset('css/pos-enhancements.css') }}" rel="stylesheet">
 @endpush
