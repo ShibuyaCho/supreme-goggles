@@ -7,46 +7,89 @@
     <title>Cannabest POS System</title>
     <script>
       // Prevent auto-login when forced reauth is enabled and provide global logout helper
-      (function(){
+      (function () {
         try {
-          if (localStorage.getItem('pos_force_reauth') === '1') {
-            try { localStorage.removeItem('pos_token'); } catch(e) {}
-            try { localStorage.removeItem('pos_user'); } catch(e) {}
-            try { localStorage.removeItem('auth_token'); } catch(e) {}
-            try { localStorage.removeItem('user_data'); } catch(e) {}
-            try { localStorage.removeItem('cannabisPOS-auth'); } catch(e) {}
-            try { sessionStorage.clear(); } catch(e) {}
-            try { document.cookie.split(';').forEach(function(c){ document.cookie = c.trim().split('=')[0]+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'; }); } catch(e) {}
+          if (localStorage.getItem("pos_force_reauth") === "1") {
+            try {
+              localStorage.removeItem("pos_token");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("pos_user");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("auth_token");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("user_data");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("cannabisPOS-auth");
+            } catch (e) {}
+            try {
+              sessionStorage.clear();
+            } catch (e) {}
+            try {
+              document.cookie.split(";").forEach(function (c) {
+                document.cookie =
+                  c.trim().split("=")[0] +
+                  "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+              });
+            } catch (e) {}
             window.POS_FORCE_REAUTH = true;
           }
-        } catch(e) {}
+        } catch (e) {}
       })();
 
-      window.__forceLogout = async function() {
-        try { localStorage.setItem('pos_force_reauth','1'); } catch(e) {}
+      window.__forceLogout = async function () {
         try {
-          if (window.posAuth && typeof window.posAuth.logout === 'function') {
+          localStorage.setItem("pos_force_reauth", "1");
+        } catch (e) {}
+        try {
+          if (window.posAuth && typeof window.posAuth.logout === "function") {
             await window.posAuth.logout();
           }
-        } catch(e) {}
-        try { localStorage.removeItem('pos_token'); } catch(e) {}
-        try { localStorage.removeItem('pos_user'); } catch(e) {}
-        try { localStorage.removeItem('auth_token'); } catch(e) {}
-        try { localStorage.removeItem('user_data'); } catch(e) {}
-        try { localStorage.removeItem('cannabisPOS-auth'); } catch(e) {}
-        try { sessionStorage.clear(); } catch(e) {}
-        try { document.cookie.split(';').forEach(function(c){ document.cookie = c.trim().split('=')[0]+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'; }); } catch(e) {}
+        } catch (e) {}
+        try {
+          localStorage.removeItem("pos_token");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("pos_user");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("auth_token");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("user_data");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("cannabisPOS-auth");
+        } catch (e) {}
+        try {
+          sessionStorage.clear();
+        } catch (e) {}
+        try {
+          document.cookie.split(";").forEach(function (c) {
+            document.cookie =
+              c.trim().split("=")[0] +
+              "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+          });
+        } catch (e) {}
         location.reload();
       };
 
-      document.addEventListener('DOMContentLoaded', function(){
+      document.addEventListener("DOMContentLoaded", function () {
         try {
           const search = new URLSearchParams(location.search);
-          const hash = new URLSearchParams(location.hash.replace('#',''));
-          if (search.has('logout') || search.has('forceLogout') || hash.has('logout') || hash.has('forceLogout')) {
+          const hash = new URLSearchParams(location.hash.replace("#", ""));
+          if (
+            search.has("logout") ||
+            search.has("forceLogout") ||
+            hash.has("logout") ||
+            hash.has("forceLogout")
+          ) {
             window.__forceLogout();
           }
-        } catch(e) {}
+        } catch (e) {}
       });
     </script>
     <script>
@@ -846,16 +889,56 @@
               </button>
 
               <!-- Current Employee -->
-              <div class="hidden md:flex items-center text-sm text-gray-700 relative" x-data="{ open:false }">
-                <button @click="open=!open" class="flex items-center hover:text-cannabis-green">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <div
+                class="hidden md:flex items-center text-sm text-gray-700 relative"
+                x-data="{ open:false }"
+              >
+                <button
+                  @click="open=!open"
+                  class="flex items-center hover:text-cannabis-green"
+                >
+                  <svg
+                    class="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
                   </svg>
-                  <span x-text="currentUser ? currentUser.name : 'Employee'"></span>
-                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  <span
+                    x-text="currentUser ? currentUser.name : 'Employee'"
+                  ></span>
+                  <svg
+                    class="w-4 h-4 ml-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </button>
-                <div x-show="open" @click.outside="open=false" x-transition class="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                  <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50" onclick="window.__forceLogout && window.__forceLogout()">Log Out</button>
+                <div
+                  x-show="open"
+                  @click.outside="open=false"
+                  x-transition
+                  class="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50"
+                >
+                  <button
+                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                    onclick="window.__forceLogout && window.__forceLogout()"
+                  >
+                    Log Out
+                  </button>
                 </div>
               </div>
             </div>

@@ -15,18 +15,34 @@
     <title>{{ config('app.name', 'Cannabis POS System') }}</title>
     <script>
       // Prevent auto-login when forced reauth is enabled
-      (function(){
+      (function () {
         try {
-          if (localStorage.getItem('pos_force_reauth') === '1') {
-            try { localStorage.removeItem('pos_token'); } catch(e) {}
-            try { localStorage.removeItem('pos_user'); } catch(e) {}
-            try { localStorage.removeItem('auth_token'); } catch(e) {}
-            try { localStorage.removeItem('user_data'); } catch(e) {}
-            try { sessionStorage.clear(); } catch(e) {}
-            try { document.cookie.split(';').forEach(function(c){ document.cookie = c.trim().split('=')[0]+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'; }); } catch(e) {}
+          if (localStorage.getItem("pos_force_reauth") === "1") {
+            try {
+              localStorage.removeItem("pos_token");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("pos_user");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("auth_token");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("user_data");
+            } catch (e) {}
+            try {
+              sessionStorage.clear();
+            } catch (e) {}
+            try {
+              document.cookie.split(";").forEach(function (c) {
+                document.cookie =
+                  c.trim().split("=")[0] +
+                  "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+              });
+            } catch (e) {}
             window.POS_FORCE_REAUTH = true;
           }
-        } catch(e) {}
+        } catch (e) {}
       })();
       window["_fs_namespace"] = window["_fs_namespace"] || "FS_cpos";
     </script>
@@ -415,14 +431,54 @@
               </div>
 
               <!-- User Menu -->
-              <div class="flex items-center space-x-4 relative" x-data="{ open:false }">
-                <button @click="open=!open" class="flex items-center text-sm text-gray-700 hover:text-cannabis-green">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+              <div
+                class="flex items-center space-x-4 relative"
+                x-data="{ open:false }"
+              >
+                <button
+                  @click="open=!open"
+                  class="flex items-center text-sm text-gray-700 hover:text-cannabis-green"
+                >
+                  <svg
+                    class="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                    />
+                  </svg>
                   <span x-text="currentUser?.name || 'User'"></span>
-                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                  <svg
+                    class="w-4 h-4 ml-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </button>
-                <div x-show="open" @click.outside="open=false" x-transition class="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                  <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50" @click="open=false; window.__forceAlpineLogout && window.__forceAlpineLogout()">Log Out</button>
+                <div
+                  x-show="open"
+                  @click.outside="open=false"
+                  x-transition
+                  class="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50"
+                >
+                  <button
+                    class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                    @click="open=false; window.__forceAlpineLogout && window.__forceAlpineLogout()"
+                  >
+                    Log Out
+                  </button>
                 </div>
               </div>
             </div>
@@ -485,20 +541,40 @@
     <!-- Initialize Application -->
     <script>
       // Global logout helper used by dropdown
-      window.__forceAlpineLogout = async function(){
-        try { localStorage.setItem('pos_force_reauth','1'); } catch(e) {}
+      window.__forceAlpineLogout = async function () {
         try {
-          if (window.posAuth && typeof window.posAuth.logout === 'function') {
+          localStorage.setItem("pos_force_reauth", "1");
+        } catch (e) {}
+        try {
+          if (window.posAuth && typeof window.posAuth.logout === "function") {
             await window.posAuth.logout();
           }
-        } catch(e) {}
-        try { localStorage.removeItem('pos_token'); } catch(e) {}
-        try { localStorage.removeItem('pos_user'); } catch(e) {}
-        try { localStorage.removeItem('auth_token'); } catch(e) {}
-        try { localStorage.removeItem('user_data'); } catch(e) {}
-        try { localStorage.removeItem('cannabisPOS-auth'); } catch(e) {}
-        try { sessionStorage.clear(); } catch(e) {}
-        try { document.cookie.split(';').forEach(function(c){ document.cookie = c.trim().split('=')[0]+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'; }); } catch(e) {}
+        } catch (e) {}
+        try {
+          localStorage.removeItem("pos_token");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("pos_user");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("auth_token");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("user_data");
+        } catch (e) {}
+        try {
+          localStorage.removeItem("cannabisPOS-auth");
+        } catch (e) {}
+        try {
+          sessionStorage.clear();
+        } catch (e) {}
+        try {
+          document.cookie.split(";").forEach(function (c) {
+            document.cookie =
+              c.trim().split("=")[0] +
+              "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+          });
+        } catch (e) {}
         location.reload();
       };
 

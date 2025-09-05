@@ -7,19 +7,35 @@
     <title>Cannabis POS System</title>
     <script>
       // Prevent auto-login when forced reauth is enabled
-      (function(){
+      (function () {
         try {
-          if (localStorage.getItem('pos_force_reauth') === '1') {
-            try { localStorage.removeItem('pos_token'); } catch(e) {}
-            try { localStorage.removeItem('pos_user'); } catch(e) {}
-            try { localStorage.removeItem('auth_token'); } catch(e) {}
-            try { localStorage.removeItem('user_data'); } catch(e) {}
-            try { sessionStorage.clear(); } catch(e) {}
+          if (localStorage.getItem("pos_force_reauth") === "1") {
+            try {
+              localStorage.removeItem("pos_token");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("pos_user");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("auth_token");
+            } catch (e) {}
+            try {
+              localStorage.removeItem("user_data");
+            } catch (e) {}
+            try {
+              sessionStorage.clear();
+            } catch (e) {}
             // Best-effort cookie clear (won't clear httpOnly)
-            try { document.cookie.split(';').forEach(function(c){ document.cookie = c.trim().split('=')[0]+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'; }); } catch(e) {}
+            try {
+              document.cookie.split(";").forEach(function (c) {
+                document.cookie =
+                  c.trim().split("=")[0] +
+                  "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/";
+              });
+            } catch (e) {}
             window.POS_FORCE_REAUTH = true;
           }
-        } catch(e) {}
+        } catch (e) {}
       })();
       window["_fs_namespace"] = window["_fs_namespace"] || "FS_cpos";
     </script>
@@ -185,16 +201,54 @@
             </button>
 
             <!-- Current Employee Dropdown -->
-            <div class="hidden md:flex items-center text-sm text-gray-700 relative" x-data="{ open:false }">
-              <button @click="open=!open" class="flex items-center hover:text-cannabis-green">
-                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            <div
+              class="hidden md:flex items-center text-sm text-gray-700 relative"
+              x-data="{ open:false }"
+            >
+              <button
+                @click="open=!open"
+                class="flex items-center hover:text-cannabis-green"
+              >
+                <svg
+                  class="w-4 h-4 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                  />
                 </svg>
                 <span id="current-user-label">Employee</span>
-                <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <svg
+                  class="w-4 h-4 ml-1"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 9l-7 7-7-7"
+                  />
+                </svg>
               </button>
-              <div x-show="open" @click.outside="open=false" x-transition class="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50" onclick="forceLogout()">Log Out</button>
+              <div
+                x-show="open"
+                @click.outside="open=false"
+                x-transition
+                class="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50"
+              >
+                <button
+                  class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                  onclick="forceLogout()"
+                >
+                  Log Out
+                </button>
               </div>
             </div>
           </div>
