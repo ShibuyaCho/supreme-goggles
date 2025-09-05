@@ -107,21 +107,21 @@
         <div id="employees-tab" class="tab-content">
             <!-- Employee Cards -->
             <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                <!-- Sample Employee Card -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                @forelse($employees as $employee)
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow" data-employee-id="{{ $employee->id }}">
                     <div class="p-6">
                         <!-- Employee Header -->
                         <div class="flex items-center space-x-4 mb-4">
-                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                                <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <div class="w-16 h-16 rounded-full flex items-center justify-center {{ $employee->department === 'management' ? 'bg-blue-100' : ($employee->department === 'inventory' ? 'bg-purple-100' : ($employee->department === 'security' ? 'bg-orange-100' : 'bg-green-100')) }}">
+                                <svg class="w-8 h-8 {{ $employee->department === 'management' ? 'text-blue-600' : ($employee->department === 'inventory' ? 'text-purple-600' : ($employee->department === 'security' ? 'text-orange-600' : 'text-green-600')) }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                 </svg>
                             </div>
                             <div>
-                                <h3 class="text-lg font-semibold text-gray-900">Sarah Johnson</h3>
-                                <p class="text-sm text-gray-600">Senior Budtender</p>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Active
+                                <h3 class="text-lg font-semibold text-gray-900">{{ $employee->full_name }}</h3>
+                                <p class="text-sm text-gray-600">{{ ucfirst($employee->position) }}</p>
+                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $employee->status === 'active' ? 'bg-green-100 text-green-800' : ($employee->status === 'on_leave' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800') }}">
+                                    {{ ucfirst(str_replace('_', ' ', $employee->status ?? 'active')) }}
                                 </span>
                             </div>
                         </div>
@@ -132,20 +132,20 @@
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                                 </svg>
-                                sarah.johnson@dispensary.com
+                                {{ $employee->email }}
                             </div>
                             <div class="flex items-center text-sm text-gray-600">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                                 </svg>
-                                (555) 123-4567
+                                {{ $employee->phone }}
                             </div>
                             <div class="flex items-center text-sm text-gray-600">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                                 </svg>
-                                EMP001
+                                {{ $employee->employee_id }}
                             </div>
                         </div>
 
@@ -153,11 +153,11 @@
                         <div class="bg-gray-50 rounded-lg p-3 mb-4">
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">$12,450</div>
-                                    <div class="text-xs text-gray-500">Sales This Month</div>
+                                    <div class="text-lg font-bold text-gray-900">{{ \App\Providers\HelperServiceProvider::currency() }}{{ number_format($employee->total_sales ?? 0, 2) }}</div>
+                                    <div class="text-xs text-gray-500">Total Sales</div>
                                 </div>
                                 <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">142</div>
+                                    <div class="text-lg font-bold text-gray-900">{{ $employee->total_transactions ?? 0 }}</div>
                                     <div class="text-xs text-gray-500">Transactions</div>
                                 </div>
                             </div>
@@ -166,231 +166,28 @@
                         <!-- Permissions -->
                         <div class="mb-4">
                             <div class="flex flex-wrap gap-1">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                    POS Access
-                                </span>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                    Inventory
-                                </span>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                    Reports
-                                </span>
+                                @foreach(($employee->permissions ?? []) as $perm)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">{{ ucwords(str_replace(['_', ':'], ' ', $perm)) }}</span>
+                                @endforeach
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
                         <div class="flex space-x-2">
-                            <button onclick="viewEmployee(1)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                View
-                            </button>
-                            <button onclick="editEmployee(1)" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Edit
-                            </button>
-                            <button onclick="viewPerformance(1)" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Performance
-                            </button>
+                            <a href="{{ route('employees.show', $employee) }}" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">View</a>
+                            <button type="button" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="EmployeeUI.openEdit({{ $employee->id }})">Edit</button>
+                            <a href="{{ route('employees.performance', $employee) }}" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">Performance</a>
                         </div>
                     </div>
                 </div>
-
-                <!-- Additional Employee Cards -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                    <div class="p-6">
-                        <div class="flex items-center space-x-4 mb-4">
-                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-900">Mike Rodriguez</h3>
-                                <p class="text-sm text-gray-600">Store Manager</p>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Active
-                                </span>
-                            </div>
-                        </div>
-                        <div class="space-y-2 mb-4">
-                            <div class="flex items-center text-sm text-gray-600">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                                mike.rodriguez@dispensary.com
-                            </div>
-                            <div class="flex items-center text-sm text-gray-600">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                </svg>
-                                EMP002
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">$28,750</div>
-                                    <div class="text-xs text-gray-500">Team Sales</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">325</div>
-                                    <div class="text-xs text-gray-500">Managed Trans</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <div class="flex flex-wrap gap-1">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                    Admin
-                                </span>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                    All Access
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button onclick="viewEmployee(2)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                View
-                            </button>
-                            <button onclick="editEmployee(2)" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Edit
-                            </button>
-                            <button onclick="viewPerformance(2)" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Performance
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Employee 3 -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                    <div class="p-6">
-                        <div class="flex items-center space-x-4 mb-4">
-                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center">
-                                <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-900">Alex Thompson</h3>
-                                <p class="text-sm text-gray-600">Budtender</p>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                    Active
-                                </span>
-                            </div>
-                        </div>
-                        <div class="space-y-2 mb-4">
-                            <div class="flex items-center text-sm text-gray-600">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                                alex.thompson@dispensary.com
-                            </div>
-                            <div class="flex items-center text-sm text-gray-600">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                </svg>
-                                EMP003
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">$9,830</div>
-                                    <div class="text-xs text-gray-500">Sales This Month</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">118</div>
-                                    <div class="text-xs text-gray-500">Transactions</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <div class="flex flex-wrap gap-1">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                    POS Access
-                                </span>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                    Inventory
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button onclick="viewEmployee(3)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                View
-                            </button>
-                            <button onclick="editEmployee(3)" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Edit
-                            </button>
-                            <button onclick="viewPerformance(3)" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Performance
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Employee 4 -->
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-                    <div class="p-6">
-                        <div class="flex items-center space-x-4 mb-4">
-                            <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center">
-                                <svg class="w-8 h-8 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                            </div>
-                            <div>
-                                <h3 class="text-lg font-semibold text-gray-900">Jamie Lee</h3>
-                                <p class="text-sm text-gray-600">Cashier</p>
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                    On Leave
-                                </span>
-                            </div>
-                        </div>
-                        <div class="space-y-2 mb-4">
-                            <div class="flex items-center text-sm text-gray-600">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                                jamie.lee@dispensary.com
-                            </div>
-                            <div class="flex items-center text-sm text-gray-600">
-                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                </svg>
-                                EMP004
-                            </div>
-                        </div>
-                        <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">$8,920</div>
-                                    <div class="text-xs text-gray-500">Sales This Month</div>
-                                </div>
-                                <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">95</div>
-                                    <div class="text-xs text-gray-500">Transactions</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-4">
-                            <div class="flex flex-wrap gap-1">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-                                    POS Access
-                                </span>
-                            </div>
-                        </div>
-                        <div class="flex space-x-2">
-                            <button onclick="viewEmployee(4)" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                View
-                            </button>
-                            <button onclick="editEmployee(4)" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Edit
-                            </button>
-                            <button onclick="viewPerformance(4)" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">
-                                Performance
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                @empty
+                @include('partials.empty-state', ['title' => 'No employees found', 'description' => 'Use the Add Employee button to create your first employee.'])
+                @endforelse
             </div>
+
+            @if(method_exists($employees, 'links'))
+            <div class="mt-6">{{ $employees->links() }}</div>
+            @endif
         </div>
 
         <!-- Performance Tab -->
@@ -566,6 +363,38 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('department-filter').addEventListener('change', applyFilters);
 });
 
+const EmployeeUI = {
+    data: @json((method_exists($employees, 'items') ? $employees->items() : $employees) ?? []),
+    getById(id){ return this.data.find(e => e.id === id); },
+    openEdit(id){
+        const emp = this.getById(id);
+        if (!emp) return;
+        window.currentEditingEmployeeId = id;
+        const modal = document.getElementById('edit-employee-modal');
+        if (!modal) return;
+        // Populate form fields
+        const form = document.getElementById('edit-employee-form');
+        if (form){
+            form.querySelector('[name="first_name"]').value = emp.first_name || '';
+            form.querySelector('[name="last_name"]').value = emp.last_name || '';
+            form.querySelector('[name="email"]').value = emp.email || '';
+            form.querySelector('[name="phone"]').value = emp.phone || '';
+            form.querySelector('[name="role"]').value = (emp.position || '').toLowerCase();
+            form.querySelector('[name="status"]').value = (emp.status || 'active');
+            form.querySelector('[name="employee_id"]').value = emp.employee_id || '';
+            form.querySelector('[name="department"]').value = (emp.department || 'sales');
+            form.querySelector('[name="hire_date"]').value = (emp.hire_date ? String(emp.hire_date).slice(0,10) : '');
+            // Permissions
+            const perms = Array.isArray(emp.permissions) ? emp.permissions : [];
+            form.querySelectorAll('input[name="permissions[]"]').forEach(cb => {
+                cb.checked = perms.includes(cb.value);
+            });
+        }
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    },
+};
+
 function switchTab(tabName) {
     // Hide all tabs
     document.querySelectorAll('.tab-content').forEach(content => {
@@ -612,7 +441,7 @@ function viewEmployee(employeeId) {
 }
 
 function editEmployee(employeeId) {
-    window.location.href = `/employees/${employeeId}/edit`;
+    EmployeeUI.openEdit(Number(employeeId));
 }
 
 function viewPerformance(employeeId) {
