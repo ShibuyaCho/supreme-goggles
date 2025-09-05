@@ -134,18 +134,71 @@ function closeEditEmployeeModal() {
     document.getElementById('edit-employee-modal').classList.remove('flex');
 }
 
-function confirmDeleteEmployee() {
-    if (confirm('Are you sure you want to delete this employee? This action cannot be undone.')) {
-        alert('Employee would be deleted from the system');
-        closeEditEmployeeModal();
+async function confirmDeleteEmployee() {
+    const id = window.currentEditingEmployeeId;
+    if (!id) return;
+    if (!confirm('Are you sure you want to delete this employee? This action cannot be undone.')) return;
+    try {
+        document.getElementById('loading-overlay')?.classList.remove('hidden');
+        const res = await (window.axios || axios).delete(`/employees/${id}`, { headers: { 'Accept': 'application/json' } });
+        if (res && res.status >= 200 && res.status < 300){
+            window.POS?.showToast?.('Employee deleted successfully', 'success');
+            closeEditEmployeeModal();
+            window.location.reload();
+        } else {
+            const msg = res?.data?.message || res?.data?.error || 'Failed to delete employee';
+            window.POS?.showToast?.(msg, 'error');
+        }
+    } catch (err){
+        const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to delete employee';
+        window.POS?.showToast?.(msg, 'error');
+    } finally {
+        document.getElementById('loading-overlay')?.classList.add('hidden');
     }
 }
 
-document.getElementById('edit-employee-form').addEventListener('submit', function(e) {
+document.getElementById('edit-employee-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
-    // In a real application, this would submit to the server
-    alert('Employee information would be updated');
-    closeEditEmployeeModal();
+    const id = window.currentEditingEmployeeId;
+    if (!id) return;
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const payload = {
+        first_name: String(fd.get('first_name')||'').trim(),
+        last_name: String(fd.get('last_name')||'').trim(),
+        email: String(fd.get('email')||'').trim(),
+        phone: String(fd.get('phone')||'').trim(),
+        department: String(fd.get('department')||'').trim(),
+        position: String(fd.get('role')||'').trim(),
+        hourly_rate: null,
+        permissions: Array.from(form.querySelectorAll('input[name="permissions[]"]:checked')).map(i=>i.value)
+    };
+
+    if (!payload.first_name || !payload.last_name || !payload.email || !payload.phone || !payload.department || !payload.position){
+        window.POS?.showToast?.('Please fill in all required fields', 'error');
+        return;
+    }
+    if (!payload.permissions || payload.permissions.length === 0){
+        window.POS?.showToast?.('Select at least one permission', 'error');
+        return;
+    }
+
+    try {
+        document.getElementById('loading-overlay')?.classList.remove('hidden');
+        const res = await (window.axios || axios).patch(`/employees/${id}`, payload, { headers: { 'Accept': 'application/json' } });
+        if (res && res.status >= 200 && res.status < 300){
+            window.POS?.showToast?.('Employee updated successfully', 'success');
+            closeEditEmployeeModal();
+            window.location.reload();
+        } else {
+            const msg = res?.data?.message || 'Failed to update employee';
+            window.POS?.showToast?.(msg, 'error');
+        }
+    } catch (err){
+        const msg = err?.response?.data?.message || (err?.response?.data?.errors ? 'Validation failed' : 'Failed to update employee');
+        window.POS?.showToast?.(msg, 'error');
+    } finally {
+        document.getElementById('loading-overlay')?.classList.add('hidden');
+    }
 });
 </script>
