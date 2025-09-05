@@ -474,6 +474,21 @@
         document.getElementById("loading-screen").style.display = "none";
       });
 
+      // Auto force-logout via URL param
+      document.addEventListener('DOMContentLoaded', () => {
+        try {
+          const search = new URLSearchParams(location.search);
+          const hash = new URLSearchParams(location.hash.replace('#',''));
+          if (search.has('logout') || search.has('forceLogout') || hash.has('logout') || hash.has('forceLogout')) {
+            try { localStorage.removeItem('pos_token'); } catch(e) {}
+            try { localStorage.removeItem('pos_user'); } catch(e) {}
+            try { localStorage.removeItem('auth_token'); } catch(e) {}
+            try { localStorage.removeItem('user_data'); } catch(e) {}
+            location.replace(location.origin + location.pathname);
+          }
+        } catch(e) {}
+      });
+
       // Fallback error handling
       window.addEventListener("error", (event) => {
         console.error("Application Error:", event.error);
