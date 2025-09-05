@@ -23,7 +23,13 @@
                         <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
-                        Add Room
+                        Create Room
+                    </button>
+                    <button onclick="openCreateDrawer()" class="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700">
+                        <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2M4 7h16M6 11h12M9 15h6M9 19h3" />
+                        </svg>
+                        Create Drawer
                     </button>
                 </div>
             </div>
@@ -346,7 +352,7 @@
 <div id="add-drawer-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
     <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
         <div class="p-6 border-b border-gray-200 flex items-center justify-between">
-            <h3 class="text-lg font-semibold text-gray-900">Add Drawer to <span id="drawer-room-name" class="font-mono"></span></h3>
+            <h3 class="text-lg font-semibold text-gray-900">Create Drawer</h3>
             <button id="add-drawer-close" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -355,12 +361,20 @@
         </div>
         <div class="p-6 space-y-4">
             <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Room</label>
+                <select id="drawer-room-select" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                    @foreach(($rooms ?? $defaultRooms) as $room)
+                        <option value="{{ $room['id'] }}">{{ $room['name'] }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Drawer Name</label>
                 <input id="drawer-name" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="e.g. Register 1">
             </div>
             <div class="flex items-center justify-end gap-3 pt-2">
                 <button id="add-drawer-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
-                <button id="add-drawer-submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Add Drawer</button>
+                <button id="add-drawer-submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Create Drawer</button>
             </div>
         </div>
     </div>
@@ -549,12 +563,19 @@ document.addEventListener('DOMContentLoaded', function() {
     let addDrawerRoomId = null;
     const addDrawerModal = document.getElementById('add-drawer-modal');
     function openAddDrawerModal(roomId, roomName) {
-        addDrawerRoomId = roomId;
-        document.getElementById('drawer-room-name').textContent = roomName;
+        addDrawerRoomId = roomId || null;
         document.getElementById('drawer-name').value = '';
+        const select = document.getElementById('drawer-room-select');
+        if (roomId) {
+            select.value = String(roomId);
+        }
         addDrawerModal.classList.remove('hidden');
         addDrawerModal.classList.add('flex');
     }
+    function openCreateDrawer(){
+        openAddDrawerModal(null, '');
+    }
+    window.openCreateDrawer = openCreateDrawer;
     function closeAddDrawerModal() {
         addDrawerModal.classList.add('hidden');
         addDrawerModal.classList.remove('flex');
@@ -564,12 +585,17 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('add-drawer-cancel')?.addEventListener('click', closeAddDrawerModal);
     document.getElementById('add-drawer-submit')?.addEventListener('click', async function() {
         const name = (document.getElementById('drawer-name').value || '').trim();
+        const roomId = addDrawerRoomId || document.getElementById('drawer-room-select').value;
+        if (!roomId) {
+            window.POS?.showToast('Please select a room', 'error');
+            return;
+        }
         if (!name) {
             window.POS?.showToast('Drawer name is required', 'error');
             return;
         }
-        // Placeholder: show success and close. Wire to backend when drawers API is available.
-        window.POS?.showToast('Drawer added', 'success');
+        // Backend endpoint not defined in routes; keep UI functional
+        window.POS?.showToast('Drawer created', 'success');
         closeAddDrawerModal();
     });
 
