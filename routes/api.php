@@ -55,6 +55,12 @@ Route::prefix('auth')->group(function () {
     Route::post('/self-register', [AuthController::class, 'selfRegister']);
 });
 
+// Compatibility aliases (support clients using /api/* without /auth prefix)
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/pin-login', [AuthController::class, 'pinLogin']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/self-register', [AuthController::class, 'selfRegister']);
+
 /*
 |--------------------------------------------------------------------------
 | Protected Routes (Authentication Required)
