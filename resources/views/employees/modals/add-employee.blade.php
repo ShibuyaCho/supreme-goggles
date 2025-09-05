@@ -35,7 +35,7 @@
                                 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Phone Number</label>
-                                    <input type="tel" name="phone" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                    <input type="tel" name="phone" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                                 </div>
 
                                 <!-- Employment Details -->
@@ -64,7 +64,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Employee ID</label>
-                                    <input type="text" name="employee_id" placeholder="EMP005" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                    <input type="text" name="employee_id" placeholder="EMP005" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
                                 </div>
 
                                 <div>
@@ -77,7 +77,7 @@
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Permissions</label>
                                     <div class="space-y-2">
                                         <label class="flex items-center">
-                                            <input type="checkbox" name="permissions[]" value="pos_access" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                                            <input type="checkbox" name="permissions[]" value="pos_access" checked class="rounded border-gray-300 text-green-600 focus:ring-green-500">
                                             <span class="ml-2 text-sm text-gray-700">POS Access</span>
                                         </label>
                                         <label class="flex items-center">
@@ -118,11 +118,62 @@ function closeAddEmployeeModal() {
     document.getElementById('add-employee-modal').classList.remove('flex');
 }
 
-document.getElementById('add-employee-form').addEventListener('submit', function(e) {
+document.getElementById('add-employee-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    
-    // In a real application, this would submit to the server
-    alert('Employee would be added to the system');
-    closeAddEmployeeModal();
+    const form = e.currentTarget;
+    const fd = new FormData(form);
+    const first_name = String(fd.get('first_name')||'').trim();
+    const last_name = String(fd.get('last_name')||'').trim();
+    const email = String(fd.get('email')||'').trim();
+    const phone = String(fd.get('phone')||'').trim();
+    const role = String(fd.get('role')||'').trim();
+    const department = String(fd.get('department')||'').trim();
+    const employee_id = String(fd.get('employee_id')||'').trim();
+    const hire_date = String(fd.get('hire_date')||'').trim();
+    const permissions = Array.from(form.querySelectorAll('input[name="permissions[]"]:checked')).map(i=>i.value);
+
+    if (!first_name || !last_name || !email || !phone || !role || !department || !employee_id || !hire_date){
+        window.POS?.showToast?.('Please fill in all required fields', 'error');
+        return;
+    }
+    if (permissions.length === 0){
+        window.POS?.showToast?.('Select at least one permission', 'error');
+        return;
+    }
+
+    const tempPassword = `Canna${Math.random().toString(36).slice(2, 8)}!${Math.floor(10 + Math.random() * 89)}`;
+
+    const payload = {
+        first_name,
+        last_name,
+        email,
+        phone,
+        employee_id,
+        department,
+        position: role,
+        hire_date,
+        hourly_rate: null,
+        permissions,
+        password: tempPassword,
+        password_confirmation: tempPassword,
+    };
+
+    try {
+        document.getElementById('loading-overlay')?.classList.remove('hidden');
+        const res = await (window.axios || axios).post('/employees', payload, { headers: { 'Accept': 'application/json' } });
+        if (res && res.status >= 200 && res.status < 300){
+            window.POS?.showToast?.('Employee created successfully', 'success');
+            closeAddEmployeeModal();
+            window.location.reload();
+        } else {
+            const msg = res?.data?.message || 'Failed to create employee';
+            window.POS?.showToast?.(msg, 'error');
+        }
+    } catch (err){
+        const msg = err?.response?.data?.message || (err?.response?.data?.errors ? 'Validation failed' : 'Failed to create employee');
+        window.POS?.showToast?.(msg, 'error');
+    } finally {
+        document.getElementById('loading-overlay')?.classList.add('hidden');
+    }
 });
 </script>
