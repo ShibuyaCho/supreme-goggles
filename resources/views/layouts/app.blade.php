@@ -350,10 +350,35 @@
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
-            
+
             if (mobileMenuButton && mobileMenu) {
                 mobileMenuButton.addEventListener('click', function() {
                     mobileMenu.classList.toggle('hidden');
+                });
+            }
+
+            // User menu dropdown + logout
+            const userBtn = document.getElementById('user-menu-button');
+            const userDropdown = document.getElementById('user-menu-dropdown');
+            const logoutBtn = document.getElementById('logout-button');
+            if (userBtn && userDropdown) {
+                userBtn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+                document.addEventListener('click', function(){
+                    userDropdown.classList.add('hidden');
+                });
+            }
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function(){
+                    try {
+                        if (window.posAuth && typeof window.posAuth.logout === 'function') {
+                            await window.posAuth.logout();
+                        }
+                    } catch (e) {}
+                    // Force re-authentication
+                    window.location.reload();
                 });
             }
         });
