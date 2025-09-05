@@ -153,7 +153,7 @@
                         <div class="bg-gray-50 rounded-lg p-3 mb-4">
                             <div class="grid grid-cols-2 gap-3">
                                 <div class="text-center">
-                                    <div class="text-lg font-bold text-gray-900">{{ \App\Providers\HelperServiceProvider::currency() }}{{ number_format($employee->total_sales ?? 0, 2) }}</div>
+                                    <div class="text-lg font-bold text-gray-900">${{ number_format($employee->total_sales ?? 0, 2) }}</div>
                                     <div class="text-xs text-gray-500">Total Sales</div>
                                 </div>
                                 <div class="text-center">
