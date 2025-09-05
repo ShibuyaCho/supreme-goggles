@@ -90,6 +90,7 @@ function cannabisPOS() {
         if (response.data.token) {
           localStorage.setItem("auth_token", response.data.token);
           localStorage.setItem("user_data", JSON.stringify(response.data.user));
+          try { localStorage.removeItem("pos_force_reauth"); } catch(e) {}
           this.currentUser = response.data.user;
           this.isAuthenticated = true;
           this.showAuthModal = false;
@@ -111,6 +112,7 @@ function cannabisPOS() {
         if (response.data.token) {
           localStorage.setItem("auth_token", response.data.token);
           localStorage.setItem("user_data", JSON.stringify(response.data.user));
+          try { localStorage.removeItem("pos_force_reauth"); } catch(e) {}
           this.currentUser = response.data.user;
           this.isAuthenticated = true;
           this.showAuthModal = false;
@@ -153,6 +155,7 @@ function cannabisPOS() {
           localStorage.setItem("user_data", JSON.stringify(response.data.user));
           axios.defaults.headers.common["Authorization"] =
             `Bearer ${response.data.token}`;
+          try { localStorage.removeItem("pos_force_reauth"); } catch(e) {}
           this.currentUser = response.data.user;
           this.isAuthenticated = true;
           this.showRegisterModal = false;
