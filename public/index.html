@@ -6,6 +6,21 @@
     <meta name="csrf-token" content="development-token" />
     <title>Cannabis POS System</title>
     <script>
+      // Prevent auto-login when forced reauth is enabled
+      (function(){
+        try {
+          if (localStorage.getItem('pos_force_reauth') === '1') {
+            try { localStorage.removeItem('pos_token'); } catch(e) {}
+            try { localStorage.removeItem('pos_user'); } catch(e) {}
+            try { localStorage.removeItem('auth_token'); } catch(e) {}
+            try { localStorage.removeItem('user_data'); } catch(e) {}
+            try { sessionStorage.clear(); } catch(e) {}
+            // Best-effort cookie clear (won't clear httpOnly)
+            try { document.cookie.split(';').forEach(function(c){ document.cookie = c.trim().split('=')[0]+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'; }); } catch(e) {}
+            window.POS_FORCE_REAUTH = true;
+          }
+        } catch(e) {}
+      })();
       window["_fs_namespace"] = window["_fs_namespace"] || "FS_cpos";
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
