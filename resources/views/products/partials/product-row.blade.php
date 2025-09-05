@@ -196,7 +196,7 @@
                             Sales History
                         </button>
                         <hr class="border-gray-100">
-                        <button onclick="deleteProduct({{ $product->id }}, @json($product->name))" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100 w-full text-left">
+                        <button onclick="deleteProductSecure({{ $product->id }}, @json($product->name))" class="block px-4 py-2 text-sm text-red-700 hover:bg-gray-100 w-full text-left">
                             Delete Product
                         </button>
                     </div>
