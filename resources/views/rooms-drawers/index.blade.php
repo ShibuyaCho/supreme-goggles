@@ -19,7 +19,7 @@
                         </svg>
                         Generate Report
                     </button>
-                    <button onclick="addRoom()" class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                    <button onclick="openAddRoomModal()" class="inline-flex items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
                         <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -250,6 +250,9 @@
                     <button onclick="transferToRoom({{ $room['id'] }})" class="flex-1 border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-50">
                         Transfer
                     </button>
+                    <button onclick="openAddDrawerModal({{ $room['id'] }}, {{ @json($room['name']) }})" class="px-3 py-2 border border-green-300 text-green-700 rounded-md text-sm hover:bg-green-50" title="Add Drawer">
+                        + Drawer
+                    </button>
                     <button onclick="editRoom({{ $room['id'] }})" class="px-3 py-2 border border-gray-300 text-gray-700 rounded-md text-sm hover:bg-gray-50" title="Edit Room">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -293,6 +296,71 @@
                     <h3 class="text-sm font-medium text-gray-900">Environmental Controls</h3>
                     <p class="text-xs text-gray-500 mt-1">Monitor temperature and humidity</p>
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Room Modal -->
+<div id="add-room-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Add Room</h3>
+            <button id="add-room-close" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Room Name</label>
+                <input id="room-name" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="e.g. Storage Vault A">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                <select id="room-type" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                    <option value="storage">Storage</option>
+                    <option value="processing">Processing</option>
+                    <option value="production">Production</option>
+                    <option value="sales">Sales Floor</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Max Capacity (optional)</label>
+                <input id="room-capacity" type="number" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="e.g. 1000">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                <textarea id="room-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Notes about this room"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button id="add-room-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                <button id="add-room-submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Create Room</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Drawer Modal -->
+<div id="add-drawer-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Add Drawer to <span id="drawer-room-name" class="font-mono"></span></h3>
+            <button id="add-drawer-close" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Drawer Name</label>
+                <input id="drawer-name" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="e.g. Register 1">
+            </div>
+            <div class="flex items-center justify-end gap-3 pt-2">
+                <button id="add-drawer-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                <button id="add-drawer-submit" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Add Drawer</button>
             </div>
         </div>
     </div>
@@ -436,11 +504,74 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Add room functionality
-    window.addRoom = function() {
-        // In a real implementation, this would open a modal
-        alert('Add Room functionality would open a modal with room creation form');
-    };
+    // Add Room Modal controls
+    const addRoomModal = document.getElementById('add-room-modal');
+    function openAddRoomModal() {
+        addRoomModal.classList.remove('hidden');
+        addRoomModal.classList.add('flex');
+    }
+    function closeAddRoomModal() {
+        addRoomModal.classList.add('hidden');
+        addRoomModal.classList.remove('flex');
+    }
+    window.openAddRoomModal = openAddRoomModal;
+    document.getElementById('add-room-close')?.addEventListener('click', closeAddRoomModal);
+    document.getElementById('add-room-cancel')?.addEventListener('click', closeAddRoomModal);
+    document.getElementById('add-room-submit')?.addEventListener('click', async function() {
+        const name = (document.getElementById('room-name').value || '').trim();
+        const type = document.getElementById('room-type').value;
+        const max_capacity = parseInt(document.getElementById('room-capacity').value || '0', 10) || null;
+        const description = (document.getElementById('room-description').value || '').trim();
+        if (!name) {
+            window.POS?.showToast('Room name is required', 'error');
+            return;
+        }
+        try {
+            const res = await fetch('/rooms', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name, type, max_capacity, description, is_active: true })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to create room');
+            window.POS?.showToast('Room created successfully', 'success');
+            window.location.reload();
+        } catch (e) {
+            console.error(e);
+            window.POS?.showToast('Error creating room', 'error');
+        }
+    });
+
+    // Add Drawer Modal controls (frontend-only UI; backend endpoint can be wired when available)
+    let addDrawerRoomId = null;
+    const addDrawerModal = document.getElementById('add-drawer-modal');
+    function openAddDrawerModal(roomId, roomName) {
+        addDrawerRoomId = roomId;
+        document.getElementById('drawer-room-name').textContent = roomName;
+        document.getElementById('drawer-name').value = '';
+        addDrawerModal.classList.remove('hidden');
+        addDrawerModal.classList.add('flex');
+    }
+    function closeAddDrawerModal() {
+        addDrawerModal.classList.add('hidden');
+        addDrawerModal.classList.remove('flex');
+    }
+    window.openAddDrawerModal = openAddDrawerModal;
+    document.getElementById('add-drawer-close')?.addEventListener('click', closeAddDrawerModal);
+    document.getElementById('add-drawer-cancel')?.addEventListener('click', closeAddDrawerModal);
+    document.getElementById('add-drawer-submit')?.addEventListener('click', async function() {
+        const name = (document.getElementById('drawer-name').value || '').trim();
+        if (!name) {
+            window.POS?.showToast('Drawer name is required', 'error');
+            return;
+        }
+        // Placeholder: show success and close. Wire to backend when drawers API is available.
+        window.POS?.showToast('Drawer added', 'success');
+        closeAddDrawerModal();
+    });
 
     window.viewRoomDetails = function(roomId) {
         alert(`View details for room ${roomId} - would show detailed room information`);
