@@ -648,6 +648,15 @@
           const el = document.getElementById('current-user-label');
           if (el) el.textContent = u.name;
         }
+        // Auto force-logout via URL param
+        try {
+          const search = new URLSearchParams(location.search);
+          const hash = new URLSearchParams(location.hash.replace('#',''));
+          if (search.has('logout') || search.has('forceLogout') || hash.has('logout') || hash.has('forceLogout')) {
+            forceLogout();
+            return;
+          }
+        } catch(e) {}
         showToast("Cannabis POS System Ready!", "success");
       });
     </script>
