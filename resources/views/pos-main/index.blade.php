@@ -350,19 +350,23 @@
     if (!id) return;
     if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
     window.POS?.showLoading?.();
-    fetch(`/api/products/${id}/delete`, { method: 'DELETE', headers: { 'Accept': 'application/json' }})
-      .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+    (window.axios || axios).delete(`/api/products/${id}/delete`)
       .then(res => {
-        if (res.ok && (res.data.success ?? true)) {
+        const ok = res.status >= 200 && res.status < 300;
+        const data = res.data || {};
+        if (ok && (data.success ?? true)) {
           window.POS?.showToast?.('Product deleted', 'success');
           const card = btn.closest('.product-card, .product-row');
           if (card) card.remove();
         } else {
-          const msg = res.data?.message || res.data?.error || 'Failed to delete product';
+          const msg = data?.message || data?.error || 'Failed to delete product';
           window.POS?.showToast?.(msg, 'error');
         }
       })
-      .catch(() => window.POS?.showToast?.('Failed to delete product', 'error'))
+      .catch(err => {
+        const msg = err?.response?.data?.message || 'Failed to delete product';
+        window.POS?.showToast?.(msg, 'error');
+      })
       .finally(() => window.POS?.hideLoading?.());
   });
 })();
@@ -375,9 +379,8 @@
     btn.addEventListener('click', async function(){
       try {
         window.POS?.showLoading?.();
-        const res = await fetch('/api/metrc/packages', { headers: { 'Accept': 'application/json' }});
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.message || data.error || 'Refresh failed');
+        const res = await (window.axios || axios).get('/api/metrc/packages');
+        if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
         window.POS?.showToast?.('METRC data refreshed', 'success');
       } catch(e){
         window.POS?.showToast?.('Failed to refresh METRC data', 'error');
