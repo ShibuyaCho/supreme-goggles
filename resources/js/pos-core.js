@@ -10,10 +10,22 @@ function cannabisPOS() {
         metrcConnected: false,
 
         // Login form data
+        loginType: 'email',
         loginEmail: '',
         loginPassword: '',
         employeeId: '',
         employeePin: '',
+
+        // Registration form state
+        showRegisterModal: false,
+        registerError: '',
+        registerForm: {
+            name: '',
+            email: '',
+            password: '',
+            passwordConfirm: '',
+            pin: ''
+        },
 
         // Application state
         currentPage: 'pos',
@@ -107,6 +119,50 @@ function cannabisPOS() {
             } catch (error) {
                 console.error('PIN login failed:', error);
                 this.showError('PIN login failed. Please check your credentials.');
+            }
+        },
+
+        async handleRegister() {
+            this.registerError = '';
+            const { name, email, password, passwordConfirm, pin } = this.registerForm;
+
+            if (!name || !email || !password || !passwordConfirm || !pin) {
+                this.registerError = 'Please fill out all fields';
+                return;
+            }
+            if (password !== passwordConfirm) {
+                this.registerError = 'Passwords do not match';
+                return;
+            }
+            if (!/^\d{4}$/.test(pin)) {
+                this.registerError = 'PIN must be exactly 4 digits';
+                return;
+            }
+
+            try {
+                const response = await axios.post('/api/auth/self-register', {
+                    name,
+                    email,
+                    password,
+                    password_confirmation: passwordConfirm,
+                    pin
+                });
+
+                if (response.status === 201 && response.data.token) {
+                    localStorage.setItem('auth_token', response.data.token);
+                    localStorage.setItem('user_data', JSON.stringify(response.data.user));
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.token}`;
+                    this.currentUser = response.data.user;
+                    this.isAuthenticated = true;
+                    this.showRegisterModal = false;
+                    this.showAuthModal = false;
+                    this.registerForm = { name: '', email: '', password: '', passwordConfirm: '', pin: '' };
+                    await this.loadInitialData();
+                }
+            } catch (error) {
+                const msg = error.response?.data?.error || error.response?.data?.message || 'Registration failed';
+                this.registerError = msg;
+                this.showError(msg);
             }
         },
 
