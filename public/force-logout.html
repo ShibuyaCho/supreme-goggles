@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Signing out…</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#f8fafc;color:#0f172a;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
+    .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,.06);padding:24px;max-width:420px;width:90%}
+    h1{font-size:18px;margin:0 0 8px}
+    p{margin:6px 0;color:#475569}
+    .ok{color:#16a34a}
+    .err{color:#dc2626}
+    .muted{color:#64748b;font-size:12px}
+    button{margin-top:12px;padding:10px 14px;border-radius:8px;border:1px solid #cbd5e1;background:#f1f5f9;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Signing you out…</h1>
+    <p id="step">Revoking session…</p>
+    <p class="muted">If this page gets stuck, click Reload.</p>
+    <button onclick="location.reload()">Reload</button>
+  </div>
+  <script>
+    (async function hardLogout(){
+      const step = (m)=>{ try{ document.getElementById('step').textContent = m; }catch(e){} };
+      try {
+        step('Revoking session…');
+        try { await fetch('/api/auth/logout', { method:'POST', headers:{ 'Accept':'application/json' }, credentials:'include' }); } catch(e) {}
+        step('Clearing local data…');
+        try { localStorage.removeItem('pos_token'); } catch(e) {}
+        try { localStorage.removeItem('pos_user'); } catch(e) {}
+        try { localStorage.removeItem('auth_token'); } catch(e) {}
+        try { localStorage.removeItem('user_data'); } catch(e) {}
+        try { sessionStorage.clear(); } catch(e) {}
+        step('Done. Redirecting…');
+        setTimeout(()=>{ window.location.replace('/'); }, 400);
+      } catch (e) {
+        step('Sign-out encountered an issue, but local data was cleared. You can close this tab.');
+      }
+    })();
+  </script>
+</body>
+</html>
