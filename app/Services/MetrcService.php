@@ -230,11 +230,11 @@ class MetrcService
     {
         try {
             $params = [];
-            
+
             if ($lastModifiedStart) {
                 $params['lastModifiedStart'] = $lastModifiedStart;
             }
-            
+
             if ($lastModifiedEnd) {
                 $params['lastModifiedEnd'] = $lastModifiedEnd;
             }
@@ -243,6 +243,28 @@ class MetrcService
 
         } catch (\Exception $e) {
             Log::error('Error fetching all METRC packages', [
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get incoming transfers for facility
+     */
+    public function getIncomingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null)
+    {
+        try {
+            $params = [];
+            if ($lastModifiedStart) {
+                $params['lastModifiedStart'] = $lastModifiedStart;
+            }
+            if ($lastModifiedEnd) {
+                $params['lastModifiedEnd'] = $lastModifiedEnd;
+            }
+            return $this->makeRequest('GET', '/transfers/v1/incoming', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC incoming transfers', [
                 'error' => $e->getMessage()
             ]);
             throw $e;
