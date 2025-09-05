@@ -206,6 +206,87 @@ class AuthController extends Controller
     }
 
     /**
+     * Self-register a new cashier user with PIN (public endpoint)
+     */
+    public function selfRegister(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email|unique:employees,email',
+            'password' => 'required|string|min:8|confirmed',
+            'pin' => 'required|digits:4'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Generate a unique employee identifier
+        do {
+            $generatedId = strtoupper(Str::random(6));
+        } while (Employee::where('employee_id', $generatedId)->exists());
+
+        // Split name into first and last
+        $parts = preg_split('/\s+/', trim($request->name), 2);
+        $firstName = $parts[0] ?? '';
+        $lastName = $parts[1] ?? '';
+
+        // Create employee record
+        $employee = Employee::create([
+            'employee_id' => $generatedId,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $request->email,
+            'phone' => $request->get('phone', ''),
+            'pin' => Hash::make($request->pin),
+            'password' => Hash::make($request->password),
+            'department' => 'Sales',
+            'position' => 'Cashier',
+            'hire_date' => now(),
+            'hourly_rate' => 0,
+            'status' => 'active',
+            'permissions' => ['pos:*', 'products:read', 'customers:read', 'sales:create'],
+        ]);
+
+        // Create user linked to employee
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'employee_id' => $employee->id,
+            'role' => 'cashier',
+            'permissions' => ['pos:*', 'products:read', 'customers:read', 'sales:create'],
+            'is_active' => true,
+        ]);
+
+        // Generate token using role-based abilities
+        $abilities = $this->getTokenAbilities($user);
+        $token = $user->generateApiToken('POS Self-Register', $abilities);
+
+        return response()->json([
+            'message' => 'Account created successfully',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'permissions' => $user->permissions,
+                'employee' => [
+                    'id' => $employee->id,
+                    'employee_id' => $employee->employee_id,
+                    'first_name' => $employee->first_name,
+                    'last_name' => $employee->last_name,
+                ]
+            ],
+            'token' => $token->plainTextToken,
+            'expires_at' => $token->accessToken->expires_at,
+        ], 201);
+    }
+
+    /**
      * Get current authenticated user
      */
     public function me(Request $request)
