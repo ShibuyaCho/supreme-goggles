@@ -1,48 +1,33 @@
-// server.cjs
-// If your package.json has `"type": "module"`, keep this filename as .cjs.
-// Otherwise you can rename to server.js and remove "type": "module".
+// server.js (ESM)
+import express from 'express';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
-const express = require('express');
-const path = require('path');
-const fs = require('fs');
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-
-// Render provides PORT via env; default for local dev.
 const PORT = process.env.PORT || 3000;
 
-// --- Paths ---
-const ROOT_DIR = __dirname;
-const PUBLIC_DIR = path.join(ROOT_DIR, 'public');
-const ROOT_INDEX = path.join(ROOT_DIR, 'index.html');
-const PUBLIC_INDEX = path.join(PUBLIC_DIR, 'index.html');
+// Absolute path to /public next to this file
+const publicDir = path.join(__dirname, 'public');
 
-// --- Middleware ---
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Serve static files (don’t auto-serve index so we can control '/')
+app.use(express.static(publicDir, { index: false }));
 
-// Serve static assets from /public if present
-if (fs.existsSync(PUBLIC_DIR)) {
-  app.use(express.static(PUBLIC_DIR));
-}
-
-// --- Healthcheck (Render friendly) ---
-app.get(['/health', '/healthz', '/_health'], (_req, res) => {
-  res.json({ ok: true, uptime: process.uptime() });
-});
-
-// --- Root route ---
-// Prefer /public/index.html, else fall back to /index.html, else inline HTML.
+// Main route serves our Cannabis POS system
 app.get('/', (req, res) => {
-  if (fs.existsSync(PUBLIC_INDEX)) {
-    return res.sendFile(PUBLIC_INDEX);
-  }
-  if (fs.existsSync(ROOT_INDEX)) {
-    return res.sendFile(ROOT_INDEX);
-  }
+  const indexPath = path.join(__dirname, 'index.html');
 
-  // Fallback inline HTML
-  res.type('html').send(`<!DOCTYPE html>
+  // Use async check; send the inline HTML if index.html isn't present
+  fs.access(indexPath, fs.constants.F_OK, (err) => {
+    if (!err) {
+      res.sendFile(indexPath);
+      return;
+    }
+
+    res.type('html').send(`<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -102,12 +87,11 @@ app.get('/', (req, res) => {
   </div>
 </body>
 </html>`);
+  });
 });
 
-// --- API placeholder ---
-// Express 5 uses path-to-regexp v6; avoid bare '*' patterns.
-// Use a named wildcard (':rest(*)') or a regex instead.
-app.get('/api/:rest(*)', (req, res) => {
+// API routes placeholder
+app.get('/api/*', (_req, res) => {
   res.json({
     message: 'Laravel API ready - all controllers converted',
     endpoints: [
@@ -119,24 +103,10 @@ app.get('/api/:rest(*)', (req, res) => {
       'GET /api/settings - SettingsController',
     ],
     status: 'Laravel/PHP conversion complete',
-    pathMatched: req.params.rest || '',
   });
 });
 
-// OPTIONAL: SPA catch-all to serve index.html for non-API routes.
-// Comment this in if you have a front-end router.
-/*
-app.get('/:rest(*)', (req, res, next) => {
-  if (req.path.startsWith('/api/')) return next();
-
-  if (fs.existsSync(PUBLIC_INDEX)) return res.sendFile(PUBLIC_INDEX);
-  if (fs.existsSync(ROOT_INDEX)) return res.sendFile(ROOT_INDEX);
-
-  return res.status(404).send('Not Found');
-});
-*/
-
-// --- Start server ---
+// Bind to 0.0.0.0 for Render
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Cannabis POS System (Laravel/PHP) running on http://0.0.0.0:${PORT}`);
 });
