@@ -96,12 +96,12 @@
       window["_fs_namespace"] = window["_fs_namespace"] || "FS_cpos";
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/lib/axios/axios.min.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/pos.js"></script>
     <script src="/js/modal-keyboard-handler.js"></script>
     <script src="/js/report-export.js"></script>
     <script src="/lib/alpine/alpine.min.js" defer></script>
-    <script src="/lib/axios/axios.min.js"></script>
     <script src="/lib/qrious/qrious.min.js"></script>
     <link rel="stylesheet" href="/css/report-export.css" />
 
@@ -15385,6 +15385,7 @@
                     <input
                       type="tel"
                       x-model="employeeForm.phone"
+                      required
                       class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       placeholder="(503) 555-0123"
                     />
