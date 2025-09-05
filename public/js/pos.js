@@ -192,6 +192,7 @@ function cannabisPOS() {
     ],
 
     currentPage: "pos",
+    roomsTab: "rooms",
     viewMode: "cards", // cards or list
     sortOrder: "name-asc",
     searchQuery: "",
