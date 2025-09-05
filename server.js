@@ -1,8 +1,8 @@
 // server.js (ESM, Express 5, uses RegExp routes to avoid path-to-regexp string quirks)
-import express from 'express';
-import path from 'node:path';
-import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
+import express from "express";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,42 +19,48 @@ let nextUserId = 1;
 let nextEmployeeId = 1;
 
 function genToken() {
-  return 'dev-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  return (
+    "dev-" +
+    Math.random().toString(36).slice(2) +
+    Math.random().toString(36).slice(2)
+  );
 }
 
 function findUserByEmail(email) {
-  return devStore.users.find(u => u.email?.toLowerCase() === String(email || '').toLowerCase());
+  return devStore.users.find(
+    (u) => u.email?.toLowerCase() === String(email || "").toLowerCase(),
+  );
 }
 
 function findUserByEmployee(employee_id) {
-  return devStore.users.find(u => u.employee?.employee_id === employee_id);
+  return devStore.users.find((u) => u.employee?.employee_id === employee_id);
 }
 
 function authFromReq(req) {
-  const auth = req.headers.authorization || '';
-  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  const auth = req.headers.authorization || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
   if (!token) return null;
   const uid = devStore.tokens.get(token);
-  return devStore.users.find(u => u.id === uid) || null;
+  return devStore.users.find((u) => u.id === uid) || null;
 }
 
-app.set('trust proxy', 1);
+app.set("trust proxy", 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Static assets (no auto-index so we control '/')
-const publicDir = path.join(__dirname, 'public');
+const publicDir = path.join(__dirname, "public");
 app.use(express.static(publicDir, { index: false }));
 
 // Healthcheck
-app.get('/health', (_req, res) => res.type('text').send('ok'));
+app.get("/health", (_req, res) => res.type("text").send("ok"));
 
 // Root: serve ./index.html if present, else inline HTML
-app.get('/', (_req, res) => {
-  const indexPath = path.join(__dirname, 'index.html');
+app.get("/", (_req, res) => {
+  const indexPath = path.join(__dirname, "index.html");
   fs.access(indexPath, fs.constants.F_OK, (err) => {
     if (!err) return res.sendFile(indexPath);
-    res.type('html').send(`<!DOCTYPE html>
+    res.type("html").send(`<!DOCTYPE html>
 <html lang="en"><head>
 <meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>Cannabis POS System - Laravel Converted</title>
@@ -111,28 +117,48 @@ app.get('/', (_req, res) => {
 });
 
 // Auth endpoints for dev mode (simulate backend)
-app.post(['/api/auth/self-register', '/api/self-register'], (req, res) => {
+app.post(["/api/auth/self-register", "/api/self-register"], (req, res) => {
   const { name, email, password, password_confirmation, pin } = req.body || {};
   if (!name || !email || !password || !password_confirmation || !pin) {
-    return res.status(422).json({ error: 'Validation failed', errors: { fields: 'Missing required fields' } });
+    return res
+      .status(422)
+      .json({
+        error: "Validation failed",
+        errors: { fields: "Missing required fields" },
+      });
   }
   if (String(password) !== String(password_confirmation)) {
-    return res.status(422).json({ error: 'Validation failed', errors: { password: ['Passwords do not match'] } });
+    return res
+      .status(422)
+      .json({
+        error: "Validation failed",
+        errors: { password: ["Passwords do not match"] },
+      });
   }
   if (!/^\d{4}$/.test(String(pin))) {
-    return res.status(422).json({ error: 'Validation failed', errors: { pin: ['PIN must be 4 digits'] } });
+    return res
+      .status(422)
+      .json({
+        error: "Validation failed",
+        errors: { pin: ["PIN must be 4 digits"] },
+      });
   }
   if (findUserByEmail(email)) {
-    return res.status(422).json({ error: 'Validation failed', errors: { email: ['Email already taken'] } });
+    return res
+      .status(422)
+      .json({
+        error: "Validation failed",
+        errors: { email: ["Email already taken"] },
+      });
   }
-  const empId = 'EMP' + String(nextEmployeeId++).padStart(5, '0');
-  const [first_name, last_name = ''] = String(name).trim().split(/\s+/, 2);
+  const empId = "EMP" + String(nextEmployeeId++).padStart(5, "0");
+  const [first_name, last_name = ""] = String(name).trim().split(/\s+/, 2);
   const user = {
     id: nextUserId++,
     name,
     email,
-    role: 'cashier',
-    permissions: ['pos:*', 'products:read', 'customers:read', 'sales:create'],
+    role: "cashier",
+    permissions: ["pos:*", "products:read", "customers:read", "sales:create"],
     employee: { id: nextEmployeeId, employee_id: empId, first_name, last_name },
     password, // dev only
     pin: String(pin),
@@ -141,52 +167,61 @@ app.post(['/api/auth/self-register', '/api/self-register'], (req, res) => {
   const token = genToken();
   devStore.tokens.set(token, user.id);
   return res.status(201).json({
-    message: 'Account created successfully',
+    message: "Account created successfully",
     user,
     token,
     success: true,
   });
 });
 
-app.post(['/api/auth/login', '/api/login'], (req, res) => {
+app.post(["/api/auth/login", "/api/login"], (req, res) => {
   const { email, password } = req.body || {};
   const user = findUserByEmail(email);
   if (!user || String(user.password) !== String(password)) {
-    return res.status(401).json({ error: 'Invalid credentials', success: false });
+    return res
+      .status(401)
+      .json({ error: "Invalid credentials", success: false });
   }
   const token = genToken();
   devStore.tokens.set(token, user.id);
-  res.json({ message: 'Login successful', user, token, success: true });
+  res.json({ message: "Login successful", user, token, success: true });
 });
 
-app.post(['/api/auth/pin-login', '/api/pin-login'], (req, res) => {
+app.post(["/api/auth/pin-login", "/api/pin-login"], (req, res) => {
   const { employee_id, pin } = req.body || {};
   const user = findUserByEmployee(employee_id);
   if (!user || String(user.pin) !== String(pin)) {
-    return res.status(401).json({ error: 'Invalid employee ID or PIN', success: false });
+    return res
+      .status(401)
+      .json({ error: "Invalid employee ID or PIN", success: false });
   }
   const token = genToken();
   devStore.tokens.set(token, user.id);
-  res.json({ message: 'PIN login successful', employee: {
-    id: user.employee.id,
-    employee_id: user.employee.employee_id,
-    name: user.name,
-    role: user.role,
-    permissions: user.permissions,
-  }, token, success: true });
+  res.json({
+    message: "PIN login successful",
+    employee: {
+      id: user.employee.id,
+      employee_id: user.employee.employee_id,
+      name: user.name,
+      role: user.role,
+      permissions: user.permissions,
+    },
+    token,
+    success: true,
+  });
 });
 
-app.get('/api/user', (req, res) => {
+app.get("/api/user", (req, res) => {
   const user = authFromReq(req);
-  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
   res.json(user);
 });
 
 // ✅ API catch-all using RegExp (matches /api and any subpath)
 app.all(/^\/api(?:\/.*)?$/, (_req, res) => {
   res.json({
-    message: 'Dev API stub active',
-    status: 'ok',
+    message: "Dev API stub active",
+    status: "ok",
   });
 });
 
@@ -198,15 +233,19 @@ app.all(/^\/api(?:\/.*)?$/, (_req, res) => {
 // });
 
 // 404 (for anything not matched above)
-app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
+app.use((_req, res) => res.status(404).json({ error: "Not found" }));
 
 // 500 error handler
 // eslint-disable-next-line no-unused-vars
 app.use((err, _req, res, _next) => {
   console.error(err);
-  res.status(500).json({ error: 'Server error', detail: String(err?.message || err) });
+  res
+    .status(500)
+    .json({ error: "Server error", detail: String(err?.message || err) });
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Cannabis POS System (Laravel/PHP) running on http://0.0.0.0:${PORT}`);
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(
+    `Cannabis POS System (Laravel/PHP) running on http://0.0.0.0:${PORT}`,
+  );
 });
