@@ -340,6 +340,17 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Preserve current filters
+    const currentRole = @json(request('role', 'all'));
+    const currentStatus = @json(request('status', 'all'));
+    const currentDepartment = @json(request('department', 'all'));
+    const roleEl = document.getElementById('role-filter');
+    const statusEl = document.getElementById('status-filter');
+    const deptEl = document.getElementById('department-filter');
+    if (roleEl) roleEl.value = currentRole || 'all';
+    if (statusEl) statusEl.value = currentStatus || 'all';
+    if (deptEl) deptEl.value = currentDepartment || 'all';
+
     // Tab switching
     document.querySelectorAll('.employee-tab').forEach(tab => {
         tab.addEventListener('click', function() {
