@@ -486,6 +486,7 @@
     <script>
       // Global logout helper used by dropdown
       window.__forceAlpineLogout = async function(){
+        try { localStorage.setItem('pos_force_reauth','1'); } catch(e) {}
         try {
           if (window.posAuth && typeof window.posAuth.logout === 'function') {
             await window.posAuth.logout();
@@ -495,6 +496,9 @@
         try { localStorage.removeItem('pos_user'); } catch(e) {}
         try { localStorage.removeItem('auth_token'); } catch(e) {}
         try { localStorage.removeItem('user_data'); } catch(e) {}
+        try { localStorage.removeItem('cannabisPOS-auth'); } catch(e) {}
+        try { sessionStorage.clear(); } catch(e) {}
+        try { document.cookie.split(';').forEach(function(c){ document.cookie = c.trim().split('=')[0]+'=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/'; }); } catch(e) {}
         location.reload();
       };
 
