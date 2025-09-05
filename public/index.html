@@ -623,8 +623,31 @@
         showToast("Customer modal would open here", "info");
       }
 
+      // Global force logout
+      async function forceLogout() {
+        try {
+          const token = localStorage.getItem('pos_token');
+          if (window.axios && token) {
+            try { await axios.post('/api/auth/logout'); } catch(e) {}
+          }
+        } finally {
+          try { localStorage.removeItem('pos_token'); } catch(e) {}
+          try { localStorage.removeItem('pos_user'); } catch(e) {}
+          try { localStorage.removeItem('auth_token'); } catch(e) {}
+          try { localStorage.removeItem('user_data'); } catch(e) {}
+          showToast('Logged out', 'success');
+          setTimeout(() => location.reload(), 300);
+        }
+      }
+
       // Initialize
       document.addEventListener("DOMContentLoaded", function () {
+        // If a user exists in storage, reflect it in the header
+        const u = JSON.parse(localStorage.getItem('pos_user') || 'null') || JSON.parse(localStorage.getItem('user_data') || 'null');
+        if (u && u.name) {
+          const el = document.getElementById('current-user-label');
+          if (el) el.textContent = u.name;
+        }
         showToast("Cannabis POS System Ready!", "success");
       });
     </script>
