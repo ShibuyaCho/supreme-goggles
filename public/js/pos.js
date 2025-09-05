@@ -3004,11 +3004,13 @@ function cannabisPOS() {
           password_confirmation: tempPassword,
         };
 
-        if (!posAuth || !posAuth.isAuthenticated()) {
-          this.showToast("Please log in to create employees", "error");
-          return;
-        }
-        const res = await axios.post("/api/employees", payload, { headers: { Accept: "application/json" } });
+        const token = localStorage.getItem("auth_token") || localStorage.getItem("pos_token");
+        const res = await axios.post("/api/employees", payload, {
+          headers: {
+            Accept: "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
         const created = res.data && res.data.employee ? res.data.employee : null;
         const uiEmployee = {
           id: created && created.id ? created.id : employee_id,
