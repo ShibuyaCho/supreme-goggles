@@ -176,6 +176,19 @@
 
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4">
+                    <!-- Quick Actions -->
+                    <button id="global-refresh-metrc" class="hidden md:inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-cannabis-green hover:bg-green-700 rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/></svg>
+                        Refresh METRC
+                    </button>
+                    <a href="{{ route('rooms-drawers.index') }}" class="hidden md:inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                        Create Room
+                    </a>
+                    <a href="{{ route('rooms-drawers.index') }}" class="hidden md:inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v3M7 4H5a1 1 0 00-1 1v16a1 1 0 001 1h14a1 1 0 001-1V5a1 1 0 00-1-1h-2M9 9h6m-6 4h6m-3 4h3"/></svg>
+                        Create Drawer
+                    </a>
                     <!-- Current Employee -->
                     <div class="hidden md:flex items-center text-sm text-gray-700">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -347,6 +360,86 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         };
+    </script>
+
+    <script>
+    // POS product-card tweaks applied globally
+    (function(){
+      // hide category / sold by line directly under product name
+      const style = document.createElement('style');
+      style.textContent = `.product-card h3 + p{display:none!important}`;
+      document.head.appendChild(style);
+
+      function injectDeleteButtons(){
+        const cards = document.querySelectorAll('.product-card');
+        cards.forEach(card => {
+          if (card.querySelector('.delete-product')) return;
+          const id = card.getAttribute('data-product-id') || card.dataset.id;
+          const nameEl = card.querySelector('h3, h4');
+          const name = nameEl ? nameEl.textContent.trim() : 'this product';
+          if (!id) return; // skip if no id on card
+          const btn = document.createElement('button');
+          btn.className = 'delete-product absolute top-2 right-2 p-1 rounded bg-white/80 hover:bg-white text-red-600 shadow border border-red-200';
+          btn.setAttribute('data-product-id', id);
+          btn.setAttribute('data-product-name', name);
+          btn.title = 'Delete Product';
+          btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>';
+          card.style.position = 'relative';
+          card.appendChild(btn);
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function(){
+        injectDeleteButtons();
+        setTimeout(injectDeleteButtons, 500);
+        setTimeout(injectDeleteButtons, 1500);
+      });
+
+      // Delegated delete handler
+      document.addEventListener('click', function(e){
+        const btn = e.target.closest('.delete-product');
+        if (!btn) return;
+        e.preventDefault();
+        const id = btn.getAttribute('data-product-id');
+        const name = btn.getAttribute('data-product-name') || 'this product';
+        if (!id) return;
+        if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+        window.POS?.showLoading?.();
+        fetch(`/api/products/${id}/delete`, { method: 'DELETE', headers: { 'Accept': 'application/json' }})
+          .then(r => r.json().then(d => ({ ok: r.ok, data: d })))
+          .then(res => {
+            if (res.ok && (res.data.success ?? true)) {
+              window.POS?.showToast?.('Product deleted', 'success');
+              const card = btn.closest('.product-card, .product-row');
+              if (card) card.remove();
+            } else {
+              const msg = res.data?.message || res.data?.error || 'Failed to delete product';
+              window.POS?.showToast?.(msg, 'error');
+            }
+          })
+          .catch(() => window.POS?.showToast?.('Failed to delete product', 'error'))
+          .finally(() => window.POS?.hideLoading?.());
+      });
+
+      // Refresh METRC from nav button
+      document.addEventListener('DOMContentLoaded', function(){
+        const btn = document.getElementById('global-refresh-metrc');
+        if (!btn) return;
+        btn.addEventListener('click', async function(){
+          try {
+            window.POS?.showLoading?.();
+            const res = await fetch('/api/metrc/packages', { headers: { 'Accept': 'application/json' }});
+            await res.json();
+            if (!res.ok) throw new Error('Refresh failed');
+            window.POS?.showToast?.('METRC data refreshed', 'success');
+          } catch(e) {
+            window.POS?.showToast?.('Failed to refresh METRC data', 'error');
+          } finally {
+            window.POS?.hideLoading?.();
+          }
+        });
+      });
+    })();
     </script>
 
     @stack('scripts')
