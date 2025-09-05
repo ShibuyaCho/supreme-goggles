@@ -299,6 +299,57 @@
 @include('products.modals.bulk-pricing')
 @include('products.modals.transfer-room')
 @include('products.modals.adjust-quantity')
+
+<!-- Secure Two-Step Delete Modal -->
+<div id="secure-delete-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg">
+        <div class="p-6 border-b border-gray-200 flex items-center justify-between">
+            <h3 id="secure-delete-title" class="text-lg font-semibold text-gray-900">Delete Item</h3>
+            <button id="secure-delete-close" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+            </button>
+        </div>
+        <div class="p-6 space-y-6">
+            <div id="secure-delete-summary" class="text-sm text-gray-600"></div>
+
+            <!-- Step 1: Type-to-confirm -->
+            <div id="secure-step-1" class="space-y-3">
+                <p id="confirm-instruction" class="text-sm text-gray-700"></p>
+                <input id="confirm-input" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="" />
+                <p id="delete-confirm-error" class="text-sm text-red-600 hidden"></p>
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button id="secure-cancel-1" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                    <button id="secure-next" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Continue</button>
+                </div>
+            </div>
+
+            <!-- Step 2: PIN verification -->
+            <div id="secure-step-2" class="space-y-3 hidden">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="employee-id-input" class="block text-sm font-medium text-gray-700">Employee ID</label>
+                        <input id="employee-id-input" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="e.g. EMP001" />
+                    </div>
+                    <div>
+                        <label for="pin-input" class="block text-sm font-medium text-gray-700">PIN</label>
+                        <input id="pin-input" type="password" maxlength="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="4-digit PIN" />
+                    </div>
+                </div>
+                <p class="text-sm text-gray-600">Only authorized personnel may delete inventory. Your PIN will be verified.</p>
+                <p id="pin-error" class="text-sm text-red-600 hidden"></p>
+                <div class="flex items-center justify-between pt-2">
+                    <button id="secure-back" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Back</button>
+                    <div class="flex items-center gap-3">
+                        <button id="secure-cancel-2" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                        <button id="secure-delete" class="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
@@ -497,33 +548,11 @@ function bulkDelete() {
         POS.showToast('Please select products to delete', 'warning');
         return;
     }
-    
-    if (confirm(`Are you sure you want to delete ${selectedProducts.size} selected products? This action cannot be undone.`)) {
-        // Implement bulk delete
-        fetch('{{ route("products.bulk-delete") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({
-                product_ids: Array.from(selectedProducts)
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                POS.showToast(data.message, 'success');
-                window.location.reload();
-            } else {
-                POS.showToast(data.message || 'Error deleting products', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            POS.showToast('Error deleting products', 'error');
-        });
-    }
+    openSecureDelete('bulk', { ids: Array.from(selectedProducts) });
+}
+
+function deleteProduct(productId, productName) {
+    openSecureDelete('single', { id: productId, name: productName });
 }
 
 function exportProducts() {
@@ -570,5 +599,183 @@ function generateBarcode(productId) {
 function generateLabel(productId) {
     window.open(`/products/${productId}/label`, '_blank');
 }
+// Secure Delete State and Logic
+const secureDeleteState = {
+    mode: null, // 'single' | 'bulk'
+    productId: null,
+    productName: '',
+    ids: [],
+    step: 1,
+    confirmInput: '',
+    employeeId: '',
+    pin: '',
+    loading: false
+};
+
+function openSecureDelete(mode, payload) {
+    secureDeleteState.mode = mode;
+    secureDeleteState.step = 1;
+    secureDeleteState.confirmInput = '';
+    secureDeleteState.employeeId = '';
+    secureDeleteState.pin = '';
+    secureDeleteState.productId = mode === 'single' ? payload.id : null;
+    secureDeleteState.productName = mode === 'single' ? (payload.name || getProductNameById(payload.id)) : '';
+    secureDeleteState.ids = mode === 'bulk' ? (payload.ids || []) : [];
+
+    document.getElementById('secure-delete-title').textContent = mode === 'single' ? 'Delete Product' : 'Delete Selected Products';
+    const summary = document.getElementById('secure-delete-summary');
+    if (mode === 'single') {
+        summary.textContent = `You are about to permanently delete "${secureDeleteState.productName}" from inventory. This cannot be undone.`;
+        document.getElementById('confirm-instruction').textContent = `Type the product name exactly to confirm: ${secureDeleteState.productName}`;
+        document.getElementById('confirm-input').placeholder = secureDeleteState.productName;
+    } else {
+        summary.textContent = `You are about to permanently delete ${secureDeleteState.ids.length} products from inventory. This cannot be undone.`;
+        document.getElementById('confirm-instruction').textContent = 'Type DELETE to confirm bulk deletion';
+        document.getElementById('confirm-input').placeholder = 'DELETE';
+    }
+
+    document.getElementById('delete-confirm-error').classList.add('hidden');
+    document.getElementById('pin-error').classList.add('hidden');
+    document.getElementById('confirm-input').value = '';
+    document.getElementById('employee-id-input').value = '';
+    document.getElementById('pin-input').value = '';
+
+    document.getElementById('secure-step-1').classList.remove('hidden');
+    document.getElementById('secure-step-2').classList.add('hidden');
+
+    const modal = document.getElementById('secure-delete-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeSecureDelete() {
+    const modal = document.getElementById('secure-delete-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+function proceedSecureDelete() {
+    const input = document.getElementById('confirm-input').value.trim();
+    const errorEl = document.getElementById('delete-confirm-error');
+    errorEl.classList.add('hidden');
+
+    if (secureDeleteState.mode === 'single') {
+        if (input !== secureDeleteState.productName) {
+            errorEl.textContent = 'Confirmation text does not match the product name.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+    } else {
+        if (input !== 'DELETE') {
+            errorEl.textContent = 'Please type DELETE to confirm.';
+            errorEl.classList.remove('hidden');
+            return;
+        }
+    }
+
+    document.getElementById('secure-step-1').classList.add('hidden');
+    document.getElementById('secure-step-2').classList.remove('hidden');
+}
+
+function backSecureDelete() {
+    document.getElementById('secure-step-2').classList.add('hidden');
+    document.getElementById('secure-step-1').classList.remove('hidden');
+}
+
+function verifyPinAndExecuteDelete() {
+    const employeeId = document.getElementById('employee-id-input').value.trim();
+    const pin = document.getElementById('pin-input').value.trim();
+    const pinError = document.getElementById('pin-error');
+    pinError.classList.add('hidden');
+
+    if (!employeeId || pin.length !== 4) {
+        pinError.textContent = 'Enter a valid Employee ID and 4-digit PIN.';
+        pinError.classList.remove('hidden');
+        return;
+    }
+
+    fetch('/api/pin-login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ employee_id: employeeId, pin })
+    })
+    .then(async (res) => {
+        if (!res.ok) {
+            throw new Error('Invalid credentials');
+        }
+        // Credentials verified; proceed to delete
+        if (secureDeleteState.mode === 'single') {
+            return fetch(`/products/${secureDeleteState.productId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+        } else {
+            return fetch('{{ route("products.bulk-delete") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({ product_ids: secureDeleteState.ids })
+            });
+        }
+    })
+    .then(async (res) => {
+        if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.message || 'Delete failed');
+        }
+        return res.json().catch(() => ({}));
+    })
+    .then((data) => {
+        POS.showToast((data && data.message) ? data.message : 'Deleted successfully', 'success');
+        window.location.reload();
+    })
+    .catch((err) => {
+        pinError.textContent = 'Verification or deletion failed. Check credentials and try again.';
+        pinError.classList.remove('hidden');
+        console.error(err);
+    });
+}
+
+function getProductNameById(id) {
+    const row = document.querySelector(`#product-menu-${id}`)?.closest('tr');
+    if (row) {
+        const nameEl = row.querySelector('td .text-sm.font-medium.text-gray-900');
+        if (nameEl) return nameEl.textContent.trim();
+    }
+    // Fallback empty
+    return '';
+}
+
+// Wire modal controls
+(function initSecureDeleteModal() {
+    const closeBtn = document.getElementById('secure-delete-close');
+    const cancel1 = document.getElementById('secure-cancel-1');
+    const cancel2 = document.getElementById('secure-cancel-2');
+    const nextBtn = document.getElementById('secure-next');
+    const backBtn = document.getElementById('secure-back');
+    const deleteBtn = document.getElementById('secure-delete');
+
+    closeBtn?.addEventListener('click', closeSecureDelete);
+    cancel1?.addEventListener('click', closeSecureDelete);
+    cancel2?.addEventListener('click', closeSecureDelete);
+    nextBtn?.addEventListener('click', proceedSecureDelete);
+    backBtn?.addEventListener('click', backSecureDelete);
+    deleteBtn?.addEventListener('click', verifyPinAndExecuteDelete);
+
+    // Allow Enter key to advance
+    document.getElementById('confirm-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') proceedSecureDelete();
+    });
+    document.getElementById('pin-input')?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') verifyPinAndExecuteDelete();
+    });
+})();
 </script>
 @endpush
