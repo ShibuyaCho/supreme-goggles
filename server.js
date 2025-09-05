@@ -10,6 +10,34 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// In-memory dev auth store (non-persistent)
+const devStore = {
+  users: [], // { id, name, email, role, permissions, employee, password, pin, employee_id }
+  tokens: new Map(), // token -> userId
+};
+let nextUserId = 1;
+let nextEmployeeId = 1;
+
+function genToken() {
+  return 'dev-' + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+}
+
+function findUserByEmail(email) {
+  return devStore.users.find(u => u.email?.toLowerCase() === String(email || '').toLowerCase());
+}
+
+function findUserByEmployee(employee_id) {
+  return devStore.users.find(u => u.employee?.employee_id === employee_id);
+}
+
+function authFromReq(req) {
+  const auth = req.headers.authorization || '';
+  const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
+  if (!token) return null;
+  const uid = devStore.tokens.get(token);
+  return devStore.users.find(u => u.id === uid) || null;
+}
+
 app.set('trust proxy', 1);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -82,19 +110,83 @@ app.get('/', (_req, res) => {
   });
 });
 
+// Auth endpoints for dev mode (simulate backend)
+app.post(['/api/auth/self-register', '/api/self-register'], (req, res) => {
+  const { name, email, password, password_confirmation, pin } = req.body || {};
+  if (!name || !email || !password || !password_confirmation || !pin) {
+    return res.status(422).json({ error: 'Validation failed', errors: { fields: 'Missing required fields' } });
+  }
+  if (String(password) !== String(password_confirmation)) {
+    return res.status(422).json({ error: 'Validation failed', errors: { password: ['Passwords do not match'] } });
+  }
+  if (!/^\d{4}$/.test(String(pin))) {
+    return res.status(422).json({ error: 'Validation failed', errors: { pin: ['PIN must be 4 digits'] } });
+  }
+  if (findUserByEmail(email)) {
+    return res.status(422).json({ error: 'Validation failed', errors: { email: ['Email already taken'] } });
+  }
+  const empId = 'EMP' + String(nextEmployeeId++).padStart(5, '0');
+  const [first_name, last_name = ''] = String(name).trim().split(/\s+/, 2);
+  const user = {
+    id: nextUserId++,
+    name,
+    email,
+    role: 'cashier',
+    permissions: ['pos:*', 'products:read', 'customers:read', 'sales:create'],
+    employee: { id: nextEmployeeId, employee_id: empId, first_name, last_name },
+    password, // dev only
+    pin: String(pin),
+  };
+  devStore.users.push(user);
+  const token = genToken();
+  devStore.tokens.set(token, user.id);
+  return res.status(201).json({
+    message: 'Account created successfully',
+    user,
+    token,
+    success: true,
+  });
+});
+
+app.post(['/api/auth/login', '/api/login'], (req, res) => {
+  const { email, password } = req.body || {};
+  const user = findUserByEmail(email);
+  if (!user || String(user.password) !== String(password)) {
+    return res.status(401).json({ error: 'Invalid credentials', success: false });
+  }
+  const token = genToken();
+  devStore.tokens.set(token, user.id);
+  res.json({ message: 'Login successful', user, token, success: true });
+});
+
+app.post(['/api/auth/pin-login', '/api/pin-login'], (req, res) => {
+  const { employee_id, pin } = req.body || {};
+  const user = findUserByEmployee(employee_id);
+  if (!user || String(user.pin) !== String(pin)) {
+    return res.status(401).json({ error: 'Invalid employee ID or PIN', success: false });
+  }
+  const token = genToken();
+  devStore.tokens.set(token, user.id);
+  res.json({ message: 'PIN login successful', employee: {
+    id: user.employee.id,
+    employee_id: user.employee.employee_id,
+    name: user.name,
+    role: user.role,
+    permissions: user.permissions,
+  }, token, success: true });
+});
+
+app.get('/api/user', (req, res) => {
+  const user = authFromReq(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  res.json(user);
+});
+
 // ✅ API catch-all using RegExp (matches /api and any subpath)
-app.get(/^\/api(?:\/.*)?$/, (_req, res) => {
+app.all(/^\/api(?:\/.*)?$/, (_req, res) => {
   res.json({
-    message: 'Laravel API ready - all controllers converted',
-    endpoints: [
-      'GET /api/products - ProductsController',
-      'GET /api/customers - CustomersController',
-      'POST /api/sales - SalesController',
-      'GET /api/analytics - AnalyticsController',
-      'POST /api/products/transfer-room - ProductActionsController',
-      'GET /api/settings - SettingsController',
-    ],
-    status: 'Laravel/PHP conversion complete',
+    message: 'Dev API stub active',
+    status: 'ok',
   });
 });
 
