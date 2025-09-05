@@ -302,6 +302,89 @@ class ProductsController extends Controller
         ]);
     }
 
+    public function updatePricing(Request $request, $id)
+    {
+        $product = Product::findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'price' => 'required|numeric|min:0'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        $product->update(['price' => $request->price]);
+        return response()->json(['message' => 'Pricing updated', 'product' => $product]);
+    }
+
+    public function bulkPricing(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'product_ids' => 'required|array|min:1',
+            'product_ids.*' => 'exists:products,id',
+            'price' => 'required|numeric|min:0'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+        Product::whereIn('id', $request->product_ids)->update(['price' => $request->price]);
+        return response()->json(['message' => count($request->product_ids) . ' products updated']);
+    }
+
+    public function generateBarcode($id)
+    {
+        $product = Product::findOrFail($id);
+        $pdf = PDF::loadView('products.barcode', compact('product'));
+        return $pdf->download("barcode_{$product->sku}.pdf");
+    }
+
+    public function generateLabel($id)
+    {
+        $product = Product::findOrFail($id);
+        $pdf = PDF::loadView('products.exit-label', compact('product'));
+        return $pdf->download("exit_label_{$product->metrc_tag}.pdf");
+    }
+
+    public function export(Request $request)
+    {
+        $query = Product::query();
+        $products = $query->get();
+        $filename = 'products_' . now()->format('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+        $callback = function() use ($products) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, [
+                'SKU', 'Name', 'Category', 'Price', 'Cost', 'Quantity', 'Room',
+                'THC%', 'CBD%', 'Strain', 'METRC Tag', 'Batch ID', 'Created Date'
+            ]);
+            foreach ($products as $product) {
+                fputcsv($file, [
+                    $product->sku,
+                    $product->name,
+                    $product->category,
+                    $product->price,
+                    $product->cost ?? 0,
+                    $product->quantity,
+                    $product->room,
+                    $product->thc ?? 0,
+                    $product->cbd ?? 0,
+                    $product->strain ?? '',
+                    $product->metrc_tag ?? '',
+                    $product->batch_id ?? '',
+                    $product->created_at->format('Y-m-d')
+                ]);
+            }
+            fclose($file);
+        };
+        return response()->streamDownload($callback, $filename, $headers);
+    }
+
+    public function import(Request $request)
+    {
+        return back()->with('status', 'Import endpoint not configured');
+    }
+
     private function calculateTurnoverRate(Product $product): float
     {
         $totalSold = $product->total_sold;
