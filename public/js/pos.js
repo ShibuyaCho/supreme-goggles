@@ -4842,33 +4842,19 @@ function cannabisPOS() {
 
     // Authentication Functions
     async handleLogin(email, password) {
-      this.loginError = "";
-
-      if (!email || !password) {
-        this.loginError = "Please enter both email and password";
-        return;
+      const result = await posAuth.login(email, password);
+      if (result.success) {
+        try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
+        this.isAuthenticated = true;
+        this.currentUser = result.user;
+        this.showAuthModal = false;
+        await this.loadInitialData();
+        this.ensureMyEmployeeListed();
+        this.showToast("Login successful", "success");
+      } else {
+        this.showToast(result.message, "error");
       }
-
-      // Use centralized POSAuth with endpoint fallback
-      try {
-        const result = await posAuth.login(email, password);
-        if (result.success) {
-          this.currentUser = result.user;
-          this.isAuthenticated = true;
-          this.showAuthModal = false;
-          this.loginError = "";
-          this.loginEmail = "";
-          this.loginPassword = "";
-          localStorage.setItem("pos_user", JSON.stringify(result.user || {}));
-          await this.loadInitialData();
-          this.showToast(`Welcome, ${result.user.name}!`, "success");
-        } else {
-          this.loginError = result.message || "Login failed";
-        }
-      } catch (error) {
-        console.error("Login error:", error);
-        this.loginError = error?.message || "Login failed. Please try again.";
-      }
+      return result.success;
     },
 
     async handlePinLogin(employeeId, pin) {
