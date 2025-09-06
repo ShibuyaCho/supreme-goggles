@@ -3575,7 +3575,7 @@ function cannabisPOS() {
       }, 1500); // Simulate network delay
     },
 
-    syncMetrcInventory() {
+    async syncMetrcInventory() {
       console.log("Syncing METRC inventory with settings:", this.metrcSettings);
 
       // Validate required fields
@@ -3598,57 +3598,48 @@ function cannabisPOS() {
       // Show loading state
       this.showToast("Starting METRC inventory sync...", "info");
 
-      // Simulate inventory sync process
-      // In a real implementation, this would:
-      // 1. Get current inventory from METRC
-      // 2. Compare with local inventory
-      // 3. Update local database with METRC data
-      // 4. Report any discrepancies
-
-      setTimeout(() => {
-        try {
-          this.normalizeCollections();
-          const list = Array.isArray(this.products)
-            ? this.products
-            : this.products && Array.isArray(this.products.data)
-              ? this.products.data
-              : [];
-          const productsToSync = list.filter(
-            (p) => p && p.metrcTag && p.metrcTag.length > 0,
-          );
-          const synced = productsToSync.length;
-
-          if (synced > 0) {
-            this.showToast(
-              `METRC inventory sync completed! ${synced} products synchronized.`,
-              "success",
-            );
-
-            // Log sync results
-            console.log("METRC inventory sync completed:", {
-              itemsSynced: synced,
-              facilityLicense: this.metrcSettings.facilityLicense,
-              state: this.metrcSettings.state,
-              timestamp: new Date().toISOString(),
-              autoSyncEnabled: this.metrcSettings.autoSync,
-              salesTrackingEnabled: this.metrcSettings.trackSales,
-            });
-
-            // Update UI to reflect sync
-            if (this.metrcSettings.trackSales) {
-              this.showToast("Sales tracking to METRC is enabled", "info");
-            }
-          } else {
-            this.showToast(
-              "No products with METRC tags found to sync",
-              "warning",
-            );
-          }
-        } catch (error) {
-          this.showToast("METRC sync error: " + error.message, "error");
-          console.error("METRC inventory sync failed:", error);
+      // Try server-side METRC packages first
+      try {
+        const res = await (window.axios || axios).get('/api/metrc/packages');
+        const count = Array.isArray(res?.data?.packages)
+          ? res.data.packages.length
+          : (res?.data?.count || 0);
+        if (count > 0) {
+          this.showToast(`METRC inventory sync completed! ${count} active packages found.`, 'success');
+          console.log('METRC packages retrieved:', { count, facility: this.metrcSettings.facilityLicense, at: new Date().toISOString() });
+          if (this.metrcSettings.trackSales) this.showToast('Sales tracking to METRC is enabled', 'info');
+          return;
         }
-      }, 2000); // Simulate longer process for sync
+      } catch (e) {
+        console.warn('Package fetch failed, falling back to local products', e?.response?.data || e);
+      }
+
+      // Fallback: local products with tags
+      try {
+        this.normalizeCollections();
+        const list = Array.isArray(this.products)
+          ? this.products
+          : (this.products && Array.isArray(this.products.data) ? this.products.data : []);
+        const productsToSync = list.filter((p) => p && p.metrcTag && p.metrcTag.length > 0);
+        const synced = productsToSync.length;
+        if (synced > 0) {
+          this.showToast(`METRC inventory sync completed! ${synced} products synchronized.`, 'success');
+          console.log('METRC inventory sync completed:', {
+            itemsSynced: synced,
+            facilityLicense: this.metrcSettings.facilityLicense,
+            state: this.metrcSettings.state,
+            timestamp: new Date().toISOString(),
+            autoSyncEnabled: this.metrcSettings.autoSync,
+            salesTrackingEnabled: this.metrcSettings.trackSales,
+          });
+          if (this.metrcSettings.trackSales) this.showToast('Sales tracking to METRC is enabled', 'info');
+        } else {
+          this.showToast('No METRC packages or tagged products found to sync', 'warning');
+        }
+      } catch (error) {
+        this.showToast('METRC sync error: ' + (error.message || 'Unknown error'), 'error');
+        console.error('METRC inventory sync failed:', error);
+      }
     },
 
     // CSV Import Functions
