@@ -902,7 +902,6 @@ function settingsManager() {
             try {
                 const res = await (window.posAuth ? posAuth.apiRequest('post', '/settings', this.settings) : Promise.resolve({ success: false }));
                 if (res.success) {
-                    this.saveSettingsToStorage();
                     this.showToast('Settings saved successfully!', 'success');
                 } else {
                     this.showToast('Error saving settings' + (res.message ? (': ' + res.message) : ''), 'error');
@@ -910,6 +909,9 @@ function settingsManager() {
             } catch (error) {
                 console.error('Error saving settings:', error);
                 this.showToast('Error saving settings', 'error');
+            } finally {
+                // Always keep a local copy so sensitive fields persist client-side
+                this.saveSettingsToStorage();
             }
         },
 
@@ -979,7 +981,20 @@ function settingsManager() {
                 if (res.success && res.data) {
                     const srv = res.data.settings || res.data;
                     if (srv && typeof srv === 'object') {
-                        this.settings = { ...this.settings, ...srv };
+                        const sensitive = new Set(['metrc_user_key','metrc_vendor_key','metrc_facility']);
+                        const merged = { ...this.settings };
+                        Object.keys(srv).forEach((k) => {
+                            const v = srv[k];
+                            const isNullish = v === null || v === undefined;
+                            const isEmptyStr = typeof v === 'string' && v.trim() === '';
+                            if (sensitive.has(k)) {
+                                // Do not overwrite non-empty local values with empty server values
+                                if (!isNullish && !isEmptyStr) merged[k] = v;
+                            } else {
+                                if (!isNullish) merged[k] = v;
+                            }
+                        });
+                        this.settings = merged;
                         this.saveSettingsToStorage();
                     }
                 }
