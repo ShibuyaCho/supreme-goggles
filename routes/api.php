@@ -237,6 +237,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/{employee}', [EmployeesController::class, 'destroy']);
             Route::get('/{employee}/performance', [EmployeesController::class, 'getPerformance']);
             Route::get('/schedule', [EmployeesController::class, 'getSchedule']);
+            // Resets
+            Route::post('/{employee}/reset-pin', [EmployeesController::class, 'resetPin']);
+            Route::post('/{employee}/reset-password', [EmployeesController::class, 'sendPasswordReset']);
         });
 
         // Clock in/out (all employees)
