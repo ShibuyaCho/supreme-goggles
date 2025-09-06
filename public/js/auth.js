@@ -32,9 +32,7 @@ class POSAuth {
             (error) => {
                 if (error.response?.status === 401) {
                     this.logout();
-                    if (window.location.pathname !== '/') {
-                        window.location.href = '/';
-                    }
+                    try { document.dispatchEvent(new CustomEvent('pos-unauthorized')); } catch(e) {}
                 }
                 return Promise.reject(error);
             }
