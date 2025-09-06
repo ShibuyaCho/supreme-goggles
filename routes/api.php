@@ -354,14 +354,37 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('settings')->group(function () {
         // Read settings (most users)
         Route::get('/pos', function() {
+            $cached = \Illuminate\Support\Facades\Cache::get('pos_settings');
+            $defaults = [
+                'sales_tax' => 20.0,
+                'excise_tax' => 10.0,
+                'cannabis_tax' => 17.0,
+                'tax_inclusive' => false,
+                'auto_print_receipt' => true,
+                'require_customer' => true,
+                'age_verification' => true,
+                'limit_enforcement' => true,
+                'accept_cash' => true,
+                'accept_debit' => true,
+                'accept_check' => false,
+                'round_to_nearest' => false,
+                'metrc_enabled' => config('services.metrc.enabled', true),
+                'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
+                'store_name' => 'Cannabis POS',
+                'store_address' => ''
+            ];
+            $settings = array_merge($defaults, is_array($cached) ? $cached : []);
             return response()->json([
-                'tax_rate' => config('services.pos.sales_tax', 20.0),
+                'success' => true,
+                'settings' => $settings,
+                'tax_rate' => $settings['sales_tax'] ?? 20.0,
+                'medical_tax_rate' => 0.0,
                 'currency' => 'USD',
                 'timezone' => config('app.timezone'),
                 'features' => [
-                    'metrc_integration' => config('services.metrc.enabled', true),
+                    'metrc_integration' => (bool)($settings['metrc_enabled'] ?? true),
                     'loyalty_program' => true,
-                    'age_verification' => config('services.pos.age_verification', true)
+                    'age_verification' => (bool)($settings['age_verification'] ?? true)
                 ]
             ]);
         });
