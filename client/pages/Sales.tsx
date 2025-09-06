@@ -190,6 +190,22 @@ export default function Sales() {
   const [sales, setSales] = useState<Sale[]>(sampleSales);
   const [metrcSyncing, setMetrcSyncing] = useState(false);
   const [lastMetrcSync, setLastMetrcSync] = useState<string | null>(null);
+  const [metrcReady, setMetrcReady] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch('/api/settings/metrc', { headers: { Accept: 'application/json' } });
+        if (!mounted) return;
+        if (res.ok) {
+          const data = await res.json();
+          setMetrcReady(!!data?.enabled && !!data?.user_api_key);
+        }
+      } catch {}
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   const filteredSales = sales.filter(sale => {
     const saleDate = new Date(sale.timestamp).toISOString().split('T')[0];
