@@ -753,6 +753,11 @@ function settingsManager() {
                 this.settings.business_hours = this.getDefaultBusinessHours();
             }
 
+            // Coerce array settings for Alpine reactivity
+            this.settings.exit_label_categories = Array.isArray(this.settings.exit_label_categories) ? this.settings.exit_label_categories : [];
+            this.settings.receipt_categories_autoprint = Array.isArray(this.settings.receipt_categories_autoprint) ? this.settings.receipt_categories_autoprint : [];
+            this.settings.minimum_price_categories = Array.isArray(this.settings.minimum_price_categories) ? this.settings.minimum_price_categories : [];
+
             // Load settings from localStorage if available
             this.loadSettingsFromStorage();
 
