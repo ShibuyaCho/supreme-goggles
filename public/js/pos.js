@@ -3585,10 +3585,11 @@ function cannabisPOS() {
 
       setTimeout(() => {
         try {
-          // Simulate sync process
-          const productsToSync = this.products.filter(
-            (p) => p.metrcTag && p.metrcTag.length > 0,
-          );
+          this.normalizeCollections();
+          const list = Array.isArray(this.products)
+            ? this.products
+            : (this.products && Array.isArray(this.products.data) ? this.products.data : []);
+          const productsToSync = list.filter((p) => p && p.metrcTag && p.metrcTag.length > 0);
           const synced = productsToSync.length;
 
           if (synced > 0) {
