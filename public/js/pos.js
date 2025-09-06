@@ -713,6 +713,7 @@ function cannabisPOS() {
         if (this.isAuthenticated) {
           // Load data from API if authenticated
           await this.loadInitialData();
+          this.ensureMyEmployeeListed();
         } else {
           // Load local data as fallback
           this.loadSettings();
