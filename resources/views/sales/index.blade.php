@@ -26,7 +26,7 @@
                     </div>
 
                     <!-- Push Sales to METRC -->
-                    <button id="push-metrc" class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <button id="push-metrc" class="inline-flex items-center bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 000-8h-1M8 11l4-4m0 0l4 4m-4-4v12"/></svg>
                         <span>Push Sales to METRC</span>
                     </button>
