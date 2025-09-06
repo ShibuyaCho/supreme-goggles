@@ -35,7 +35,19 @@ class EmployeesController extends Controller
         }
         
         $employees = $query->orderBy('created_at', 'desc')->paginate(20);
-        
+
+        if ($request->expectsJson() || $request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'employees' => $employees->items(),
+                'meta' => [
+                    'current_page' => $employees->currentPage(),
+                    'per_page' => $employees->perPage(),
+                    'total' => $employees->total(),
+                    'last_page' => $employees->lastPage(),
+                ],
+            ]);
+        }
+
         return view('employees.index', compact(
             'employees',
             'searchQuery',
