@@ -4326,6 +4326,39 @@ function cannabisPOS() {
       this.showAddEmployeeModal = true;
     },
 
+    viewEmployee(employee) {
+      this.selectedEmployee = employee;
+      this.showEmployeeModal = true;
+    },
+
+    async resetPassword(employee) {
+      try {
+        if (!employee?.id) throw new Error("Invalid employee");
+        const res = await posAuth.apiRequest("post", `/employees/${employee.id}/reset-password`);
+        if (res.success) {
+          this.showToast("Password reset email sent", "success");
+        } else {
+          throw new Error(res.message || "Failed to send reset email");
+        }
+      } catch (e) {
+        this.showToast(e.message || "Failed to send reset email", "error");
+      }
+    },
+
+    async resetPIN(employee) {
+      try {
+        if (!employee?.id) throw new Error("Invalid employee");
+        const res = await posAuth.apiRequest("post", `/employees/${employee.id}/reset-pin`);
+        if (res.success) {
+          this.showToast("PIN reset and email sent", "success");
+        } else {
+          throw new Error(res.message || "Failed to reset PIN");
+        }
+      } catch (e) {
+        this.showToast(e.message || "Failed to reset PIN", "error");
+      }
+    },
+
     // Room Management Functions
     closeAddRoomModal() {
       this.showAddRoomModal = false;
