@@ -1058,6 +1058,15 @@ function cannabisPOS() {
     // Page navigation
     setCurrentPage(page) {
       this.currentPage = page;
+      if (page === 'employees') {
+        if ((this.employees || []).length === 0) {
+          if (this.isAuthenticated && (this.hasPermission('employees:read') || this.hasRole('admin') || this.hasRole('manager'))) {
+            this.fetchEmployeesFromApi();
+          } else {
+            this.ensureMyEmployeeListed();
+          }
+        }
+      }
     },
 
     getCurrentPageTitle() {
