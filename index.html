@@ -38,6 +38,8 @@
             window.POS_FORCE_REAUTH = true;
           }
         } catch (e) {}
+        // Clear the flag so it doesn't persist across reloads
+        try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
       })();
 
       window.__forceLogout = async function () {
@@ -6382,7 +6384,7 @@
                       >
                     </p>
                     <p class="text-sm text-gray-500">
-                      ����� Enhanced search functionality implemented
+                      ������ Enhanced search functionality implemented
                     </p>
                     <p class="text-sm text-gray-500">
                       ��� Customer action buttons added
