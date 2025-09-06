@@ -737,21 +737,33 @@ function cannabisPOS() {
     normalizeCollections() {
       if (!Array.isArray(this.products)) {
         try {
-          if (this.products && typeof this.products === "object" && Array.isArray(this.products.data)) {
+          if (
+            this.products &&
+            typeof this.products === "object" &&
+            Array.isArray(this.products.data)
+          ) {
             this.products = this.products.data;
           } else {
             this.products = [];
           }
-        } catch (e) { this.products = []; }
+        } catch (e) {
+          this.products = [];
+        }
       }
       if (!Array.isArray(this.customers)) {
         try {
-          if (this.customers && typeof this.customers === "object" && Array.isArray(this.customers.data)) {
+          if (
+            this.customers &&
+            typeof this.customers === "object" &&
+            Array.isArray(this.customers.data)
+          ) {
             this.customers = this.customers.data;
           } else {
             this.customers = [];
           }
-        } catch (e) { this.customers = []; }
+        } catch (e) {
+          this.customers = [];
+        }
       }
       if (!Array.isArray(this.employees)) this.employees = [];
       if (!Array.isArray(this.sortedProducts)) this.sortedProducts = [];
@@ -1658,7 +1670,9 @@ function cannabisPOS() {
           const parsed = JSON.parse(saved);
           this.products = Array.isArray(parsed)
             ? parsed
-            : (Array.isArray(parsed?.data) ? parsed.data : []);
+            : Array.isArray(parsed?.data)
+              ? parsed.data
+              : [];
         }
       } catch (error) {
         console.error("Error loading products:", error);
@@ -2470,7 +2484,9 @@ function cannabisPOS() {
 
     getUniqueCategories() {
       const list = Array.isArray(this.products) ? this.products : [];
-      const categories = [...new Set(list.map((p) => p.category).filter(Boolean))];
+      const categories = [
+        ...new Set(list.map((p) => p.category).filter(Boolean)),
+      ];
       return categories.sort();
     },
 
@@ -2534,7 +2550,9 @@ function cannabisPOS() {
         const discount = parseFloat(discountPercent);
         if (discount > 0 && discount <= 100) {
           const newPrice = item.price * (1 - discount / 100);
-          const productIndex = (Array.isArray(this.products) ? this.products : []).findIndex((p) => p.id === item.id);
+          const productIndex = (
+            Array.isArray(this.products) ? this.products : []
+          ).findIndex((p) => p.id === item.id);
           if (productIndex !== -1) {
             this.products[productIndex].price = newPrice;
             this.products[productIndex].discountApplied = discount;
@@ -3588,8 +3606,12 @@ function cannabisPOS() {
           this.normalizeCollections();
           const list = Array.isArray(this.products)
             ? this.products
-            : (this.products && Array.isArray(this.products.data) ? this.products.data : []);
-          const productsToSync = list.filter((p) => p && p.metrcTag && p.metrcTag.length > 0);
+            : this.products && Array.isArray(this.products.data)
+              ? this.products.data
+              : [];
+          const productsToSync = list.filter(
+            (p) => p && p.metrcTag && p.metrcTag.length > 0,
+          );
           const synced = productsToSync.length;
 
           if (synced > 0) {
