@@ -75,6 +75,8 @@ class EmployeesController extends Controller
             'hire_date' => 'required|date',
             'hourly_rate' => 'nullable|numeric|min:0',
             'permissions' => 'required|array',
+            'worker_permit' => 'nullable|string|max:100',
+            'metrc_api_key' => 'nullable|string|max:255',
             'password' => 'required|string|min:8|confirmed'
         ]);
         
@@ -92,6 +94,8 @@ class EmployeesController extends Controller
             'position' => $request->position,
             'hire_date' => $request->hire_date,
             'hourly_rate' => $request->hourly_rate,
+            'worker_permit' => $request->worker_permit,
+            'metrc_api_key' => $request->metrc_api_key,
             'permissions' => json_encode($request->permissions),
             'password' => Hash::make($request->password),
             'status' => 'active',
@@ -133,6 +137,8 @@ class EmployeesController extends Controller
             'department' => 'required|string|max:100',
             'position' => 'required|string|max:100',
             'hourly_rate' => 'nullable|numeric|min:0',
+            'worker_permit' => 'nullable|string|max:100',
+            'metrc_api_key' => 'nullable|string|max:255',
             'permissions' => 'required|array'
         ]);
         
@@ -142,7 +148,7 @@ class EmployeesController extends Controller
         
         $updateData = $request->only([
             'first_name', 'last_name', 'email', 'phone',
-            'department', 'position', 'hourly_rate'
+            'department', 'position', 'hourly_rate', 'worker_permit', 'metrc_api_key'
         ]);
         
         $updateData['permissions'] = json_encode($request->permissions);
