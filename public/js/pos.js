@@ -3177,8 +3177,78 @@ function cannabisPOS() {
       }
     },
 
-    updateEmployee() {
-      console.log("Update employee functionality would be implemented here");
+    async updateEmployee() {
+      try {
+        if (!this.selectedEmployee) {
+          this.showToast("No employee selected", "error");
+          return;
+        }
+        if (!this.employeeForm.name || !this.employeeForm.email) {
+          this.showToast("Name and email are required", "error");
+          return;
+        }
+        const parts = String(this.employeeForm.name).trim().split(/\s+/);
+        const first_name = parts.shift() || "";
+        const last_name = parts.join(" ") || "";
+        const role = this.employeeForm.role;
+        const deptMap = {
+          manager: "management",
+          admin: "management",
+          budtender: "sales",
+          security: "security",
+          cashier: "sales",
+        };
+        const department = deptMap[role] || "sales";
+        const hourly_rate = parseFloat(this.employeeForm.payRate || 0) || 0;
+        const hire_date = this.employeeForm.hireDate;
+        const payload = {
+          first_name,
+          last_name,
+          email: this.employeeForm.email,
+          phone: this.employeeForm.phone || "",
+          department,
+          position: role,
+          hourly_rate,
+          hire_date,
+          permissions: this.employeeForm.permissions || [],
+          worker_permit: this.employeeForm.workerPermit || "",
+          metrc_api_key: this.employeeForm.metrcApiKey || "",
+          status: this.employeeForm.status || "active",
+        };
+        const res = await posAuth.apiRequest(
+          "put",
+          `/employees/${this.selectedEmployee.id}`,
+          payload,
+        );
+        if (!res.success) {
+          throw new Error(res.message || "Failed to update employee");
+        }
+        // Update local list
+        const idx = (this.employees || []).findIndex(
+          (e) => String(e.id) === String(this.selectedEmployee.id),
+        );
+        if (idx !== -1) {
+          this.employees[idx] = {
+            ...this.employees[idx],
+            name: `${first_name} ${last_name}`.trim(),
+            email: payload.email,
+            phone: payload.phone,
+            role,
+            payRate: hourly_rate,
+            hireDate: hire_date,
+            status: payload.status,
+            workerPermit: payload.worker_permit,
+            metrcApiKey: payload.metrc_api_key,
+            permissions: payload.permissions,
+          };
+        }
+        this.showToast("Employee updated", "success");
+        this.showAddEmployeeModal = false;
+        this.selectedEmployee = null;
+        this.resetEmployeeForm();
+      } catch (err) {
+        this.showToast(err?.message || "Failed to update employee", "error");
+      }
     },
 
     addRoom() {
