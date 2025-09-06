@@ -821,7 +821,9 @@ function cannabisPOS() {
           if (window.posAuth && typeof window.posAuth.setAuth === "function") {
             window.posAuth.setAuth(response.data.user, response.data.token);
           }
-          try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
+          try {
+            localStorage.removeItem("pos_force_reauth");
+          } catch (e) {}
           this.currentUser = response.data.user;
           this.isAuthenticated = true;
           this.showRegisterModal = false;
@@ -4844,7 +4846,9 @@ function cannabisPOS() {
     async handleLogin(email, password) {
       const result = await posAuth.login(email, password);
       if (result.success) {
-        try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
+        try {
+          localStorage.removeItem("pos_force_reauth");
+        } catch (e) {}
         this.isAuthenticated = true;
         this.currentUser = result.user;
         this.showAuthModal = false;
@@ -4868,7 +4872,9 @@ function cannabisPOS() {
       try {
         const result = await posAuth.pinLogin(employeeId, pin);
         if (result.success) {
-          try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
+          try {
+            localStorage.removeItem("pos_force_reauth");
+          } catch (e) {}
           this.isAuthenticated = true;
           this.currentUser = result.user;
           this.showAuthModal = false;
@@ -4883,7 +4889,8 @@ function cannabisPOS() {
         }
       } catch (error) {
         console.error("PIN login error:", error);
-        this.loginError = error?.message || "PIN login failed. Please try again.";
+        this.loginError =
+          error?.message || "PIN login failed. Please try again.";
       }
     },
 
@@ -4964,12 +4971,17 @@ function cannabisPOS() {
         this.isAuthenticated = posAuth.isAuthenticated();
         this.currentUser = posAuth.getUser();
         if (this.isAuthenticated) {
-          try { await posAuth.refreshUser(); } catch (e) {}
+          try {
+            await posAuth.refreshUser();
+          } catch (e) {}
           this.showAuthModal = false;
         }
         document.addEventListener("pos-unauthorized", async () => {
           try {
-            const inactive = typeof posAuth?.isInactiveBeyondLimit === "function" ? posAuth.isInactiveBeyondLimit() : false;
+            const inactive =
+              typeof posAuth?.isInactiveBeyondLimit === "function"
+                ? posAuth.isInactiveBeyondLimit()
+                : false;
             if (!inactive) {
               const ok = await posAuth.refreshToken();
               if (ok) {
