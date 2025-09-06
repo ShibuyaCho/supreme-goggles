@@ -4644,49 +4644,25 @@ function cannabisPOS() {
         return;
       }
 
-      // Production authentication with backend API
+      // Use centralized POSAuth with endpoint fallback
       try {
-        const response = await axios.post("/api/auth/login", {
-          email: email,
-          password: password,
-        });
-
-        if (response.status >= 200 && response.status < 300 && response.data && response.data.token) {
-          this.currentUser = response.data.user;
+        const result = await posAuth.login(email, password);
+        if (result.success) {
+          this.currentUser = result.user;
           this.isAuthenticated = true;
           this.showAuthModal = false;
           this.loginError = "";
           this.loginEmail = "";
           this.loginPassword = "";
-
-          // Store authentication token
-          localStorage.setItem("auth_token", response.data.token);
-          localStorage.setItem("pos_token", response.data.token);
-          localStorage.setItem("pos_user", JSON.stringify(response.data.user || {}));
-
-          // Set axios default header for future requests
-          axios.defaults.headers.common["Authorization"] =
-            `Bearer ${response.data.token}`;
-
-          // Save auth state to localStorage
-          localStorage.setItem(
-            "cannabisPOS-auth",
-            JSON.stringify({
-              isAuthenticated: true,
-              currentUser: response.data.user,
-            }),
-          );
-
+          localStorage.setItem("pos_user", JSON.stringify(result.user || {}));
           await this.loadInitialData();
-          this.showToast(`Welcome, ${response.data.user.name}!`, "success");
-          console.log("User logged in successfully");
+          this.showToast(`Welcome, ${result.user.name}!`, "success");
         } else {
-          this.loginError = response.data?.message || "Login failed";
+          this.loginError = result.message || "Login failed";
         }
       } catch (error) {
         console.error("Login error:", error);
-        this.loginError =
-          error.response?.data?.message || "Login failed. Please try again.";
+        this.loginError = error?.message || "Login failed. Please try again.";
       }
     },
 
@@ -4698,50 +4674,25 @@ function cannabisPOS() {
         return;
       }
 
-      // Production PIN authentication with backend API
+      // Use centralized POSAuth with endpoint fallback
       try {
-        const response = await axios.post("/api/auth/pin-login", {
-          employee_id: employeeId,
-          pin: pin,
-        });
-
-        if (response.status >= 200 && response.status < 300 && response.data && response.data.token) {
-          this.currentUser = response.data.user;
+        const result = await posAuth.pinLogin(employeeId, pin);
+        if (result.success) {
+          this.currentUser = result.user;
           this.isAuthenticated = true;
           this.showAuthModal = false;
           this.loginError = "";
           this.employeeId = "";
           this.employeePin = "";
-
-          // Store authentication token
-          localStorage.setItem("auth_token", response.data.token);
-          localStorage.setItem("pos_token", response.data.token);
-          localStorage.setItem("pos_user", JSON.stringify(response.data.user || {}));
-
-          // Set axios default header for future requests
-          axios.defaults.headers.common["Authorization"] =
-            `Bearer ${response.data.token}`;
-
-          // Save auth state to localStorage
-          localStorage.setItem(
-            "cannabisPOS-auth",
-            JSON.stringify({
-              isAuthenticated: true,
-              currentUser: response.data.user,
-            }),
-          );
-
+          localStorage.setItem("pos_user", JSON.stringify(result.user || {}));
           await this.loadInitialData();
-          this.showToast(`Welcome, ${response.data.user.name}!`, "success");
-          console.log("User logged in successfully with PIN");
+          this.showToast(`Welcome, ${result.user.name}!`, "success");
         } else {
-          this.loginError = response.data?.message || "PIN login failed";
+          this.loginError = result.message || "PIN login failed";
         }
       } catch (error) {
         console.error("PIN login error:", error);
-        this.loginError =
-          error.response?.data?.message ||
-          "PIN login failed. Please try again.";
+        this.loginError = error?.message || "PIN login failed. Please try again.";
       }
     },
 
