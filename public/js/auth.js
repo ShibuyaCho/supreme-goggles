@@ -32,8 +32,8 @@ class POSAuth {
             (error) => {
                 if (error.response?.status === 401) {
                     this.logout();
-                    if (window.location.pathname !== '/login') {
-                        window.location.href = '/login';
+                    if (window.location.pathname !== '/') {
+                        window.location.href = '/';
                     }
                 }
                 return Promise.reject(error);
