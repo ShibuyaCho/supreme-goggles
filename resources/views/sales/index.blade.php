@@ -24,7 +24,13 @@
                             <button onclick="customReport()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Custom Report</button>
                         </div>
                     </div>
-                    
+
+                    <!-- Push Sales to METRC -->
+                    <button id="push-metrc" class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 000-8h-1M8 11l4-4m0 0l4 4m-4-4v12"/></svg>
+                        <span>Push Sales to METRC</span>
+                    </button>
+
                     <!-- Export Button -->
                     <button onclick="exportSales()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Export
@@ -449,6 +455,57 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('reports-menu').classList.add('hidden');
         }
     });
+    // Push Sales to METRC
+    const pushBtn = document.getElementById('push-metrc');
+    if (pushBtn) {
+        pushBtn.addEventListener('click', async function() {
+            if (this.disabled) return;
+            this.disabled = true;
+            const originalText = this.innerHTML;
+            this.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.581M5.418 9A7.5 7.5 0 1114.5 4.582"/></svg> Syncing...';
+            try {
+                // Build payloads from visible completed sales rows
+                const rows = Array.from(document.querySelectorAll('tbody tr')).filter(r => r.querySelector('td:nth-child(8) .bg-green-100'));
+                if (rows.length === 0) {
+                    window.POS?.showToast?.('No completed sales to push for current filters', 'info');
+                    return;
+                }
+                let pushed = 0;
+                for (const row of rows) {
+                    const dateText = row.querySelector('td:nth-child(1) .text-sm.text-gray-500')?.textContent?.trim() || '';
+                    const itemsCell = row.querySelector('td:nth-child(5)');
+                    const itemLines = itemsCell ? Array.from(itemsCell.querySelectorAll('.text-xs.text-gray-500')).map(el => el.textContent || '') : [];
+                    // Extract any displayed METRC suffixes from the hint line if present
+                    const metrcHint = itemsCell?.querySelector('.text-\[11px\].text-gray-500')?.textContent || '';
+                    const metrcSuffixes = (metrcHint.match(/\*\*\*\*(\w+)/g) || []).map(s => s.replace('****',''));
+                    // Fallback: proceed without item mapping if no metrc tags shown
+                    const transactions = metrcSuffixes.map(suffix => ({
+                        package_label: suffix, // backend should resolve full tag; if not, it will error
+                        quantity: 1,
+                        unit_of_measure: 'Each',
+                        total_amount: 0
+                    }));
+                    const body = {
+                        sales_datetime: new Date(dateText || Date.now()).toISOString(),
+                        sales_customer_type: (row.querySelector('td:nth-child(2) .text-sm.text-gray-500')?.textContent || '').toLowerCase() === 'medical' ? 'Patient' : 'Consumer',
+                        transactions: transactions.length > 0 ? transactions : [
+                            { package_label: 'UNKNOWN', quantity: 1, unit_of_measure: 'Each', total_amount: 0 }
+                        ]
+                    };
+                    try {
+                        const res = await (window.axios || axios).post('/api/metrc/sales/receipts', body, { headers: { 'Accept': 'application/json' } });
+                        if (res.status >= 200 && res.status < 300) pushed++;
+                    } catch (e) {
+                        console.warn('Failed to push one sale to METRC', e?.response?.data || e);
+                    }
+                }
+                window.POS?.showToast?.(`Pushed ${pushed} sale(s) to METRC`, pushed > 0 ? 'success' : 'info');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = originalText;
+            }
+        });
+    }
 });
 
 function switchTab(tabName) {
