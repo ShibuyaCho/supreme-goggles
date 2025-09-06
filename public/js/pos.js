@@ -4651,7 +4651,7 @@ function cannabisPOS() {
           password: password,
         });
 
-        if (response.data.success) {
+        if (response.status >= 200 && response.status < 300 && response.data && response.data.token) {
           this.currentUser = response.data.user;
           this.isAuthenticated = true;
           this.showAuthModal = false;
@@ -4678,7 +4678,7 @@ function cannabisPOS() {
           this.showToast(`Welcome, ${response.data.user.name}!`, "success");
           console.log("User logged in successfully");
         } else {
-          this.loginError = response.data.message || "Login failed";
+          this.loginError = response.data?.message || "Login failed";
         }
       } catch (error) {
         console.error("Login error:", error);
@@ -4702,7 +4702,7 @@ function cannabisPOS() {
           pin: pin,
         });
 
-        if (response.data.success) {
+        if (response.status >= 200 && response.status < 300 && response.data && response.data.token) {
           this.currentUser = response.data.user;
           this.isAuthenticated = true;
           this.showAuthModal = false;
@@ -4729,7 +4729,7 @@ function cannabisPOS() {
           this.showToast(`Welcome, ${response.data.user.name}!`, "success");
           console.log("User logged in successfully with PIN");
         } else {
-          this.loginError = response.data.message || "PIN login failed";
+          this.loginError = response.data?.message || "PIN login failed";
         }
       } catch (error) {
         console.error("PIN login error:", error);
