@@ -724,6 +724,14 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Facility License</label>
                         <input type="text" x-model="settings.metrc_facility" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                     </div>
+                    <div class="md:col-span-3 flex items-center gap-3">
+                        <button @click="syncMetrcNow" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-700">
+                            Sync Now
+                        </button>
+                        <button @click="testMetrcConnection" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Test Connection
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
