@@ -4793,6 +4793,11 @@ function cannabisPOS() {
             this.showAuthModal = false;
           }
         }
+        document.addEventListener('pos-unauthorized', () => {
+          this.isAuthenticated = false;
+          this.currentUser = null;
+          this.showAuthModal = true;
+        });
       } catch (error) {
         console.error("Error loading auth state:", error);
         // Clear invalid auth data
