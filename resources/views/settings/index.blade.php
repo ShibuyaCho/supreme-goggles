@@ -756,6 +756,9 @@ function settingsManager() {
             // Load settings from localStorage if available
             this.loadSettingsFromStorage();
 
+            // Merge server settings (authorizes via posAuth)
+            this.fetchServerSettings();
+
             // Set up save button listener
             document.getElementById('save-settings-btn').addEventListener('click', () => {
                 this.saveSettings();
@@ -844,7 +847,9 @@ function settingsManager() {
 
         loadSettingsFromStorage() {
             try {
-                const stored = localStorage.getItem('cannabest-pos-settings');
+                const legacy = localStorage.getItem('cannabest-pos-settings');
+                const current = localStorage.getItem('cannabisPOS-settings');
+                const stored = current || legacy;
                 if (stored) {
                     const parsedSettings = JSON.parse(stored);
                     this.settings = { ...this.settings, ...parsedSettings };
@@ -856,7 +861,9 @@ function settingsManager() {
 
         saveSettingsToStorage() {
             try {
-                localStorage.setItem('cannabest-pos-settings', JSON.stringify(this.settings));
+                const json = JSON.stringify(this.settings);
+                localStorage.setItem('cannabisPOS-settings', json);
+                localStorage.setItem('cannabest-pos-settings', json);
             } catch (error) {
                 console.warn('Could not save settings to localStorage:', error);
             }
@@ -880,21 +887,12 @@ function settingsManager() {
 
         async saveSettings() {
             try {
-                const response = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(this.settings)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
+                const res = await (window.posAuth ? posAuth.apiRequest('post', '/settings', this.settings) : Promise.resolve({ success: false }));
+                if (res.success) {
+                    this.saveSettingsToStorage();
                     this.showToast('Settings saved successfully!', 'success');
                 } else {
-                    this.showToast('Error saving settings: ' + result.message, 'error');
+                    this.showToast('Error saving settings' + (res.message ? (': ' + res.message) : ''), 'error');
                 }
             } catch (error) {
                 console.error('Error saving settings:', error);
@@ -928,6 +926,21 @@ function settingsManager() {
             setTimeout(() => {
                 this.showToast('Test receipt printed successfully!', 'success');
             }, 2000);
+        },
+
+        async fetchServerSettings() {
+            try {
+                const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success: false }));
+                if (res.success && res.data) {
+                    const srv = res.data.settings || res.data;
+                    if (srv && typeof srv === 'object') {
+                        this.settings = { ...this.settings, ...srv };
+                        this.saveSettingsToStorage();
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch server settings', e);
+            }
         },
 
         showToast(message, type = 'info') {
