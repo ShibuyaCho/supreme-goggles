@@ -4,7 +4,9 @@ class POSAuth {
         this.token = localStorage.getItem('pos_token');
         this.user = JSON.parse(localStorage.getItem('pos_user') || 'null');
         this.baseUrl = '/api';
+        this.inactivityMs = 6 * 60 * 60 * 1000; // 6 hours
         this.setupAxiosInterceptors();
+        this.setupActivityTracking();
     }
 
     /**
@@ -21,17 +23,25 @@ class POSAuth {
                 config.headers['Accept'] = 'application/json';
                 return config;
             },
-            (error) => {
-                return Promise.reject(error);
-            }
+            (error) => Promise.reject(error)
         );
 
-        // Response interceptor to handle auth errors
+        // Response interceptor: try refresh once on 401, then retry
         axios.interceptors.response.use(
             (response) => response,
-            (error) => {
-                if (error.response?.status === 401) {
-                    this.logout();
+            async (error) => {
+                const original = error?.config || {};
+                if (error.response?.status === 401 && !original._retry) {
+                    original._retry = true;
+                    const refreshed = await this.refreshToken();
+                    if (refreshed) {
+                        original.headers = original.headers || {};
+                        original.headers['Authorization'] = `Bearer ${this.token}`;
+                        try { return await axios(original); } catch (e) {}
+                    }
+                    // Only logout if inactivity exceeded; otherwise keep modal
+                    const inactive = this.isInactiveBeyondLimit();
+                    if (inactive) this.logout();
                     try { document.dispatchEvent(new CustomEvent('pos-unauthorized')); } catch(e) {}
                 }
                 return Promise.reject(error);
@@ -104,6 +114,7 @@ class POSAuth {
         this.user = user;
         localStorage.setItem('pos_token', token);
         localStorage.setItem('pos_user', JSON.stringify(user));
+        this.touchActivity();
     }
 
     /**
@@ -121,6 +132,26 @@ class POSAuth {
         }
     }
 
+    // Inactivity tracking
+    setupActivityTracking() {
+        const update = this.touchActivity.bind(this);
+        ['click','keydown','mousemove','scroll','touchstart','touchmove'].forEach(evt => {
+            window.addEventListener(evt, update, { passive: true });
+        });
+        // Initialize if absent
+        if (!localStorage.getItem('pos_last_activity')) this.touchActivity();
+    }
+    touchActivity() {
+        try { localStorage.setItem('pos_last_activity', String(Date.now())); } catch(e) {}
+    }
+    isInactiveBeyondLimit() {
+        try {
+            const v = Number(localStorage.getItem('pos_last_activity') || '0');
+            if (!v) return false;
+            return (Date.now() - v) > this.inactivityMs;
+        } catch(e) { return false; }
+    }
+
     /**
      * Clear authentication data
      */
@@ -129,13 +160,14 @@ class POSAuth {
         this.user = null;
         localStorage.removeItem('pos_token');
         localStorage.removeItem('pos_user');
+        localStorage.removeItem('pos_last_activity');
     }
 
     /**
      * Check if user is authenticated
      */
     isAuthenticated() {
-        return !!this.token && !!this.user;
+        return !!this.token && !!this.user && !this.isInactiveBeyondLimit();
     }
 
     /**
@@ -170,6 +202,7 @@ class POSAuth {
             const response = await axios.get(`${this.baseUrl}/auth/me`);
             this.user = response.data.user;
             localStorage.setItem('pos_user', JSON.stringify(this.user));
+            this.touchActivity();
             return this.user;
         } catch (error) {
             console.error('Failed to refresh user:', error);
@@ -183,12 +216,13 @@ class POSAuth {
     async refreshToken() {
         try {
             const response = await axios.post(`${this.baseUrl}/auth/refresh`);
-            this.token = response.data.token;
+            const token = response?.data?.token;
+            if (!token) throw new Error('No token');
+            this.token = token;
             localStorage.setItem('pos_token', this.token);
             return true;
         } catch (error) {
-            console.error('Failed to refresh token:', error);
-            this.logout();
+            console.warn('Failed to refresh token:', error);
             return false;
         }
     }
@@ -308,14 +342,14 @@ class POSAuth {
      * Initialize authentication check on page load
      */
     init() {
-        // Check if token is expired (basic check)
         if (this.token && this.user) {
-            // Verify token is still valid by making a test request
-            this.refreshUser().catch(() => {
+            if (this.isInactiveBeyondLimit()) {
                 this.logout();
-            });
+            } else {
+                // Lazy refresh user; don't logout on failure here
+                this.refreshUser().catch(() => {});
+            }
         }
-
         return this.isAuthenticated();
     }
 }
