@@ -237,10 +237,10 @@
                         </p>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             <template x-for="category in categories" :key="category">
-                                <label class="flex items-center gap-2">
-                                    <input type="checkbox" :value="category" x-model="settings.exit_label_categories" class="rounded text-cannabis-green focus:ring-cannabis-green">
-                                    <span class="text-sm" x-text="category"></span>
-                                </label>
+                                <div class="flex items-center gap-2">
+                                    <input :id="'exitcat-'+category" type="checkbox" :value="category" x-model="settings.exit_label_categories" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer" @click.stop>
+                                    <label :for="'exitcat-'+category" class="text-sm cursor-pointer" x-text="category"></label>
+                                </div>
                             </template>
                         </div>
                         <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
