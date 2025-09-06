@@ -104,6 +104,77 @@ class MetrcController extends Controller
     }
 
     /**
+     * Import active METRC packages into inventory (exclude zero-quantity)
+     */
+    public function importActivePackages(Request $request)
+    {
+        try {
+            $packages = $this->metrcService->getAllPackages();
+            $imported = 0;
+            $updated = 0;
+            $skipped = 0;
+
+            foreach ((array)$packages as $pkg) {
+                $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                if ($qty <= 0) { $skipped++; continue; }
+
+                $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                if (!$label) { $skipped++; continue; }
+
+                // Derive fields safely
+                $item = $pkg['Item'] ?? [];
+                $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+
+                $data = [
+                    'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                    'category' => $category ?: 'Unknown',
+                    'price' => 0,
+                    'cost' => 0,
+                    'sku' => $label,
+                    'weight' => $uom ?: 'Units',
+                    'room' => 'Inventory',
+                    'supplier' => $vendor ?: 'METRC',
+                    'vendor' => $vendor ?: 'METRC',
+                    'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                    'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                    'metrc_tag' => $label,
+                    'quantity' => $qty,
+                ];
+
+                $existing = Product::where('metrc_tag', $label)->first();
+                if ($existing) {
+                    $existing->fill($data);
+                    $existing->save();
+                    $updated++;
+                } else {
+                    Product::create($data);
+                    $imported++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'METRC packages imported successfully',
+                'imported' => $imported,
+                'updated' => $updated,
+                'skipped' => $skipped,
+                'total_processed' => $imported + $updated + $skipped,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to import METRC packages',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get incoming transfers
      */
     public function getIncomingTransfers(Request $request)
