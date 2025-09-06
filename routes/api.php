@@ -93,6 +93,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('metrc')->middleware('permission:metrc:access')->group(function () {
         Route::get('/test-connection', [MetrcController::class, 'testConnection']);
         Route::get('/packages', [MetrcController::class, 'getAllPackages']);
+        Route::post('/import-packages', [MetrcController::class, 'importActivePackages'])
+            ->middleware('permission:products:write');
         Route::get('/packages/{packageTag}', [MetrcController::class, 'getPackageDetails']);
         Route::get('/packages/{packageTag}/history', [MetrcController::class, 'getPackageHistory']);
         Route::get('/transfers/incoming', [MetrcController::class, 'getIncomingTransfers']);
