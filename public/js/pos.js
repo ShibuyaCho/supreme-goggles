@@ -474,6 +474,9 @@ function cannabisPOS() {
     agingModalData: {
       title: "",
       items: [],
+      totalCost: 0,
+      totalRetail: 0,
+      totalProfit: 0,
     },
 
     // Additional arrays and objects
