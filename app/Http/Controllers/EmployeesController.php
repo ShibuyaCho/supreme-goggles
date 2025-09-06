@@ -194,13 +194,23 @@ class EmployeesController extends Controller
     public function resetPin($id)
     {
         $employee = Employee::findOrFail($id);
-        $newPin = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+        $newPin = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
 
         $employee->update(['pin' => $newPin]);
 
+        try {
+            \Illuminate\Support\Facades\Mail::raw(
+                "Your Cannabis POS PIN has been reset. Your new PIN is: {$newPin}\nIf you did not request this, please contact your manager immediately.",
+                function ($message) use ($employee) {
+                    $message->to($employee->email)->subject('Your POS PIN has been reset');
+                }
+            );
+        } catch (\Throwable $e) {
+            // Continue without failing if mail driver isn't configured
+        }
+
         return response()->json([
-            'message' => 'PIN reset successfully',
-            'new_pin' => $newPin
+            'message' => 'PIN reset and email sent to employee'
         ]);
     }
 
