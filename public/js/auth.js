@@ -4,7 +4,7 @@ class POSAuth {
     this.token = localStorage.getItem("pos_token");
     this.user = JSON.parse(localStorage.getItem("pos_user") || "null");
     this.baseUrl = "/api";
-    this.inactivityMs = 6 * 60 * 60 * 1000; // 6 hours
+    this.inactivityMs = 365 * 24 * 60 * 60 * 1000; // 1 year (effectively disabled)
     this.setupAxiosInterceptors();
     this.setupActivityTracking();
   }
@@ -191,7 +191,7 @@ class POSAuth {
    * Check if user is authenticated
    */
   isAuthenticated() {
-    return !!this.token && !!this.user && !this.isInactiveBeyondLimit();
+    return !!this.token && !!this.user;
   }
 
   /**
@@ -372,12 +372,8 @@ class POSAuth {
    */
   init() {
     if (this.token && this.user) {
-      if (this.isInactiveBeyondLimit()) {
-        this.logout();
-      } else {
-        // Lazy refresh user; don't logout on failure here
-        this.refreshUser().catch(() => {});
-      }
+      // Lazy refresh user; don't logout on failure here
+      this.refreshUser().catch(() => {});
     }
     return this.isAuthenticated();
   }
