@@ -481,6 +481,9 @@ function cannabisPOS() {
 
     // Additional arrays and objects
     employees: [],
+    employeeSearchQuery: "",
+    employeeRoleFilter: "",
+    employeeStatusFilter: "",
     facilityRooms: [],
     cashDrawers: [],
     activityLog: [],
@@ -887,6 +890,11 @@ function cannabisPOS() {
         const customersResult = await posAuth.getCustomers();
         if (customersResult.success) {
           this.customers = customersResult.data.data || customersResult.data;
+        }
+
+        // Load employees for admins/managers
+        if (this.hasPermission("employees:read") || this.hasRole("admin") || this.hasRole("manager")) {
+          await this.fetchEmployeesFromApi();
         }
 
         // Load settings from API
@@ -1610,8 +1618,44 @@ function cannabisPOS() {
       }
     },
 
+    async fetchEmployeesFromApi() {
+      try {
+        const res = await posAuth.apiRequest("get", "/employees");
+        if (res.success && res.data && (res.data.employees || res.data.data)) {
+          const list = res.data.employees || res.data.data || [];
+          this.employees = list.map((e) => ({
+            id: e.id || e.employee_id,
+            name: (e.full_name) ? e.full_name : [e.first_name, e.last_name].filter(Boolean).join(" "),
+            email: e.email || "",
+            phone: e.phone || "",
+            role: (e.position || e.role || "budtender").toLowerCase(),
+            status: e.status || (e.is_active ? "active" : "inactive"),
+            hireDate: (e.hire_date ? String(e.hire_date).slice(0,10) : ""),
+            payRate: Number(e.hourly_rate ?? 0),
+            hoursWorked: Number(e.hours_worked ?? 0),
+            workerPermit: e.worker_permit || e.workerPermit || "",
+            metrcApiKey: e.metrc_api_key || e.metrcApiKey || "",
+          }));
+        }
+      } catch (err) {
+        console.warn("Failed to fetch employees", err);
+      }
+    },
+
     loadEmployees() {
-      // Placeholder for employee loading
+      // Placeholder fallback: ensure array exists
+      this.employees = this.employees || [];
+    },
+
+    get filteredEmployees() {
+      const q = (this.employeeSearchQuery || "").toLowerCase();
+      return (this.employees || [])
+        .filter((e) => {
+          const matchQ = !q || [e.name, e.email, e.phone, String(e.id)].filter(Boolean).some((v)=>String(v).toLowerCase().includes(q));
+          const matchRole = !this.employeeRoleFilter || e.role === this.employeeRoleFilter;
+          const matchStatus = !this.employeeStatusFilter || e.status === this.employeeStatusFilter;
+          return matchQ && matchRole && matchStatus;
+        });
     },
 
     // Utility functions
