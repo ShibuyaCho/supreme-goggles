@@ -472,6 +472,21 @@ async function resetEmployeePassword(employeeId){
     }
 }
 
+async function resetEmployeePin(employeeId){
+    if (!employeeId) return;
+    if (!confirm('Reset this employee\'s PIN and email the new PIN?')) return;
+    try {
+        const csrf = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const res = await (window.axios || axios).post(`/employees/${employeeId}/reset-pin`, {}, { headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': csrf } });
+        const msg = res?.data?.message || 'PIN reset and email sent';
+        window.POS?.showToast?.(msg, 'success');
+    } catch (err){
+        const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to reset PIN';
+        window.POS?.showToast?.(msg, 'error');
+        alert(msg);
+    }
+}
+
 function viewPerformance(employeeId) {
     window.location.href = `/employees/${employeeId}/performance`;
 }
