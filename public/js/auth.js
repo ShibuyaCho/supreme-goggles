@@ -426,6 +426,50 @@ class POSAuth {
   }
 
   /**
+   * Self-register new user with PIN (with endpoint fallback)
+   */
+  async selfRegister({ name, email, password, passwordConfirm, pin }) {
+    const payload = {
+      name: String(name || "").trim(),
+      email: String(email || "").trim(),
+      password,
+      password_confirmation: passwordConfirm,
+      pin,
+    };
+    const tryPost = async (url) => axios.post(url, payload);
+    try {
+      let res;
+      try {
+        res = await tryPost(`${this.baseUrl}/auth/self-register`);
+      } catch (e) {
+        if (e?.response?.status === 404) {
+          try {
+            res = await tryPost(`${this.baseUrl}/self-register`);
+          } catch (e2) {
+            if (e2?.response?.status === 404) {
+              res = await tryPost(`/auth/self-register`);
+            } else {
+              throw e2;
+            }
+          }
+        } else {
+          throw e;
+        }
+      }
+      const { user, token } = res.data || {};
+      if (user && token) {
+        this.setAuth(user, token);
+        return { success: true, user, message: res.data.message };
+      }
+      return { success: false, message: "Invalid response from server" };
+    } catch (error) {
+      const message = error?.response?.data?.error || error?.response?.data?.message || "Registration failed";
+      const errors = error?.response?.data?.errors || null;
+      return { success: false, message, errors, status: error?.response?.status };
+    }
+  }
+
+  /**
    * Initialize authentication check on page load
    */
   init() {
