@@ -768,6 +768,7 @@ function cannabisPOS() {
         this.currentUser = result.user;
         this.showAuthModal = false;
         await this.loadInitialData();
+        this.ensureMyEmployeeListed();
         this.showToast("Login successful", "success");
       } else {
         this.showToast(result.message, "error");
@@ -785,6 +786,7 @@ function cannabisPOS() {
         this.currentUser = result.user;
         this.showAuthModal = false;
         await this.loadInitialData();
+        this.ensureMyEmployeeListed();
         this.showToast("PIN login successful", "success");
       } else {
         this.showToast(result.message, "error");
@@ -849,6 +851,7 @@ function cannabisPOS() {
             pin: "",
           };
           await this.loadInitialData();
+          this.ensureMyEmployeeListed(response.data.user);
           this.showToast("Account created. Welcome!", "success");
         }
       } catch (error) {
@@ -875,6 +878,30 @@ function cannabisPOS() {
 
     hasRole(role) {
       return posAuth.hasRole(role);
+    },
+
+    ensureMyEmployeeListed(userOverride) {
+      const u = userOverride || this.currentUser || {};
+      const emp = u.employee || {};
+      if (!emp || (!emp.id && !emp.employee_id)) return;
+      const exists = (this.employees || []).some((e)=> String(e.id) === String(emp.id || emp.employee_id));
+      if (exists) return;
+      const name = emp.name || [emp.first_name, emp.last_name].filter(Boolean).join(" ");
+      const entry = {
+        id: emp.id || emp.employee_id,
+        name: name || (u.name || ""),
+        email: u.email || emp.email || "",
+        phone: emp.phone || "",
+        role: (u.role || emp.role || "cashier").toLowerCase(),
+        status: (emp.status || (u.is_active ? "active" : "active")),
+        hireDate: new Date().toISOString().slice(0,10),
+        payRate: Number(emp.hourly_rate ?? 0),
+        hoursWorked: 0,
+        workerPermit: "",
+        metrcApiKey: "",
+      };
+      this.employees = this.employees || [];
+      this.employees.unshift(entry);
     },
 
     // API Integration methods
