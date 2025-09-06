@@ -36,6 +36,8 @@
             window.POS_FORCE_REAUTH = true;
           }
         } catch (e) {}
+        // Clear the flag so it doesn't persist across reloads
+        try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
       })();
       window["_fs_namespace"] = window["_fs_namespace"] || "FS_cpos";
     </script>
