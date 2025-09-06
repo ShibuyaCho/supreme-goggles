@@ -2384,8 +2384,8 @@ function cannabisPOS() {
       };
 
       // Calculate totals for the modal
-      this.agingModalData.totalCost = this.agingModalData.items.reduce(
-        (sum, item) => sum + (item.cost || 0) * item.stock,
+      this.agingModalData.totalCost = (this.agingModalData.items || []).reduce(
+        (sum, item) => sum + Number(item?.cost || 0) * Number(item?.stock || 0),
         0,
       );
       this.agingModalData.totalRetail = this.agingModalData.items.reduce(
