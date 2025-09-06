@@ -45,22 +45,20 @@ class POSAuth {
      * Login with email and password
      */
     async login(email, password, remember = false) {
+        const attempt = async (url) => axios.post(url, { email, password, remember });
         try {
-            const response = await axios.post(`${this.baseUrl}/auth/login`, {
-                email,
-                password,
-                remember
-            });
+            let response;
+            try {
+                response = await attempt(`${this.baseUrl}/auth/login`);
+            } catch (e) {
+                if (e?.response?.status === 404) {
+                    response = await attempt(`${this.baseUrl}/login`);
+                } else { throw e; }
+            }
 
             const { user, token } = response.data;
-            
             this.setAuth(user, token);
-            
-            return {
-                success: true,
-                user,
-                message: response.data.message
-            };
+            return { success: true, user, message: response.data.message };
         } catch (error) {
             return {
                 success: false,
@@ -74,15 +72,18 @@ class POSAuth {
      * Login with employee PIN (for POS terminals)
      */
     async pinLogin(employeeId, pin) {
+        const attempt = async (url) => axios.post(url, { employee_id: employeeId, pin });
         try {
-            const response = await axios.post(`${this.baseUrl}/auth/pin-login`, {
-                employee_id: employeeId,
-                pin
-            });
+            let response;
+            try {
+                response = await attempt(`${this.baseUrl}/auth/pin-login`);
+            } catch (e) {
+                if (e?.response?.status === 404) {
+                    response = await attempt(`${this.baseUrl}/pin-login`);
+                } else { throw e; }
+            }
 
             const { employee, token } = response.data;
-            
-            // For PIN login, create a simplified user object
             const user = {
                 id: employee.id,
                 name: employee.name,
@@ -90,20 +91,10 @@ class POSAuth {
                 permissions: employee.permissions,
                 employee: employee
             };
-            
             this.setAuth(user, token);
-            
-            return {
-                success: true,
-                user,
-                employee,
-                message: response.data.message
-            };
+            return { success: true, user, employee, message: response.data.message };
         } catch (error) {
-            return {
-                success: false,
-                message: error.response?.data?.error || 'PIN login failed'
-            };
+            return { success: false, message: error.response?.data?.error || 'PIN login failed' };
         }
     }
 
