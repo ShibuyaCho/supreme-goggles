@@ -717,10 +717,10 @@ export default function Sales() {
             </Button>
             <Button
               onClick={handleMetrcSync}
-              disabled={metrcSyncing}
+              disabled={metrcSyncing || !metrcReady}
               aria-label="Push Sales to METRC"
-              title="Push Sales to METRC"
-              className="bg-green-600 hover:bg-green-700 text-white"
+              title={metrcReady ? "Push Sales to METRC" : "Enter a valid METRC API key in Settings to enable"}
+              className={`text-white ${metrcReady ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400 cursor-not-allowed'}`}
             >
               {metrcSyncing ? (
                 <>
