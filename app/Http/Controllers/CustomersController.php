@@ -40,10 +40,22 @@ class CustomersController extends Controller
         }
         
         $customers = $query->orderBy('created_at', 'desc')->paginate(20);
-        
+
         // Get analytics data for analytics tab
         $stats = $this->getCustomerStats();
-        
+
+        if ($request->expectsJson() || $request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'data' => $customers->items(),
+                'meta' => [
+                    'current_page' => $customers->currentPage(),
+                    'per_page' => $customers->perPage(),
+                    'total' => $customers->total(),
+                    'last_page' => $customers->lastPage(),
+                ],
+            ]);
+        }
+
         return view('customers.index', compact(
             'customers',
             'searchQuery',
