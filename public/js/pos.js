@@ -4404,7 +4404,10 @@ function cannabisPOS() {
     async resetPassword(employee) {
       try {
         if (!employee?.id) throw new Error("Invalid employee");
-        const res = await posAuth.apiRequest("post", `/employees/${employee.id}/reset-password`);
+        const res = await posAuth.apiRequest(
+          "post",
+          `/employees/${employee.id}/reset-password`,
+        );
         if (res.success) {
           this.showToast("Password reset email sent", "success");
         } else {
@@ -4418,7 +4421,10 @@ function cannabisPOS() {
     async resetPIN(employee) {
       try {
         if (!employee?.id) throw new Error("Invalid employee");
-        const res = await posAuth.apiRequest("post", `/employees/${employee.id}/reset-pin`);
+        const res = await posAuth.apiRequest(
+          "post",
+          `/employees/${employee.id}/reset-pin`,
+        );
         if (res.success) {
           this.showToast("PIN reset and email sent", "success");
         } else {
