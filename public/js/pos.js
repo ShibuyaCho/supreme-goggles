@@ -4661,6 +4661,8 @@ function cannabisPOS() {
 
           // Store authentication token
           localStorage.setItem("auth_token", response.data.token);
+          localStorage.setItem("pos_token", response.data.token);
+          localStorage.setItem("pos_user", JSON.stringify(response.data.user || {}));
 
           // Set axios default header for future requests
           axios.defaults.headers.common["Authorization"] =
@@ -4675,6 +4677,7 @@ function cannabisPOS() {
             }),
           );
 
+          await this.loadInitialData();
           this.showToast(`Welcome, ${response.data.user.name}!`, "success");
           console.log("User logged in successfully");
         } else {
@@ -4712,6 +4715,8 @@ function cannabisPOS() {
 
           // Store authentication token
           localStorage.setItem("auth_token", response.data.token);
+          localStorage.setItem("pos_token", response.data.token);
+          localStorage.setItem("pos_user", JSON.stringify(response.data.user || {}));
 
           // Set axios default header for future requests
           axios.defaults.headers.common["Authorization"] =
@@ -4726,6 +4731,7 @@ function cannabisPOS() {
             }),
           );
 
+          await this.loadInitialData();
           this.showToast(`Welcome, ${response.data.user.name}!`, "success");
           console.log("User logged in successfully with PIN");
         } else {
