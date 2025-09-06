@@ -45,8 +45,56 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         
         if (!Auth::attempt($credentials)) {
+            // Fallback: allow employees to login with email + PIN (4 digits) or employee password if present
+            $employee = Employee::where('email', $request->email)->where('is_active', true)->first();
+            if ($employee) {
+                $pwd = (string) $request->password;
+                $isPin = strlen($pwd) === 4 && ctype_digit($pwd);
+                $pinOk = $isPin && Hash::check($pwd, $employee->pin);
+                $pwOk = !$isPin && isset($employee->password) && $employee->password && Hash::check($pwd, $employee->password);
+                if ($pinOk || $pwOk) {
+                    // Ensure a corresponding user exists
+                    $user = User::where('employee_id', $employee->id)->first();
+                    if (!$user) {
+                        $user = User::create([
+                            'name' => $employee->full_name,
+                            'email' => $employee->email,
+                            'employee_id' => $employee->id,
+                            'role' => $employee->role,
+                            'permissions' => $employee->permissions,
+                            'is_active' => $employee->is_active,
+                            'password' => Hash::make(Str::random(32)),
+                        ]);
+                    }
+                    // Update last login
+                    $employee->update(['last_login' => now()]);
+                    $user->updateLastLogin();
+                    // Issue token and return (mirror success payload below)
+                    $abilities = $this->getTokenAbilities($user);
+                    $token = $user->generateApiToken('POS Session', $abilities);
+                    return response()->json([
+                        'message' => 'Login successful',
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'role' => $user->role,
+                            'permissions' => $user->permissions,
+                            'employee' => [
+                                'id' => $employee->id,
+                                'employee_id' => $employee->employee_id,
+                                'first_name' => $employee->first_name,
+                                'last_name' => $employee->last_name,
+                                'role' => $employee->role,
+                            ]
+                        ],
+                        'token' => $token->plainTextToken,
+                        'expires_at' => $token->accessToken->expires_at,
+                    ]);
+                }
+            }
+
             RateLimiter::hit($key, 300); // 5 minute lockout
-            
             return response()->json([
                 'error' => 'Invalid credentials'
             ], 401);
