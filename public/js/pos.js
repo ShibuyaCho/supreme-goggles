@@ -2097,7 +2097,7 @@ function cannabisPOS() {
       } else {
         const dimensions = {
           small: { width: 100, height: 50 }, // 2" × 1"
-          medium: { width: 150, height: 100 }, // 3" × 2"
+          medium: { width: 150, height: 100 }, // 3" �� 2"
           large: { width: 200, height: 150 }, // 4" × 3"
           "extra-large": { width: 300, height: 200 }, // 6" × 4"
         };
@@ -2388,8 +2388,8 @@ function cannabisPOS() {
         (sum, item) => sum + Number(item?.cost || 0) * Number(item?.stock || 0),
         0,
       );
-      this.agingModalData.totalRetail = this.agingModalData.items.reduce(
-        (sum, item) => sum + item.price * item.stock,
+      this.agingModalData.totalRetail = (this.agingModalData.items || []).reduce(
+        (sum, item) => sum + Number(item?.price || 0) * Number(item?.stock || 0),
         0,
       );
       this.agingModalData.totalProfit =
@@ -2471,10 +2471,10 @@ function cannabisPOS() {
           });
 
           // Recalculate totals
-          this.agingModalData.totalRetail = this.agingModalData.items.reduce(
-            (sum, item) => sum + item.price * item.stock,
-            0,
-          );
+          this.agingModalData.totalRetail = (this.agingModalData.items || []).reduce(
+        (sum, item) => sum + Number(item?.price || 0) * Number(item?.stock || 0),
+        0,
+      );
           this.agingModalData.totalProfit =
             this.agingModalData.totalRetail - this.agingModalData.totalCost;
 
