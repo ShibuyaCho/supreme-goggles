@@ -26,7 +26,9 @@ class Employee extends Authenticatable
         'status',
         'permissions',
         'last_login',
-        'notes'
+        'notes',
+        'worker_permit',
+        'metrc_api_key'
     ];
 
     protected $hidden = [
