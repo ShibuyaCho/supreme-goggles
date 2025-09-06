@@ -371,7 +371,6 @@ function cannabisPOS() {
     },
     roomForm: {
       name: "",
-      type: "",
       forSale: "true",
       maxCapacity: "",
       status: "active",
@@ -4313,15 +4312,14 @@ function cannabisPOS() {
     },
 
     addRoom() {
-      if (!this.roomForm.name || !this.roomForm.type) {
-        this.showToast("Please fill in all required fields", "error");
+      if (!this.roomForm.name) {
+        this.showToast("Please enter a room name", "error");
         return;
       }
 
       const newRoom = {
         id: Math.max(...(this.facilityRooms || []).map((r) => r.id), 0) + 1,
         name: this.roomForm.name,
-        type: this.roomForm.type,
         forSale: this.roomForm.forSale === "true",
         maxCapacity: this.roomForm.maxCapacity,
         status: this.roomForm.status,
@@ -4337,8 +4335,8 @@ function cannabisPOS() {
     },
 
     updateRoom() {
-      if (!this.selectedRoom || !this.roomForm.name || !this.roomForm.type) {
-        this.showToast("Please fill in all required fields", "error");
+      if (!this.selectedRoom || !this.roomForm.name) {
+        this.showToast("Please enter a room name", "error");
         return;
       }
 
@@ -4349,7 +4347,6 @@ function cannabisPOS() {
         this.facilityRooms[roomIndex] = {
           ...this.facilityRooms[roomIndex],
           name: this.roomForm.name,
-          type: this.roomForm.type,
           forSale: this.roomForm.forSale === "true",
           maxCapacity: this.roomForm.maxCapacity,
           status: this.roomForm.status,
@@ -4370,7 +4367,6 @@ function cannabisPOS() {
       this.selectedRoom = room;
       this.roomForm = {
         name: room.name,
-        type: room.type,
         forSale: room.forSale ? "true" : "false",
         maxCapacity: room.maxCapacity,
         status: room.status,
