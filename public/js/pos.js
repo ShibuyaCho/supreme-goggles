@@ -883,19 +883,30 @@ function cannabisPOS() {
     ensureMyEmployeeListed(userOverride) {
       const u = userOverride || this.currentUser || {};
       const emp = u.employee || null;
-      let id = emp?.id || emp?.employee_id || u.employee_id || u.id || `EMP-${Date.now()}`;
-      const exists = (this.employees || []).some((e)=> String(e.id) === String(id));
+      let id =
+        emp?.id ||
+        emp?.employee_id ||
+        u.employee_id ||
+        u.id ||
+        `EMP-${Date.now()}`;
+      const exists = (this.employees || []).some(
+        (e) => String(e.id) === String(id),
+      );
       if (exists) return;
-      const name = (emp?.name) || [emp?.first_name, emp?.last_name].filter(Boolean).join(" ") || (u.name || "");
+      const name =
+        emp?.name ||
+        [emp?.first_name, emp?.last_name].filter(Boolean).join(" ") ||
+        u.name ||
+        "";
       const entry = {
         id,
         name,
         email: u.email || emp?.email || "",
         phone: emp?.phone || "",
         role: (u.role || emp?.role || "cashier").toLowerCase(),
-        status: (emp?.status || (u.is_active ? "active" : "active")),
-        hireDate: new Date().toISOString().slice(0,10),
-        payRate: Number((emp && emp.hourly_rate != null ? emp.hourly_rate : 0)),
+        status: emp?.status || (u.is_active ? "active" : "active"),
+        hireDate: new Date().toISOString().slice(0, 10),
+        payRate: Number(emp && emp.hourly_rate != null ? emp.hourly_rate : 0),
         hoursWorked: 0,
         workerPermit: "",
         metrcApiKey: "",
@@ -920,7 +931,11 @@ function cannabisPOS() {
         }
 
         // Load employees for admins/managers
-        if (this.hasPermission("employees:read") || this.hasRole("admin") || this.hasRole("manager")) {
+        if (
+          this.hasPermission("employees:read") ||
+          this.hasRole("admin") ||
+          this.hasRole("manager")
+        ) {
           await this.fetchEmployeesFromApi();
         }
 
@@ -1057,9 +1072,14 @@ function cannabisPOS() {
     // Page navigation
     setCurrentPage(page) {
       this.currentPage = page;
-      if (page === 'employees') {
+      if (page === "employees") {
         if ((this.employees || []).length === 0) {
-          if (this.isAuthenticated && (this.hasPermission('employees:read') || this.hasRole('admin') || this.hasRole('manager'))) {
+          if (
+            this.isAuthenticated &&
+            (this.hasPermission("employees:read") ||
+              this.hasRole("admin") ||
+              this.hasRole("manager"))
+          ) {
             this.fetchEmployeesFromApi();
           } else {
             this.ensureMyEmployeeListed();
@@ -1661,12 +1681,14 @@ function cannabisPOS() {
           const list = res.data.employees || res.data.data || [];
           this.employees = list.map((e) => ({
             id: e.id || e.employee_id,
-            name: (e.full_name) ? e.full_name : [e.first_name, e.last_name].filter(Boolean).join(" "),
+            name: e.full_name
+              ? e.full_name
+              : [e.first_name, e.last_name].filter(Boolean).join(" "),
             email: e.email || "",
             phone: e.phone || "",
             role: (e.position || e.role || "budtender").toLowerCase(),
             status: e.status || (e.is_active ? "active" : "inactive"),
-            hireDate: (e.hire_date ? String(e.hire_date).slice(0,10) : ""),
+            hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : "",
             payRate: Number(e.hourly_rate ?? 0),
             hoursWorked: Number(e.hours_worked ?? 0),
             workerPermit: e.worker_permit || e.workerPermit || "",
@@ -1685,13 +1707,18 @@ function cannabisPOS() {
 
     get filteredEmployees() {
       const q = (this.employeeSearchQuery || "").toLowerCase();
-      return (this.employees || [])
-        .filter((e) => {
-          const matchQ = !q || [e.name, e.email, e.phone, String(e.id)].filter(Boolean).some((v)=>String(v).toLowerCase().includes(q));
-          const matchRole = !this.employeeRoleFilter || e.role === this.employeeRoleFilter;
-          const matchStatus = !this.employeeStatusFilter || e.status === this.employeeStatusFilter;
-          return matchQ && matchRole && matchStatus;
-        });
+      return (this.employees || []).filter((e) => {
+        const matchQ =
+          !q ||
+          [e.name, e.email, e.phone, String(e.id)]
+            .filter(Boolean)
+            .some((v) => String(v).toLowerCase().includes(q));
+        const matchRole =
+          !this.employeeRoleFilter || e.role === this.employeeRoleFilter;
+        const matchStatus =
+          !this.employeeStatusFilter || e.status === this.employeeStatusFilter;
+        return matchQ && matchRole && matchStatus;
+      });
     },
 
     // Utility functions
@@ -2468,8 +2495,11 @@ function cannabisPOS() {
         (sum, item) => sum + Number(item?.cost || 0) * Number(item?.stock || 0),
         0,
       );
-      this.agingModalData.totalRetail = (this.agingModalData.items || []).reduce(
-        (sum, item) => sum + Number(item?.price || 0) * Number(item?.stock || 0),
+      this.agingModalData.totalRetail = (
+        this.agingModalData.items || []
+      ).reduce(
+        (sum, item) =>
+          sum + Number(item?.price || 0) * Number(item?.stock || 0),
         0,
       );
       this.agingModalData.totalProfit =
@@ -2551,10 +2581,13 @@ function cannabisPOS() {
           });
 
           // Recalculate totals
-          this.agingModalData.totalRetail = (this.agingModalData.items || []).reduce(
-        (sum, item) => sum + Number(item?.price || 0) * Number(item?.stock || 0),
-        0,
-      );
+          this.agingModalData.totalRetail = (
+            this.agingModalData.items || []
+          ).reduce(
+            (sum, item) =>
+              sum + Number(item?.price || 0) * Number(item?.stock || 0),
+            0,
+          );
           this.agingModalData.totalProfit =
             this.agingModalData.totalRetail - this.agingModalData.totalCost;
 
@@ -4772,7 +4805,8 @@ function cannabisPOS() {
         }
       } catch (error) {
         console.error("PIN login error:", error);
-        this.loginError = error?.message || "PIN login failed. Please try again.";
+        this.loginError =
+          error?.message || "PIN login failed. Please try again.";
       }
     },
 
@@ -4873,7 +4907,7 @@ function cannabisPOS() {
             this.showAuthModal = false;
           }
         }
-        document.addEventListener('pos-unauthorized', () => {
+        document.addEventListener("pos-unauthorized", () => {
           this.isAuthenticated = false;
           this.currentUser = null;
           this.showAuthModal = true;
