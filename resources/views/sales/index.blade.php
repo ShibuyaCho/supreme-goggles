@@ -457,7 +457,25 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     // Push Sales to METRC
     const pushBtn = document.getElementById('push-metrc');
+    async function checkMetrcReady(){
+        try {
+            const res = await (window.axios || axios).get('/api/settings/metrc');
+            const enabled = !!res?.data?.enabled;
+            const hasKey = !!res?.data?.user_api_key;
+            if (!enabled || !hasKey) {
+                pushBtn?.classList.add('opacity-50','cursor-not-allowed');
+                if (pushBtn) { pushBtn.disabled = true; pushBtn.title = 'Enter a valid METRC API key in Settings to enable'; }
+            } else {
+                pushBtn?.classList.remove('opacity-50','cursor-not-allowed');
+                if (pushBtn) { pushBtn.disabled = false; pushBtn.title = 'Push Sales to METRC'; }
+            }
+        } catch (e) {
+            pushBtn?.classList.add('opacity-50','cursor-not-allowed');
+            if (pushBtn) { pushBtn.disabled = true; pushBtn.title = 'METRC not configured'; }
+        }
+    }
     if (pushBtn) {
+        checkMetrcReady();
         pushBtn.addEventListener('click', async function() {
             if (this.disabled) return;
             this.disabled = true;
