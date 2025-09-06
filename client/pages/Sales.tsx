@@ -233,14 +233,45 @@ export default function Sales() {
 
   const handleMetrcSync = async () => {
     setMetrcSyncing(true);
-
-    // Simulate API call to Oregon Metrc system
-    await new Promise(resolve => setTimeout(resolve, 3000));
-
-    setLastMetrcSync(new Date().toISOString());
-    setMetrcSyncing(false);
-
-    alert(`Successfully synced ${filteredSales.filter(s => s.status === 'completed').length} completed sales to Oregon Metrc system.`);
+    try {
+      const completed = filteredSales.filter((s) => s.status === "completed");
+      let pushed = 0;
+      for (const sale of completed) {
+        const transactions = sale.items
+          .filter((it) => !!it.metrcTag)
+          .map((it) => ({
+            package_label: it.metrcTag as string,
+            quantity: it.quantity,
+            unit_of_measure: "Each",
+            total_amount: it.total,
+          }));
+        if (transactions.length === 0) continue;
+        const body = {
+          sales_datetime: new Date(sale.timestamp).toISOString(),
+          sales_customer_type:
+            sale.customer?.type === "medical" ? "Patient" : "Consumer",
+          transactions,
+        };
+        try {
+          const res = await fetch("/api/metrc/sales/receipts", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (res.ok) pushed += 1;
+        } catch (e) {
+          // continue to next sale
+        }
+      }
+      setLastMetrcSync(new Date().toISOString());
+      alert(
+        pushed > 0
+          ? `Successfully pushed ${pushed} sale(s) to METRC.`
+          : "No eligible sales with METRC tags to push."
+      );
+    } finally {
+      setMetrcSyncing(false);
+    }
   };
 
   const getPaymentIcon = (method: string) => {
