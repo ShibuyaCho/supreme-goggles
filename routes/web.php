@@ -178,7 +178,12 @@ Route::prefix('employees')->name('employees.')->group(function () {
     Route::get('/{employee}/edit', [EmployeesController::class, 'edit'])->name('edit');
     Route::patch('/{employee}', [EmployeesController::class, 'update'])->name('update');
     Route::delete('/{employee}', [EmployeesController::class, 'destroy'])->name('destroy');
-    
+
+    // Reset password (email link)
+    Route::post('/{employee}/reset-password', [EmployeesController::class, 'sendPasswordReset'])->name('reset-password');
+    Route::get('/password/reset/{token}', [EmployeesController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/password/reset', [EmployeesController::class, 'resetPassword'])->name('password.update');
+
     // Employee Performance
     Route::get('/{employee}/performance', [EmployeesController::class, 'performance'])->name('performance');
     Route::get('/{employee}/sales-history', [EmployeesController::class, 'salesHistory'])->name('sales-history');

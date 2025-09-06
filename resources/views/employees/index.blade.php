@@ -174,8 +174,9 @@
 
                         <!-- Action Buttons -->
                         <div class="flex space-x-2">
-                            <a href="{{ route('employees.show', $employee) }}" class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">View</a>
+                            <button type="button" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="EmployeeUI.openEdit({{ $employee->id }})">View</button>
                             <button type="button" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="EmployeeUI.openEdit({{ $employee->id }})">Edit</button>
+                            <button type="button" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="resetEmployeePassword({{ $employee->id }})">Reset Password</button>
                             <a href="{{ route('employees.performance', $employee) }}" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">Performance</a>
                         </div>
                     </div>
@@ -453,6 +454,20 @@ function viewEmployee(employeeId) {
 
 function editEmployee(employeeId) {
     EmployeeUI.openEdit(Number(employeeId));
+}
+
+async function resetEmployeePassword(employeeId){
+    if (!employeeId) return;
+    if (!confirm('Send password reset email to this employee?')) return;
+    try {
+        const res = await (window.axios || axios).post(`/employees/${employeeId}/reset-password`, {}, { headers: { 'Accept':'application/json' } });
+        const msg = res?.data?.message || 'Reset email sent';
+        window.POS?.showToast?.(msg, 'success');
+    } catch (err){
+        const msg = err?.response?.data?.message || err?.response?.data?.error || 'Failed to send reset email';
+        window.POS?.showToast?.(msg, 'error');
+        alert(msg);
+    }
 }
 
 function viewPerformance(employeeId) {

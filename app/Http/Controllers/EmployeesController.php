@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Employee;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
 
 class EmployeesController extends Controller
 {
@@ -194,15 +195,53 @@ class EmployeesController extends Controller
     {
         $employee = Employee::findOrFail($id);
         $newPin = str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
-        
+
         $employee->update(['pin' => $newPin]);
-        
+
         return response()->json([
             'message' => 'PIN reset successfully',
             'new_pin' => $newPin
         ]);
     }
-    
+
+    public function sendPasswordReset($id)
+    {
+        $employee = Employee::findOrFail($id);
+        $status = Password::broker('employees')->sendResetLink(['email' => $employee->email]);
+        if ($status === Password::RESET_LINK_SENT) {
+            return response()->json(['message' => __($status)]);
+        }
+        return response()->json(['error' => __($status)], 400);
+    }
+
+    public function showResetForm(Request $request, $token)
+    {
+        $email = $request->query('email');
+        return view('employees.reset-password', ['token' => $token, 'email' => $email]);
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => 'required|confirmed|min:8',
+        ]);
+
+        $status = Password::broker('employees')->reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function ($employee, $password) {
+                $employee->forceFill(['password' => Hash::make($password)])->save();
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return redirect()->route('employees.index')->with('success', __($status));
+        }
+
+        return back()->withErrors(['email' => __($status)]);
+    }
+
     public function performance(Request $request, $id)
     {
         $employee = Employee::findOrFail($id);
