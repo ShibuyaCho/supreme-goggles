@@ -702,17 +702,19 @@ export default function Sales() {
             <Button
               onClick={handleMetrcSync}
               disabled={metrcSyncing}
-              className="bg-green-600 hover:bg-green-700"
+              aria-label="Push Sales to METRC"
+              title="Push Sales to METRC"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               {metrcSyncing ? (
                 <>
                   <Upload className="w-4 h-4 mr-2 animate-spin" />
-                  Syncing...
+                  <span>Syncing...</span>
                 </>
               ) : (
                 <>
                   <Database className="w-4 h-4 mr-2" />
-                  Push to Metrc
+                  <span>Push Sales to METRC</span>
                 </>
               )}
             </Button>
