@@ -11,6 +11,7 @@ function cannabisPOS() {
 
     // Alpine.js init function - called automatically when component initializes
     init() {
+      this.normalizeCollections();
       this.initAuth();
       this.loadSettings();
       this.loadData();
@@ -730,6 +731,30 @@ function cannabisPOS() {
         this.taxAmount = this.taxAmount || 0;
         this.total = this.total || 0;
       }
+    },
+
+    // Ensure arrays for collections
+    normalizeCollections() {
+      if (!Array.isArray(this.products)) {
+        try {
+          if (this.products && typeof this.products === "object" && Array.isArray(this.products.data)) {
+            this.products = this.products.data;
+          } else {
+            this.products = [];
+          }
+        } catch (e) { this.products = []; }
+      }
+      if (!Array.isArray(this.customers)) {
+        try {
+          if (this.customers && typeof this.customers === "object" && Array.isArray(this.customers.data)) {
+            this.customers = this.customers.data;
+          } else {
+            this.customers = [];
+          }
+        } catch (e) { this.customers = []; }
+      }
+      if (!Array.isArray(this.employees)) this.employees = [];
+      if (!Array.isArray(this.sortedProducts)) this.sortedProducts = [];
     },
 
     // Authentication methods
@@ -1534,7 +1559,8 @@ function cannabisPOS() {
 
     // Product filtering and sorting
     filterProducts() {
-      let filtered = this.products;
+      this.normalizeCollections();
+      let filtered = Array.isArray(this.products) ? this.products : [];
 
       if (this.selectedCategory) {
         filtered = filtered.filter((p) => p.category === this.selectedCategory);
@@ -1629,11 +1655,15 @@ function cannabisPOS() {
       try {
         const saved = localStorage.getItem("cannabisPOS-products");
         if (saved) {
-          this.products = JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          this.products = Array.isArray(parsed)
+            ? parsed
+            : (Array.isArray(parsed?.data) ? parsed.data : []);
         }
       } catch (error) {
         console.error("Error loading products:", error);
       }
+      this.normalizeCollections();
       this.filterProducts();
     },
 
@@ -2439,14 +2469,16 @@ function cannabisPOS() {
     },
 
     getUniqueCategories() {
-      const categories = [...new Set(this.products.map((p) => p.category))];
+      const list = Array.isArray(this.products) ? this.products : [];
+      const categories = [...new Set(list.map((p) => p.category).filter(Boolean))];
       return categories.sort();
     },
 
     openAgingModal(type, title) {
+      this.normalizeCollections();
       this.agingModalData = {
         title: title,
-        items: this.products
+        items: (Array.isArray(this.products) ? this.products : [])
           .filter((p) => {
             // Mock aging logic - in real app this would use actual dates
             const mockAge = Math.floor(Math.random() * 120);
@@ -2502,7 +2534,7 @@ function cannabisPOS() {
         const discount = parseFloat(discountPercent);
         if (discount > 0 && discount <= 100) {
           const newPrice = item.price * (1 - discount / 100);
-          const productIndex = this.products.findIndex((p) => p.id === item.id);
+          const productIndex = (Array.isArray(this.products) ? this.products : []).findIndex((p) => p.id === item.id);
           if (productIndex !== -1) {
             this.products[productIndex].price = newPrice;
             this.products[productIndex].discountApplied = discount;
@@ -2547,9 +2579,8 @@ function cannabisPOS() {
           let updatedCount = 0;
           this.agingModalData.items.forEach((item) => {
             const newPrice = item.price * (1 - discount / 100);
-            const productIndex = this.products.findIndex(
-              (p) => p.id === item.id,
-            );
+            const arr = Array.isArray(this.products) ? this.products : [];
+            const productIndex = arr.findIndex((p) => p.id === item.id);
             if (productIndex !== -1) {
               this.products[productIndex].price = newPrice;
               this.products[productIndex].discountApplied = discount;
