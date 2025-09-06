@@ -460,7 +460,8 @@ async function resetEmployeePassword(employeeId){
     if (!employeeId) return;
     if (!confirm('Send password reset email to this employee?')) return;
     try {
-        const res = await (window.axios || axios).post(`/employees/${employeeId}/reset-password`, {}, { headers: { 'Accept':'application/json' } });
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const res = await (window.axios || axios).post(`/employees/${employeeId}/reset-password`, {}, { headers: { 'Accept':'application/json', 'X-CSRF-TOKEN': csrf } });
         const msg = res?.data?.message || 'Reset email sent';
         window.POS?.showToast?.(msg, 'success');
     } catch (err){
