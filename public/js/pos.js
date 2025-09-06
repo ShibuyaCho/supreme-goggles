@@ -3600,23 +3600,37 @@ function cannabisPOS() {
 
       // Import active packages on server (excludes zero-qty)
       try {
-        const res = await (window.axios || axios).post('/api/metrc/import-packages');
+        const res = await (window.axios || axios).post(
+          "/api/metrc/import-packages",
+        );
         const imported = Number(res?.data?.imported || 0);
         const updated = Number(res?.data?.updated || 0);
         const skipped = Number(res?.data?.skipped || 0);
         const total = imported + updated;
         if (total > 0) {
-          this.showToast(`METRC sync complete: ${imported} imported, ${updated} updated. Skipped ${skipped} zero-qty.`, 'success');
-          if (this.metrcSettings.trackSales) this.showToast('Sales tracking to METRC is enabled', 'info');
+          this.showToast(
+            `METRC sync complete: ${imported} imported, ${updated} updated. Skipped ${skipped} zero-qty.`,
+            "success",
+          );
+          if (this.metrcSettings.trackSales)
+            this.showToast("Sales tracking to METRC is enabled", "info");
           return;
         }
       } catch (e) {
-        console.warn('Server import failed, attempting package fetch fallback', e?.response?.data || e);
+        console.warn(
+          "Server import failed, attempting package fetch fallback",
+          e?.response?.data || e,
+        );
         try {
-          const res = await (window.axios || axios).get('/api/metrc/packages');
-          const count = Array.isArray(res?.data?.packages) ? res.data.packages.length : (res?.data?.count || 0);
+          const res = await (window.axios || axios).get("/api/metrc/packages");
+          const count = Array.isArray(res?.data?.packages)
+            ? res.data.packages.length
+            : res?.data?.count || 0;
           if (count > 0) {
-            this.showToast(`Found ${count} active METRC packages. Import requires inventory write permission.`, 'warning');
+            this.showToast(
+              `Found ${count} active METRC packages. Import requires inventory write permission.`,
+              "warning",
+            );
             return;
           }
         } catch (_) {}
@@ -3627,18 +3641,32 @@ function cannabisPOS() {
         this.normalizeCollections();
         const list = Array.isArray(this.products)
           ? this.products
-          : (this.products && Array.isArray(this.products.data) ? this.products.data : []);
-        const productsToSync = list.filter((p) => p && p.metrcTag && p.metrcTag.length > 0);
+          : this.products && Array.isArray(this.products.data)
+            ? this.products.data
+            : [];
+        const productsToSync = list.filter(
+          (p) => p && p.metrcTag && p.metrcTag.length > 0,
+        );
         const synced = productsToSync.length;
         if (synced > 0) {
-          this.showToast(`METRC inventory sync completed! ${synced} products synchronized.`, 'success');
-          if (this.metrcSettings.trackSales) this.showToast('Sales tracking to METRC is enabled', 'info');
+          this.showToast(
+            `METRC inventory sync completed! ${synced} products synchronized.`,
+            "success",
+          );
+          if (this.metrcSettings.trackSales)
+            this.showToast("Sales tracking to METRC is enabled", "info");
         } else {
-          this.showToast('No METRC packages or tagged products found to sync', 'warning');
+          this.showToast(
+            "No METRC packages or tagged products found to sync",
+            "warning",
+          );
         }
       } catch (error) {
-        this.showToast('METRC sync error: ' + (error.message || 'Unknown error'), 'error');
-        console.error('METRC inventory sync failed:', error);
+        this.showToast(
+          "METRC sync error: " + (error.message || "Unknown error"),
+          "error",
+        );
+        console.error("METRC inventory sync failed:", error);
       }
     },
 
