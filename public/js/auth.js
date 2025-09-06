@@ -8,7 +8,11 @@ class POSAuth {
     this.token = posToken || altToken || null;
     this.user = null;
     try {
-      this.user = posUserStr ? JSON.parse(posUserStr) : (altUserStr ? JSON.parse(altUserStr) : null);
+      this.user = posUserStr
+        ? JSON.parse(posUserStr)
+        : altUserStr
+          ? JSON.parse(altUserStr)
+          : null;
     } catch (e) {
       this.user = null;
     }
@@ -206,13 +210,28 @@ class POSAuth {
   clearAuth() {
     this.token = null;
     this.user = null;
-    try { localStorage.removeItem("pos_token"); } catch (e) {}
-    try { localStorage.removeItem("pos_user"); } catch (e) {}
-    try { localStorage.removeItem("pos_last_activity"); } catch (e) {}
-    try { localStorage.removeItem("auth_token"); } catch (e) {}
-    try { localStorage.removeItem("user_data"); } catch (e) {}
-    try { localStorage.removeItem("cannabisPOS-auth"); } catch (e) {}
-    try { if (axios?.defaults?.headers?.common) delete axios.defaults.headers.common["Authorization"]; } catch (e) {}
+    try {
+      localStorage.removeItem("pos_token");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("pos_user");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("pos_last_activity");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("auth_token");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("user_data");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("cannabisPOS-auth");
+    } catch (e) {}
+    try {
+      if (axios?.defaults?.headers?.common)
+        delete axios.defaults.headers.common["Authorization"];
+    } catch (e) {}
   }
 
   /**
