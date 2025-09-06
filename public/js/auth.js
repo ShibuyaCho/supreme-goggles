@@ -1,10 +1,24 @@
 // Cannabis POS Authentication and API Handler
 class POSAuth {
   constructor() {
-    this.token = localStorage.getItem("pos_token");
-    this.user = JSON.parse(localStorage.getItem("pos_user") || "null");
+    const posToken = localStorage.getItem("pos_token");
+    const altToken = localStorage.getItem("auth_token");
+    const posUserStr = localStorage.getItem("pos_user");
+    const altUserStr = localStorage.getItem("user_data");
+    this.token = posToken || altToken || null;
+    this.user = null;
+    try {
+      this.user = posUserStr ? JSON.parse(posUserStr) : (altUserStr ? JSON.parse(altUserStr) : null);
+    } catch (e) {
+      this.user = null;
+    }
     this.baseUrl = "/api";
     this.inactivityMs = 365 * 24 * 60 * 60 * 1000; // 1 year (effectively disabled)
+    if (this.token) {
+      axios.defaults.headers = axios.defaults.headers || {};
+      axios.defaults.headers.common = axios.defaults.headers.common || {};
+      axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
+    }
     this.setupAxiosInterceptors();
     this.setupActivityTracking();
   }
@@ -57,8 +71,8 @@ class POSAuth {
    * Login with email and password
    */
   async login(email, password, remember = false) {
-    const attempt = async (url) =>
-      axios.post(url, { email, password, remember });
+    const payload = { email: String(email || "").trim(), password, remember };
+    const attempt = async (url) => axios.post(url, payload);
     try {
       let response;
       try {
@@ -125,8 +139,18 @@ class POSAuth {
   setAuth(user, token) {
     this.token = token;
     this.user = user;
-    localStorage.setItem("pos_token", token);
-    localStorage.setItem("pos_user", JSON.stringify(user));
+    try {
+      localStorage.setItem("pos_token", token);
+      localStorage.setItem("pos_user", JSON.stringify(user));
+      // Back-compat keys
+      localStorage.setItem("auth_token", token);
+      localStorage.setItem("user_data", JSON.stringify(user));
+    } catch (e) {}
+    try {
+      axios.defaults.headers = axios.defaults.headers || {};
+      axios.defaults.headers.common = axios.defaults.headers.common || {};
+      axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    } catch (e) {}
     this.touchActivity();
   }
 
@@ -182,9 +206,13 @@ class POSAuth {
   clearAuth() {
     this.token = null;
     this.user = null;
-    localStorage.removeItem("pos_token");
-    localStorage.removeItem("pos_user");
-    localStorage.removeItem("pos_last_activity");
+    try { localStorage.removeItem("pos_token"); } catch (e) {}
+    try { localStorage.removeItem("pos_user"); } catch (e) {}
+    try { localStorage.removeItem("pos_last_activity"); } catch (e) {}
+    try { localStorage.removeItem("auth_token"); } catch (e) {}
+    try { localStorage.removeItem("user_data"); } catch (e) {}
+    try { localStorage.removeItem("cannabisPOS-auth"); } catch (e) {}
+    try { if (axios?.defaults?.headers?.common) delete axios.defaults.headers.common["Authorization"]; } catch (e) {}
   }
 
   /**
@@ -227,7 +255,10 @@ class POSAuth {
     try {
       const response = await axios.get(`${this.baseUrl}/auth/me`);
       this.user = response.data.user;
-      localStorage.setItem("pos_user", JSON.stringify(this.user));
+      try {
+        localStorage.setItem("pos_user", JSON.stringify(this.user));
+        localStorage.setItem("user_data", JSON.stringify(this.user));
+      } catch (e) {}
       this.touchActivity();
       return this.user;
     } catch (error) {
@@ -245,7 +276,15 @@ class POSAuth {
       const token = response?.data?.token;
       if (!token) throw new Error("No token");
       this.token = token;
-      localStorage.setItem("pos_token", this.token);
+      try {
+        localStorage.setItem("pos_token", this.token);
+        localStorage.setItem("auth_token", this.token);
+      } catch (e) {}
+      try {
+        axios.defaults.headers = axios.defaults.headers || {};
+        axios.defaults.headers.common = axios.defaults.headers.common || {};
+        axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+      } catch (e) {}
       return true;
     } catch (error) {
       console.warn("Failed to refresh token:", error);
