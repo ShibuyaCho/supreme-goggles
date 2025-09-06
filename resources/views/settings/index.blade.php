@@ -913,6 +913,38 @@ function settingsManager() {
             }
         },
 
+        async testMetrcConnection() {
+            try {
+                const res = await (window.posAuth ? posAuth.apiRequest('get', '/metrc/test-connection') : Promise.resolve({ success: false }));
+                if (res.success) {
+                    const ok = !!(res.data?.connection_test?.success);
+                    this.showToast(ok ? 'METRC connection successful' : 'METRC not configured or connection failed', ok ? 'success' : 'error');
+                } else {
+                    this.showToast('Failed to test METRC connection', 'error');
+                }
+            } catch (e) {
+                this.showToast('Failed to test METRC connection', 'error');
+            }
+        },
+
+        async syncMetrcNow() {
+            try {
+                const res = await (window.posAuth ? posAuth.apiRequest('get', '/metrc/packages') : Promise.resolve({ success: false }));
+                if (res.success) {
+                    const count = Array.isArray(res.data?.packages) ? res.data.packages.length : (res.data?.count || 0);
+                    if (count > 0) {
+                        this.showToast(`Synced ${count} active METRC packages.`, 'success');
+                    } else {
+                        this.showToast('No active METRC packages found for this license.', 'warning');
+                    }
+                } else {
+                    this.showToast('Failed to sync METRC packages', 'error');
+                }
+            } catch (e) {
+                this.showToast('Failed to sync METRC packages', 'error');
+            }
+        },
+
         switchStore(store) {
             this.stores.forEach(s => s.is_current = false);
             store.is_current = true;
