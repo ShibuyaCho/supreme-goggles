@@ -5015,7 +5015,10 @@ function cannabisPOS() {
         }
         document.addEventListener("pos-unauthorized", async () => {
           try {
-            const inactive = typeof posAuth?.isInactiveBeyondLimit === "function" ? posAuth.isInactiveBeyondLimit() : false;
+            const inactive =
+              typeof posAuth?.isInactiveBeyondLimit === "function"
+                ? posAuth.isInactiveBeyondLimit()
+                : false;
             if (!inactive) {
               const ok = await posAuth.refreshToken();
               if (ok) {
