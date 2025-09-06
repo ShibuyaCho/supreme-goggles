@@ -237,10 +237,10 @@
                         </p>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             <template x-for="category in categories" :key="category">
-                                <div class="flex items-center gap-2">
-                                    <input :id="'exitcat-'+category" type="checkbox" :value="category" x-model="settings.exit_label_categories" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer" @click.stop>
-                                    <label :for="'exitcat-'+category" class="text-sm cursor-pointer" x-text="category"></label>
-                                </div>
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" :value="category" x-model="settings.exit_label_categories" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer">
+                                    <span class="text-sm" x-text="category"></span>
+                                </label>
                             </template>
                         </div>
                         <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -284,10 +284,10 @@
                         </p>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             <template x-for="category in categories" :key="category">
-                                <div class="flex items-center gap-2">
-                                    <input :id="'rcat-'+category" type="checkbox" :value="category" x-model="settings.receipt_categories_autoprint" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer" @click.stop>
-                                    <label :for="'rcat-'+category" class="text-sm cursor-pointer" x-text="category"></label>
-                                </div>
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" :value="category" x-model="settings.receipt_categories_autoprint" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer">
+                                    <span class="text-sm" x-text="category"></span>
+                                </label>
                             </template>
                         </div>
                         <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -406,10 +406,10 @@
                                     </p>
                                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                         <template x-for="category in categories" :key="category">
-                                            <div class="flex items-center gap-2">
-                                                <input :id="'mincat-'+category" type="checkbox" :value="category" x-model="settings.minimum_price_categories" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer" @click.stop>
-                                                <label :for="'mincat-'+category" class="text-sm cursor-pointer" x-text="category"></label>
-                                            </div>
+                                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                                <input type="checkbox" :value="category" x-model="settings.minimum_price_categories" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer">
+                                                <span class="text-sm" x-text="category"></span>
+                                            </label>
                                         </template>
                                     </div>
                                 </div>
@@ -929,14 +929,14 @@ function settingsManager() {
 
         async syncMetrcNow() {
             try {
-                const res = await (window.posAuth ? posAuth.apiRequest('get', '/metrc/packages') : Promise.resolve({ success: false }));
-                if (res.success) {
-                    const count = Array.isArray(res.data?.packages) ? res.data.packages.length : (res.data?.count || 0);
-                    if (count > 0) {
-                        this.showToast(`Synced ${count} active METRC packages.`, 'success');
-                    } else {
-                        this.showToast('No active METRC packages found for this license.', 'warning');
-                    }
+                const res = await (window.posAuth ? posAuth.apiRequest('post', '/metrc/import-packages') : Promise.resolve({ success: false }));
+                if (res.success && res.data?.success) {
+                    const { imported, updated, skipped } = res.data;
+                    this.showToast(`Imported ${imported}, updated ${updated}. Skipped ${skipped} zero-qty packages.`, 'success');
+                } else if (res.success) {
+                    // Fallback shape
+                    const { imported = 0, updated = 0, skipped = 0 } = res.data || {};
+                    this.showToast(`Imported ${imported}, updated ${updated}. Skipped ${skipped} zero-qty packages.`, 'success');
                 } else {
                     this.showToast('Failed to sync METRC packages', 'error');
                 }
