@@ -5013,7 +5013,22 @@ function cannabisPOS() {
             this.showAuthModal = false;
           }
         }
-        document.addEventListener("pos-unauthorized", () => {
+        document.addEventListener("pos-unauthorized", async () => {
+          try {
+            const inactive = typeof posAuth?.isInactiveBeyondLimit === "function" ? posAuth.isInactiveBeyondLimit() : false;
+            if (!inactive) {
+              const ok = await posAuth.refreshToken();
+              if (ok) {
+                const u = await posAuth.refreshUser();
+                if (u) {
+                  this.currentUser = u;
+                  this.isAuthenticated = true;
+                  this.showAuthModal = false;
+                  return;
+                }
+              }
+            }
+          } catch (e) {}
           this.isAuthenticated = false;
           this.currentUser = null;
           this.showAuthModal = true;
