@@ -3598,23 +3598,31 @@ function cannabisPOS() {
       // Show loading state
       this.showToast("Starting METRC inventory sync...", "info");
 
-      // Try server-side METRC packages first
+      // Import active packages on server (excludes zero-qty)
       try {
-        const res = await (window.axios || axios).get('/api/metrc/packages');
-        const count = Array.isArray(res?.data?.packages)
-          ? res.data.packages.length
-          : (res?.data?.count || 0);
-        if (count > 0) {
-          this.showToast(`METRC inventory sync completed! ${count} active packages found.`, 'success');
-          console.log('METRC packages retrieved:', { count, facility: this.metrcSettings.facilityLicense, at: new Date().toISOString() });
+        const res = await (window.axios || axios).post('/api/metrc/import-packages');
+        const imported = Number(res?.data?.imported || 0);
+        const updated = Number(res?.data?.updated || 0);
+        const skipped = Number(res?.data?.skipped || 0);
+        const total = imported + updated;
+        if (total > 0) {
+          this.showToast(`METRC sync complete: ${imported} imported, ${updated} updated. Skipped ${skipped} zero-qty.`, 'success');
           if (this.metrcSettings.trackSales) this.showToast('Sales tracking to METRC is enabled', 'info');
           return;
         }
       } catch (e) {
-        console.warn('Package fetch failed, falling back to local products', e?.response?.data || e);
+        console.warn('Server import failed, attempting package fetch fallback', e?.response?.data || e);
+        try {
+          const res = await (window.axios || axios).get('/api/metrc/packages');
+          const count = Array.isArray(res?.data?.packages) ? res.data.packages.length : (res?.data?.count || 0);
+          if (count > 0) {
+            this.showToast(`Found ${count} active METRC packages. Import requires inventory write permission.`, 'warning');
+            return;
+          }
+        } catch (_) {}
       }
 
-      // Fallback: local products with tags
+      // Final fallback: local products with tags
       try {
         this.normalizeCollections();
         const list = Array.isArray(this.products)
@@ -3624,14 +3632,6 @@ function cannabisPOS() {
         const synced = productsToSync.length;
         if (synced > 0) {
           this.showToast(`METRC inventory sync completed! ${synced} products synchronized.`, 'success');
-          console.log('METRC inventory sync completed:', {
-            itemsSynced: synced,
-            facilityLicense: this.metrcSettings.facilityLicense,
-            state: this.metrcSettings.state,
-            timestamp: new Date().toISOString(),
-            autoSyncEnabled: this.metrcSettings.autoSync,
-            salesTrackingEnabled: this.metrcSettings.trackSales,
-          });
           if (this.metrcSettings.trackSales) this.showToast('Sales tracking to METRC is enabled', 'info');
         } else {
           this.showToast('No METRC packages or tagged products found to sync', 'warning');
