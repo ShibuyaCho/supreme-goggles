@@ -463,9 +463,17 @@ class POSAuth {
       }
       return { success: false, message: "Invalid response from server" };
     } catch (error) {
-      const message = error?.response?.data?.error || error?.response?.data?.message || "Registration failed";
+      const message =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        "Registration failed";
       const errors = error?.response?.data?.errors || null;
-      return { success: false, message, errors, status: error?.response?.status };
+      return {
+        success: false,
+        message,
+        errors,
+        status: error?.response?.status,
+      };
     }
   }
 

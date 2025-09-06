@@ -808,19 +808,35 @@ function cannabisPOS() {
         return;
       }
 
-      const res = await posAuth.selfRegister({ name, email, password, passwordConfirm, pin });
+      const res = await posAuth.selfRegister({
+        name,
+        email,
+        password,
+        passwordConfirm,
+        pin,
+      });
       if (res.success) {
-        try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
+        try {
+          localStorage.removeItem("pos_force_reauth");
+        } catch (e) {}
         this.currentUser = res.user;
         this.isAuthenticated = true;
         this.showRegisterModal = false;
         this.showAuthModal = false;
-        this.registerForm = { name: "", email: "", password: "", passwordConfirm: "", pin: "" };
+        this.registerForm = {
+          name: "",
+          email: "",
+          password: "",
+          passwordConfirm: "",
+          pin: "",
+        };
         await this.loadInitialData();
         this.ensureMyEmployeeListed(res.user);
         this.showToast("Account created. Welcome!", "success");
       } else {
-        const details = res.errors ? Object.values(res.errors).flat().join("; ") : null;
+        const details = res.errors
+          ? Object.values(res.errors).flat().join("; ")
+          : null;
         const msg = details ? `${res.message}: ${details}` : res.message;
         this.registerError = msg;
         this.showToast(msg, "error");
