@@ -71,6 +71,19 @@ class ProductsController extends Controller
             'averagePrice' => (float) Product::avg('price'),
         ];
 
+        // JSON for API requests
+        if ($request->expectsJson() || $request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'data' => $products->items(),
+                'meta' => [
+                    'current_page' => $products->currentPage(),
+                    'per_page' => $products->perPage(),
+                    'total' => $products->total(),
+                    'last_page' => $products->lastPage(),
+                ],
+            ]);
+        }
+
         return view('products.index', compact(
             'products', 'categories', 'rooms', 'searchQuery', 'filterCategory', 'filterRoom', 'filterStatus', 'sortBy', 'sortOrder', 'viewMode', 'selectedTab', 'analytics'
         ));
