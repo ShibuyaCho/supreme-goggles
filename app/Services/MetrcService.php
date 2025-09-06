@@ -19,6 +19,14 @@ class MetrcService
         $this->userKey = env('METRC_USER_KEY');
         $this->vendorKey = env('METRC_VENDOR_KEY');
         $this->facilityLicense = env('METRC_FACILITY');
+
+        // Fallback to cached settings if env not populated yet
+        if (empty($this->userKey) || empty($this->vendorKey) || empty($this->facilityLicense)) {
+            $cached = Cache::get('pos_settings', []);
+            $this->userKey = $this->userKey ?: ($cached['metrc_user_key'] ?? null);
+            $this->vendorKey = $this->vendorKey ?: ($cached['metrc_vendor_key'] ?? null);
+            $this->facilityLicense = $this->facilityLicense ?: ($cached['metrc_facility'] ?? null);
+        }
     }
 
     /**
@@ -231,6 +239,11 @@ class MetrcService
         try {
             $params = [];
 
+            // Always include facility license number when available
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+
             if ($lastModifiedStart) {
                 $params['lastModifiedStart'] = $lastModifiedStart;
             }
@@ -256,6 +269,9 @@ class MetrcService
     {
         try {
             $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
             if ($lastModifiedStart) {
                 $params['lastModifiedStart'] = $lastModifiedStart;
             }
