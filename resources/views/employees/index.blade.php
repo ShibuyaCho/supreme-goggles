@@ -177,6 +177,7 @@
                             <button type="button" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="EmployeeUI.openEdit({{ $employee->id }})">View</button>
                             <button type="button" class="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="EmployeeUI.openEdit({{ $employee->id }})">Edit</button>
                             <button type="button" class="bg-purple-100 hover:bg-purple-200 text-purple-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="resetEmployeePassword({{ $employee->id }})">Reset Password</button>
+                            <button type="button" class="bg-yellow-100 hover:bg-yellow-200 text-yellow-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors" onclick="resetEmployeePin({{ $employee->id }})">Reset PIN</button>
                             <a href="{{ route('employees.performance', $employee) }}" class="bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors">Performance</a>
                         </div>
                     </div>
