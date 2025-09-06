@@ -1630,7 +1630,9 @@ function cannabisPOS() {
     // Settings and data management
     loadSettings() {
       try {
-        const saved = localStorage.getItem("cannabisPOS-settings");
+        const savedPrimary = localStorage.getItem("cannabisPOS-settings");
+        const savedLegacy = localStorage.getItem("cannabest-pos-settings");
+        const saved = savedPrimary || savedLegacy;
         if (saved) {
           const settings = JSON.parse(saved);
           this.cartViewMode = settings.cartViewMode || "narrow";
@@ -1657,7 +1659,9 @@ function cannabisPOS() {
           viewMode: this.viewMode,
           timestamp: new Date().toISOString(),
         };
-        localStorage.setItem("cannabisPOS-settings", JSON.stringify(settings));
+        const json = JSON.stringify(settings);
+        localStorage.setItem("cannabisPOS-settings", json);
+        localStorage.setItem("cannabest-pos-settings", json);
       } catch (error) {
         console.error("Error saving settings:", error);
       }
