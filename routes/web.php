@@ -184,6 +184,9 @@ Route::prefix('employees')->name('employees.')->group(function () {
     Route::get('/password/reset/{token}', [EmployeesController::class, 'showResetForm'])->name('password.reset');
     Route::post('/password/reset', [EmployeesController::class, 'resetPassword'])->name('password.update');
 
+    // Reset PIN (email new PIN)
+    Route::post('/{employee}/reset-pin', [EmployeesController::class, 'resetPin'])->name('reset-pin');
+
     // Employee Performance
     Route::get('/{employee}/performance', [EmployeesController::class, 'performance'])->name('performance');
     Route::get('/{employee}/sales-history', [EmployeesController::class, 'salesHistory'])->name('sales-history');
