@@ -176,11 +176,25 @@
                                 @endif
                             </td>
 
+                            <!-- Till / Register -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @php
+                                    $till = $sale->till_number ?? null;
+                                @endphp
+                                <div class="text-sm text-gray-900">{{ $till ? $till : '—' }}</div>
+                            </td>
+
                             <!-- Items -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $sale->item_count }} items</div>
                                 @if($sale->saleItems->count() > 0)
                                     <div class="text-xs text-gray-500">{{ $sale->saleItems->first()->product->name ?? 'Product' }}{{ $sale->saleItems->count() > 1 ? ' +' . ($sale->saleItems->count() - 1) . ' more' : '' }}</div>
+                                    @php
+                                        $metrcTags = $sale->saleItems->pluck('metrc_tag')->filter()->map(function($t){ return substr($t, -5); })->unique()->values();
+                                    @endphp
+                                    @if($metrcTags->count() > 0)
+                                        <div class="text-[11px] text-gray-500 mt-1">METRC: ****{{ $metrcTags->join(', ****') }}</div>
+                                    @endif
                                 @endif
                             </td>
 
