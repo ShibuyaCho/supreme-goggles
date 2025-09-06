@@ -808,42 +808,20 @@ function cannabisPOS() {
         return;
       }
 
-      try {
-        const response = await axios.post("/api/auth/self-register", {
-          name,
-          email,
-          password,
-          password_confirmation: passwordConfirm,
-          pin,
-        });
-
-        if (response.status === 201) {
-          if (window.posAuth && typeof window.posAuth.setAuth === "function") {
-            window.posAuth.setAuth(response.data.user, response.data.token);
-          }
-          try {
-            localStorage.removeItem("pos_force_reauth");
-          } catch (e) {}
-          this.currentUser = response.data.user;
-          this.isAuthenticated = true;
-          this.showRegisterModal = false;
-          this.showAuthModal = false;
-          this.registerForm = {
-            name: "",
-            email: "",
-            password: "",
-            passwordConfirm: "",
-            pin: "",
-          };
-          await this.loadInitialData();
-          this.ensureMyEmployeeListed(response.data.user);
-          this.showToast("Account created. Welcome!", "success");
-        }
-      } catch (error) {
-        const msg =
-          error.response?.data?.error ||
-          error.response?.data?.message ||
-          "Registration failed";
+      const res = await posAuth.selfRegister({ name, email, password, passwordConfirm, pin });
+      if (res.success) {
+        try { localStorage.removeItem("pos_force_reauth"); } catch (e) {}
+        this.currentUser = res.user;
+        this.isAuthenticated = true;
+        this.showRegisterModal = false;
+        this.showAuthModal = false;
+        this.registerForm = { name: "", email: "", password: "", passwordConfirm: "", pin: "" };
+        await this.loadInitialData();
+        this.ensureMyEmployeeListed(res.user);
+        this.showToast("Account created. Welcome!", "success");
+      } else {
+        const details = res.errors ? Object.values(res.errors).flat().join("; ") : null;
+        const msg = details ? `${res.message}: ${details}` : res.message;
         this.registerError = msg;
         this.showToast(msg, "error");
       }
