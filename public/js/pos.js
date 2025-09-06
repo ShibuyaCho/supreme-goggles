@@ -883,20 +883,20 @@ function cannabisPOS() {
 
     ensureMyEmployeeListed(userOverride) {
       const u = userOverride || this.currentUser || {};
-      const emp = u.employee || {};
-      if (!emp || (!emp.id && !emp.employee_id)) return;
-      const exists = (this.employees || []).some((e)=> String(e.id) === String(emp.id || emp.employee_id));
+      const emp = u.employee || null;
+      let id = emp?.id || emp?.employee_id || u.employee_id || u.id || `EMP-${Date.now()}`;
+      const exists = (this.employees || []).some((e)=> String(e.id) === String(id));
       if (exists) return;
-      const name = emp.name || [emp.first_name, emp.last_name].filter(Boolean).join(" ");
+      const name = (emp?.name) || [emp?.first_name, emp?.last_name].filter(Boolean).join(" ") || (u.name || "");
       const entry = {
-        id: emp.id || emp.employee_id,
-        name: name || (u.name || ""),
-        email: u.email || emp.email || "",
-        phone: emp.phone || "",
-        role: (u.role || emp.role || "cashier").toLowerCase(),
-        status: (emp.status || (u.is_active ? "active" : "active")),
+        id,
+        name,
+        email: u.email || emp?.email || "",
+        phone: emp?.phone || "",
+        role: (u.role || emp?.role || "cashier").toLowerCase(),
+        status: (emp?.status || (u.is_active ? "active" : "active")),
         hireDate: new Date().toISOString().slice(0,10),
-        payRate: Number(emp.hourly_rate ?? 0),
+        payRate: Number((emp && emp.hourly_rate != null ? emp.hourly_rate : 0)),
         hoursWorked: 0,
         workerPermit: "",
         metrcApiKey: "",
