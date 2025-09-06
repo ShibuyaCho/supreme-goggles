@@ -376,6 +376,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'store_address' => ''
             ];
             $settings = array_merge($defaults, is_array($cached) ? $cached : []);
+            // Ensure METRC credentials are available to the settings UI (do not overwrite cached values)
+            if (!array_key_exists('metrc_user_key', $settings) || empty($settings['metrc_user_key'])) {
+                $settings['metrc_user_key'] = env('METRC_USER_KEY', '');
+            }
+            if (!array_key_exists('metrc_vendor_key', $settings) || empty($settings['metrc_vendor_key'])) {
+                $settings['metrc_vendor_key'] = env('METRC_VENDOR_KEY', '');
+            }
+            if (!array_key_exists('metrc_facility', $settings) || empty($settings['metrc_facility'])) {
+                $settings['metrc_facility'] = env('METRC_FACILITY', '');
+            }
             return response()->json([
                 'success' => true,
                 'settings' => $settings,
