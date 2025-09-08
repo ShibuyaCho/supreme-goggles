@@ -5353,9 +5353,18 @@ function cannabisPOS() {
       const fmt = await this._askFormat('pdf');
       if (!fmt) return;
 
+      // Normalize type in case an event object was passed
+      let resolvedType = (typeof type === 'string' && type.trim()) ? type.trim() : null;
+      if (!resolvedType && type && typeof type === 'object') {
+        const tgt = type.target || type.currentTarget || null;
+        if (tgt && typeof tgt.getAttribute === 'function') {
+          resolvedType = tgt.dataset?.reportType || tgt.getAttribute('data-report-type') || tgt.getAttribute('data-type') || null;
+        }
+      }
+
       // Predefined quick reports
-      if (typeof type === 'string' && type) {
-        const apiType = this._mapReportType(type);
+      if (resolvedType) {
+        const apiType = this._mapReportType(resolvedType);
         if (!apiType) { this.showToast('Unsupported report', 'error'); return; }
         try {
           const res = await (window.axios||axios).post('/api/reports/export', {
