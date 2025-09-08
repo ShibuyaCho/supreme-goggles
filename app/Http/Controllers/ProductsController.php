@@ -59,8 +59,28 @@ class ProductsController extends Controller
         $query->orderBy($sortBy, $sortOrder);
 
         $products = $query->paginate(24);
+        // Categories for filtering (existing product categories only)
         $categories = Product::select('category')->distinct()->pluck('category');
         $rooms = Room::all();
+
+        // Categories for the Create Product modal (METRC + business-specific)
+        $createCategories = [];
+        try {
+            $metrcCategories = app(MetrcService::class)->getItemCategories();
+            if (is_array($metrcCategories) && isset($metrcCategories[0]) && is_array($metrcCategories[0]) && (isset($metrcCategories[0]['Name']) || isset($metrcCategories[0]['name']))) {
+                $metrcCategories = collect($metrcCategories)->map(fn($c) => $c['Name'] ?? $c['name'])->values()->all();
+            }
+            $additional = ['Plants (Clones)', 'Apparel', 'Extracts', 'Inhalable Cannabinoid', 'Patches', 'Seeds'];
+            $createCategories = collect(array_merge($metrcCategories, $additional))
+                ->filter(fn($c) => is_string($c) && trim($c) !== '')
+                ->map(fn($c) => trim($c))
+                ->unique()
+                ->sort()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) {
+            $createCategories = ['Flower','Pre-Rolls','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Cartridges','Vape Pens','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Accessories'];
+        }
 
         // Simple analytics placeholders
         $analytics = [
@@ -86,7 +106,7 @@ class ProductsController extends Controller
         }
 
         return view('products.index', compact(
-            'products', 'categories', 'rooms', 'searchQuery', 'filterCategory', 'filterRoom', 'filterStatus', 'sortBy', 'sortOrder', 'viewMode', 'selectedTab', 'analytics'
+            'products', 'categories', 'rooms', 'searchQuery', 'filterCategory', 'filterRoom', 'filterStatus', 'sortBy', 'sortOrder', 'viewMode', 'selectedTab', 'analytics', 'createCategories'
         ));
     }
 
