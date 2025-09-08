@@ -96,7 +96,7 @@ class EmployeesController extends Controller
             'hourly_rate' => $request->hourly_rate,
             'worker_permit' => $request->worker_permit,
             'metrc_api_key' => $request->metrc_api_key,
-            'permissions' => json_encode($request->permissions),
+            'permissions' => $request->permissions,
             'password' => Hash::make($request->password),
             'status' => 'active',
             'pin' => str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT)
