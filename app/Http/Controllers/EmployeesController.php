@@ -92,13 +92,12 @@ class EmployeesController extends Controller
             'employee_id' => $request->employee_id,
             'department' => $request->department,
             'position' => $request->position,
+            'role' => $this->mapPositionToRole($request->position ?? ''),
             'hire_date' => $request->hire_date,
             'hourly_rate' => $request->hourly_rate,
             'worker_permit' => $request->worker_permit,
             'metrc_api_key' => $request->metrc_api_key,
             'permissions' => $request->permissions,
-            'password' => Hash::make($request->password),
-            'status' => 'active',
             'pin' => Hash::make(str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT))
         ]);
 
@@ -169,7 +168,11 @@ class EmployeesController extends Controller
             'first_name', 'last_name', 'email', 'phone',
             'department', 'position', 'hourly_rate', 'worker_permit', 'metrc_api_key'
         ]);
-        
+        // Normalize role persistence
+        $updateData['role'] = $request->get('role')
+            ? strtolower($request->get('role'))
+            : $this->mapPositionToRole($request->get('position', $employee->position ?? ''));
+
         $updateData['permissions'] = $request->permissions;
         
         $employee->update($updateData);
