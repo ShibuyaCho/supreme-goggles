@@ -232,4 +232,20 @@ class Sale extends Model
     {
         return $query->whereBetween('created_at', [$startDate, $endDate]);
     }
+
+    public static function generateSaleNumber(): string
+    {
+        return 'S' . now()->format('YmdHis') . '-' . random_int(100, 999);
+    }
+
+    public function complete(string $paymentMethod, ?string $paymentReference = null): void
+    {
+        $this->update([
+            'status' => 'completed',
+            'payment_method' => in_array($paymentMethod, ['cash','debit','credit','check','store_credit']) ? $paymentMethod : 'cash',
+            'payment_reference' => $paymentReference,
+            'amount_paid' => $this->amount_paid ?? $this->total_amount,
+            'change_given' => $this->change_given ?? 0,
+        ]);
+    }
 }
