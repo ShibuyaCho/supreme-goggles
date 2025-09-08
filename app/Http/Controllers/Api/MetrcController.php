@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\MetrcService;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -449,6 +451,60 @@ class MetrcController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Create METRC sales receipt from internal Sale ID
+     */
+    public function createReceiptFromSale(Request $request, Sale $sale)
+    {
+        if ($sale->status !== 'completed') {
+            return response()->json([
+                'error' => 'Only completed sales can be pushed to METRC'
+            ], 400);
+        }
+
+        $transactions = [];
+        foreach ($sale->saleItems as $item) {
+            $product = $item->product;
+            $packageLabel = $product?->metrc_tag ?: ($item->metrc_tag ?: $product?->sku);
+            if (!$packageLabel) {
+                return response()->json([
+                    'error' => 'Missing METRC package tag for one or more items',
+                    'item_id' => $item->id,
+                ], 422);
+            }
+
+            $weightSold = (float)($item->weight_sold ?? 0);
+            if ($weightSold > 0) {
+                $quantity = $weightSold;
+                $uom = 'Grams';
+            } else {
+                $quantity = (float)$item->quantity;
+                $uom = 'Each';
+            }
+
+            $transactions[] = [
+                'package_label' => $packageLabel,
+                'quantity' => $quantity,
+                'unit_of_measure' => $uom,
+                'total_amount' => (float)$item->total_price,
+            ];
+        }
+
+        $customerType = strtolower($sale->customer_type) === 'medical' ? 'Patient' : 'Consumer';
+        $patientLicense = $sale->customer?->medical_card_number ?: null;
+
+        $payload = [
+            'sales_datetime' => $sale->created_at->toIso8601String(),
+            'sales_customer_type' => $customerType,
+            'patient_license_number' => $patientLicense,
+            'caregiver_license_number' => null,
+            'transactions' => $transactions,
+        ];
+
+        $request->merge($payload);
+        return $this->createSalesReceipt($request);
     }
 
     /**
