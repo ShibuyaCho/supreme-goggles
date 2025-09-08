@@ -173,7 +173,21 @@ class EmployeesController extends Controller
         $updateData['permissions'] = $request->permissions;
         
         $employee->update($updateData);
-        
+
+        // Sync linked user role/permissions/active flag after update
+        try {
+            $user = \App\Models\User::where('employee_id', $employee->id)->first();
+            if ($user) {
+                $user->update([
+                    'role' => $this->mapPositionToRole($employee->position),
+                    'permissions' => $employee->permissions,
+                    'is_active' => $employee->status === 'active',
+                ]);
+            }
+        } catch (\Throwable $e) {
+            // ignore sync errors
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Employee updated successfully',
