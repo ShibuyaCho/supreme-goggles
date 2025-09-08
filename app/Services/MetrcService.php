@@ -443,7 +443,7 @@ class MetrcService
                     'PackagedDate' => now()->toISOString(),
                     'Item' => $this->mapCategoryToMetrc($product->category),
                     'Quantity' => $product->quantity,
-                    'UnitOfMeasure' => $product->unit ?: 'Grams',
+                    'UnitOfMeasure' => $this->mapUnitToMetrc($product->unit ?? null),
                     'PatientLicenseNumber' => null,
                     'Note' => "Product: {$product->name}",
                     'IsProductionBatch' => false,
