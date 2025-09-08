@@ -393,11 +393,11 @@
             const container = document.getElementById('user-menu-container');
             let empId = container?.dataset?.employeeId || '';
 
-            // Ensure buttons exist; if not, create dynamically
-            let clkInBtn = document.getElementById('clock-in-button');
-            let clkOutBtn = document.getElementById('clock-out-button');
-            const dropdown = document.getElementById('user-menu-dropdown');
-            if (dropdown && (!clkInBtn || !clkOutBtn)) {
+            function ensureClockButtons(){
+                const dropdown = document.getElementById('user-menu-dropdown');
+                if (!dropdown) return { dropdown: null, clkInBtn: null, clkOutBtn: null };
+                let clkInBtn = document.getElementById('clock-in-button');
+                let clkOutBtn = document.getElementById('clock-out-button');
                 if (!clkInBtn) {
                     clkInBtn = document.createElement('button');
                     clkInBtn.id = 'clock-in-button';
@@ -410,15 +410,28 @@
                     clkOutBtn.id = 'clock-out-button';
                     clkOutBtn.className = 'w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-gray-50 hidden';
                     clkOutBtn.textContent = 'Clock Out';
-                    dropdown.insertBefore(clkOutBtn, dropdown.children[1] || null);
+                    dropdown.insertBefore(clkOutBtn, dropdown.firstChild?.nextSibling || null);
                 }
-                // Ensure divider present
-                const divider = document.createElement('div');
-                divider.className = 'my-1 border-t';
-                dropdown.insertBefore(divider, dropdown.querySelector('#logout-button'));
+                if (!dropdown.querySelector('.clock-divider')){
+                    const divider = document.createElement('div');
+                    divider.className = 'clock-divider my-1 border-t';
+                    const logoutBtn = dropdown.querySelector('#logout-button');
+                    if (logoutBtn) dropdown.insertBefore(divider, logoutBtn);
+                    else dropdown.appendChild(divider);
+                }
+                return { dropdown, clkInBtn, clkOutBtn };
             }
 
+            // Observe dropdown for dynamic rebuilds
+            const mo = new MutationObserver(() => ensureClockButtons());
+            const dd = document.getElementById('user-menu-dropdown');
+            if (dd) mo.observe(dd, { childList: true });
+
+            // Also ensure on menu open
+            document.getElementById('user-menu-button')?.addEventListener('click', ensureClockButtons);
+
             function setButtons(state){
+                const { clkInBtn, clkOutBtn } = ensureClockButtons();
                 if (!clkInBtn || !clkOutBtn) return;
                 if (state === 'in') {
                     clkInBtn.classList.add('hidden');
@@ -453,8 +466,9 @@
             }
 
             (async () => {
+                ensureClockButtons();
                 await refreshClock();
-                clkInBtn?.addEventListener('click', async function(){
+                document.getElementById('clock-in-button')?.addEventListener('click', async function(){
                     try {
                         const id = await resolveEmpId();
                         if (!id) throw new Error('No employee id');
@@ -463,7 +477,7 @@
                         else { window.POS?.showToast?.(r.message || 'Clock in failed', 'error'); }
                     } catch (e) { window.POS?.showToast?.('Clock in failed', 'error'); }
                 });
-                clkOutBtn?.addEventListener('click', async function(){
+                document.getElementById('clock-out-button')?.addEventListener('click', async function(){
                     try {
                         const id = await resolveEmpId();
                         if (!id) throw new Error('No employee id');
@@ -472,6 +486,25 @@
                         else { window.POS?.showToast?.(r.message || 'Clock out failed', 'error'); }
                     } catch (e) { window.POS?.showToast?.('Clock out failed', 'error'); }
                 });
+
+                // Mobile fallback: inject into mobile menu if present
+                const mobileMenu = document.getElementById('mobile-menu');
+                if (mobileMenu && !document.getElementById('mobile-clock-area')) {
+                    const wrap = document.createElement('div');
+                    wrap.id = 'mobile-clock-area';
+                    wrap.className = 'px-3 py-2 space-y-1 bg-white border-t';
+                    wrap.innerHTML = `
+                        <button id="mobile-clock-in" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-green-700 hover:bg-gray-50">Clock In</button>
+                        <button id="mobile-clock-out" class="hidden w-full text-left px-3 py-2 rounded-md text-base font-medium text-orange-700 hover:bg-gray-50">Clock Out</button>
+                    `;
+                    mobileMenu.appendChild(wrap);
+                    const mIn = document.getElementById('mobile-clock-in');
+                    const mOut = document.getElementById('mobile-clock-out');
+                    const setMob = (state)=>{ if(state==='in'){mIn.classList.add('hidden');mOut.classList.remove('hidden');}else{mOut.classList.add('hidden');mIn.classList.remove('hidden');} };
+                    try { await refreshClock(); const id = await resolveEmpId(); if (id){ const st = await posAuth.apiRequest('get', `/employees/${id}/clock-status`); if (st.success){ setMob(st.data?.clocked_in?'in':'out'); } } } catch(e){}
+                    mIn?.addEventListener('click', async ()=>{ try{ const id=await resolveEmpId(); const r=await posAuth.apiRequest('post', `/employees/${id}/clock-in`); if(r.success){ setMob('in'); window.POS?.showToast?.('Clocked in','success'); } }catch(e){ window.POS?.showToast?.('Clock in failed','error'); }});
+                    mOut?.addEventListener('click', async ()=>{ try{ const id=await resolveEmpId(); const r=await posAuth.apiRequest('post', `/employees/${id}/clock-out`); if(r.success){ setMob('out'); window.POS?.showToast?.('Clocked out','success'); } }catch(e){ window.POS?.showToast?.('Clock out failed','error'); }});
+                }
             })();
         });
 
