@@ -996,10 +996,26 @@ function settingsManager() {
                             const isNullish = v === null || v === undefined;
                             const isEmptyStr = typeof v === 'string' && v.trim() === '';
                             if (sensitive.has(k)) {
-                                // Do not overwrite non-empty local values with empty server values
                                 if (!isNullish && !isEmptyStr) merged[k] = v;
                             } else {
                                 if (!isNullish) merged[k] = v;
+                            }
+                        });
+                        // Map legacy keys
+                        if (Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt') && !Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint')) {
+                            merged.receipt_autoprint = !!merged.auto_print_receipt;
+                        }
+                        if (Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint') && !Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt')) {
+                            merged.auto_print_receipt = !!merged.receipt_autoprint;
+                        }
+                        // Coerce arrays for Alpine reactivity
+                        const arrayKeys = ['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours'];
+                        arrayKeys.forEach((key) => {
+                            const val = merged[key];
+                            if (typeof val === 'string') {
+                                try { const parsed = JSON.parse(val); merged[key] = Array.isArray(parsed) ? parsed : []; } catch (_) { merged[key] = []; }
+                            } else if (!Array.isArray(val)) {
+                                merged[key] = key === 'business_hours' ? this.getDefaultBusinessHours() : [];
                             }
                         });
                         this.settings = merged;
