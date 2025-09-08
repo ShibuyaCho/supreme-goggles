@@ -742,7 +742,7 @@
 function settingsManager() {
     return {
         activeTab: 'general',
-        categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Tinctures', 'Vapes', 'Inhalable Cannabinoids', 'Clones', 'Hemp', 'Paraphernalia', 'Accessories'],
+        categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Patches', 'Tinctures', 'Vapes', 'Inhalable Cannabinoid', 'Inhalable Cannabinoids', 'Plants (Clones)', 'Clones', 'Seeds', 'Hemp', 'Paraphernalia', 'Accessories', 'Apparel'],
         settings: @json($settings ?? {}),
         stores: [
             { id: 'main', name: 'Cannabest POS - Main Store', address: '123 Cannabis St, Portland, OR 97201', phone: '(503) 555-0123', status: 'active', is_current: true },
