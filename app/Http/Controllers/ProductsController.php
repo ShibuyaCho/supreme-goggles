@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\Room;
+use App\Services\MetrcService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -104,7 +105,27 @@ class ProductsController extends Controller
 
     public function create()
     {
-        return view('products.create');
+        // Load METRC categories with fallback and include business-specific categories
+        $metrcCategories = [];
+        try {
+            $metrcCategories = app(MetrcService::class)->getItemCategories();
+            if (is_array($metrcCategories) && isset($metrcCategories[0]) && is_array($metrcCategories[0]) && (isset($metrcCategories[0]['Name']) || isset($metrcCategories[0]['name']))) {
+                $metrcCategories = collect($metrcCategories)->map(fn($c) => $c['Name'] ?? $c['name'])->values()->all();
+            }
+        } catch (\Throwable $e) {
+            $metrcCategories = [];
+        }
+
+        $additional = ['Plants (Clones)', 'Apparel', 'Extracts', 'Inhalable Cannabinoid', 'Patches', 'Seeds'];
+        $categories = collect(array_merge($metrcCategories, $additional))
+            ->filter(fn($c) => is_string($c) && trim($c) !== '')
+            ->map(fn($c) => trim($c))
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return view('products.create', compact('categories'));
     }
 
     public function store(Request $request)
