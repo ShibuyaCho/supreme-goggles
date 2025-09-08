@@ -72,6 +72,15 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Weight/Size</label>
                             <input type="text" x-model="product.weight" placeholder="e.g., 3.5g, 1oz, 30ml" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                         </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Unit of Measure *</nlabel>
+                            <select x-model="product.unit" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <option value="Each">each</option>
+                                <option value="Grams">grams</option>
+                                <option value="Fluid Ounces">fluid oz.</option>
+                                <option value="Milliliters">Milliliters</option>
+                            </select>
+                        </div>
                     </div>
 
                     <div>
