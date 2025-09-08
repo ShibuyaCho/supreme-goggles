@@ -431,7 +431,7 @@ function showSavedSales() {
                             
                             <div class="text-right">
                                 <div class="text-lg font-bold text-green-600">$${product.price.toFixed(2)}</div>
-                                <div class="text-xs ${stockStatus}">${product.stock} in stock</div>
+                                <div class="text-xs ${stockStatus}">${product.stock} qty</div>
                                 ${product.thc ? `<div class="text-xs text-gray-500">THC: ${product.thc}%</div>` : ''}
                             </div>
                         </div>

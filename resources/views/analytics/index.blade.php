@@ -258,7 +258,7 @@
                             </svg>
                             <div>
                                 <div class="text-sm font-medium text-gray-900">{{ $alert['product'] }}</div>
-                                <div class="text-xs text-gray-600">Current stock: {{ $alert['stock'] }} | Reorder at: {{ $alert['reorderPoint'] }}</div>
+                                <div class="text-xs text-gray-600">Current quantity: {{ $alert['stock'] }} | Reorder at: {{ $alert['reorderPoint'] }}</div>
                             </div>
                         </div>
                         <span class="px-2 py-1 text-xs font-medium rounded-full {{ $alert['status'] === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">

@@ -92,8 +92,8 @@
                         <option value="name-desc" {{ $sortBy === 'name' && $sortOrder === 'desc' ? 'selected' : '' }}>Name (Z-A)</option>
                         <option value="price-asc" {{ $sortBy === 'price' && $sortOrder === 'asc' ? 'selected' : '' }}>Price (Low-High)</option>
                         <option value="price-desc" {{ $sortBy === 'price' && $sortOrder === 'desc' ? 'selected' : '' }}>Price (High-Low)</option>
-                        <option value="quantity-asc" {{ $sortBy === 'quantity' && $sortOrder === 'asc' ? 'selected' : '' }}>Stock (Low-High)</option>
-                        <option value="quantity-desc" {{ $sortBy === 'quantity' && $sortOrder === 'desc' ? 'selected' : '' }}>Stock (High-Low)</option>
+                        <option value="quantity-asc" {{ $sortBy === 'quantity' && $sortOrder === 'asc' ? 'selected' : '' }}>Quantity (Low-High)</option>
+                        <option value="quantity-desc" {{ $sortBy === 'quantity' && $sortOrder === 'desc' ? 'selected' : '' }}>Quantity (High-Low)</option>
                         <option value="created_at-desc" {{ $sortBy === 'created_at' && $sortOrder === 'desc' ? 'selected' : '' }}>Newest First</option>
                     </select>
 
@@ -172,7 +172,7 @@
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
                                 <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th scope="col" class="relative px-6 py-3"><span class="sr-only">Actions</span></th>
