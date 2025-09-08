@@ -75,7 +75,7 @@ class SalesController extends Controller
         
         // Get filter options
         $employees = Employee::all();
-        $paymentMethods = Sale::distinct('payment_method')->pluck('payment_method');
+        $paymentMethods = Sale::select('payment_method')->distinct()->pluck('payment_method');
         
         // Get analytics data
         $analytics = $this->getSalesAnalytics($request);
@@ -126,7 +126,7 @@ class SalesController extends Controller
         ])->findOrFail($id);
         
         // Generate receipt PDF
-        $pdf = PDF::loadView('sales.receipt', compact('sale'));
+        $pdf = Pdf::loadView('sales.receipt', compact('sale'));
         
         // Mark as printed
         $sale->markAsPrinted();
@@ -271,7 +271,7 @@ class SalesController extends Controller
         ])->findOrFail($id);
         
         // Generate receipt PDF
-        $pdf = PDF::loadView('sales.receipt', [
+        $pdf = Pdf::loadView('sales.receipt', [
             'sale' => $sale,
             'reprint' => true
         ]);
@@ -291,7 +291,7 @@ class SalesController extends Controller
         $report = $this->generateDailyReportData($sales, $date);
         
         if ($request->get('format') === 'pdf') {
-            $pdf = PDF::loadView('sales.reports.daily', compact('report', 'date'));
+            $pdf = Pdf::loadView('sales.reports.daily', compact('report', 'date'));
             return $pdf->download("daily_sales_report_{$date}.pdf");
         }
         
@@ -311,7 +311,7 @@ class SalesController extends Controller
         $report = $this->generateWeeklyReportData($sales, $startDate, $endDate);
         
         if ($request->get('format') === 'pdf') {
-            $pdf = PDF::loadView('sales.reports.weekly', compact('report', 'startDate', 'endDate'));
+            $pdf = Pdf::loadView('sales.reports.weekly', compact('report', 'startDate', 'endDate'));
             return $pdf->download("weekly_sales_report_{$startDate}_to_{$endDate}.pdf");
         }
         
@@ -332,7 +332,7 @@ class SalesController extends Controller
         $report = $this->generateMonthlyReportData($sales, $month);
         
         if ($request->get('format') === 'pdf') {
-            $pdf = PDF::loadView('sales.reports.monthly', compact('report', 'month'));
+            $pdf = Pdf::loadView('sales.reports.monthly', compact('report', 'month'));
             return $pdf->download("monthly_sales_report_{$month}.pdf");
         }
         
@@ -404,15 +404,15 @@ class SalesController extends Controller
             ->where('status', 'completed');
         
         return [
-            'totalSales' => $sales->sum('total_amount'),
-            'totalTransactions' => $sales->count(),
-            'averageOrderValue' => $sales->avg('total_amount'),
-            'totalTax' => $sales->sum('tax_amount'),
-            'totalItems' => $sales->withSum('saleItems', 'quantity')->sum('sale_items_sum_quantity'),
+            'totalSales' => (clone $sales)->sum('total_amount'),
+            'totalTransactions' => (clone $sales)->count(),
+            'averageOrderValue' => (clone $sales)->avg('total_amount'),
+            'totalTax' => (clone $sales)->sum('tax_amount'),
+            'totalItems' => (clone $sales)->withSum('saleItems', 'quantity')->sum('sale_items_sum_quantity'),
             'paymentBreakdown' => [
-                'cash' => $sales->where('payment_method', 'cash')->sum('total_amount'),
-                'debit' => $sales->where('payment_method', 'debit')->sum('total_amount'),
-                'credit' => $sales->where('payment_method', 'credit')->sum('total_amount')
+                'cash' => (clone $sales)->where('payment_method', 'cash')->sum('total_amount'),
+                'debit' => (clone $sales)->where('payment_method', 'debit')->sum('total_amount'),
+                'credit' => (clone $sales)->where('payment_method', 'credit')->sum('total_amount'),
             ]
         ];
     }
