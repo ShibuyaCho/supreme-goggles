@@ -365,11 +365,37 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/pos', function() {
             $cached = \Illuminate\Support\Facades\Cache::get('pos_settings');
             $defaults = [
-                'sales_tax' => 20.0,
+                // Taxes
+                'sales_tax' => 0.0,
                 'excise_tax' => 10.0,
                 'cannabis_tax' => 17.0,
                 'tax_inclusive' => false,
-                'auto_print_receipt' => true,
+
+                // Store info
+                'store_name' => 'Cannabest POS',
+                'store_address' => '',
+                'store_phone' => '',
+                'store_email' => '',
+                'website' => '',
+                'store_manager' => '',
+                'license_number' => '',
+                'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
+
+                // Exit labels
+                'exit_label_categories' => ['Flower','Pre-Rolls','Concentrates','Edibles'],
+
+                // Receipt & printing
+                'auto_print_receipt' => false,
+                'receipt_autoprint' => false,
+                'receipt_categories_autoprint' => [],
+                'receipt_show_tax_breakdown' => true,
+                'receipt_show_metrc' => true,
+                'receipt_show_loyalty' => true,
+                'receipt_show_qr_code' => false,
+                'default_receipt_printer' => '',
+                'receipt_paper_size' => '80mm',
+
+                // POS behavior / payments
                 'require_customer' => true,
                 'age_verification' => true,
                 'limit_enforcement' => true,
@@ -377,10 +403,40 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'accept_debit' => true,
                 'accept_check' => false,
                 'round_to_nearest' => false,
+
+                // Pricing
+                'minimum_price_enabled' => false,
+                'minimum_price_amount' => 0.01,
+                'minimum_price_categories' => [],
+
+                // Display & inventory
+                'inventory_view_mode' => 'cards',
+                'expandable_cart' => true,
+
+                // Auto delete
+                'auto_delete_zero_quantity' => false,
+                'auto_delete_zero_days' => 1,
+
+                // METRC
                 'metrc_enabled' => config('services.metrc.enabled', true),
-                'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
-                'store_name' => 'Cannabis POS',
-                'store_address' => ''
+
+                // Appearance
+                'dark_mode' => false,
+                'theme_color' => 'green',
+                'font_size' => 'medium',
+                'high_contrast' => false,
+                'reduce_motion' => false,
+
+                // Business hours
+                'business_hours' => [
+                    ['day' => 'Monday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Tuesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Wednesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Thursday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Friday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Saturday', 'is_open' => true, 'open_time' => '10:00', 'close_time' => '20:00'],
+                    ['day' => 'Sunday', 'is_open' => true, 'open_time' => '11:00', 'close_time' => '19:00'],
+                ],
             ];
             $settings = array_merge($defaults, is_array($cached) ? $cached : []);
             // Ensure METRC credentials are available to the settings UI (do not overwrite cached values)
