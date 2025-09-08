@@ -19886,5 +19886,27 @@
         console.log("Cannabis POS system initialized successfully!");
       });
     </script>
+    <script>
+      (function(){
+        function hideLaravelNotices(root){
+          const sels = ['p','div','span','section','footer'];
+          for (const sel of sels) {
+            root.querySelectorAll(sel).forEach(function(el){
+              try {
+                const txt = (el.textContent || '').toLowerCase();
+                if (!txt) return;
+                if (txt.includes('laravel integration') || txt.includes('laravel implementation') || txt.includes('laravel demo') || txt.includes('laravel ready')) {
+                  const container = el.closest('.border') || el.closest('.rounded-lg') || el.parentElement || el;
+                  container.style.display = 'none';
+                }
+              } catch(e) {}
+            });
+          }
+        }
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', function(){ hideLaravelNotices(document); });
+        } else { hideLaravelNotices(document); }
+      })();
+    </script>
   </body>
 </html>
