@@ -223,11 +223,16 @@ function calculateChange() {
 }
 
 function updatePaymentModal(orderData) {
+    // Stash for processing
+    paymentOrderData = {
+        items: Array.isArray(orderData.items) ? orderData.items : [],
+        customer: orderData.customer || null,
+    };
     // Update order summary
     const summaryEl = document.getElementById('payment-order-summary');
     orderTotal = orderData.total || 0;
-    
-    summaryEl.innerHTML = orderData.items.map(item => `
+
+    summaryEl.innerHTML = (paymentOrderData.items).map(item => `
         <div class="flex justify-between text-sm py-1">
             <span>${item.name} x${item.quantity}</span>
             <span>${window.POS?.formatCurrency(item.total) || '$0.00'}</span>
@@ -305,21 +310,12 @@ async function processPayment() {
             };
         }
         
-        // Process payment via API
-        const response = await fetch('/api/pos/process-payment', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-            },
-            body: JSON.stringify(paymentData)
-        });
-        
-        if (!response.ok) {
-            throw new Error('Payment processing failed');
-        }
-        
-        const result = await response.json();
+        // Attach items and customer
+        paymentData.items = (paymentOrderData.items || []).map(it => ({ id: it.id, quantity: it.quantity, price: it.price, discount: it.discount || 0 }));
+        paymentData.customer_id = paymentOrderData.customer && paymentOrderData.customer.id ? paymentOrderData.customer.id : null;
+
+        // Process payment via API with axios (auth header already set by posAuth)
+        const { data: result } = await (window.axios || axios).post('/api/pos/process-payment', paymentData, { headers: { 'Accept': 'application/json' } });
         
         // Success
         window.POS?.showToast('Payment processed successfully!', 'success');
