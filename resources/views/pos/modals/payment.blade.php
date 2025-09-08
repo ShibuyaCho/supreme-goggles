@@ -173,6 +173,7 @@
 <script>
 let selectedPaymentMethod = null;
 let orderTotal = 0;
+let paymentOrderData = { items: [], customer: null };
 
 function selectPaymentMethod(method) {
     selectedPaymentMethod = method;
