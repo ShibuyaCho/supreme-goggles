@@ -170,7 +170,7 @@ class EmployeesController extends Controller
             'department', 'position', 'hourly_rate', 'worker_permit', 'metrc_api_key'
         ]);
         
-        $updateData['permissions'] = json_encode($request->permissions);
+        $updateData['permissions'] = $request->permissions;
         
         $employee->update($updateData);
         
