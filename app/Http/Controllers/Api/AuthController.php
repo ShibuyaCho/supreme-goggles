@@ -102,6 +102,15 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
+        // Keep user role/permissions in sync with linked employee
+        if ($user && $user->employee) {
+            $emp = $user->employee;
+            $updates = [];
+            if ($emp->role && $user->role !== $emp->role) $updates['role'] = $emp->role;
+            if (is_array($emp->permissions) && $emp->permissions !== $user->permissions) $updates['permissions'] = $emp->permissions;
+            if (!empty($updates)) $user->update($updates);
+        }
+
         if (!$user->is_active) {
             Auth::logout();
             return response()->json([
@@ -180,6 +189,12 @@ class AuthController extends Controller
                 'is_active' => $employee->is_active,
                 'password' => Hash::make(Str::random(32)), // Random password since PIN is used
             ]);
+        } else {
+            // Keep user role/permissions in sync with employee
+            $updates = [];
+            if ($employee->role && $user->role !== $employee->role) $updates['role'] = $employee->role;
+            if (is_array($employee->permissions) && $employee->permissions !== $user->permissions) $updates['permissions'] = $employee->permissions;
+            if (!empty($updates)) $user->update($updates);
         }
 
         // Update last login
@@ -340,7 +355,15 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        
+        // Sync user role/permissions with employee on fetch
+        if ($user && $user->employee) {
+            $emp = $user->employee;
+            $updates = [];
+            if ($emp->role && $user->role !== $emp->role) $updates['role'] = $emp->role;
+            if (is_array($emp->permissions) && $emp->permissions !== $user->permissions) $updates['permissions'] = $emp->permissions;
+            if (!empty($updates)) $user->update($updates);
+        }
+
         return response()->json([
             'user' => [
                 'id' => $user->id,
