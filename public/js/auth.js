@@ -1,11 +1,36 @@
 // Cannabis POS Authentication and API Handler
 class POSAuth {
   constructor() {
-    const posToken = localStorage.getItem("pos_token");
-    const altToken = localStorage.getItem("auth_token");
-    const posUserStr = localStorage.getItem("pos_user");
-    const altUserStr = localStorage.getItem("user_data");
-    this.token = posToken || altToken || null;
+    // Helpers for cookie fallback (for environments where localStorage may be cleared)
+    const getCookie = (name) => {
+      try {
+        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
+        return match ? decodeURIComponent(match[1]) : null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const setCookie = (name, value, days = 30) => {
+      try {
+        const d = new Date();
+        d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${d.toUTCString()}; path=/`;
+      } catch (e) {}
+    };
+    const deleteCookie = (name) => {
+      try {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+      } catch (e) {}
+    };
+    this._cookies = { getCookie, setCookie, deleteCookie };
+
+    const posToken = (typeof localStorage !== 'undefined' && localStorage.getItem('pos_token')) || null;
+    const altToken = (typeof localStorage !== 'undefined' && localStorage.getItem('auth_token')) || null;
+    const cookieToken = getCookie('pos_token');
+    const posUserStr = (typeof localStorage !== 'undefined' && localStorage.getItem('pos_user')) || null;
+    const altUserStr = (typeof localStorage !== 'undefined' && localStorage.getItem('user_data')) || null;
+
+    this.token = posToken || altToken || cookieToken || null;
     this.user = null;
     try {
       this.user = posUserStr
