@@ -53,30 +53,74 @@ class SettingsController extends Controller
             'sales_tax' => 'required|numeric|min:0|max:100',
             'excise_tax' => 'required|numeric|min:0|max:100',
             'cannabis_tax' => 'required|numeric|min:0|max:100',
-            'tax_inclusive' => 'boolean',
+            'tax_inclusive' => 'sometimes|boolean',
 
-            // POS preferences
-            'auto_print_receipt' => 'boolean',
-            'require_customer' => 'boolean',
-            'age_verification' => 'boolean',
-            'limit_enforcement' => 'boolean',
+            // POS/Receipt preferences (support both legacy and new keys)
+            'auto_print_receipt' => 'sometimes|boolean',
+            'receipt_autoprint' => 'sometimes|boolean',
+            'receipt_show_tax_breakdown' => 'sometimes|boolean',
+            'receipt_show_metrc' => 'sometimes|boolean',
+            'receipt_show_loyalty' => 'sometimes|boolean',
+            'receipt_show_qr_code' => 'sometimes|boolean',
+            'default_receipt_printer' => 'sometimes|nullable|string|max:255',
+            'receipt_paper_size' => 'sometimes|in:80mm,58mm,letter',
+
+            // POS behavior
+            'require_customer' => 'sometimes|boolean',
+            'age_verification' => 'sometimes|boolean',
+            'limit_enforcement' => 'sometimes|boolean',
 
             // Payment methods
-            'accept_cash' => 'boolean',
-            'accept_debit' => 'boolean',
-            'accept_check' => 'boolean',
-            'round_to_nearest' => 'boolean',
+            'accept_cash' => 'sometimes|boolean',
+            'accept_debit' => 'sometimes|boolean',
+            'accept_check' => 'sometimes|boolean',
+            'round_to_nearest' => 'sometimes|boolean',
 
             // METRC integration
-            'metrc_enabled' => 'boolean',
-            'metrc_user_key' => 'nullable|string',
-            'metrc_vendor_key' => 'nullable|string',
-            'metrc_facility' => 'nullable|string',
+            'metrc_enabled' => 'sometimes|boolean',
+            'metrc_user_key' => 'sometimes|nullable|string',
+            'metrc_vendor_key' => 'sometimes|nullable|string',
+            'metrc_facility' => 'sometimes|nullable|string',
 
-            // Receipt settings
-            'receipt_footer' => 'nullable|string|max:1000',
+            // Receipt & store info
+            'receipt_footer' => 'sometimes|nullable|string|max:1000',
             'store_name' => 'required|string|max:255',
-            'store_address' => 'nullable|string|max:500'
+            'store_address' => 'sometimes|nullable|string|max:500',
+            'store_phone' => 'sometimes|nullable|string|max:50',
+            'store_email' => 'sometimes|nullable|email',
+            'website' => 'sometimes|nullable|string|max:255',
+            'store_manager' => 'sometimes|nullable|string|max:255',
+            'license_number' => 'sometimes|nullable|string|max:255',
+
+            // Exit labels and receipt category arrays
+            'exit_label_categories' => 'sometimes|array',
+            'exit_label_categories.*' => 'string',
+            'receipt_categories_autoprint' => 'sometimes|array',
+            'receipt_categories_autoprint.*' => 'string',
+
+            // Pricing minimums
+            'minimum_price_enabled' => 'sometimes|boolean',
+            'minimum_price_amount' => 'sometimes|numeric|min:0',
+            'minimum_price_categories' => 'sometimes|array',
+            'minimum_price_categories.*' => 'string',
+
+            // Display & inventory
+            'inventory_view_mode' => 'sometimes|in:cards,list',
+            'expandable_cart' => 'sometimes|boolean',
+
+            // Auto-delete configuration
+            'auto_delete_zero_quantity' => 'sometimes|boolean',
+            'auto_delete_zero_days' => 'sometimes|integer|min:1|max:30',
+
+            // Appearance
+            'dark_mode' => 'sometimes|boolean',
+            'theme_color' => 'sometimes|in:green,blue,purple,orange',
+            'font_size' => 'sometimes|in:small,medium,large',
+            'high_contrast' => 'sometimes|boolean',
+            'reduce_motion' => 'sometimes|boolean',
+
+            // Business hours
+            'business_hours' => 'sometimes|array',
         ]);
 
         if ($validator->fails()) {
@@ -89,18 +133,55 @@ class SettingsController extends Controller
 
         try {
             $settings = $request->all();
-            
+
+            // Normalize array-like inputs possibly sent as JSON strings
+            $arrayFields = [
+                'exit_label_categories',
+                'receipt_categories_autoprint',
+                'minimum_price_categories',
+                'business_hours',
+            ];
+            foreach ($arrayFields as $field) {
+                if (isset($settings[$field]) && is_string($settings[$field])) {
+                    $decoded = json_decode($settings[$field], true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $settings[$field] = $decoded;
+                    }
+                }
+                if (isset($settings[$field]) && !is_array($settings[$field])) {
+                    $settings[$field] = [];
+                }
+            }
+
             // Convert string boolean values
             $booleanFields = [
-                'tax_inclusive', 'auto_print_receipt', 'require_customer',
-                'age_verification', 'limit_enforcement', 'accept_cash',
-                'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled'
+                'tax_inclusive', 'auto_print_receipt', 'receipt_autoprint', 'require_customer',
+                'age_verification', 'limit_enforcement', 'accept_cash', 'receipt_show_tax_breakdown',
+                'receipt_show_metrc', 'receipt_show_loyalty', 'receipt_show_qr_code',
+                'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled',
+                'minimum_price_enabled', 'expandable_cart', 'auto_delete_zero_quantity',
+                'dark_mode', 'high_contrast', 'reduce_motion'
             ];
-
             foreach ($booleanFields as $field) {
-                if (isset($settings[$field])) {
+                if (array_key_exists($field, $settings)) {
                     $settings[$field] = filter_var($settings[$field], FILTER_VALIDATE_BOOLEAN);
                 }
+            }
+
+            // Ensure numeric types
+            $numericFields = ['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days'];
+            foreach ($numericFields as $field) {
+                if (isset($settings[$field])) {
+                    $settings[$field] = is_numeric($settings[$field]) ? 0 + $settings[$field] : $settings[$field];
+                }
+            }
+
+            // Alias: keep legacy and new key in sync
+            if (isset($settings['receipt_autoprint']) && !isset($settings['auto_print_receipt'])) {
+                $settings['auto_print_receipt'] = (bool)$settings['receipt_autoprint'];
+            }
+            if (isset($settings['auto_print_receipt']) && !isset($settings['receipt_autoprint'])) {
+                $settings['receipt_autoprint'] = (bool)$settings['auto_print_receipt'];
             }
 
             // Store settings in cache with a long TTL
