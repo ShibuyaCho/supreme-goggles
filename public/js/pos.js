@@ -5474,7 +5474,8 @@ function cannabisPOS() {
           },
           { responseType: "blob" },
         );
-        const file = new Blob([res.data], { type: "application/pdf" });
+        const ctype = res?.headers?.["content-type"] || "application/pdf";
+        const file = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
         const url = URL.createObjectURL(file);
         const w = window.open(url, "_blank");
         if (!w)
