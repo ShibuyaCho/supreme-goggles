@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Response;
+use Illuminate\Support\Facades\View as ViewFacade;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -22,12 +24,28 @@ class ExportService
 
         $filename = $this->generateFilename($reportType, $format);
 
-        return match($format) {
-            'pdf' => $this->exportToPdf($reportType, $data, $filename, $options),
-            'excel' => $this->exportToExcel($reportType, $data, $filename, $options),
-            'csv' => $this->exportToCsv($reportType, $data, $filename, $options),
-            default => throw new \InvalidArgumentException("Unsupported format: {$format}")
-        };
+        try {
+            return match($format) {
+                'pdf' => $this->exportToPdf($reportType, $data, $filename, $options),
+                'excel' => $this->exportToExcel($reportType, $data, $filename, $options),
+                'csv' => $this->exportToCsv($reportType, $data, $filename, $options),
+                default => throw new \InvalidArgumentException("Unsupported format: {$format}")
+            };
+        } catch (\Throwable $e) {
+            // Graceful fallbacks to ensure a valid file is delivered
+            if ($format === 'excel') {
+                $fallbackName = $this->generateFilename($reportType, 'csv');
+                $response = $this->exportToCsv($reportType, $data, $fallbackName, $options);
+                $response->headers->set('X-Export-Fallback', 'excel->csv');
+                $response->headers->set('X-Export-Filename', $fallbackName);
+                return $response;
+            }
+            if ($format === 'pdf') {
+                return $this->exportToHtmlDownload($reportType, $data, $options);
+            }
+            // For CSV or others, rethrow
+            throw $e;
+        }
     }
 
     /**
@@ -35,6 +53,10 @@ class ExportService
      */
     protected function exportToPdf(string $reportType, array $data, string $filename, array $options = [])
     {
+        if (!class_exists(Pdf::class)) {
+            return $this->exportToHtmlDownload($reportType, $data, $options);
+        }
+
         $view = $this->getReportView($reportType);
         $orientation = $options['orientation'] ?? 'portrait';
         $paperSize = $options['paper_size'] ?? 'a4';
@@ -61,6 +83,14 @@ class ExportService
      */
     protected function exportToExcel(string $reportType, array $data, string $filename, array $options = [])
     {
+        if (!class_exists(Excel::class)) {
+            $fallbackName = $this->generateFilename($reportType, 'csv');
+            $response = $this->exportToCsv($reportType, $data, $fallbackName, $options);
+            $response->headers->set('X-Export-Fallback', 'excel->csv');
+            $response->headers->set('X-Export-Filename', $fallbackName);
+            return $response;
+        }
+
         $export = new class($reportType, $data, $options) implements \Maatwebsite\Excel\Concerns\FromCollection,
                                                                      \Maatwebsite\Excel\Concerns\WithHeadings,
                                                                      \Maatwebsite\Excel\Concerns\WithStyles,
@@ -126,24 +156,24 @@ class ExportService
             {
                 return match($reportType) {
                     'sales' => [
-                        'E' => '#,##0.00', // Subtotal
-                        'F' => '#,##0.00', // Tax
-                        'G' => '#,##0.00', // Total
+                        'E' => '#,##0.00',
+                        'F' => '#,##0.00',
+                        'G' => '#,##0.00',
                     ],
                     'inventory' => [
-                        'E' => '#,##0.00', // Unit Cost
-                        'F' => '#,##0.00', // Unit Price
-                        'G' => '#,##0.00', // Total Value
+                        'E' => '#,##0.00',
+                        'F' => '#,##0.00',
+                        'G' => '#,##0.00',
                     ],
                     'customers' => [
-                        'F' => '#,##0.00', // Total Spent
-                        'G' => '#,##0.00', // Average Order
+                        'F' => '#,##0.00',
+                        'G' => '#,##0.00',
                     ],
                     'products' => [
-                        'D' => '#,##0.00', // Price
-                        'E' => '#,##0.00', // Cost
-                        'H' => '0.00%', // THC%
-                        'I' => '0.00%', // CBD%
+                        'D' => '#,##0.00',
+                        'E' => '#,##0.00',
+                        'H' => '0.00%',
+                        'I' => '0.00%',
                     ],
                     default => []
                 };
@@ -168,12 +198,10 @@ class ExportService
 
         $callback = function() use ($reportType, $data) {
             $file = fopen('php://output', 'w');
-            
-            // Add CSV headers
+
             $headings = $this->getCsvHeadingsForReport($reportType);
             fputcsv($file, $headings);
-            
-            // Add data rows
+
             foreach ($data as $row) {
                 if (is_array($row)) {
                     fputcsv($file, array_values($row));
@@ -181,11 +209,34 @@ class ExportService
                     fputcsv($file, array_values((array) $row));
                 }
             }
-            
+
             fclose($file);
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Fallback: export as HTML for viewing/printing when PDF isn't available
+     */
+    protected function exportToHtmlDownload(string $reportType, array $data, array $options = [])
+    {
+        $view = $this->getReportView($reportType);
+        $html = view($view, [
+            'data' => $data,
+            'reportType' => $reportType,
+            'generatedAt' => now(),
+            'options' => $options
+        ])->render();
+
+        $filename = $this->generateFilename($reportType, 'html');
+        $response = response($html, 200)
+            ->header('Content-Type', 'text/html; charset=UTF-8')
+            ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
+            ->header('X-Export-Fallback', 'pdf->html')
+            ->header('X-Export-Filename', $filename);
+
+        return $response;
     }
 
     /**
@@ -206,7 +257,7 @@ class ExportService
             'tax_report' => 'exports.pdf.tax_report',
         ];
         $view = $map[$reportType] ?? 'exports.pdf.generic';
-        if (!\Illuminate\Support\Facades\View::exists($view)) {
+        if (!ViewFacade::exists($view)) {
             return 'exports.pdf.generic';
         }
         return $view;
@@ -219,7 +270,7 @@ class ExportService
     {
         $timestamp = now()->format('Y-m-d_H-i-s');
         $extension = $format === 'excel' ? 'xlsx' : $format;
-        
+
         return "cannabis_pos_{$reportType}_report_{$timestamp}.{$extension}";
     }
 
