@@ -516,9 +516,14 @@ class POSAuth {
    * Initialize authentication check on page load
    */
   init() {
-    if (this.token && this.user) {
-      // Lazy refresh user; don't logout on failure here
-      this.refreshUser().catch(() => {});
+    if (this.token) {
+      // If we have a token but not a user, fetch user info to rehydrate session
+      if (!this.user) {
+        this.refreshUser().catch(() => {});
+      } else {
+        // Lazy refresh user when we already have cached data
+        this.refreshUser().catch(() => {});
+      }
     }
     return this.isAuthenticated();
   }
