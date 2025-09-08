@@ -386,12 +386,45 @@ function reportsManager() {
             }
         },
 
+        async askFormat(defaultFmt = 'pdf') {
+            try {
+                const choice = prompt('Export format: pdf, excel, or csv', defaultFmt);
+                const fmt = (choice||'').trim().toLowerCase();
+                if (!fmt) return null;
+                if (!['pdf','excel','csv'].includes(fmt)) { this.showToast('Invalid format', 'error'); return null; }
+                return fmt;
+            } catch(e) { return null; }
+        },
+
+        mapSourceToReport(src) {
+            const m = { sales:'sales', inventory:'inventory', customers:'customers', products:'products', employees:'employees', analytics:'analytics', metrc:'metrc', compliance:'compliance' };
+            return m[src] || 'sales';
+        },
+        mapReportType(type) {
+            const m = {
+                'daily-sales':'sales', 'weekly-sales':'sales', 'monthly-sales':'sales', 'sales-by-category':'sales', 'sales-by-employee':'sales',
+                'current-inventory':'inventory', 'low-stock':'inventory', 'out-of-stock':'inventory', 'inventory-valuation':'inventory', 'product-movement':'inventory',
+                'tax-collected':'tax_report', 'metrc-compliance':'metrc', 'medical-sales':'sales', 'regulatory-summary':'compliance', 'audit-trail':'compliance',
+                'customer-list':'customers','loyalty-summary':'customers','top-customers':'customers','customer-preferences':'customers','retention-analysis':'customers'
+            };
+            return m[type] || null;
+        },
+
+        triggerDownload(res, filename){
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        },
+
         downloadReport(report) {
             this.showToast(`Downloading ${report.name}...`, 'info');
-            // Simulate download
-            setTimeout(() => {
-                this.showToast('Download completed!', 'success');
-            }, 1000);
+            // No stored file; prompt and re-run generation
+            this.generateReport(report.name.toLowerCase().replace(/\s+/g,'-'))
         },
 
         viewReport(report) {
