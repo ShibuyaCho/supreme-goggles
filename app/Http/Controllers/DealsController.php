@@ -17,7 +17,20 @@ class DealsController extends Controller
                     ->orderBy('created_at', 'desc')
                     ->get();
 
-        return view('deals.index', compact('deals'));
+        // Load METRC categories with safe fallback
+        $categories = [];
+        try {
+            $categories = app(\App\Services\MetrcService::class)->getItemCategories();
+            if (is_array($categories) && isset($categories[0]) && is_array($categories[0]) && (isset($categories[0]['Name']) || isset($categories[0]['name']))) {
+                $categories = collect($categories)->map(fn($c) => $c['Name'] ?? $c['name'])->values()->all();
+            }
+        } catch (\Throwable $e) {
+            $categories = [
+                'Flower','Pre-Rolls','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Cartridges','Vape Pens','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Shake/Trim','Kief','Accessories'
+            ];
+        }
+
+        return view('deals.index', compact('deals','categories'));
     }
 
     public function store(Request $request)
@@ -30,8 +43,8 @@ class DealsController extends Controller
             'frequency' => 'required|in:always,daily,weekly,monthly,custom',
             'day_of_week' => 'nullable|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'day_of_month' => 'nullable|integer|min:1|max:31',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after:start_date',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'applicable_categories' => 'nullable|array',
             'minimum_purchase' => 'nullable|numeric|min:0',
             'minimum_purchase_type' => 'nullable|in:dollars,grams',
@@ -101,8 +114,8 @@ class DealsController extends Controller
             'frequency' => 'required|in:always,daily,weekly,monthly,custom',
             'day_of_week' => 'nullable|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
             'day_of_month' => 'nullable|integer|min:1|max:31',
-            'start_date' => 'required|date',
-            'end_date' => 'nullable|date|after:start_date',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date|after_or_equal:start_date',
             'applicable_categories' => 'nullable|array',
             'minimum_purchase' => 'nullable|numeric|min:0',
             'minimum_purchase_type' => 'nullable|in:dollars,grams',
@@ -215,8 +228,8 @@ class DealsController extends Controller
         try {
             $deal = Deal::findOrFail($request->deal_id);
 
-            // Check if deal is active and within date range
-            if (!$this->isDealValid($deal)) {
+            // Check if deal is active by model rules (dates, usage, frequency)
+            if (!$deal->isActive()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Deal is not currently active or has expired'
@@ -319,23 +332,7 @@ class DealsController extends Controller
 
     private function isDealValid($deal)
     {
-        if (!$deal->is_active) {
-            return false;
-        }
-
-        $now = now();
-        $startDate = \Carbon\Carbon::parse($deal->start_date);
-        $endDate = $deal->end_date ? \Carbon\Carbon::parse($deal->end_date) : null;
-
-        if ($now < $startDate) {
-            return false;
-        }
-
-        if ($endDate && $now > $endDate) {
-            return false;
-        }
-
-        return true;
+        return $deal->isActive();
     }
 
     private function calculateDiscount($deal, $cartTotal)
