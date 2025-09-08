@@ -5349,10 +5349,12 @@ function cannabisPOS() {
 
     // Generate Report (predefined or custom)
     async generateReport(type) {
-      // If a predefined type is provided (from Available Reports)
+      // Always ask for format first so the user sees the prompt
+      const fmt = await this._askFormat('pdf');
+      if (!fmt) return;
+
+      // Predefined quick reports
       if (typeof type === 'string' && type) {
-        const fmt = await this._askFormat();
-        if (!fmt) return;
         const apiType = this._mapReportType(type);
         if (!apiType) { this.showToast('Unsupported report', 'error'); return; }
         try {
@@ -5370,13 +5372,11 @@ function cannabisPOS() {
         return;
       }
 
-      // Custom report flow (right-side builder)
+      // Custom report builder flow
       if (!this.isReportValid()) {
         this.showToast("Please complete all required fields", "error");
         return;
       }
-      const fmt = await this._askFormat('pdf');
-      if (!fmt) return;
       try {
         const res = await (window.axios||axios).post('/api/reports/export', {
           report_type: this._mapSourceToReport((this.customReport?.dataSources?.[0]||'sales').toLowerCase()),
