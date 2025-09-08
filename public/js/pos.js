@@ -5475,7 +5475,10 @@ function cannabisPOS() {
           { responseType: "blob" },
         );
         const ctype = res?.headers?.["content-type"] || "application/pdf";
-        const file = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+        const file =
+          res?.data instanceof Blob
+            ? res.data
+            : new Blob([res.data], { type: ctype });
         const url = URL.createObjectURL(file);
         const w = window.open(url, "_blank");
         if (!w)
@@ -5558,9 +5561,19 @@ function cannabisPOS() {
       const headers = (res && res.headers) || {};
       const contentType = headers["content-type"] || "application/octet-stream";
       const cd = headers["content-disposition"] || "";
-      const hintedName = headers["x-export-filename"] || (cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i) || [])[1] || (cd.match(/filename=\"?([^\";]+)\"?/i) || [])[1];
-      const finalName = (hintedName && typeof hintedName === "string") ? decodeURIComponent(hintedName) : filename;
-      const blob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: contentType });
+      const hintedName =
+        headers["x-export-filename"] ||
+        (cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i) ||
+          [])[1] ||
+        (cd.match(/filename=\"?([^\";]+)\"?/i) || [])[1];
+      const finalName =
+        hintedName && typeof hintedName === "string"
+          ? decodeURIComponent(hintedName)
+          : filename;
+      const blob =
+        res?.data instanceof Blob
+          ? res.data
+          : new Blob([res.data], { type: contentType });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
