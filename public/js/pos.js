@@ -5554,10 +5554,16 @@ function cannabisPOS() {
       return m[type] || null;
     },
     _triggerDownload(res, filename) {
-      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const headers = (res && res.headers) || {};
+      const contentType = headers["content-type"] || "application/octet-stream";
+      const cd = headers["content-disposition"] || "";
+      const hintedName = headers["x-export-filename"] || (cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i) || [])[1] || (cd.match(/filename=\"?([^\";]+)\"?/i) || [])[1];
+      const finalName = (hintedName && typeof hintedName === "string") ? decodeURIComponent(hintedName) : filename;
+      const blob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: contentType });
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", filename);
+      link.setAttribute("download", finalName);
       document.body.appendChild(link);
       link.click();
       link.remove();
