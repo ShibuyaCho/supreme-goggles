@@ -7,6 +7,7 @@ use App\Models\Employee;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Schema;
 
 class EmployeesController extends Controller
 {
@@ -262,11 +263,30 @@ class EmployeesController extends Controller
         if (!empty($data['clocked_in'])) {
             return response()->json(['message' => 'Already clocked in', 'clocked_in' => true, 'clock_in_at' => $data['clock_in_at'] ?? now()], 200);
         }
+        $now = now();
         $payload = [
             'clocked_in' => true,
-            'clock_in_at' => now()->toIso8601String(),
+            'clock_in_at' => $now->toIso8601String(),
         ];
         \Illuminate\Support\Facades\Cache::put($key, $payload, now()->addDays(7));
+        // Persist to DB if available
+        try {
+            if (class_exists(\App\Models\TimeClockEntry::class) && Schema::hasTable('time_clock_entries')) {
+                // Ensure no open entry exists
+                \App\Models\TimeClockEntry::firstOrCreate(
+                    [
+                        'employee_id' => $employee->id,
+                        'clock_out' => null,
+                    ],
+                    [
+                        'clock_in' => $now,
+                        'source' => 'pos',
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            // ignore db persistence errors
+        }
         return response()->json(['message' => 'Clocked in', 'clocked_in' => true, 'clock_in_at' => $payload['clock_in_at']]);
     }
 
@@ -294,12 +314,131 @@ class EmployeesController extends Controller
             'clock_in_at' => null,
             'history' => $history,
         ], now()->addDays(30));
+        // Persist to DB if available
+        try {
+            if (class_exists(\App\Models\TimeClockEntry::class) && Schema::hasTable('time_clock_entries')) {
+                $open = \App\Models\TimeClockEntry::where('employee_id', $employee->id)
+                    ->whereNull('clock_out')
+                    ->latest('clock_in')
+                    ->first();
+                if ($open) {
+                    $open->update(['clock_out' => $clockOutAt]);
+                } else {
+                    \App\Models\TimeClockEntry::create([
+                        'employee_id' => $employee->id,
+                        'clock_in' => $clockInAt,
+                        'clock_out' => $clockOutAt,
+                        'source' => 'pos'
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore db persistence errors
+        }
         return response()->json(['message' => 'Clocked out', 'clocked_in' => false, 'entry' => $entry]);
     }
 
     private function clockCacheKey($employeeId): string
     {
         return 'employee_clock:'.$employeeId;
+    }
+
+    // List time entries (admin/manager)
+    public function listTimeEntries(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || !($user->isAdmin() || $user->isManager())) abort(403);
+        try {
+            if (!class_exists(\App\Models\TimeClockEntry::class) || !Schema::hasTable('time_clock_entries')) {
+                return response()->json(['error' => 'Time tracking not yet initialized'], 503);
+            }
+            $start = $request->get('start_date', now()->subDays(14)->toDateString());
+            $end = $request->get('end_date', now()->toDateString());
+            $employeeId = $request->get('employee_id');
+            $q = \App\Models\TimeClockEntry::with(['employee'])
+                ->whereBetween('clock_in', [\Carbon\Carbon::parse($start)->startOfDay(), \Carbon\Carbon::parse($end)->endOfDay()])
+                ->orderBy('clock_in', 'desc');
+            if ($employeeId) $q->where('employee_id', $employeeId);
+            $entries = $q->paginate(50);
+            return response()->json([
+                'entries' => $entries->items(),
+                'meta' => [
+                    'current_page' => $entries->currentPage(),
+                    'per_page' => $entries->perPage(),
+                    'total' => $entries->total(),
+                    'last_page' => $entries->lastPage(),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Failed to load time entries'], 500);
+        }
+    }
+
+    // Create manual entry (admin/manager)
+    public function createTimeEntry(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || !($user->isAdmin() || $user->isManager())) abort(403);
+        $data = $request->validate([
+            'employee_id' => 'required|exists:employees,id',
+            'clock_in' => 'required|date',
+            'clock_out' => 'nullable|date|after:clock_in',
+            'notes' => 'nullable|string',
+        ]);
+        try {
+            if (!class_exists(\App\Models\TimeClockEntry::class) || !Schema::hasTable('time_clock_entries')) {
+                return response()->json(['error' => 'Time tracking not yet initialized'], 503);
+            }
+            $entry = \App\Models\TimeClockEntry::create(array_merge($data, [
+                'source' => 'admin',
+                'adjusted_by' => $user->id,
+                'adjusted_at' => now(),
+            ]));
+            return response()->json(['message' => 'Entry created', 'entry' => $entry]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Failed to create entry'], 500);
+        }
+    }
+
+    // Update entry (adjust)
+    public function updateTimeEntry(Request $request, $entryId)
+    {
+        $user = auth()->user();
+        if (!$user || !($user->isAdmin() || $user->isManager())) abort(403);
+        $data = $request->validate([
+            'clock_in' => 'required|date',
+            'clock_out' => 'nullable|date|after:clock_in',
+            'notes' => 'nullable|string',
+        ]);
+        try {
+            if (!class_exists(\App\Models\TimeClockEntry::class) || !Schema::hasTable('time_clock_entries')) {
+                return response()->json(['error' => 'Time tracking not yet initialized'], 503);
+            }
+            $entry = \App\Models\TimeClockEntry::findOrFail($entryId);
+            $adjustments = $entry->adjustments ?: [];
+            $adjustments[] = [
+                'prev' => [
+                    'clock_in' => optional($entry->clock_in)->toIso8601String(),
+                    'clock_out' => optional($entry->clock_out)->toIso8601String(),
+                    'notes' => $entry->notes,
+                ],
+                'new' => [
+                    'clock_in' => (string)$data['clock_in'],
+                    'clock_out' => isset($data['clock_out']) ? (string)$data['clock_out'] : null,
+                    'notes' => $data['notes'] ?? null,
+                ],
+                'by' => $user->id,
+                'at' => now()->toIso8601String(),
+            ];
+            $entry->update(array_merge($data, [
+                'adjusted_by' => $user->id,
+                'adjusted_at' => now(),
+                'adjustments' => $adjustments,
+            ]));
+            return response()->json(['message' => 'Entry updated', 'entry' => $entry->fresh()]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => 'Failed to update entry'], 500);
+        }
     }
 
     private function authorizeEmployeeAction(Employee $employee): void
