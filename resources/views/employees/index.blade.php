@@ -561,3 +561,113 @@ function exportEmployees() {
 }
 </script>
 @endpush
+
+@push('scripts')
+<script>
+(function(){
+  function qs(id){return document.getElementById(id)}
+  function fmtDuration(sec){ sec = Number(sec||0); const h=Math.floor(sec/3600); const m=Math.floor((sec%3600)/60); return `${h}h ${m}m`; }
+  function isoLocal(dt){ const d = new Date(dt); const off = d.getTimezoneOffset(); const local = new Date(d.getTime() - off*60000); return local.toISOString().slice(0,16); }
+  function toISOFromLocalInput(v){ if(!v) return null; const d = new Date(v); return new Date(d.getTime()).toISOString(); }
+
+  // Tabs control
+  document.querySelectorAll('.employee-tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const tab = btn.getAttribute('data-tab');
+      document.querySelectorAll('.tab-content').forEach(el=>el.classList.add('hidden'));
+      qs(tab+'-tab')?.classList.remove('hidden');
+      document.querySelectorAll('.employee-tab').forEach(b=>b.classList.remove('border-green-500','text-green-600'));
+      btn.classList.add('border-green-500','text-green-600');
+    });
+  });
+
+  // Defaults for date filters
+  const start = qs('tc-start-date');
+  const end = qs('tc-end-date');
+  const today = new Date();
+  const twoWeeksAgo = new Date(Date.now()-13*86400000);
+  start.value = twoWeeksAgo.toISOString().slice(0,10);
+  end.value = today.toISOString().slice(0,10);
+
+  async function loadEntries(){
+    const params = new URLSearchParams();
+    if (start.value) params.set('start_date', start.value);
+    if (end.value) params.set('end_date', end.value);
+    const emp = qs('tc-employee').value;
+    if (emp) params.set('employee_id', emp);
+    try {
+      const res = await (window.axios||axios).get('/api/employees/time-entries?'+params.toString());
+      const rows = Array.isArray(res.data?.entries) ? res.data.entries : [];
+      const body = qs('tc-body');
+      body.innerHTML = '';
+      rows.forEach((r)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="px-4 py-2 text-sm text-gray-900">${(r.employee?.first_name||'')+' '+(r.employee?.last_name||'')}</td>
+          <td class="px-4 py-2 text-sm"><input type="datetime-local" class="tc-in border rounded px-2 py-1" value="${isoLocal(r.clock_in)}" data-id="${r.id}"></td>
+          <td class="px-4 py-2 text-sm"><input type="datetime-local" class="tc-out border rounded px-2 py-1" value="${r.clock_out ? isoLocal(r.clock_out) : ''}" data-id="${r.id}"></td>
+          <td class="px-4 py-2 text-sm text-gray-700">${fmtDuration(r.duration_seconds || (r.clock_out ? ( (new Date(r.clock_out)-new Date(r.clock_in))/1000 ) : 0))}</td>
+          <td class="px-4 py-2 text-sm"><input type="text" class="tc-notes border rounded px-2 py-1 w-56" value="${r.notes||''}" data-id="${r.id}"></td>
+          <td class="px-4 py-2 text-right"><button class="tc-save bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded" data-id="${r.id}">Save</button></td>
+        `;
+        body.appendChild(tr);
+      });
+    } catch(e) {
+      (window.POS?.showToast||alert)('Failed to load time entries','error');
+    }
+  }
+
+  qs('tc-refresh').addEventListener('click', loadEntries);
+
+  // Save handler (delegated)
+  document.addEventListener('click', async function(e){
+    const btn = e.target.closest('.tc-save');
+    if (!btn) return;
+    const id = btn.getAttribute('data-id');
+    const row = btn.closest('tr');
+    const clock_in = toISOFromLocalInput(row.querySelector('.tc-in').value);
+    const outEl = row.querySelector('.tc-out');
+    const clock_out = outEl && outEl.value ? toISOFromLocalInput(outEl.value) : null;
+    const notes = row.querySelector('.tc-notes').value;
+    try {
+      const res = await (window.axios||axios).put('/api/employees/time-entries/'+id, { clock_in, clock_out, notes });
+      if (res.status>=200 && res.status<300) {
+        (window.POS?.showToast||alert)('Entry updated','success');
+        loadEntries();
+      } else {
+        (window.POS?.showToast||alert)('Failed to update entry','error');
+      }
+    } catch(err) {
+      const msg = err?.response?.data?.error || 'Failed to update entry';
+      (window.POS?.showToast||alert)(msg,'error');
+    }
+  });
+
+  // Add entry
+  qs('tc-add').addEventListener('click', async function(){
+    const emp = qs('tc-employee').value;
+    if (!emp) { (window.POS?.showToast||alert)('Select an employee filter to add an entry','warning'); return; }
+    const st = prompt('Clock In (YYYY-MM-DD HH:MM) local time:');
+    if (!st) return;
+    const en = prompt('Clock Out (optional, YYYY-MM-DD HH:MM):');
+    try {
+      const payload = { employee_id: emp, clock_in: new Date(st).toISOString() };
+      if (en) payload.clock_out = new Date(en).toISOString();
+      const res = await (window.axios||axios).post('/api/employees/time-entries', payload);
+      if (res.status>=200 && res.status<300) {
+        (window.POS?.showToast||alert)('Entry created','success');
+        loadEntries();
+      } else {
+        (window.POS?.showToast||alert)('Failed to create entry','error');
+      }
+    } catch(err) {
+      const msg = err?.response?.data?.error || 'Failed to create entry';
+      (window.POS?.showToast||alert)(msg,'error');
+    }
+  });
+
+  // Auto-load when tab opened
+  document.querySelector('[data-tab="timeclock"]').addEventListener('click', loadEntries);
+})();
+</script>
+@endpush
