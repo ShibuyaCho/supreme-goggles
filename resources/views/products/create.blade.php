@@ -65,13 +65,18 @@
                                 <option value="Extracts">Extracts</option>
                                 <option value="Edibles">Edibles</option>
                                 <option value="Topicals">Topicals</option>
+                                <option value="Patches">Patches</option>
                                 <option value="Tinctures">Tinctures</option>
                                 <option value="Vapes">Vapes</option>
+                                <option value="Inhalable Cannabinoid">Inhalable Cannabinoid</option>
                                 <option value="Inhalable Cannabinoids">Inhalable Cannabinoids</option>
+                                <option value="Plants (Clones)">Plants (Clones)</option>
                                 <option value="Clones">Clones</option>
+                                <option value="Seeds">Seeds</option>
                                 <option value="Hemp">Hemp</option>
                                 <option value="Paraphernalia">Paraphernalia</option>
                                 <option value="Accessories">Accessories</option>
+                                <option value="Apparel">Apparel</option>
                             </select>
                         </div>
                         <div>
@@ -504,7 +509,7 @@ function productCreator() {
         },
 
         isCannabisProduct() {
-            const cannabisCategories = ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Tinctures', 'Vapes', 'Inhalable Cannabinoids', 'Clones'];
+            const cannabisCategories = ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Patches', 'Tinctures', 'Vapes', 'Inhalable Cannabinoid', 'Inhalable Cannabinoids', 'Plants (Clones)', 'Clones', 'Seeds'];
             return cannabisCategories.includes(this.product.category);
         },
 
