@@ -114,7 +114,7 @@ class EmployeesController extends Controller
                 ]
             );
             $user->update([
-                'role' => $this->mapPositionToRole($employee->position),
+                'role' => $employee->role,
                 'permissions' => $employee->permissions,
             ]);
         } catch (\Throwable $e) {
@@ -179,9 +179,9 @@ class EmployeesController extends Controller
             $user = \App\Models\User::where('employee_id', $employee->id)->first();
             if ($user) {
                 $user->update([
-                    'role' => $this->mapPositionToRole($employee->position),
+                    'role' => $employee->role,
                     'permissions' => $employee->permissions,
-                    'is_active' => $employee->status === 'active',
+                    'is_active' => $employee->isActive(),
                 ]);
             }
         } catch (\Throwable $e) {
