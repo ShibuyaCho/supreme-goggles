@@ -5087,7 +5087,7 @@
                     >
                       <option value="">Choose a customer...</option>
                       <template
-                        x-for="customer in customers.filter(c => !c.loyaltyPoints)"
+                        x-for="customer in (Array.isArray(customers)?customers:[]).filter(c => !c.loyaltyPoints)"
                         :key="customer.id"
                       >
                         <option
@@ -6386,7 +6386,7 @@
                       >
                     </p>
                     <p class="text-sm text-gray-500">
-                      ������ Enhanced search functionality implemented
+                      �������� Enhanced search functionality implemented
                     </p>
                     <p class="text-sm text-gray-500">
                       ��� Customer action buttons added
@@ -18213,7 +18213,7 @@
                       aria-describedby="products-help"
                     >
                       <template
-                        x-for="product in products.filter(p => !p.isGLS)"
+                        x-for="product in (Array.isArray(products)?products:[]).filter(p => !p.isGLS)"
                         :key="product.id"
                       >
                         <option
