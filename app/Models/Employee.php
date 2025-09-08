@@ -68,6 +68,17 @@ class Employee extends Authenticatable
         return $this->hasMany(TimeClockEntry::class);
     }
 
+    public function getRoleAttribute()
+    {
+        $p = strtolower(trim($this->position ?? ''));
+        if ($p === 'admin' || $p === 'administrator') return 'admin';
+        if ($p === 'manager' || $p === 'general manager' || $p === 'assistant manager') return 'manager';
+        if ($p === 'inventory' || $p === 'inventory manager' || $p === 'inventory specialist') return 'inventory';
+        if ($p === 'budtender') return 'budtender';
+        if ($p === 'cashier' || $p === 'sales' || $p === 'sales associate') return 'cashier';
+        return 'cashier';
+    }
+
     public function getTotalSalesAttribute()
     {
         return $this->sales()->where('status', 'completed')->sum('total');
