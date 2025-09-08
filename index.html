@@ -5147,7 +5147,7 @@
                       Loyalty Program Benefits
                     </h4>
                     <ul class="text-sm text-yellow-700 space-y-1">
-                      <li>• Earn 1 point per $1 spent</li>
+                      <li>�� Earn 1 point per $1 spent</li>
                       <li>• Redeem 100 points = $5 discount</li>
                       <li>��� Birthday bonuses and special offers</li>
                       <li>• Tier upgrades based on annual spending</li>
@@ -19885,28 +19885,6 @@
 
         console.log("Cannabis POS system initialized successfully!");
       });
-    </script>
-    <script>
-      (function(){
-        function hideLaravelNotices(root){
-          const sels = ['p','div','span','section','footer'];
-          for (const sel of sels) {
-            root.querySelectorAll(sel).forEach(function(el){
-              try {
-                const txt = (el.textContent || '').toLowerCase();
-                if (!txt) return;
-                if (txt.includes('laravel integration') || txt.includes('laravel implementation') || txt.includes('laravel demo') || txt.includes('laravel ready')) {
-                  const container = el.closest('.border') || el.closest('.rounded-lg') || el.parentElement || el;
-                  container.style.display = 'none';
-                }
-              } catch(e) {}
-            });
-          }
-        }
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', function(){ hideLaravelNotices(document); });
-        } else { hideLaravelNotices(document); }
-      })();
     </script>
   </body>
 </html>
