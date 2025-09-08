@@ -4,7 +4,13 @@ class POSAuth {
     // Helpers for cookie fallback (for environments where localStorage may be cleared)
     const getCookie = (name) => {
       try {
-        const match = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, '\\$1') + '=([^;]*)'));
+        const match = document.cookie.match(
+          new RegExp(
+            "(?:^|; )" +
+              name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") +
+              "=([^;]*)",
+          ),
+        );
         return match ? decodeURIComponent(match[1]) : null;
       } catch (e) {
         return null;
@@ -24,11 +30,23 @@ class POSAuth {
     };
     this._cookies = { getCookie, setCookie, deleteCookie };
 
-    const posToken = (typeof localStorage !== 'undefined' && localStorage.getItem('pos_token')) || null;
-    const altToken = (typeof localStorage !== 'undefined' && localStorage.getItem('auth_token')) || null;
-    const cookieToken = getCookie('pos_token');
-    const posUserStr = (typeof localStorage !== 'undefined' && localStorage.getItem('pos_user')) || null;
-    const altUserStr = (typeof localStorage !== 'undefined' && localStorage.getItem('user_data')) || null;
+    const posToken =
+      (typeof localStorage !== "undefined" &&
+        localStorage.getItem("pos_token")) ||
+      null;
+    const altToken =
+      (typeof localStorage !== "undefined" &&
+        localStorage.getItem("auth_token")) ||
+      null;
+    const cookieToken = getCookie("pos_token");
+    const posUserStr =
+      (typeof localStorage !== "undefined" &&
+        localStorage.getItem("pos_user")) ||
+      null;
+    const altUserStr =
+      (typeof localStorage !== "undefined" &&
+        localStorage.getItem("user_data")) ||
+      null;
 
     this.token = posToken || altToken || cookieToken || null;
     this.user = null;
@@ -177,7 +195,7 @@ class POSAuth {
     } catch (e) {}
     try {
       // Cookie fallback to survive certain reload scenarios and environments
-      this._cookies?.setCookie?.('pos_token', token, 30);
+      this._cookies?.setCookie?.("pos_token", token, 30);
     } catch (e) {}
     try {
       axios.defaults.headers = axios.defaults.headers || {};
@@ -258,7 +276,7 @@ class POSAuth {
       localStorage.removeItem("cannabisPOS-auth");
     } catch (e) {}
     try {
-      this._cookies?.deleteCookie?.('pos_token');
+      this._cookies?.deleteCookie?.("pos_token");
     } catch (e) {}
     try {
       if (axios?.defaults?.headers?.common)
@@ -332,7 +350,7 @@ class POSAuth {
         localStorage.setItem("auth_token", this.token);
       } catch (e) {}
       try {
-        this._cookies?.setCookie?.('pos_token', token, 30);
+        this._cookies?.setCookie?.("pos_token", token, 30);
       } catch (e) {}
       try {
         axios.defaults.headers = axios.defaults.headers || {};
