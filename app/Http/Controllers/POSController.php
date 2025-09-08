@@ -168,7 +168,7 @@ class POSController extends Controller
         if ($product->stock < $quantity) {
             return response()->json([
                 'success' => false,
-                'message' => "Insufficient stock. Available: {$product->stock}"
+                'message' => "Insufficient quantity. Available: {$product->stock}"
             ]);
         }
 
