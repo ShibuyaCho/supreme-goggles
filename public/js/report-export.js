@@ -336,8 +336,14 @@ class ReportExportManager {
                 responseType: 'blob'
             });
 
-            // Create download link
-            this.downloadFile(response.data, this.generateFilename(reportType, format), format);
+            const headers = response.headers || {};
+            const cd = headers['content-disposition'] || '';
+            const hintedName = headers['x-export-filename'] || (cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i) || [])[1] || (cd.match(/filename=\"?([^\";]+)\"?/i) || [])[1];
+            const filename = (hintedName && typeof hintedName === 'string') ? decodeURIComponent(hintedName) : this.generateFilename(reportType, format);
+
+            // Create download link (preserve server content-type)
+            const blob = response.data instanceof Blob ? response.data : new Blob([response.data], { type: headers['content-type'] || 'application/octet-stream' });
+            this.downloadFile(blob, filename);
             
             // Show success message
             this.showSuccessMessage(`${format.toUpperCase()} report exported successfully!`);
@@ -359,7 +365,7 @@ class ReportExportManager {
     /**
      * Download file from blob
      */
-    downloadFile(blob, filename, format) {
+    downloadFile(blob, filename) {
         const url = window.URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
