@@ -449,6 +449,7 @@ function productCreator() {
             category: '',
             brand: '',
             weight: '',
+            unit: 'Each',
             description: '',
             cost: 0,
             price: 0,
