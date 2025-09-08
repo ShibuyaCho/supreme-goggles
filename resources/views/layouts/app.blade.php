@@ -140,6 +140,15 @@
     <script src="{{ asset('lib/axios/axios.min.js') }}" defer></script>
     <script src="{{ asset('js/auth.js') }}" defer></script>
     <script src="{{ asset('js/pos.js') }}" defer></script>
+    <!-- Global fallbacks to satisfy Alpine expressions on pages that reference reportFilters/currentReport -->
+    <script>
+      (function(){
+        try {
+          if (typeof window.reportFilters === 'undefined') window.reportFilters = { store: '', dateRange: '', category: '', room: '' };
+          if (typeof window.currentReport === 'undefined') window.currentReport = null;
+        } catch (e) {}
+      })();
+    </script>
     <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 </head>
 
