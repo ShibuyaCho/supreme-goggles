@@ -319,4 +319,15 @@ class EmployeesController extends Controller
         
         return response()->json($performance);
     }
+
+    private function mapPositionToRole(string $position): string
+    {
+        $p = strtolower(trim($position));
+        if ($p === 'admin' || $p === 'administrator') return 'admin';
+        if ($p === 'manager' || $p === 'general manager' || $p === 'assistant manager') return 'manager';
+        if ($p === 'inventory' || $p === 'inventory manager' || $p === 'inventory specialist') return 'inventory';
+        if ($p === 'budtender') return 'budtender';
+        if ($p === 'cashier' || $p === 'sales' || $p === 'sales associate') return 'cashier';
+        return 'cashier';
+    }
 }
