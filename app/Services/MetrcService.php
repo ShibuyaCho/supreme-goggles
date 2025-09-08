@@ -408,7 +408,25 @@ class MetrcService
             Log::error('Error fetching METRC item categories', [
                 'error' => $e->getMessage()
             ]);
-            throw $e;
+            // Fallback to common Oregon categories
+            return [
+                ['Name' => 'Flower'],
+                ['Name' => 'Pre-Rolls'],
+                ['Name' => 'Concentrates'],
+                ['Name' => 'Extracts'],
+                ['Name' => 'Edibles'],
+                ['Name' => 'Topicals'],
+                ['Name' => 'Tinctures'],
+                ['Name' => 'Vape Cartridges'],
+                ['Name' => 'Vape Pens'],
+                ['Name' => 'Inhalable Cannabinoids'],
+                ['Name' => 'Clones'],
+                ['Name' => 'Immature Plants'],
+                ['Name' => 'Seeds'],
+                ['Name' => 'Shake/Trim'],
+                ['Name' => 'Kief'],
+                ['Name' => 'Accessories'],
+            ];
         }
     }
 
