@@ -17,6 +17,7 @@ class Product extends Model
         'cost',
         'sku',
         'weight',
+        'unit',
         'room',
         'strain',
         'thc',
