@@ -258,6 +258,9 @@ class POSAuth {
       localStorage.removeItem("cannabisPOS-auth");
     } catch (e) {}
     try {
+      this._cookies?.deleteCookie?.('pos_token');
+    } catch (e) {}
+    try {
       if (axios?.defaults?.headers?.common)
         delete axios.defaults.headers.common["Authorization"];
     } catch (e) {}
