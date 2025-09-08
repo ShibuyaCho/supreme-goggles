@@ -17,9 +17,9 @@
                             Reports
                         </button>
                         <div id="reports-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                            <a href="{{ route('sales.daily-report') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Daily Report</a>
-                            <a href="{{ route('sales.weekly-report') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Weekly Report</a>
-                            <a href="{{ route('sales.monthly-report') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Monthly Report</a>
+                            <a href="{{ route('reports.index') }}?section=sales&range=daily" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Daily Report</a>
+                            <a href="{{ route('reports.index') }}?section=sales&range=weekly" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Weekly Report</a>
+                            <a href="{{ route('reports.index') }}?section=sales&range=monthly" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Monthly Report</a>
                             <hr class="border-gray-100">
                             <button onclick="customReport()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Custom Report</button>
                         </div>
