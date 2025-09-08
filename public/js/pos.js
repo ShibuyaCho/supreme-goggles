@@ -5347,48 +5347,55 @@ function cannabisPOS() {
       }
     },
 
-    // Generate Custom Report
-    generateReport() {
+    // Generate Report (predefined or custom)
+    async generateReport(type) {
+      // If a predefined type is provided (from Available Reports)
+      if (typeof type === 'string' && type) {
+        const fmt = await this._askFormat();
+        if (!fmt) return;
+        const apiType = this._mapReportType(type);
+        if (!apiType) { this.showToast('Unsupported report', 'error'); return; }
+        try {
+          const res = await (window.axios||axios).post('/api/reports/export', {
+            report_type: apiType,
+            format: fmt,
+            start_date: null,
+            end_date: null,
+            filters: {}
+          }, { responseType: 'blob' });
+          this._triggerDownload(res, `report_${apiType}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+        } catch (e) {
+          this.showToast('Failed to generate report', 'error');
+        }
+        return;
+      }
+
+      // Custom report flow (right-side builder)
       if (!this.isReportValid()) {
         this.showToast("Please complete all required fields", "error");
         return;
       }
-
-      this.showToast("Generating custom report...", "info");
-
-      setTimeout(() => {
-        const generatedReport = {
-          id: Date.now(),
-          name: this.customReport.name,
-          type: this.customReport.type,
-          description: this.customReport.description,
-          createdAt: new Date().toISOString(),
-          createdBy: this.currentUser?.name || "User",
-          dateRange: this.customReport.dateRange,
-          dataSources: [...this.customReport.dataSources],
-          metrics: [...this.customReport.selectedMetrics],
-          chartType: this.customReport.chartType,
-          status: "completed",
-          exportFormats: [...this.customReport.exportFormats],
-        };
-
-        this.recentReports.unshift(generatedReport);
-        if (this.recentReports.length > 10) {
-          this.recentReports = this.recentReports.slice(0, 10);
-        }
-
-        // Save to localStorage
-        localStorage.setItem(
-          "cannabisPOS-reports",
-          JSON.stringify(this.recentReports),
-        );
-
-        this.showToast(
-          `Custom report "${this.customReport.name}" generated successfully!`,
-          "success",
-        );
-        this.closeCreateReportModal();
-      }, 2000);
+      const fmt = await this._askFormat('pdf');
+      if (!fmt) return;
+      try {
+        const res = await (window.axios||axios).post('/api/reports/export', {
+          report_type: this._mapSourceToReport((this.customReport?.dataSources?.[0]||'sales').toLowerCase()),
+          format: fmt,
+          start_date: this.customReport?.startDate || null,
+          end_date: this.customReport?.endDate || null,
+          filters: {
+            metrics: this.customReport?.selectedMetrics || [],
+            include_comparisons: !!this.customReport?.includeComparisons,
+            include_trends: !!this.customReport?.includeTrends,
+            include_breakdowns: !!this.customReport?.includeBreakdowns,
+          }
+        }, { responseType: 'blob' });
+        const name = (this.customReport?.name || 'custom-report').replace(/\s+/g,'_');
+        this._triggerDownload(res, `${name}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+        this.showToast('Report generated successfully!', 'success');
+      } catch (e) {
+        this.showToast('Failed to generate report', 'error');
+      }
     },
 
     // Save Report Template
