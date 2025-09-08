@@ -479,7 +479,33 @@ class MetrcService
     {
         $prefix = config('services.metrc.tag_prefix', '1A4');
         $suffix = strtoupper(substr(uniqid(), -8));
-        
+
         return $prefix . $suffix;
+    }
+
+    /**
+     * Normalize local category names into METRC item categories
+     */
+    private function mapCategoryToMetrc(?string $category): string
+    {
+        $c = strtolower(trim((string)$category));
+        $map = [
+            'plants (clones)' => 'Immature Plants',
+            'clones' => 'Immature Plants',
+            'immature plants' => 'Immature Plants',
+            'seeds' => 'Seeds',
+            'inhalable cannabinoid' => 'Inhalable Cannabinoids',
+            'patches' => 'Topicals',
+            'apparel' => 'Accessories',
+            'paraphernalia' => 'Accessories',
+            'vapes' => 'Vape Cartridges',
+            'extracts' => 'Concentrates',
+        ];
+        // Exact match map
+        if (isset($map[$c])) {
+            return $map[$c];
+        }
+        // Default: title case original category
+        return $category ? ucwords($category) : 'Accessories';
     }
 }
