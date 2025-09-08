@@ -357,26 +357,33 @@ function reportsManager() {
             return 'General';
         },
 
-        generateCustomReport() {
+        async generateCustomReport() {
             if (!this.customReport.name || !this.customReport.source) {
                 this.showToast('Please fill in required fields', 'error');
                 return;
             }
-
-            this.showToast('Generating custom report...', 'info');
+            const fmt = await this.askFormat(this.customReport.format);
+            if (!fmt) return;
             this.showCustomModal = false;
-            
-            setTimeout(() => {
-                const newReport = {
-                    id: Date.now(),
-                    name: this.customReport.name,
-                    type: 'Custom',
-                    generated: new Date().toLocaleString(),
-                    status: 'completed'
-                };
-                this.recentReports.unshift(newReport);
-                this.showToast('Custom report generated successfully!', 'success');
-            }, 3000);
+            const reportType = this.mapSourceToReport(this.customReport.source);
+            try {
+                const res = await (window.axios||axios).post('/api/reports/export', {
+                    report_type: reportType,
+                    format: fmt,
+                    start_date: this.customReport.startDate || null,
+                    end_date: this.customReport.endDate || null,
+                    filters: {
+                        include_void: !!this.customReport.includeVoid,
+                        medical_only: !!this.customReport.medicalOnly,
+                        group_by_category: !!this.customReport.groupByCategory,
+                    },
+                }, { responseType: 'blob' });
+                this.triggerDownload(res, `${this.customReport.name.replace(/\s+/g,'_')}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                this.showToast('Report generated successfully!', 'success');
+            } catch (e) {
+                const msg = e?.response?.data?.error || 'Failed to generate report';
+                this.showToast(msg, 'error');
+            }
         },
 
         downloadReport(report) {
