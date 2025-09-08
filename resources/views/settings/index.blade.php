@@ -931,6 +931,12 @@ function settingsManager() {
 
         async syncMetrcNow() {
             try {
+                // Persist current settings to server and local storage before syncing
+                try {
+                    await (window.posAuth ? posAuth.apiRequest('post', '/settings', this.settings) : Promise.resolve({ success: false }));
+                    this.saveSettingsToStorage();
+                } catch (_) {}
+                // Trigger server-side import (excludes zero-qty)
                 const res = await (window.posAuth ? posAuth.apiRequest('post', '/metrc/import-packages') : Promise.resolve({ success: false }));
                 if (res.success && res.data?.success) {
                     const { imported, updated, skipped } = res.data;
@@ -940,10 +946,12 @@ function settingsManager() {
                     const { imported = 0, updated = 0, skipped = 0 } = res.data || {};
                     this.showToast(`Imported ${imported}, updated ${updated}. Skipped ${skipped} zero-qty packages.`, 'success');
                 } else {
-                    this.showToast('Failed to sync METRC packages', 'error');
+                    const msg = res.message || 'Failed to sync METRC packages';
+                    this.showToast(msg, 'error');
                 }
             } catch (e) {
-                this.showToast('Failed to sync METRC packages', 'error');
+                const msg = e?.response?.data?.message || e?.message || 'Failed to sync METRC packages';
+                this.showToast(msg, 'error');
             }
         },
 

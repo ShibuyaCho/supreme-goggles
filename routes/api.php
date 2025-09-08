@@ -91,6 +91,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('metrc')->middleware('permission:metrc:access')->group(function () {
+        Route::get('/status', function() {
+            $svc = app(\App\Services\MetrcService::class);
+            return response()->json([
+                'connected' => $svc->isConfigured(),
+                'facility' => env('METRC_FACILITY') ?: (\Illuminate\Support\Facades\Cache::get('pos_settings')['metrc_facility'] ?? null),
+            ]);
+        });
         Route::get('/test-connection', [MetrcController::class, 'testConnection']);
         Route::get('/packages', [MetrcController::class, 'getAllPackages']);
         Route::post('/import-packages', [MetrcController::class, 'importActivePackages'])
