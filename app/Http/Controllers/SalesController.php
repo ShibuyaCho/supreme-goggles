@@ -125,12 +125,22 @@ class SalesController extends Controller
             'saleItems.product'
         ])->findOrFail($id);
         
-        // Generate receipt PDF
+        // Generate receipt PDF (fallback to HTML if PDF library unavailable)
+        if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $html = view('sales.receipt', compact('sale'))->render();
+            $filename = "receipt_{$sale->sale_number}.html";
+            return response($html, 200)
+                ->header('Content-Type', 'text/html; charset=UTF-8')
+                ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
+                ->header('X-Export-Fallback', 'pdf->html')
+                ->header('X-Export-Filename', $filename);
+        }
+
         $pdf = Pdf::loadView('sales.receipt', compact('sale'));
-        
+
         // Mark as printed
         $sale->markAsPrinted();
-        
+
         return $pdf->download("receipt_{$sale->sale_number}.pdf");
     }
     
@@ -270,12 +280,25 @@ class SalesController extends Controller
             'saleItems.product'
         ])->findOrFail($id);
         
-        // Generate receipt PDF
+        // Generate receipt PDF (fallback to HTML if PDF library unavailable)
+        if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+            $html = view('sales.receipt', [
+                'sale' => $sale,
+                'reprint' => true
+            ])->render();
+            $filename = "receipt_{$sale->sale_number}_reprint.html";
+            return response($html, 200)
+                ->header('Content-Type', 'text/html; charset=UTF-8')
+                ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
+                ->header('X-Export-Fallback', 'pdf->html')
+                ->header('X-Export-Filename', $filename);
+        }
+
         $pdf = Pdf::loadView('sales.receipt', [
             'sale' => $sale,
             'reprint' => true
         ]);
-        
+
         return $pdf->download("receipt_{$sale->sale_number}_reprint.pdf");
     }
     
@@ -291,6 +314,15 @@ class SalesController extends Controller
         $report = $this->generateDailyReportData($sales, $date);
         
         if ($request->get('format') === 'pdf') {
+            if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                $html = view('sales.reports.daily', compact('report', 'date'))->render();
+                $filename = "daily_sales_report_{$date}.html";
+                return response($html, 200)
+                    ->header('Content-Type', 'text/html; charset=UTF-8')
+                    ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
+                    ->header('X-Export-Fallback', 'pdf->html')
+                    ->header('X-Export-Filename', $filename);
+            }
             $pdf = Pdf::loadView('sales.reports.daily', compact('report', 'date'));
             return $pdf->download("daily_sales_report_{$date}.pdf");
         }
@@ -311,6 +343,15 @@ class SalesController extends Controller
         $report = $this->generateWeeklyReportData($sales, $startDate, $endDate);
         
         if ($request->get('format') === 'pdf') {
+            if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                $html = view('sales.reports.weekly', compact('report', 'startDate', 'endDate'))->render();
+                $filename = "weekly_sales_report_{$startDate}_to_{$endDate}.html";
+                return response($html, 200)
+                    ->header('Content-Type', 'text/html; charset=UTF-8')
+                    ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
+                    ->header('X-Export-Fallback', 'pdf->html')
+                    ->header('X-Export-Filename', $filename);
+            }
             $pdf = Pdf::loadView('sales.reports.weekly', compact('report', 'startDate', 'endDate'));
             return $pdf->download("weekly_sales_report_{$startDate}_to_{$endDate}.pdf");
         }
@@ -332,6 +373,15 @@ class SalesController extends Controller
         $report = $this->generateMonthlyReportData($sales, $month);
         
         if ($request->get('format') === 'pdf') {
+            if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
+                $html = view('sales.reports.monthly', compact('report', 'month'))->render();
+                $filename = "monthly_sales_report_{$month}.html";
+                return response($html, 200)
+                    ->header('Content-Type', 'text/html; charset=UTF-8')
+                    ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
+                    ->header('X-Export-Fallback', 'pdf->html')
+                    ->header('X-Export-Filename', $filename);
+            }
             $pdf = Pdf::loadView('sales.reports.monthly', compact('report', 'month'));
             return $pdf->download("monthly_sales_report_{$month}.pdf");
         }
