@@ -176,6 +176,10 @@ class POSAuth {
       localStorage.setItem("user_data", JSON.stringify(user));
     } catch (e) {}
     try {
+      // Cookie fallback to survive certain reload scenarios and environments
+      this._cookies?.setCookie?.('pos_token', token, 30);
+    } catch (e) {}
+    try {
       axios.defaults.headers = axios.defaults.headers || {};
       axios.defaults.headers.common = axios.defaults.headers.common || {};
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
