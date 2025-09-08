@@ -55,9 +55,13 @@ class POSController extends Controller
     public function processPayment(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'method' => 'required|in:cash,card',
+            'method' => 'required|in:cash,card,debit,credit',
             'total' => 'required|numeric|min:0',
             'items' => 'required|array|min:1',
+            'items.*.id' => 'required|exists:products,id',
+            'items.*.quantity' => 'required|numeric|min:0.01',
+            'items.*.price' => 'required|numeric|min:0',
+            'items.*.discount' => 'nullable|numeric|min:0',
             'customer_id' => 'nullable|exists:customers,id',
             'receipt_options' => 'array'
         ]);
@@ -72,33 +76,69 @@ class POSController extends Controller
         try {
             DB::beginTransaction();
             
-            // Create sale record
+            $employeeId = optional(auth()->user()?->employee)->id;
+            if (!$employeeId) {
+                return response()->json(['error' => 'Employee context not found for user'], 400);
+            }
+
+            // Compute subtotal from items and derive tax amount
+            $subtotal = 0;
+            foreach ($request->items as $it) {
+                $line = ($it['price'] * $it['quantity']) - (float)($it['discount'] ?? 0);
+                $subtotal += $line;
+            }
+            $total = (float) $request->total;
+            $taxAmount = max(0, $total - $subtotal);
+
+            // Generate sale number
+            $saleNumber = 'S' . now()->format('YmdHis') . '-' . random_int(100, 999);
+
+            // Optional customer
+            $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
+
+            // Create sale record aligned with schema
             $sale = Sale::create([
-                'customer_id' => $request->customer_id,
-                'employee_id' => auth()->id(),
-                'total_amount' => $request->total,
-                'payment_method' => $request->method,
-                'payment_status' => 'completed',
-                'sale_date' => now(),
-                'receipt_printed' => $request->receipt_options['print'] ?? false,
-                'receipt_emailed' => $request->receipt_options['email'] ?? false,
-                'receipt_sms' => $request->receipt_options['sms'] ?? false
+                'sale_number' => $saleNumber,
+                'customer_id' => $customer?->id,
+                'employee_id' => $employeeId,
+                'customer_type' => $customer?->customer_type ?? 'recreational',
+                'customer_info' => $customer ? [
+                    'name' => trim(($customer->first_name ?? '') . ' ' . ($customer->last_name ?? '')),
+                    'email' => $customer->email,
+                    'phone' => $customer->phone,
+                ] : null,
+                'subtotal' => $subtotal,
+                'tax_amount' => $taxAmount,
+                'discount_amount' => 0,
+                'total_amount' => $total,
+                'payment_method' => $request->method === 'card'
+                    ? ($request->card_details['type'] ?? 'debit')
+                    : $request->method,
+                'payment_reference' => $request->card_details['last_four'] ?? null,
+                'amount_paid' => $request->method === 'cash' ? ($request->cash_received ?? $total) : $total,
+                'change_given' => $request->method === 'cash' ? ($request->change ?? 0) : 0,
+                'status' => 'completed',
+                'receipt_printed' => (bool)($request->receipt_options['print'] ?? false),
+                'synced_to_metrc' => false,
             ]);
             
             // Add sale items
             foreach ($request->items as $item) {
-                $sale->items()->create([
+                $product = Product::find($item['id']);
+                $sale->saleItems()->create([
                     'product_id' => $item['id'],
+                    'product_name' => $product?->name,
+                    'product_category' => $product?->category,
+                    'product_sku' => $product?->sku,
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['price'],
-                    'total_price' => $item['price'] * $item['quantity'],
-                    'discount_amount' => $item['discount'] ?? 0
+                    'total_price' => ($item['price'] * $item['quantity']) - (float)($item['discount'] ?? 0),
+                    'discount_amount' => (float)($item['discount'] ?? 0),
                 ]);
-                
-                // Update product stock
-                $product = Product::find($item['id']);
+
+                // Update product quantity
                 if ($product) {
-                    $product->decrement('stock', $item['quantity']);
+                    $product->decrement('quantity', $item['quantity']);
                 }
             }
             
@@ -123,13 +163,13 @@ class POSController extends Controller
             if ($request->receipt_options['print'] ?? false) {
                 $receiptUrl = route('sales.receipt', $sale->id);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Payment processed successfully',
                 'sale_id' => $sale->id,
+                'sale_number' => $sale->sale_number,
                 'receipt_url' => $receiptUrl,
-                'transaction_number' => $sale->transaction_number
             ]);
             
         } catch (\Exception $e) {
