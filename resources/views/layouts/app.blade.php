@@ -367,29 +367,6 @@
             }
         };
 
-        // Hide any demo notices like "Laravel Integration/Implementation" across pages
-        (function(){
-            function hideLaravelNotices(root){
-                var sels = ['p','div','span','section','footer'];
-                for (var i=0;i<sels.length;i++){
-                    var nodes = root.querySelectorAll(sels[i]);
-                    nodes.forEach(function(el){
-                        try{
-                            var t = (el.textContent || '').toLowerCase();
-                            if (!t) return;
-                            if (t.includes('laravel integration') || t.includes('laravel implementation') || t.includes('laravel demo') || t.includes('laravel ready')){
-                                var container = el.closest('.border') || el.closest('.rounded-lg') || el.parentElement || el;
-                                container.style.display = 'none';
-                            }
-                        }catch(e){}
-                    });
-                }
-            }
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', function(){ hideLaravelNotices(document); });
-            } else { hideLaravelNotices(document); }
-        })();
-
         // Mobile menu toggle
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
