@@ -501,11 +501,31 @@ class MetrcService
             'vapes' => 'Vape Cartridges',
             'extracts' => 'Concentrates',
         ];
-        // Exact match map
         if (isset($map[$c])) {
             return $map[$c];
         }
-        // Default: title case original category
         return $category ? ucwords($category) : 'Accessories';
+    }
+
+    private function mapUnitToMetrc(?string $unit): string
+    {
+        $u = strtolower(trim((string)$unit));
+        $map = [
+            'each' => 'Each',
+            'unit' => 'Each',
+            'units' => 'Each',
+            'gram' => 'Grams',
+            'grams' => 'Grams',
+            'g' => 'Grams',
+            'fluid oz.' => 'Fluid Ounces',
+            'fluid oz' => 'Fluid Ounces',
+            'fl oz' => 'Fluid Ounces',
+            'ounce' => 'Fluid Ounces',
+            'ounces' => 'Fluid Ounces',
+            'milliliter' => 'Milliliters',
+            'milliliters' => 'Milliliters',
+            'ml' => 'Milliliters',
+        ];
+        return $map[$u] ?? 'Each';
     }
 }
