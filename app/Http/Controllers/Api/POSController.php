@@ -112,7 +112,7 @@ class POSController extends Controller
                 'discount_amount' => 0,
                 'total_amount' => $total,
                 'payment_method' => $request->method === 'card'
-                    ? ($request->card_details['type'] ?? 'debit')
+                    ? ((strtolower($request->card_details['type'] ?? '') === 'debit') ? 'debit' : 'credit')
                     : $request->method,
                 'payment_reference' => $request->card_details['last_four'] ?? null,
                 'amount_paid' => $request->method === 'cash' ? ($request->cash_received ?? $total) : $total,
