@@ -441,7 +441,7 @@ class MetrcService
                 $packageData = [
                     'Tag' => $this->generatePackageTag(),
                     'PackagedDate' => now()->toISOString(),
-                    'Item' => $product->category,
+                    'Item' => $this->mapCategoryToMetrc($product->category),
                     'Quantity' => $product->quantity,
                     'UnitOfMeasure' => $product->unit ?: 'Grams',
                     'PatientLicenseNumber' => null,
