@@ -117,8 +117,13 @@ class Deal extends Model
             return false;
         }
 
-        if ($this->medical_only && (!$customer || !$customer->is_medical_patient)) {
-            return false;
+        if ($this->medical_only) {
+            if (!$customer) return false;
+            $isCaregiver = ($customer->customer_type ?? null) === 'caregiver';
+            $isMedical = ($customer->is_medical_patient ?? false) || ($customer->customer_type ?? null) === 'medical';
+            if (!($isMedical || $isCaregiver)) {
+                return false;
+            }
         }
 
         return true;
