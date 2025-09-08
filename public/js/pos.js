@@ -5426,18 +5426,50 @@ function cannabisPOS() {
     // Report Management Functions
     viewReport(report) {
       this.showToast(`Opening report: ${report.name}`, "info");
-      // View report logic
+    },
+
+    async printReport(type){
+      try {
+        const res = await (window.axios||axios).post('/api/reports/export', {
+          report_type: this._mapReportType(type),
+          format: 'pdf',
+          start_date: null,
+          end_date: null,
+          filters: {}
+        }, { responseType: 'blob' });
+        const file = new Blob([res.data], { type: 'application/pdf' });
+        const url = URL.createObjectURL(file);
+        const w = window.open(url, '_blank');
+        if (!w) this.showToast('Popup blocked. Enable popups to print.', 'warning');
+        setTimeout(()=> URL.revokeObjectURL(url), 5000);
+      } catch (e) {
+        this.showToast('Failed to open print preview', 'error');
+      }
     },
 
     downloadReport(report) {
       this.showToast(`Downloading ${report.name}...`, "info");
-      // Download logic
+      // Re-run generation for chosen format
+      this.generateReport(report.name.toLowerCase().replace(/\s+/g,'-'));
     },
 
     duplicateReport(report) {
       this.showToast(`Duplicating ${report.name}...`, "info");
-      // Duplicate logic
     },
+
+    // Helpers for export
+    async _askFormat(def='pdf'){
+      try{ const c = prompt('Export format: pdf, excel, or csv', def); const v=(c||'').trim().toLowerCase(); if(!v) return null; if(!['pdf','excel','csv'].includes(v)){ this.showToast('Invalid format','error'); return null;} return v; }catch(e){ return null; }
+    },
+    _mapSourceToReport(src){ const m={sales:'sales',inventory:'inventory',customers:'customers',products:'products',employees:'employees',analytics:'analytics',metrc:'metrc',compliance:'compliance'}; return m[src]||'sales'; },
+    _mapReportType(type){ const m={
+      'daily-sales':'sales','weekly-sales':'sales','monthly-sales':'sales','sales-by-category':'sales','sales-by-employee':'sales',
+      'inventory':'inventory','current-inventory':'inventory','low-stock':'inventory','out-of-stock':'inventory','inventory-valuation':'inventory','product-movement':'inventory',
+      'tax-collected':'tax_report','metrc-compliance':'metrc','compliance':'metrc','medical-sales':'sales','regulatory-summary':'compliance','audit-trail':'compliance',
+      'customer-list':'customers','loyalty-summary':'customers','top-customers':'customers','customer-preferences':'customers','retention-analysis':'customers',
+      'employee-performance':'employees','payroll':'employees','penny-sale':'sales'
+    }; return m[type]||null; },
+    _triggerDownload(res, filename){ const url = window.URL.createObjectURL(new Blob([res.data])); const link=document.createElement('a'); link.href=url; link.setAttribute('download', filename); document.body.appendChild(link); link.click(); link.remove(); window.URL.revokeObjectURL(url); },
 
     // Helper Functions
     getReportTypeColor(type) {
