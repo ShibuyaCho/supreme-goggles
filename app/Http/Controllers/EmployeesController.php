@@ -99,7 +99,7 @@ class EmployeesController extends Controller
             'permissions' => $request->permissions,
             'password' => Hash::make($request->password),
             'status' => 'active',
-            'pin' => str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT)
+            'pin' => Hash::make(str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT))
         ]);
 
         // Sync or create linked user with employee role/permissions
@@ -235,7 +235,7 @@ class EmployeesController extends Controller
         $employee = Employee::findOrFail($id);
         $newPin = str_pad((string) random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
 
-        $employee->update(['pin' => $newPin]);
+        $employee->update(['pin' => Hash::make($newPin)]);
 
         try {
             \Illuminate\Support\Facades\Mail::raw(
