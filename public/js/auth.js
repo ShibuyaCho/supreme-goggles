@@ -270,7 +270,7 @@ class POSAuth {
    * Check if user is authenticated
    */
   isAuthenticated() {
-    return !!this.token && !!this.user;
+    return !!this.token;
   }
 
   /**
