@@ -93,9 +93,13 @@
                         data-tab="schedules">
                     Schedules
                 </button>
-                <button class="employee-tab py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300" 
+                <button class="employee-tab py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                         data-tab="permissions">
                     Permissions
+                </button>
+                <button class="employee-tab py-4 px-1 border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                        data-tab="timeclock">
+                    Time Clock
                 </button>
             </nav>
         </div>
@@ -103,6 +107,56 @@
 
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Time Clock Tab -->
+        <div id="timeclock-tab" class="tab-content hidden">
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Start Date</label>
+                        <input type="date" id="tc-start-date" class="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">End Date</label>
+                        <input type="date" id="tc-end-date" class="w-full border rounded px-3 py-2 text-sm" />
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-600 mb-1">Employee</label>
+                        <select id="tc-employee" class="w-full border rounded px-3 py-2 text-sm">
+                            <option value="">All</option>
+                            @foreach($employees as $e)
+                                <option value="{{ $e->id }}">{{ $e->full_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button id="tc-refresh" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm">Load Entries</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <div class="flex items-center justify-between p-4 border-b">
+                    <h3 class="text-lg font-semibold text-gray-900">Employee Time Entries</h3>
+                    <button id="tc-add" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Add Entry</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Clock In</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Clock Out</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
+                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Notes</th>
+                                <th class="px-4 py-2"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tc-body" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Employees Tab -->
         <div id="employees-tab" class="tab-content">
             <!-- Employee Cards -->
