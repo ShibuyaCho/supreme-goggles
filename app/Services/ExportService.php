@@ -193,7 +193,7 @@ class ExportService
      */
     protected function getReportView(string $reportType): string
     {
-        return match($reportType) {
+        $map = [
             'sales' => 'exports.pdf.sales',
             'inventory' => 'exports.pdf.inventory',
             'customers' => 'exports.pdf.customers',
@@ -204,8 +204,12 @@ class ExportService
             'employees' => 'exports.pdf.employees',
             'daily_summary' => 'exports.pdf.daily_summary',
             'tax_report' => 'exports.pdf.tax_report',
-            default => 'exports.pdf.generic'
-        };
+        ];
+        $view = $map[$reportType] ?? 'exports.pdf.generic';
+        if (!\Illuminate\Support\Facades\View::exists($view)) {
+            return 'exports.pdf.generic';
+        }
+        return $view;
     }
 
     /**
