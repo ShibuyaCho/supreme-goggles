@@ -207,8 +207,8 @@
                         <!-- Date Range -->
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
-                                <input type="date" x-model="form.start_date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date (optional)</label>
+                                <input type="date" x-model="form.start_date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
@@ -246,6 +246,16 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Uses</label>
                             <input type="number" x-model="form.max_uses" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Unlimited">
+                        </div>
+
+                        <!-- Audience -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Audience</label>
+                            <select x-model="form.audience" @change="applyAudience()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <option value="everyone">Everyone</option>
+                                <option value="loyalty">Loyalty Members Only</option>
+                                <option value="medical_caregiver">Medical/Caregiver Only</option>
+                            </select>
                         </div>
 
                         <!-- Settings -->
@@ -331,7 +341,7 @@ function dealsManager() {
                 type: 'percentage',
                 value: 0,
                 frequency: 'always',
-                start_date: new Date().toISOString().split('T')[0],
+                start_date: '',
                 end_date: '',
                 applicable_categories: [],
                 minimum_purchase: null,
@@ -340,7 +350,8 @@ function dealsManager() {
                 email_customers: false,
                 loyalty_only: false,
                 medical_only: false,
-                is_active: true
+                is_active: true,
+                audience: 'everyone'
             };
         },
 
@@ -356,9 +367,12 @@ function dealsManager() {
             this.modalType = detail.type;
             if (detail.type === 'edit' && detail.deal) {
                 this.form = { ...detail.deal };
+                // Normalize audience from booleans
+                this.form.audience = (this.form.medical_only ? 'medical_caregiver' : (this.form.loyalty_only ? 'loyalty' : 'everyone'));
                 this.form.applicable_categories = detail.deal.applicable_categories || [];
             } else {
                 this.form = this.getDefaultForm();
+                this.applyAudience();
             }
             this.showModal = true;
         },
@@ -366,6 +380,19 @@ function dealsManager() {
         closeModal() {
             this.showModal = false;
             this.form = this.getDefaultForm();
+        },
+
+        applyAudience() {
+            if (this.form.audience === 'loyalty') {
+                this.form.loyalty_only = true;
+                this.form.medical_only = false;
+            } else if (this.form.audience === 'medical_caregiver') {
+                this.form.loyalty_only = false;
+                this.form.medical_only = true;
+            } else {
+                this.form.loyalty_only = false;
+                this.form.medical_only = false;
+            }
         },
 
         async submitDeal() {
