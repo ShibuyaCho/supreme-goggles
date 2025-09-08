@@ -391,9 +391,33 @@
 
             // Clock In/Out wiring
             const container = document.getElementById('user-menu-container');
-            const empId = container?.dataset?.employeeId;
-            const clkInBtn = document.getElementById('clock-in-button');
-            const clkOutBtn = document.getElementById('clock-out-button');
+            let empId = container?.dataset?.employeeId || '';
+
+            // Ensure buttons exist; if not, create dynamically
+            let clkInBtn = document.getElementById('clock-in-button');
+            let clkOutBtn = document.getElementById('clock-out-button');
+            const dropdown = document.getElementById('user-menu-dropdown');
+            if (dropdown && (!clkInBtn || !clkOutBtn)) {
+                if (!clkInBtn) {
+                    clkInBtn = document.createElement('button');
+                    clkInBtn.id = 'clock-in-button';
+                    clkInBtn.className = 'w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-50';
+                    clkInBtn.textContent = 'Clock In';
+                    dropdown.insertBefore(clkInBtn, dropdown.firstChild);
+                }
+                if (!clkOutBtn) {
+                    clkOutBtn = document.createElement('button');
+                    clkOutBtn.id = 'clock-out-button';
+                    clkOutBtn.className = 'w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-gray-50 hidden';
+                    clkOutBtn.textContent = 'Clock Out';
+                    dropdown.insertBefore(clkOutBtn, dropdown.children[1] || null);
+                }
+                // Ensure divider present
+                const divider = document.createElement('div');
+                divider.className = 'my-1 border-t';
+                dropdown.insertBefore(divider, dropdown.querySelector('#logout-button'));
+            }
+
             function setButtons(state){
                 if (!clkInBtn || !clkOutBtn) return;
                 if (state === 'in') {
@@ -404,33 +428,51 @@
                     clkInBtn.classList.remove('hidden');
                 }
             }
+
+            async function resolveEmpId(){
+                if (empId) return empId;
+                try {
+                    const cached = window.posAuth?.user || null;
+                    if (cached?.employee?.id) { empId = cached.employee.id; return empId; }
+                    const refreshed = await window.posAuth?.refreshUser?.();
+                    if (refreshed?.employee?.id) { empId = refreshed.employee.id; return empId; }
+                } catch (e) {}
+                return '';
+            }
+
             async function refreshClock(){
                 try {
-                    if (!empId) return;
-                    const res = await (window.posAuth ? posAuth.apiRequest('get', `/employees/${empId}/clock-status`) : Promise.resolve({ success:false }));
+                    const id = await resolveEmpId();
+                    if (!id) return;
+                    const res = await posAuth.apiRequest('get', `/employees/${id}/clock-status`);
                     if (res.success) {
                         const clocked = !!res.data?.clocked_in;
                         setButtons(clocked ? 'in' : 'out');
                     }
                 } catch (e) {}
             }
-            if (empId) {
-                refreshClock();
+
+            (async () => {
+                await refreshClock();
                 clkInBtn?.addEventListener('click', async function(){
                     try {
-                        const r = await posAuth.apiRequest('post', `/employees/${empId}/clock-in`);
+                        const id = await resolveEmpId();
+                        if (!id) throw new Error('No employee id');
+                        const r = await posAuth.apiRequest('post', `/employees/${id}/clock-in`);
                         if (r.success) { setButtons('in'); window.POS?.showToast?.('Clocked in', 'success'); }
                         else { window.POS?.showToast?.(r.message || 'Clock in failed', 'error'); }
                     } catch (e) { window.POS?.showToast?.('Clock in failed', 'error'); }
                 });
                 clkOutBtn?.addEventListener('click', async function(){
                     try {
-                        const r = await posAuth.apiRequest('post', `/employees/${empId}/clock-out`);
+                        const id = await resolveEmpId();
+                        if (!id) throw new Error('No employee id');
+                        const r = await posAuth.apiRequest('post', `/employees/${id}/clock-out`);
                         if (r.success) { setButtons('out'); window.POS?.showToast?.('Clocked out', 'success'); }
                         else { window.POS?.showToast?.(r.message || 'Clock out failed', 'error'); }
                     } catch (e) { window.POS?.showToast?.('Clock out failed', 'error'); }
                 });
-            }
+            })();
         });
 
         // CSRF token setup for AJAX requests
