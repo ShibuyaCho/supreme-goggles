@@ -249,6 +249,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
             // Resets
             Route::post('/{employee}/reset-pin', [EmployeesController::class, 'resetPin']);
             Route::post('/{employee}/reset-password', [EmployeesController::class, 'sendPasswordReset']);
+
+            // Time clock admin endpoints
+            Route::get('/time-entries', [EmployeesController::class, 'listTimeEntries']);
+            Route::post('/time-entries', [EmployeesController::class, 'createTimeEntry']);
+            Route::put('/time-entries/{entry}', [EmployeesController::class, 'updateTimeEntry']);
         });
 
         // Clock in/out (all employees)
