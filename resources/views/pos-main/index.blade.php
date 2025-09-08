@@ -95,18 +95,24 @@
                     <x-ui.select id="category-filter">
                         <option value="All">All Categories</option>
                         <option value="Flower">Flower</option>
+                        <option value="Plants (Clones)">Plants (Clones)</option>
                         <option value="Clones">Clones</option>
+                        <option value="Seeds">Seeds</option>
+                        <option value="Extracts">Extracts</option>
                         <option value="Edibles">Edibles</option>
                         <option value="Vapes">Vapes</option>
                         <option value="Concentrates">Concentrates</option>
                         <option value="Pre-Rolls">Pre-Rolls</option>
                         <option value="Infused Pre-Rolls">Infused Pre-Rolls</option>
                         <option value="Tinctures">Tinctures</option>
+                        <option value="Inhalable Cannabinoid">Inhalable Cannabinoid</option>
                         <option value="Inhalable Cannabinoids">Inhalable Cannabinoids</option>
                         <option value="Topicals">Topicals</option>
+                        <option value="Patches">Patches</option>
                         <option value="Hemp">Hemp</option>
                         <option value="Paraphernalia">Paraphernalia</option>
                         <option value="Accessories">Accessories</option>
+                        <option value="Apparel">Apparel</option>
                     </x-ui.select>
 
                     <!-- Sort Options -->
