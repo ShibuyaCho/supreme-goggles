@@ -19767,31 +19767,31 @@
             const logoutBtn = document.querySelector(
               'button[onclick*="__forceLogout"]',
             );
-            if (!logoutBtn) return { inBtn: null, outBtn: null, dropdown: null };
-            const dropdown = logoutBtn.closest('div');
-            if (!dropdown)
+            if (!logoutBtn)
               return { inBtn: null, outBtn: null, dropdown: null };
-            let inBtn = document.getElementById('clock-in-button');
-            let outBtn = document.getElementById('clock-out-button');
+            const dropdown = logoutBtn.closest("div");
+            if (!dropdown) return { inBtn: null, outBtn: null, dropdown: null };
+            let inBtn = document.getElementById("clock-in-button");
+            let outBtn = document.getElementById("clock-out-button");
             if (!inBtn) {
-              inBtn = document.createElement('button');
-              inBtn.id = 'clock-in-button';
+              inBtn = document.createElement("button");
+              inBtn.id = "clock-in-button";
               inBtn.className =
-                'w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-50';
-              inBtn.textContent = 'Clock In';
+                "w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-50";
+              inBtn.textContent = "Clock In";
               dropdown.insertBefore(inBtn, logoutBtn);
             }
             if (!outBtn) {
-              outBtn = document.createElement('button');
-              outBtn.id = 'clock-out-button';
+              outBtn = document.createElement("button");
+              outBtn.id = "clock-out-button";
               outBtn.className =
-                'w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-gray-50 hidden';
-              outBtn.textContent = 'Clock Out';
+                "w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-gray-50 hidden";
+              outBtn.textContent = "Clock Out";
               dropdown.insertBefore(outBtn, logoutBtn);
             }
-            if (!dropdown.querySelector('.clock-divider')) {
-              const divider = document.createElement('div');
-              divider.className = 'clock-divider my-1 border-t';
+            if (!dropdown.querySelector(".clock-divider")) {
+              const divider = document.createElement("div");
+              divider.className = "clock-divider my-1 border-t";
               dropdown.insertBefore(divider, logoutBtn);
             }
             return { inBtn, outBtn, dropdown };
@@ -19799,23 +19799,24 @@
 
           async function resolveEmpId() {
             try {
-              const u = (window.posAuth?.getUser?.() || window.posAuth?.user) || null;
+              const u =
+                window.posAuth?.getUser?.() || window.posAuth?.user || null;
               if (u?.employee?.id) return u.employee.id;
               const refreshed = await window.posAuth?.refreshUser?.();
               if (refreshed?.employee?.id) return refreshed.employee.id;
             } catch (e) {}
-            return '';
+            return "";
           }
 
           function setButtons(state) {
             const { inBtn, outBtn } = ensureClockButtons();
             if (!inBtn || !outBtn) return;
-            if (state === 'in') {
-              inBtn.classList.add('hidden');
-              outBtn.classList.remove('hidden');
+            if (state === "in") {
+              inBtn.classList.add("hidden");
+              outBtn.classList.remove("hidden");
             } else {
-              outBtn.classList.add('hidden');
-              inBtn.classList.remove('hidden');
+              outBtn.classList.add("hidden");
+              inBtn.classList.remove("hidden");
             }
           }
 
@@ -19824,11 +19825,11 @@
               const id = await resolveEmpId();
               if (!id) return;
               const res = await window.posAuth?.apiRequest?.(
-                'get',
+                "get",
                 `/employees/${id}/clock-status`,
               );
               if (res?.success) {
-                setButtons(res.data?.clocked_in ? 'in' : 'out');
+                setButtons(res.data?.clocked_in ? "in" : "out");
               }
             } catch (e) {}
           }
@@ -19836,58 +19837,58 @@
           async function setupHandlers() {
             const { inBtn, outBtn } = ensureClockButtons();
             if (!inBtn || !outBtn) return;
-            inBtn.addEventListener('click', async function () {
+            inBtn.addEventListener("click", async function () {
               try {
                 const id = await resolveEmpId();
-                if (!id) throw new Error('No employee id');
+                if (!id) throw new Error("No employee id");
                 const r = await window.posAuth.apiRequest(
-                  'post',
+                  "post",
                   `/employees/${id}/clock-in`,
                 );
                 if (r?.success) {
-                  setButtons('in');
-                  (window.POS?.showToast || alert)('Clocked in');
+                  setButtons("in");
+                  (window.POS?.showToast || alert)("Clocked in");
                 } else {
                   (window.POS?.showToast || alert)(
-                    r?.message || 'Clock in failed',
-                    'error',
+                    r?.message || "Clock in failed",
+                    "error",
                   );
                 }
               } catch (e) {
-                (window.POS?.showToast || alert)('Clock in failed', 'error');
+                (window.POS?.showToast || alert)("Clock in failed", "error");
               }
             });
-            outBtn.addEventListener('click', async function () {
+            outBtn.addEventListener("click", async function () {
               try {
                 const id = await resolveEmpId();
-                if (!id) throw new Error('No employee id');
+                if (!id) throw new Error("No employee id");
                 const r = await window.posAuth.apiRequest(
-                  'post',
+                  "post",
                   `/employees/${id}/clock-out`,
                 );
                 if (r?.success) {
-                  setButtons('out');
-                  (window.POS?.showToast || alert)('Clocked out');
+                  setButtons("out");
+                  (window.POS?.showToast || alert)("Clocked out");
                 } else {
                   (window.POS?.showToast || alert)(
-                    r?.message || 'Clock out failed',
-                    'error',
+                    r?.message || "Clock out failed",
+                    "error",
                   );
                 }
               } catch (e) {
-                (window.POS?.showToast || alert)('Clock out failed', 'error');
+                (window.POS?.showToast || alert)("Clock out failed", "error");
               }
             });
             await refreshClock();
           }
 
           setupHandlers();
-          document.addEventListener('click', function () {
+          document.addEventListener("click", function () {
             ensureClockButtons();
           });
         })();
 
-        console.log('Cannabis POS system initialized successfully!');
+        console.log("Cannabis POS system initialized successfully!");
       });
     </script>
   </body>

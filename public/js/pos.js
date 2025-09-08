@@ -5350,33 +5350,48 @@ function cannabisPOS() {
     // Generate Report (predefined or custom)
     async generateReport(type) {
       // Always ask for format first so the user sees the prompt
-      const fmt = await this._askFormat('pdf');
+      const fmt = await this._askFormat("pdf");
       if (!fmt) return;
 
       // Normalize type in case an event object was passed
-      let resolvedType = (typeof type === 'string' && type.trim()) ? type.trim() : null;
-      if (!resolvedType && type && typeof type === 'object') {
+      let resolvedType =
+        typeof type === "string" && type.trim() ? type.trim() : null;
+      if (!resolvedType && type && typeof type === "object") {
         const tgt = type.target || type.currentTarget || null;
-        if (tgt && typeof tgt.getAttribute === 'function') {
-          resolvedType = tgt.dataset?.reportType || tgt.getAttribute('data-report-type') || tgt.getAttribute('data-type') || null;
+        if (tgt && typeof tgt.getAttribute === "function") {
+          resolvedType =
+            tgt.dataset?.reportType ||
+            tgt.getAttribute("data-report-type") ||
+            tgt.getAttribute("data-type") ||
+            null;
         }
       }
 
       // Predefined quick reports
       if (resolvedType) {
         const apiType = this._mapReportType(resolvedType);
-        if (!apiType) { this.showToast('Unsupported report', 'error'); return; }
+        if (!apiType) {
+          this.showToast("Unsupported report", "error");
+          return;
+        }
         try {
-          const res = await (window.axios||axios).post('/api/reports/export', {
-            report_type: apiType,
-            format: fmt,
-            start_date: null,
-            end_date: null,
-            filters: {}
-          }, { responseType: 'blob' });
-          this._triggerDownload(res, `report_${apiType}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+          const res = await (window.axios || axios).post(
+            "/api/reports/export",
+            {
+              report_type: apiType,
+              format: fmt,
+              start_date: null,
+              end_date: null,
+              filters: {},
+            },
+            { responseType: "blob" },
+          );
+          this._triggerDownload(
+            res,
+            `report_${apiType}.${fmt === "excel" ? "xlsx" : fmt}`,
+          );
         } catch (e) {
-          this.showToast('Failed to generate report', 'error');
+          this.showToast("Failed to generate report", "error");
         }
         return;
       }
@@ -5387,23 +5402,32 @@ function cannabisPOS() {
         return;
       }
       try {
-        const res = await (window.axios||axios).post('/api/reports/export', {
-          report_type: this._mapSourceToReport((this.customReport?.dataSources?.[0]||'sales').toLowerCase()),
-          format: fmt,
-          start_date: this.customReport?.startDate || null,
-          end_date: this.customReport?.endDate || null,
-          filters: {
-            metrics: this.customReport?.selectedMetrics || [],
-            include_comparisons: !!this.customReport?.includeComparisons,
-            include_trends: !!this.customReport?.includeTrends,
-            include_breakdowns: !!this.customReport?.includeBreakdowns,
-          }
-        }, { responseType: 'blob' });
-        const name = (this.customReport?.name || 'custom-report').replace(/\s+/g,'_');
-        this._triggerDownload(res, `${name}.${fmt === 'excel' ? 'xlsx' : fmt}`);
-        this.showToast('Report generated successfully!', 'success');
+        const res = await (window.axios || axios).post(
+          "/api/reports/export",
+          {
+            report_type: this._mapSourceToReport(
+              (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
+            ),
+            format: fmt,
+            start_date: this.customReport?.startDate || null,
+            end_date: this.customReport?.endDate || null,
+            filters: {
+              metrics: this.customReport?.selectedMetrics || [],
+              include_comparisons: !!this.customReport?.includeComparisons,
+              include_trends: !!this.customReport?.includeTrends,
+              include_breakdowns: !!this.customReport?.includeBreakdowns,
+            },
+          },
+          { responseType: "blob" },
+        );
+        const name = (this.customReport?.name || "custom-report").replace(
+          /\s+/g,
+          "_",
+        );
+        this._triggerDownload(res, `${name}.${fmt === "excel" ? "xlsx" : fmt}`);
+        this.showToast("Report generated successfully!", "success");
       } catch (e) {
-        this.showToast('Failed to generate report', 'error');
+        this.showToast("Failed to generate report", "error");
       }
     },
 
@@ -5437,29 +5461,34 @@ function cannabisPOS() {
       this.showToast(`Opening report: ${report.name}`, "info");
     },
 
-    async printReport(type){
+    async printReport(type) {
       try {
-        const res = await (window.axios||axios).post('/api/reports/export', {
-          report_type: this._mapReportType(type),
-          format: 'pdf',
-          start_date: null,
-          end_date: null,
-          filters: {}
-        }, { responseType: 'blob' });
-        const file = new Blob([res.data], { type: 'application/pdf' });
+        const res = await (window.axios || axios).post(
+          "/api/reports/export",
+          {
+            report_type: this._mapReportType(type),
+            format: "pdf",
+            start_date: null,
+            end_date: null,
+            filters: {},
+          },
+          { responseType: "blob" },
+        );
+        const file = new Blob([res.data], { type: "application/pdf" });
         const url = URL.createObjectURL(file);
-        const w = window.open(url, '_blank');
-        if (!w) this.showToast('Popup blocked. Enable popups to print.', 'warning');
-        setTimeout(()=> URL.revokeObjectURL(url), 5000);
+        const w = window.open(url, "_blank");
+        if (!w)
+          this.showToast("Popup blocked. Enable popups to print.", "warning");
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
       } catch (e) {
-        this.showToast('Failed to open print preview', 'error');
+        this.showToast("Failed to open print preview", "error");
       }
     },
 
     downloadReport(report) {
       this.showToast(`Downloading ${report.name}...`, "info");
       // Re-run generation for chosen format
-      this.generateReport(report.name.toLowerCase().replace(/\s+/g,'-'));
+      this.generateReport(report.name.toLowerCase().replace(/\s+/g, "-"));
     },
 
     duplicateReport(report) {
@@ -5467,18 +5496,73 @@ function cannabisPOS() {
     },
 
     // Helpers for export
-    async _askFormat(def='pdf'){
-      try{ const c = prompt('Export format: pdf, excel, or csv', def); const v=(c||'').trim().toLowerCase(); if(!v) return null; if(!['pdf','excel','csv'].includes(v)){ this.showToast('Invalid format','error'); return null;} return v; }catch(e){ return null; }
+    async _askFormat(def = "pdf") {
+      try {
+        const c = prompt("Export format: pdf, excel, or csv", def);
+        const v = (c || "").trim().toLowerCase();
+        if (!v) return null;
+        if (!["pdf", "excel", "csv"].includes(v)) {
+          this.showToast("Invalid format", "error");
+          return null;
+        }
+        return v;
+      } catch (e) {
+        return null;
+      }
     },
-    _mapSourceToReport(src){ const m={sales:'sales',inventory:'inventory',customers:'customers',products:'products',employees:'employees',analytics:'analytics',metrc:'metrc',compliance:'compliance'}; return m[src]||'sales'; },
-    _mapReportType(type){ const m={
-      'daily-sales':'sales','weekly-sales':'sales','monthly-sales':'sales','sales-by-category':'sales','sales-by-employee':'sales',
-      'inventory':'inventory','current-inventory':'inventory','low-stock':'inventory','out-of-stock':'inventory','inventory-valuation':'inventory','product-movement':'inventory',
-      'tax-collected':'tax_report','metrc-compliance':'metrc','compliance':'metrc','medical-sales':'sales','regulatory-summary':'compliance','audit-trail':'compliance',
-      'customer-list':'customers','loyalty-summary':'customers','top-customers':'customers','customer-preferences':'customers','retention-analysis':'customers',
-      'employee-performance':'employees','payroll':'employees','penny-sale':'sales'
-    }; return m[type]||null; },
-    _triggerDownload(res, filename){ const url = window.URL.createObjectURL(new Blob([res.data])); const link=document.createElement('a'); link.href=url; link.setAttribute('download', filename); document.body.appendChild(link); link.click(); link.remove(); window.URL.revokeObjectURL(url); },
+    _mapSourceToReport(src) {
+      const m = {
+        sales: "sales",
+        inventory: "inventory",
+        customers: "customers",
+        products: "products",
+        employees: "employees",
+        analytics: "analytics",
+        metrc: "metrc",
+        compliance: "compliance",
+      };
+      return m[src] || "sales";
+    },
+    _mapReportType(type) {
+      const m = {
+        "daily-sales": "sales",
+        "weekly-sales": "sales",
+        "monthly-sales": "sales",
+        "sales-by-category": "sales",
+        "sales-by-employee": "sales",
+        inventory: "inventory",
+        "current-inventory": "inventory",
+        "low-stock": "inventory",
+        "out-of-stock": "inventory",
+        "inventory-valuation": "inventory",
+        "product-movement": "inventory",
+        "tax-collected": "tax_report",
+        "metrc-compliance": "metrc",
+        compliance: "metrc",
+        "medical-sales": "sales",
+        "regulatory-summary": "compliance",
+        "audit-trail": "compliance",
+        "customer-list": "customers",
+        "loyalty-summary": "customers",
+        "top-customers": "customers",
+        "customer-preferences": "customers",
+        "retention-analysis": "customers",
+        "employee-performance": "employees",
+        payroll: "employees",
+        "penny-sale": "sales",
+      };
+      return m[type] || null;
+    },
+    _triggerDownload(res, filename) {
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    },
 
     // Helper Functions
     getReportTypeColor(type) {
