@@ -330,21 +330,23 @@ function reportsManager() {
             { id: 3, name: 'Daily METRC Compliance', frequency: 'Daily (6 AM)', nextRun: 'Jan 16, 2024', active: false }
         ],
 
-        generateReport(type) {
-            this.showToast(`Generating ${type.replace('-', ' ')} report...`, 'info');
-            
-            // Simulate report generation
-            setTimeout(() => {
-                const newReport = {
-                    id: Date.now(),
-                    name: type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                    type: this.getReportCategory(type),
-                    generated: new Date().toLocaleString(),
-                    status: 'completed'
-                };
-                this.recentReports.unshift(newReport);
-                this.showToast('Report generated successfully!', 'success');
-            }, 2000);
+        async generateReport(type) {
+            const fmt = await this.askFormat();
+            if (!fmt) return;
+            const map = this.mapReportType(type);
+            if (!map) { this.showToast('Unsupported report', 'error'); return; }
+            try {
+                const res = await (window.axios||axios).post('/api/reports/export', {
+                    report_type: map,
+                    format: fmt,
+                    start_date: null,
+                    end_date: null,
+                    filters: {}
+                }, { responseType: 'blob' });
+                this.triggerDownload(res, `report_${map}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+            } catch(e) {
+                this.showToast('Failed to generate report', 'error');
+            }
         },
 
         getReportCategory(type) {
