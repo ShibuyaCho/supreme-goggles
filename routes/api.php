@@ -252,6 +252,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         });
 
         // Clock in/out (all employees)
+        Route::get('/{employee}/clock-status', [EmployeesController::class, 'clockStatus']);
         Route::post('/{employee}/clock-in', [EmployeesController::class, 'clockIn']);
         Route::post('/{employee}/clock-out', [EmployeesController::class, 'clockOut']);
     });

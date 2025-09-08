@@ -230,6 +230,79 @@ class EmployeesController extends Controller
         ]);
     }
     
+    public function clockStatus($id)
+    {
+        $employee = Employee::findOrFail($id);
+        $this->authorizeEmployeeAction($employee);
+        $key = $this->clockCacheKey($employee->id);
+        $data = \Illuminate\Support\Facades\Cache::get($key, null);
+        $clockedIn = (bool)($data['clocked_in'] ?? false);
+        $clockInAt = $data['clock_in_at'] ?? null;
+        return response()->json([
+            'clocked_in' => $clockedIn,
+            'clock_in_at' => $clockInAt,
+        ]);
+    }
+
+    public function clockIn($id)
+    {
+        $employee = Employee::findOrFail($id);
+        $this->authorizeEmployeeAction($employee);
+        $key = $this->clockCacheKey($employee->id);
+        $data = \Illuminate\Support\Facades\Cache::get($key, []);
+        if (!empty($data['clocked_in'])) {
+            return response()->json(['message' => 'Already clocked in', 'clocked_in' => true, 'clock_in_at' => $data['clock_in_at'] ?? now()], 200);
+        }
+        $payload = [
+            'clocked_in' => true,
+            'clock_in_at' => now()->toIso8601String(),
+        ];
+        \Illuminate\Support\Facades\Cache::put($key, $payload, now()->addDays(7));
+        return response()->json(['message' => 'Clocked in', 'clocked_in' => true, 'clock_in_at' => $payload['clock_in_at']]);
+    }
+
+    public function clockOut($id)
+    {
+        $employee = Employee::findOrFail($id);
+        $this->authorizeEmployeeAction($employee);
+        $key = $this->clockCacheKey($employee->id);
+        $data = \Illuminate\Support\Facades\Cache::get($key, []);
+        if (empty($data['clocked_in'])) {
+            return response()->json(['message' => 'Not clocked in', 'clocked_in' => false], 200);
+        }
+        $clockInAt = isset($data['clock_in_at']) ? \Carbon\Carbon::parse($data['clock_in_at']) : now();
+        $clockOutAt = now();
+        $duration = $clockOutAt->diffInSeconds($clockInAt);
+        $entry = [
+            'in' => $clockInAt->toIso8601String(),
+            'out' => $clockOutAt->toIso8601String(),
+            'seconds' => $duration,
+        ];
+        $history = $data['history'] ?? [];
+        $history[] = $entry;
+        \Illuminate\Support\Facades\Cache::put($key, [
+            'clocked_in' => false,
+            'clock_in_at' => null,
+            'history' => $history,
+        ], now()->addDays(30));
+        return response()->json(['message' => 'Clocked out', 'clocked_in' => false, 'entry' => $entry]);
+    }
+
+    private function clockCacheKey($employeeId): string
+    {
+        return 'employee_clock:'.$employeeId;
+    }
+
+    private function authorizeEmployeeAction(Employee $employee): void
+    {
+        $user = auth()->user();
+        if (!$user) abort(401);
+        // Allow self or manager/admin
+        $isSelf = $user->employee && $user->employee->id === $employee->id;
+        $isManager = $user->isAdmin() || $user->isManager();
+        if (!$isSelf && !$isManager) abort(403, 'Not authorized');
+    }
+
     public function resetPin($id)
     {
         $employee = Employee::findOrFail($id);

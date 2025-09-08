@@ -195,7 +195,7 @@
                         Create Drawer
                     </a>
                     <!-- Current Employee -->
-                    <div class="hidden md:flex items-center text-sm text-gray-700 relative" id="user-menu-container">
+                    <div class="hidden md:flex items-center text-sm text-gray-700 relative" id="user-menu-container" data-employee-id="{{ auth()->user()->employee->id ?? '' }}">
                         <button id="user-menu-button" class="flex items-center hover:text-cannabis-green">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -203,7 +203,10 @@
                             <span>{{ auth()->user()->name ?? 'Employee' }}</span>
                             <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                         </button>
-                        <div id="user-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                        <div id="user-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                            <button id="clock-in-button" class="w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-50">Clock In</button>
+                            <button id="clock-out-button" class="w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-gray-50 hidden">Clock Out</button>
+                            <div class="my-1 border-t"></div>
                             <button id="logout-button" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Log Out</button>
                         </div>
                     </div>
@@ -382,8 +385,50 @@
                             await window.posAuth.logout();
                         }
                     } catch (e) {}
-                    // Force re-authentication
                     window.location.reload();
+                });
+            }
+
+            // Clock In/Out wiring
+            const container = document.getElementById('user-menu-container');
+            const empId = container?.dataset?.employeeId;
+            const clkInBtn = document.getElementById('clock-in-button');
+            const clkOutBtn = document.getElementById('clock-out-button');
+            function setButtons(state){
+                if (!clkInBtn || !clkOutBtn) return;
+                if (state === 'in') {
+                    clkInBtn.classList.add('hidden');
+                    clkOutBtn.classList.remove('hidden');
+                } else {
+                    clkOutBtn.classList.add('hidden');
+                    clkInBtn.classList.remove('hidden');
+                }
+            }
+            async function refreshClock(){
+                try {
+                    if (!empId) return;
+                    const res = await (window.posAuth ? posAuth.apiRequest('get', `/employees/${empId}/clock-status`) : Promise.resolve({ success:false }));
+                    if (res.success) {
+                        const clocked = !!res.data?.clocked_in;
+                        setButtons(clocked ? 'in' : 'out');
+                    }
+                } catch (e) {}
+            }
+            if (empId) {
+                refreshClock();
+                clkInBtn?.addEventListener('click', async function(){
+                    try {
+                        const r = await posAuth.apiRequest('post', `/employees/${empId}/clock-in`);
+                        if (r.success) { setButtons('in'); window.POS?.showToast?.('Clocked in', 'success'); }
+                        else { window.POS?.showToast?.(r.message || 'Clock in failed', 'error'); }
+                    } catch (e) { window.POS?.showToast?.('Clock in failed', 'error'); }
+                });
+                clkOutBtn?.addEventListener('click', async function(){
+                    try {
+                        const r = await posAuth.apiRequest('post', `/employees/${empId}/clock-out`);
+                        if (r.success) { setButtons('out'); window.POS?.showToast?.('Clocked out', 'success'); }
+                        else { window.POS?.showToast?.(r.message || 'Clock out failed', 'error'); }
+                    } catch (e) { window.POS?.showToast?.('Clock out failed', 'error'); }
                 });
             }
         });
