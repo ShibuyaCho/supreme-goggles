@@ -116,6 +116,9 @@ class EmployeesController extends Controller
                 'role' => $employee->role,
                 'permissions' => $employee->permissions,
             ]);
+            if (!$employee->user_id || (int) $employee->user_id !== (int) $user->id) {
+                $employee->forceFill(['user_id' => $user->id])->save();
+            }
         } catch (\Throwable $e) {
             // ignore sync errors
         }
@@ -186,6 +189,9 @@ class EmployeesController extends Controller
                     'permissions' => $employee->permissions,
                     'is_active' => $employee->isActive(),
                 ]);
+                if (!$employee->user_id || (int) $employee->user_id !== (int) $user->id) {
+                    $employee->forceFill(['user_id' => $user->id])->save();
+                }
             }
         } catch (\Throwable $e) {
             // ignore sync errors
