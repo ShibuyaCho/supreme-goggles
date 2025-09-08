@@ -101,7 +101,26 @@ class EmployeesController extends Controller
             'status' => 'active',
             'pin' => str_pad(random_int(1000, 9999), 4, '0', STR_PAD_LEFT)
         ]);
-        
+
+        // Sync or create linked user with employee role/permissions
+        try {
+            $user = \App\Models\User::firstOrCreate(
+                ['employee_id' => $employee->id],
+                [
+                    'name' => $employee->full_name,
+                    'email' => $employee->email,
+                    'password' => Hash::make(\Illuminate\Support\Str::random(32)),
+                    'is_active' => true,
+                ]
+            );
+            $user->update([
+                'role' => $this->mapPositionToRole($employee->position),
+                'permissions' => $employee->permissions,
+            ]);
+        } catch (\Throwable $e) {
+            // ignore sync errors
+        }
+
         if ($request->expectsJson()) {
             return response()->json([
                 'message' => 'Employee created successfully',
