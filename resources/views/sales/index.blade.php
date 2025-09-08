@@ -144,7 +144,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($sales as $sale)
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50" data-sale-id="{{ $sale->id }}">
                             <!-- Sale Info -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div>
@@ -490,31 +490,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 let pushed = 0;
                 for (const row of rows) {
-                    const dateText = row.querySelector('td:nth-child(1) .text-sm.text-gray-500')?.textContent?.trim() || '';
-                    const itemsCell = row.querySelector('td:nth-child(5)');
-                    const itemLines = itemsCell ? Array.from(itemsCell.querySelectorAll('.text-xs.text-gray-500')).map(el => el.textContent || '') : [];
-                    // Extract any displayed METRC suffixes from the hint line if present
-                    const metrcHint = itemsCell?.querySelector('.text-\[11px\].text-gray-500')?.textContent || '';
-                    const metrcSuffixes = (metrcHint.match(/\*\*\*\*(\w+)/g) || []).map(s => s.replace('****',''));
-                    // Fallback: proceed without item mapping if no metrc tags shown
-                    const transactions = metrcSuffixes.map(suffix => ({
-                        package_label: suffix, // backend should resolve full tag; if not, it will error
-                        quantity: 1,
-                        unit_of_measure: 'Each',
-                        total_amount: 0
-                    }));
-                    const body = {
-                        sales_datetime: new Date(dateText || Date.now()).toISOString(),
-                        sales_customer_type: (row.querySelector('td:nth-child(2) .text-sm.text-gray-500')?.textContent || '').toLowerCase() === 'medical' ? 'Patient' : 'Consumer',
-                        transactions: transactions.length > 0 ? transactions : [
-                            { package_label: 'UNKNOWN', quantity: 1, unit_of_measure: 'Each', total_amount: 0 }
-                        ]
-                    };
+                    const saleId = row.getAttribute('data-sale-id');
+                    if (!saleId) continue;
                     try {
-                        const res = await (window.axios || axios).post('/api/metrc/sales/receipts', body, { headers: { 'Accept': 'application/json' } });
+                        const res = await (window.axios || axios).post(`/api/metrc/sales/receipts/from-sale/${saleId}`, {}, { headers: { 'Accept': 'application/json' } });
                         if (res.status >= 200 && res.status < 300) pushed++;
                     } catch (e) {
-                        console.warn('Failed to push one sale to METRC', e?.response?.data || e);
+                        console.warn('Failed to push sale to METRC', e?.response?.data || e);
                     }
                 }
                 window.POS?.showToast?.(`Pushed ${pushed} sale(s) to METRC`, pushed > 0 ? 'success' : 'info');

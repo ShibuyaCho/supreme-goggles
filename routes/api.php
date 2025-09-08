@@ -113,6 +113,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware('permission:metrc:sync');
         Route::post('/sales/receipts', [MetrcController::class, 'createSalesReceipt'])
             ->middleware('permission:metrc:sales');
+        Route::post('/sales/receipts/from-sale/{sale}', [MetrcController::class, 'createReceiptFromSale'])
+            ->middleware('permission:metrc:sales');
         Route::get('/sales/receipts', [MetrcController::class, 'getSalesReceipts']);
         Route::get('/facility', [MetrcController::class, 'getFacilityDetails']);
         Route::get('/categories', [MetrcController::class, 'getItemCategories']);
