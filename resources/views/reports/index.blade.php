@@ -35,11 +35,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('daily-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Daily Sales</button>
-                    <button @click="generateReport('weekly-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Weekly Sales</button>
-                    <button @click="generateReport('monthly-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Monthly Sales</button>
-                    <button @click="generateReport('sales-by-category')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Category</button>
-                    <button @click="generateReport('sales-by-employee')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Employee</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Daily Sales</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Weekly Sales</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Monthly Sales</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Category</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Employee</button>
                 </div>
             </div>
 
@@ -52,11 +52,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('current-inventory')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Current Inventory</button>
-                    <button @click="generateReport('low-stock')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Low Stock Alert</button>
-                    <button @click="generateReport('out-of-stock')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Out of Stock</button>
-                    <button @click="generateReport('inventory-valuation')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Inventory Valuation</button>
-                    <button @click="generateReport('product-movement')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Product Movement</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Current Inventory</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Low Stock Alert</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Out of Stock</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Inventory Valuation</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Product Movement</button>
                 </div>
             </div>
 
@@ -69,11 +69,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('tax-collected')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Tax Collected</button>
-                    <button @click="generateReport('metrc-compliance')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">METRC Compliance</button>
-                    <button @click="generateReport('medical-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Medical Sales</button>
-                    <button @click="generateReport('regulatory-summary')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Regulatory Summary</button>
-                    <button @click="generateReport('audit-trail')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Audit Trail</button>
+                    <button data-export-report="tax_report" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Tax Collected</button>
+                    <button data-export-report="metrc" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">METRC Compliance</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Medical Sales</button>
+                    <button data-export-report="compliance" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Regulatory Summary</button>
+                    <button data-export-report="compliance" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Audit Trail</button>
                 </div>
             </div>
 
@@ -86,11 +86,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('customer-list')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer List</button>
-                    <button @click="generateReport('loyalty-summary')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Loyalty Summary</button>
-                    <button @click="generateReport('top-customers')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Top Customers</button>
-                    <button @click="generateReport('customer-preferences')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer Preferences</button>
-                    <button @click="generateReport('retention-analysis')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Retention Analysis</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer List</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Loyalty Summary</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Top Customers</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer Preferences</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Retention Analysis</button>
                 </div>
             </div>
         </div>
@@ -506,5 +506,13 @@ function generateCustomReport() {
     document.querySelector('[x-data="reportsManager()"]').__x.$data.showCustomModal = true;
 }
 </script>
+
+@push('styles')
+<link href="{{ asset('css/report-export.css') }}" rel="stylesheet">
+@endpush
+
+@push('scripts')
+<script src="{{ asset('js/report-export.js') }}" defer></script>
+@endpush
 
 @endsection

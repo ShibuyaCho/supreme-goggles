@@ -196,6 +196,10 @@
                     </a>
                     <!-- Current Employee -->
                     <div class="hidden md:flex items-center text-sm text-gray-700 relative" id="user-menu-container" data-employee-id="{{ auth()->user()->employee->id ?? '' }}">
+                        <!-- Always-visible quick clock buttons (desktop) -->
+                        <button id="header-clock-in" class="mr-2 px-3 py-1 rounded-md text-xs font-medium text-white bg-green-600 hover:bg-green-700">Clock In</button>
+                        <button id="header-clock-out" class="mr-2 px-3 py-1 rounded-md text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 hidden">Clock Out</button>
+                        <!-- User dropdown trigger -->
                         <button id="user-menu-button" class="flex items-center hover:text-cannabis-green">
                             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -432,13 +436,18 @@
 
             function setButtons(state){
                 const { clkInBtn, clkOutBtn } = ensureClockButtons();
-                if (!clkInBtn || !clkOutBtn) return;
+                const hIn = document.getElementById('header-clock-in');
+                const hOut = document.getElementById('header-clock-out');
                 if (state === 'in') {
-                    clkInBtn.classList.add('hidden');
-                    clkOutBtn.classList.remove('hidden');
+                    clkInBtn?.classList.add('hidden');
+                    clkOutBtn?.classList.remove('hidden');
+                    hIn?.classList.add('hidden');
+                    hOut?.classList.remove('hidden');
                 } else {
-                    clkOutBtn.classList.add('hidden');
-                    clkInBtn.classList.remove('hidden');
+                    clkOutBtn?.classList.add('hidden');
+                    clkInBtn?.classList.remove('hidden');
+                    hOut?.classList.add('hidden');
+                    hIn?.classList.remove('hidden');
                 }
             }
 
@@ -468,24 +477,28 @@
             (async () => {
                 ensureClockButtons();
                 await refreshClock();
-                document.getElementById('clock-in-button')?.addEventListener('click', async function(){
-                    try {
-                        const id = await resolveEmpId();
-                        if (!id) throw new Error('No employee id');
-                        const r = await posAuth.apiRequest('post', `/employees/${id}/clock-in`);
-                        if (r.success) { setButtons('in'); window.POS?.showToast?.('Clocked in', 'success'); }
-                        else { window.POS?.showToast?.(r.message || 'Clock in failed', 'error'); }
-                    } catch (e) { window.POS?.showToast?.('Clock in failed', 'error'); }
-                });
-                document.getElementById('clock-out-button')?.addEventListener('click', async function(){
-                    try {
-                        const id = await resolveEmpId();
-                        if (!id) throw new Error('No employee id');
-                        const r = await posAuth.apiRequest('post', `/employees/${id}/clock-out`);
-                        if (r.success) { setButtons('out'); window.POS?.showToast?.('Clocked out', 'success'); }
-                        else { window.POS?.showToast?.(r.message || 'Clock out failed', 'error'); }
-                    } catch (e) { window.POS?.showToast?.('Clock out failed', 'error'); }
-                });
+                function bindClockHandlers(btnInId, btnOutId){
+                    document.getElementById(btnInId)?.addEventListener('click', async function(){
+                        try {
+                            const id = await resolveEmpId();
+                            if (!id) throw new Error('No employee id');
+                            const r = await posAuth.apiRequest('post', `/employees/${id}/clock-in`);
+                            if (r.success) { setButtons('in'); window.POS?.showToast?.('Clocked in', 'success'); }
+                            else { window.POS?.showToast?.(r.message || 'Clock in failed', 'error'); }
+                        } catch (e) { window.POS?.showToast?.('Clock in failed', 'error'); }
+                    });
+                    document.getElementById(btnOutId)?.addEventListener('click', async function(){
+                        try {
+                            const id = await resolveEmpId();
+                            if (!id) throw new Error('No employee id');
+                            const r = await posAuth.apiRequest('post', `/employees/${id}/clock-out`);
+                            if (r.success) { setButtons('out'); window.POS?.showToast?.('Clocked out', 'success'); }
+                            else { window.POS?.showToast?.(r.message || 'Clock out failed', 'error'); }
+                        } catch (e) { window.POS?.showToast?.('Clock out failed', 'error'); }
+                    });
+                }
+                bindClockHandlers('clock-in-button', 'clock-out-button');
+                bindClockHandlers('header-clock-in', 'header-clock-out');
 
                 // Mobile fallback: inject into mobile menu if present
                 const mobileMenu = document.getElementById('mobile-menu');
