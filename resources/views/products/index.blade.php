@@ -12,12 +12,12 @@
                 
                 <div class="flex items-center space-x-4">
                     <!-- Add Product Button -->
-                    <a href="{{ route('products.create') }}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <button type="button" onclick="showAddProductModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
                         Add Product
-                    </a>
+                    </button>
                     
                     <!-- Bulk Actions -->
                     <div class="relative">
@@ -295,6 +295,7 @@
     </div>
 </div>
 
+@include('products.modals.add-product', ['categories' => $createCategories])
 @include('products.modals.bulk-transfer')
 @include('products.modals.bulk-pricing')
 @include('products.modals.transfer-room')
