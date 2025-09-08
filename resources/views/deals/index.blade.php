@@ -216,17 +216,37 @@
                             </div>
                         </div>
 
+                        <div class="grid grid-cols-2 gap-4" x-show="form.frequency === 'weekly'">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Day of Week</label>
+                                <select x-model="form.day_of_week" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4" x-show="form.frequency === 'monthly'">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Day of Month</label>
+                                <input type="number" x-model.number="form.day_of_month" min="1" max="31" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="1-31">
+                            </div>
+                        </div>
+
                         <!-- Categories -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Categories</label>
-                            <div class="grid grid-cols-3 gap-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Categories (from Oregon METRC)</label>
+                            <select multiple x-model="form.applicable_categories" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green h-32">
                                 <template x-for="category in categories" :key="category">
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" :value="category" x-model="form.applicable_categories" class="rounded text-cannabis-green focus:ring-cannabis-green">
-                                        <span class="text-sm" x-text="category"></span>
-                                    </label>
+                                    <option :value="category" x-text="category"></option>
                                 </template>
-                            </div>
+                            </select>
+                            <p class="text-xs text-gray-500 mt-1">Select one or more categories. Leave empty to apply to all.</p>
                         </div>
 
                         <!-- Minimum Purchase -->
