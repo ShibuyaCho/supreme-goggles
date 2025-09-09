@@ -116,6 +116,17 @@ class MetrcController extends Controller
             $updated = 0;
             $skipped = 0;
 
+            // Prefetch Retail ID info for all labels to reduce calls
+            $allLabels = collect((array)$packages)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+            $retailMap = [];
+            if (!empty($allLabels)) {
+                try {
+                    $retResp = $this->metrcService->getRetailIdPackagesInfo($allLabels);
+                    $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                    foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                } catch (\Throwable $e) {}
+            }
+
             foreach ((array)$packages as $pkg) {
                 $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
                 if ($qty <= 0) { $skipped++; continue; }
