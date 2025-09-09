@@ -845,4 +845,23 @@ class MetrcService
         ];
         return $map[$u] ?? 'Each';
     }
+
+    /**
+     * Infer strain type from percentages or genetics string
+     */
+    public function inferStrainType($indicaPercentage = null, $sativaPercentage = null, $genetics = null): ?string
+    {
+        $i = is_numeric($indicaPercentage) ? (float)$indicaPercentage : null;
+        $s = is_numeric($sativaPercentage) ? (float)$sativaPercentage : null;
+        if ($i !== null && $s !== null) {
+            if ($i >= 60 && $s < 40) return 'Indica-dominant';
+            if ($s >= 60 && $i < 40) return 'Sativa-dominant';
+            return 'Hybrid';
+        }
+        $g = strtolower((string)$genetics);
+        if (str_contains($g, 'indica') && !str_contains($g, 'sativa')) return 'Indica';
+        if (str_contains($g, 'sativa') && !str_contains($g, 'indica')) return 'Sativa';
+        if ($g) return 'Hybrid';
+        return null;
+    }
 }
