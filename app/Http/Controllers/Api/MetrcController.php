@@ -914,6 +914,18 @@ class MetrcController extends Controller
 
                 // 1) Active packages -> upsert
                 $active = (array) $this->metrcService->getAllPackages($windowStart->toIso8601String(), $windowEnd->toIso8601String());
+
+                // Prefetch Retail ID info for this window
+                $activeLabels = collect($active)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+                $retailMap = [];
+                if (!empty($activeLabels)) {
+                    try {
+                        $retResp = $this->metrcService->getRetailIdPackagesInfo($activeLabels);
+                        $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                        foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                    } catch (\Throwable $e) {}
+                }
+
                 foreach ($active as $pkg) {
                     $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
                     $label = $pkg['Label'] ?? $pkg['label'] ?? null;
