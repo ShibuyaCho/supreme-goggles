@@ -143,6 +143,23 @@ class MetrcController extends Controller
                 $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
                 $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
 
+                // If item id present, fetch full item details
+                $itemId = null;
+                if (is_array($item)) { $itemId = $item['Id'] ?? $item['ID'] ?? null; }
+                elseif (is_numeric($item)) { $itemId = (int)$item; }
+                if (!$uom || !$category || !$itemName) {
+                    if (!$itemId && isset($pkg['ItemId'])) { $itemId = $pkg['ItemId']; }
+                }
+                if ($itemId) {
+                    try {
+                        $it = $this->metrcService->getItemById($itemId);
+                        $itemName = $itemName ?: ($it['Name'] ?? null);
+                        $category = $category ?: ($it['ProductCategoryName'] ?? null);
+                        $uom = $uom ?: ($it['UnitOfMeasureName'] ?? null);
+                        if (empty($strainName)) { $strainName = $it['StrainName'] ?? null; }
+                    } catch (\Throwable $e) {}
+                }
+
                 // Resolve strain if present
                 $strainName = null; $strainId = null;
                 if (is_array($item)) {
