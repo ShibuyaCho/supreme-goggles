@@ -655,6 +655,25 @@ class MetrcService
     }
 
     /**
+     * Get active items list (v2) with optional pagination and lastModified filters
+     */
+    public function getActiveItems(?string $lastModifiedStart = null, ?string $lastModifiedEnd = null, ?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/items/v2/active', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC active items', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Test METRC connection
      */
     public function testConnection()
