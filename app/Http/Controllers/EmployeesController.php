@@ -65,6 +65,12 @@ class EmployeesController extends Controller
     
     public function store(Request $request)
     {
+        // Authorization: only admin/manager
+        $user = auth()->user();
+        if (!$user || !($user->isAdmin() || $user->isManager())) {
+            abort(403, 'Unauthorized');
+        }
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -149,8 +155,14 @@ class EmployeesController extends Controller
     
     public function update(Request $request, $id)
     {
+        // Authorization: only admin/manager
+        $user = auth()->user();
+        if (!$user || !($user->isAdmin() || $user->isManager())) {
+            abort(403, 'Unauthorized');
+        }
+
         $employee = Employee::findOrFail($id);
-        
+
         $validator = Validator::make($request->all(), [
             'first_name' => 'required|string|max:255',
             'last_name' => 'required|string|max:255',
@@ -211,8 +223,14 @@ class EmployeesController extends Controller
     
     public function destroy($id)
     {
+        // Authorization: only admin/manager
+        $user = auth()->user();
+        if (!$user || !($user->isAdmin() || $user->isManager())) {
+            abort(403, 'Unauthorized');
+        }
+
         $employee = Employee::findOrFail($id);
-        
+
         // Check if employee has any sales
         if ($employee->sales()->exists()) {
             return response()->json([
