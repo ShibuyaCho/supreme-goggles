@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Cache;
 class MetrcService
 {
     protected $baseUrl;
+    // $vendorKey: Integrator (software) API key; $userKey: User API key
     protected $userKey;
     protected $vendorKey;
     protected $facilityLicense;
@@ -17,7 +18,7 @@ class MetrcService
     {
         $this->baseUrl = config('services.metrc.base_url', 'https://api-or.metrc.com');
         $this->userKey = env('METRC_USER_KEY');
-        $this->vendorKey = env('METRC_VENDOR_KEY');
+        $this->vendorKey = env('METRC_INTEGRATOR_KEY') ?: env('METRC_VENDOR_KEY');
         $this->facilityLicense = env('METRC_FACILITY');
 
         // Fallback to cached settings if env not populated yet
@@ -46,17 +47,23 @@ class MetrcService
             throw new \Exception('METRC is not properly configured');
         }
 
-        $url = $this->baseUrl . $endpoint;
-        
-        $response = Http::withBasicAuth($this->userKey, $this->vendorKey)
+        $url = rtrim($this->baseUrl, '/') . $endpoint;
+
+        // Per METRC docs: Basic base64("integrator_api_key:user_api_key")
+        $response = Http::withBasicAuth($this->vendorKey, $this->userKey)
+            ->acceptJson()
             ->withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
+                'Content-Type' => 'application/json'
             ]);
 
-        switch (strtoupper($method)) {
+        $method = strtoupper($method);
+        switch ($method) {
             case 'GET':
-                $response = $response->get($url, $data);
+                if (!empty($data)) {
+                    $query = http_build_query($data, '', '&', PHP_QUERY_RFC3986);
+                    $url = strpos($url, '?') === false ? ($url . '?' . $query) : ($url . '&' . $query);
+                }
+                $response = $response->get($url);
                 break;
             case 'POST':
                 $response = $response->post($url, $data);
@@ -72,15 +79,17 @@ class MetrcService
         }
 
         if (!$response->successful()) {
-            $error = $response->json('message') ?? 'METRC API request failed';
+            $status = $response->status();
+            $json = $response->json();
+            $error = is_array($json) ? ($json['message'] ?? ($json[0]['message'] ?? 'METRC API request failed')) : 'METRC API request failed';
             Log::error('METRC API Error', [
                 'url' => $url,
                 'method' => $method,
-                'status' => $response->status(),
+                'status' => $status,
                 'error' => $error,
                 'response' => $response->body()
             ]);
-            throw new \Exception("METRC API Error: $error");
+            throw new \Exception("METRC API Error ({$status}): {$error}");
         }
 
         return $response->json();
