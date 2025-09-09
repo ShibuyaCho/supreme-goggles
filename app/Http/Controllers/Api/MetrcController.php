@@ -705,6 +705,39 @@ class MetrcController extends Controller
         }
     }
 
+    public function getAvailablePlantTags(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'page_number' => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1|max:20'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $raw = $this->metrcService->getAvailablePlantTags($request->page_number, $request->page_size);
+            $tags = (isset($raw['Data']) && is_array($raw['Data'])) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+            return response()->json([
+                'success' => true,
+                'tags' => $tags,
+                'count' => count($tags),
+                'pagination' => [
+                    'total' => $raw['Total'] ?? null,
+                    'total_records' => $raw['TotalRecords'] ?? null,
+                    'page' => $raw['Page'] ?? null,
+                    'current_page' => $raw['CurrentPage'] ?? null,
+                    'page_size' => $raw['PageSize'] ?? null,
+                    'records_on_page' => $raw['RecordsOnPage'] ?? null,
+                    'total_pages' => $raw['TotalPages'] ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch plant tags', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function getFacilityDetails(Request $request)
     {
         try {
