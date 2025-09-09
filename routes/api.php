@@ -128,6 +128,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/tags/plant/available', [MetrcController::class, 'getAvailablePlantTags']);
         Route::get('/strains/{id}', [MetrcController::class, 'getStrain']);
         Route::get('/items/{id}', [MetrcController::class, 'getItem']);
+        Route::get('/items/active', [MetrcController::class, 'getActiveItems']);
         Route::post('/retailid/packages/info', [MetrcController::class, 'getRetailIdPackagesInfo']);
     });
 
