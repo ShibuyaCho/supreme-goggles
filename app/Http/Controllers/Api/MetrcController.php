@@ -846,6 +846,50 @@ class MetrcController extends Controller
         }
     }
 
+    public function getActiveItems(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'last_modified_start' => 'nullable|date',
+            'last_modified_end' => 'nullable|date|after_or_equal:last_modified_start',
+            'page_number' => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1|max:20'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+        try {
+            $raw = $this->metrcService->getActiveItems(
+                $request->last_modified_start,
+                $request->last_modified_end,
+                $request->page_number,
+                $request->page_size
+            );
+            $items = (isset($raw['Data']) && is_array($raw['Data'])) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+            return response()->json([
+                'success' => true,
+                'items' => $items,
+                'count' => count($items),
+                'filters' => [
+                    'last_modified_start' => $request->last_modified_start,
+                    'last_modified_end' => $request->last_modified_end,
+                    'page_number' => $request->page_number,
+                    'page_size' => $request->page_size
+                ],
+                'pagination' => [
+                    'total' => $raw['Total'] ?? null,
+                    'total_records' => $raw['TotalRecords'] ?? null,
+                    'page' => $raw['Page'] ?? null,
+                    'current_page' => $raw['CurrentPage'] ?? null,
+                    'page_size' => $raw['PageSize'] ?? null,
+                    'records_on_page' => $raw['RecordsOnPage'] ?? null,
+                    'total_pages' => $raw['TotalPages'] ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to retrieve active items', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     /**
      * Get item categories
      */
