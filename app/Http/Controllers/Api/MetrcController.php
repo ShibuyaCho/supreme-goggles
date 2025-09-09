@@ -609,4 +609,125 @@ class MetrcController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Sync inventory with METRC using chronological lastModified windows and outgoing transfers
+     */
+    public function syncInventory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'start' => 'nullable|date',
+            'end' => 'nullable|date|after_or_equal:start',
+            'window_days' => 'nullable|integer|min:1|max:31'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $start = $request->get('start') ? now()->parse($request->get('start')) : (cache('metrc_sync_cursor') ? now()->parse(cache('metrc_sync_cursor')) : now()->subDays(30));
+        $end = $request->get('end') ? now()->parse($request->get('end')) : now();
+        $windowDays = (int)($request->get('window_days', 7));
+
+        $summary = [
+            'windows_processed' => 0,
+            'active_processed' => 0,
+            'inactive_processed' => 0,
+            'outgoing_transfers' => 0,
+            'deliveries_processed' => 0,
+            'transfer_packages_processed' => 0,
+            'products_created' => 0,
+            'products_updated' => 0,
+            'products_deactivated' => 0,
+        ];
+
+        try {
+            $cursor = $start->clone();
+            while ($cursor->lt($end)) {
+                $windowStart = $cursor->clone();
+                $windowEnd = $cursor->clone()->addDays($windowDays);
+                if ($windowEnd->gt($end)) { $windowEnd = $end->clone(); }
+
+                // 1) Active packages -> upsert
+                $active = (array) $this->metrcService->getAllPackages($windowStart->toIso8601String(), $windowEnd->toIso8601String());
+                foreach ($active as $pkg) {
+                    $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+
+                    $item = $pkg['Item'] ?? [];
+                    $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                    $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                    $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                    $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                    $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                    $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+
+                    $data = [
+                        'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                        'category' => $category ?: 'Unknown',
+                        'price' => 0,
+                        'cost' => 0,
+                        'sku' => $label,
+                        'weight' => $uom ?: 'Units',
+                        'unit' => $uom ?: 'Each',
+                        'room' => 'Inventory',
+                        'supplier' => $vendor ?: 'METRC',
+                        'vendor' => $vendor ?: 'METRC',
+                        'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                        'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                        'metrc_tag' => $label,
+                        'quantity' => $qty,
+                    ];
+
+                    $existing = Product::where('metrc_tag', $label)->first();
+                    if ($existing) { $existing->fill($data)->save(); $summary['products_updated']++; }
+                    else { Product::create($data); $summary['products_created']++; }
+                    $summary['active_processed']++;
+                }
+
+                // 2) Inactive packages -> set quantity to 0
+                $inactive = (array) $this->metrcService->getInactivePackages($windowStart->toIso8601String(), $windowEnd->toIso8601String());
+                foreach ($inactive as $pkg) {
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+                    $p = Product::where('metrc_tag', $label)->first();
+                    if ($p && $p->quantity > 0) { $p->update(['quantity' => 0]); $summary['products_deactivated']++; }
+                    $summary['inactive_processed']++;
+                }
+
+                // 3) Outgoing transfers -> deliveries -> packages
+                $outgoing = (array) $this->metrcService->getOutgoingTransfers($windowStart->toIso8601String(), $windowEnd->toIso8601String());
+                foreach ($outgoing as $transfer) {
+                    $summary['outgoing_transfers']++;
+                    $deliveries = (array) $this->metrcService->getTransferDeliveries($transfer['Id'] ?? $transfer['id']);
+                    foreach ($deliveries as $delivery) {
+                        $summary['deliveries_processed']++;
+                        $packages = (array) $this->metrcService->getDeliveryPackages($delivery['Id'] ?? $delivery['id']);
+                        foreach ($packages as $pkg) {
+                            $summary['transfer_packages_processed']++;
+                            $label = $pkg['PackageLabel'] ?? $pkg['Label'] ?? $pkg['packageLabel'] ?? null;
+                            if (!$label) { continue; }
+                            $p = Product::where('metrc_tag', $label)->first();
+                            if ($p && $p->quantity > 0) { $p->update(['quantity' => 0]); $summary['products_deactivated']++; }
+                        }
+                    }
+                }
+
+                $summary['windows_processed']++;
+                $cursor = $windowEnd->clone();
+                cache(['metrc_sync_cursor' => $cursor->toIso8601String()], now()->addDays(7));
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'METRC inventory sync completed',
+                'summary' => $summary,
+                'synced_range' => [ 'start' => $start->toIso8601String(), 'end' => $end->toIso8601String() ],
+                'next_cursor' => cache('metrc_sync_cursor')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 }
