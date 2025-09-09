@@ -775,6 +775,26 @@ class MetrcController extends Controller
         }
     }
 
+    public function getRetailIdPackagesInfo(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'package_labels' => 'required|array|min:1',
+            'package_labels.*' => 'string|min:8'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+        try {
+            $raw = $this->metrcService->getRetailIdPackagesInfo($request->package_labels);
+            return response()->json([
+                'success' => true,
+                'data' => $raw
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch Retail ID info', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function getFacilityDetails(Request $request)
     {
         try {
