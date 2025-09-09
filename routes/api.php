@@ -117,6 +117,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/sales/receipts/from-sale/{sale}', [MetrcController::class, 'createReceiptFromSale'])
             ->middleware('permission:metrc:sales');
         Route::get('/sales/receipts', [MetrcController::class, 'getSalesReceipts']);
+        // Sales Deliveries v2
+        Route::post('/sales/deliveries', [MetrcController::class, 'createSalesDeliveries'])
+            ->middleware('permission:metrc:sales');
+        Route::post('/sales/deliveries/from-sale/{sale}', [MetrcController::class, 'createDeliveriesFromSale'])
+            ->middleware('permission:metrc:sales');
         Route::get('/facility', [MetrcController::class, 'getFacilityDetails']);
         Route::get('/categories', [MetrcController::class, 'getItemCategories']);
     });
