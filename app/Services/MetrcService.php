@@ -466,7 +466,7 @@ class MetrcService
     {
         try {
             $requiredFields = ['SalesDateTime', 'SalesCustomerType', 'Transactions'];
-            
+
             foreach ($requiredFields as $field) {
                 if (!isset($salesData[$field])) {
                     throw new \Exception("Missing required field: $field");
@@ -478,6 +478,36 @@ class MetrcService
         } catch (\Exception $e) {
             Log::error('Error creating METRC sales receipt', [
                 'sales_data' => $salesData,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Create sales deliveries (v2). SalesDateTime must be local facility time without timezone.
+     */
+    public function createSalesDeliveries(array $deliveries)
+    {
+        try {
+            // Ensure correctly formatted local timestamps
+            foreach ($deliveries as &$d) {
+                if (isset($d['SalesDateTime'])) {
+                    $dt = \Carbon\Carbon::parse($d['SalesDateTime']);
+                    $d['SalesDateTime'] = $dt->format('Y-m-d\TH:i:s.u'); // no TZ suffix
+                }
+            }
+            unset($d);
+
+            $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+
+            return $this->makeRequest('POST', '/sales/v2/deliveries', $deliveries + $params ? $deliveries : $deliveries);
+        } catch (\Exception $e) {
+            Log::error('Error creating METRC sales deliveries', [
+                'deliveries' => $deliveries,
                 'error' => $e->getMessage()
             ]);
             throw $e;
