@@ -331,6 +331,93 @@ class MetrcService
     }
 
     /**
+     * Get lab test results for a package (paginated optional)
+     */
+    public function getLabTestResults(int|string $packageId, ?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [
+                'packageId' => $packageId,
+                'licenseNumber' => $this->facilityLicense,
+            ];
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/labtests/v2/results', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC lab test results', [ 'package_id' => $packageId, 'error' => $e->getMessage() ]);
+            return null; // don't block inventory sync if lab fetch fails
+        }
+    }
+
+    /**
+     * Parse lab results into product fields
+     */
+    public function parseLabResults($labResponse): array
+    {
+        $data = [
+            'is_tested' => false,
+            'test_status' => null,
+            'test_date' => null,
+            'lab_name' => null,
+            'contaminants_passed' => null,
+            'lab_results' => null,
+            'thc' => null,
+            'cbd' => null,
+            'cbn' => null,
+            'cbg' => null,
+            'cbc' => null,
+        ];
+
+        if (empty($labResponse)) {
+            return $data;
+        }
+
+        $records = $labResponse['Data'] ?? (is_array($labResponse) ? $labResponse : []);
+        if (!is_array($records)) { return $data; }
+
+        $overallPass = null; $anyReleased = false; $labName = null; $testDate = null;
+        $nonCannabinoidAllPassed = true; $hasNonCannabinoid = false;
+
+        foreach ($records as $rec) {
+            if (!is_array($rec)) { continue; }
+            $overallPass = $rec['OverallPassed'] ?? $overallPass;
+            $labName = $rec['LabFacilityName'] ?? $labName;
+            $testDate = $rec['TestPerformedDate'] ?? $testDate;
+            $released = $rec['ResultReleased'] ?? false; $anyReleased = $anyReleased || $released;
+
+            $type = strtolower((string)($rec['TestTypeName'] ?? ''));
+            $level = $rec['TestResultLevel'] ?? null;
+
+            // Map cannabinoids
+            if ($level !== null) {
+                if (str_contains($type, 'total thc') || $type === 'thc') { $data['thc'] = (float)$level; }
+                if (str_contains($type, 'total cbd') || $type === 'cbd') { $data['cbd'] = (float)$level; }
+                if ($type === 'cbn' || str_contains($type, 'total cbn')) { $data['cbn'] = (float)$level; }
+                if ($type === 'cbg' || str_contains($type, 'total cbg')) { $data['cbg'] = (float)$level; }
+                if ($type === 'cbc' || str_contains($type, 'total cbc')) { $data['cbc'] = (float)$level; }
+            }
+
+            // Track contaminants pass (microbiologicals, pesticides, etc.)
+            if (!in_array($type, ['thc','cbd','cbn','cbg','cbc']) && !str_contains($type, 'cannabinoid')) {
+                $hasNonCannabinoid = true;
+                $testPassed = $rec['TestPassed'] ?? null;
+                if ($testPassed === false) { $nonCannabinoidAllPassed = false; }
+            }
+        }
+
+        $data['is_tested'] = count($records) > 0 && $anyReleased;
+        if ($overallPass === true) { $data['test_status'] = 'passed'; }
+        elseif ($overallPass === false) { $data['test_status'] = 'failed'; }
+        else { $data['test_status'] = $anyReleased ? 'passed' : null; }
+        $data['test_date'] = $testDate ? date('Y-m-d', strtotime($testDate)) : null;
+        $data['lab_name'] = $labName;
+        $data['contaminants_passed'] = $hasNonCannabinoid ? $nonCannabinoidAllPassed : null;
+        $data['lab_results'] = $records;
+
+        return $data;
+    }
+
+    /**
      * Get incoming transfers for facility
      */
     public function getIncomingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null)
