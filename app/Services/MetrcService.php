@@ -538,6 +538,25 @@ class MetrcService
     }
 
     /**
+     * Get available package tags (premium)
+     */
+    public function getAvailablePackageTags(?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/tags/v2/package/available', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching available METRC package tags', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Get facility details
      */
     public function getFacilityDetails()
@@ -624,9 +643,23 @@ class MetrcService
     {
         try {
             if (!$product->metrc_tag) {
+                // Prefer real available METRC tags; fallback to generated
+                $selectedTag = null;
+                try {
+                    $tags = $this->getAvailablePackageTags();
+                    $list = (isset($tags['Data']) && is_array($tags['Data'])) ? $tags['Data'] : (is_array($tags) ? $tags : []);
+                    if (!empty($list)) {
+                        $first = $list[0];
+                        $selectedTag = $first['Label'] ?? $first['label'] ?? null;
+                    }
+                } catch (\Throwable $e) {
+                    // ignore; may be premium or unavailable
+                }
+                $selectedTag = $selectedTag ?: $this->generatePackageTag();
+
                 // Create new METRC package for product
                 $packageData = [
-                    'Tag' => $this->generatePackageTag(),
+                    'Tag' => $selectedTag,
                     'PackagedDate' => now()->toISOString(),
                     'Item' => $this->mapCategoryToMetrc($product->category),
                     'Quantity' => $product->quantity,
