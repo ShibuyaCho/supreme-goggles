@@ -1190,6 +1190,53 @@ class MetrcController extends Controller
                 cache(['metrc_sync_cursor' => $cursor->toIso8601String()], now()->addDays(7));
             }
 
+            // Fallback: if no active packages were processed in windows, try a full active fetch once
+            if ($summary['active_processed'] === 0 && !$request->boolean('skip_fallback')) {
+                $allActive = (array) $this->metrcService->getAllPackages();
+                $activeLabels = collect($allActive)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+                $retailMap = [];
+                if (!empty($activeLabels)) {
+                    try {
+                        $retResp = $this->metrcService->getRetailIdPackagesInfo($activeLabels);
+                        $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                        foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                    } catch (\Throwable $e) {}
+                }
+                foreach ($allActive as $pkg) {
+                    $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+                    $item = $pkg['Item'] ?? [];
+                    $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                    $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                    $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                    $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                    $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                    $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+                    $data = [
+                        'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                        'category' => $category ?: 'Unknown',
+                        'price' => 0,
+                        'cost' => 0,
+                        'sku' => $label,
+                        'weight' => $uom ?: 'Units',
+                        'unit' => $uom ?: 'Each',
+                        'room' => 'Inventory',
+                        'supplier' => $vendor ?: 'METRC',
+                        'vendor' => $vendor ?: 'METRC',
+                        'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                        'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                        'metrc_tag' => $label,
+                        'quantity' => $qty,
+                    ];
+                    if (isset($retailMap[$label])) { $ri = $retailMap[$label]; if (($ri['RequiresVerification'] ?? false) === true) { $data['administrative_hold'] = true; $note = 'RetailID: Requires Verification'; $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note; } $data['lab_results'] = [ 'retail_id' => $ri ]; }
+                    $existing = Product::where('metrc_tag', $label)->first();
+                    if ($existing) { $existing->fill($data)->save(); $summary['products_updated']++; }
+                    else { Product::create($data); $summary['products_created']++; }
+                    $summary['active_processed']++;
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'METRC inventory sync completed',
