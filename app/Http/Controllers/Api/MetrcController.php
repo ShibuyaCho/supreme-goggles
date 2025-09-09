@@ -148,6 +148,16 @@ class MetrcController extends Controller
                     'quantity' => $qty,
                 ];
 
+                // Pull lab results to auto-fill potency and test info
+                $pkgId = $pkg['Id'] ?? $pkg['PackageId'] ?? null;
+                if ($pkgId) {
+                    $labResp = $this->metrcService->getLabTestResults($pkgId, null, 20);
+                    if ($labResp) {
+                        $parsed = $this->metrcService->parseLabResults($labResp);
+                        $data = array_merge($data, array_filter($parsed, function($v){ return $v !== null; }));
+                    }
+                }
+
                 $existing = Product::where('metrc_tag', $label)->first();
                 if ($existing) {
                     $existing->fill($data);
