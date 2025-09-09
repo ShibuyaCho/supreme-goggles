@@ -978,6 +978,17 @@ class MetrcController extends Controller
                         }
                     }
 
+                    // Retail ID enrich
+                    if (isset($retailMap[$label])) {
+                        $ri = $retailMap[$label];
+                        if (($ri['RequiresVerification'] ?? false) === true) {
+                            $data['administrative_hold'] = true;
+                            $note = 'RetailID: Requires Verification';
+                            $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note;
+                        }
+                        $data['lab_results'] = [ 'retail_id' => $ri ];
+                    }
+
                     $existing = Product::where('metrc_tag', $label)->first();
                     if ($existing) { $existing->fill($data)->save(); $summary['products_updated']++; }
                     else { Product::create($data); $summary['products_created']++; }
