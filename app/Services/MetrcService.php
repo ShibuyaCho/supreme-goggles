@@ -49,8 +49,8 @@ class MetrcService
 
         $url = rtrim($this->baseUrl, '/') . $endpoint;
 
-        // Per METRC docs: Basic base64("integrator_api_key:user_api_key")
-        $response = Http::withBasicAuth($this->vendorKey, $this->userKey)
+        // Per METRC docs: Basic base64("user_api_key:integrator_api_key")
+        $response = Http::withBasicAuth($this->userKey, $this->vendorKey)
             ->acceptJson()
             ->withHeaders([
                 'Content-Type' => 'application/json'
