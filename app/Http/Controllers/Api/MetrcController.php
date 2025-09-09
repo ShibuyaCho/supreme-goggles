@@ -132,6 +132,20 @@ class MetrcController extends Controller
                 $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
                 $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
 
+                // Resolve strain if present
+                $strainName = null; $strainId = null;
+                if (is_array($item)) {
+                    $strainName = $item['StrainName'] ?? $item['Strain'] ?? null;
+                    $strainId = $item['StrainId'] ?? null;
+                }
+                if (!$strainName && ($pkg['StrainName'] ?? null)) { $strainName = $pkg['StrainName']; }
+                if (!$strainName && $strainId) {
+                    try {
+                        $sr = $this->metrcService->getStrainById($strainId);
+                        $strainName = $sr['Name'] ?? null;
+                    } catch (\Throwable $e) {}
+                }
+
                 $data = [
                     'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
                     'category' => $category ?: 'Unknown',
@@ -146,6 +160,7 @@ class MetrcController extends Controller
                     'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
                     'metrc_tag' => $label,
                     'quantity' => $qty,
+                    'strain' => $strainName,
                 ];
 
                 // Pull lab results to auto-fill potency and test info
@@ -777,6 +792,25 @@ class MetrcController extends Controller
     }
 
     /**
+     * Get strain by ID
+     */
+    public function getStrain(Request $request, $id)
+    {
+        try {
+            $license = $request->get('licenseNumber');
+            $strain = $this->metrcService->getStrainById($id, $license);
+            $type = $this->metrcService->inferStrainType($strain['IndicaPercentage'] ?? null, $strain['SativaPercentage'] ?? null, $strain['Genetics'] ?? null);
+            return response()->json([
+                'success' => true,
+                'strain' => $strain,
+                'strain_type' => $type
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to retrieve strain', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get package history
      */
     public function getPackageHistory(Request $request, string $packageTag)
@@ -851,6 +885,17 @@ class MetrcController extends Controller
                     $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
                     $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
 
+                    // Resolve strain if present
+                    $strainName = null; $strainId = null;
+                    if (is_array($item)) {
+                        $strainName = $item['StrainName'] ?? $item['Strain'] ?? null;
+                        $strainId = $item['StrainId'] ?? null;
+                    }
+                    if (!$strainName && ($pkg['StrainName'] ?? null)) { $strainName = $pkg['StrainName']; }
+                    if (!$strainName && $strainId) {
+                        try { $sr = $this->metrcService->getStrainById($strainId); $strainName = $sr['Name'] ?? null; } catch (\Throwable $e) {}
+                    }
+
                     $data = [
                         'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
                         'category' => $category ?: 'Unknown',
@@ -866,6 +911,7 @@ class MetrcController extends Controller
                         'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
                         'metrc_tag' => $label,
                         'quantity' => $qty,
+                        'strain' => $strainName,
                     ];
 
                     // Pull lab results for this package and merge
