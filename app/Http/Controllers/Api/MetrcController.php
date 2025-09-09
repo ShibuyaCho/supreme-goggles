@@ -520,6 +520,100 @@ class MetrcController extends Controller
     /**
      * Get sales receipts from METRC
      */
+    public function createSalesDeliveries(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'deliveries' => 'required|array|min:1',
+            'deliveries.*.sales_datetime' => 'required|date',
+            'deliveries.*.sales_customer_type' => 'required|string|in:Consumer,Patient,Caregiver',
+            'deliveries.*.patient_license_number' => 'nullable|string',
+            'deliveries.*.transactions' => 'required|array|min:1',
+            'deliveries.*.transactions.*.package_label' => 'required|string',
+            'deliveries.*.transactions.*.quantity' => 'required|numeric|min:0.01',
+            'deliveries.*.transactions.*.unit_of_measure' => 'required|string',
+            'deliveries.*.transactions.*.total_amount' => 'required|numeric|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $deliveries = [];
+            foreach ($request->deliveries as $d) {
+                $deliveries[] = [
+                    'SalesDateTime' => \Carbon\Carbon::parse($d['sales_datetime'])->format('Y-m-d\TH:i:s.000'), // local, no TZ
+                    'SalesCustomerType' => $d['sales_customer_type'],
+                    'PatientLicenseNumber' => $d['patient_license_number'] ?? null,
+                    'Transactions' => array_map(function($t){
+                        return [
+                            'PackageLabel' => $t['package_label'],
+                            'Quantity' => (float)$t['quantity'],
+                            'UnitOfMeasure' => $t['unit_of_measure'],
+                            'TotalAmount' => (float)$t['total_amount'],
+                            'QrCodes' => $t['qr_codes'] ?? null,
+                        ];
+                    }, $d['transactions'])
+                ];
+            }
+
+            $result = $this->metrcService->createSalesDeliveries($deliveries);
+
+            Log::info('METRC sales deliveries created', [ 'deliveries_count' => count($deliveries), 'user_id' => $request->user()->id ]);
+
+            return response()->json([
+                'message' => 'Sales deliveries created successfully',
+                'result' => $result
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to create sales deliveries',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function createDeliveriesFromSale(Request $request, Sale $sale)
+    {
+        if ($sale->status !== 'completed') {
+            return response()->json(['error' => 'Only completed sales can be pushed to METRC'], 400);
+        }
+
+        $customerType = strtolower($sale->customer_type) === 'medical' ? 'Patient' : 'Consumer';
+        $patientLicense = $sale->customer?->medical_card_number ?: null;
+
+        $transactions = [];
+        foreach ($sale->saleItems as $item) {
+            $product = $item->product;
+            $label = $product?->metrc_tag ?: ($item->metrc_tag ?: $product?->sku);
+            if (!$label) {
+                return response()->json(['error' => 'Missing METRC package tag for one or more items', 'item_id' => $item->id], 422);
+            }
+            $weightSold = (float)($item->weight_sold ?? 0);
+            $transactions[] = [
+                'package_label' => $label,
+                'quantity' => $weightSold > 0 ? $weightSold : (float)$item->quantity,
+                'unit_of_measure' => $weightSold > 0 ? 'Grams' : 'Each',
+                'total_amount' => (float)$item->total_price
+            ];
+        }
+
+        $payload = [
+            'deliveries' => [[
+                'sales_datetime' => $sale->created_at->format('Y-m-d\TH:i:s.000'),
+                'sales_customer_type' => $customerType,
+                'patient_license_number' => $patientLicense,
+                'transactions' => $transactions
+            ]]
+        ];
+
+        $request->merge($payload);
+        return $this->createSalesDeliveries($request);
+    }
+
     public function getSalesReceipts(Request $request)
     {
         $validator = Validator::make($request->all(), [
