@@ -239,7 +239,6 @@ class MetrcService
         try {
             $params = [];
 
-            // Always include facility license number when available
             if (!empty($this->facilityLicense)) {
                 $params['licenseNumber'] = $this->facilityLicense;
             }
@@ -258,6 +257,66 @@ class MetrcService
             Log::error('Error fetching all METRC packages', [
                 'error' => $e->getMessage()
             ]);
+            throw $e;
+        }
+    }
+
+    public function getInactivePackages(string $lastModifiedStart = null, string $lastModifiedEnd = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+            if ($lastModifiedStart) {
+                $params['lastModifiedStart'] = $lastModifiedStart;
+            }
+            if ($lastModifiedEnd) {
+                $params['lastModifiedEnd'] = $lastModifiedEnd;
+            }
+            return $this->makeRequest('GET', '/packages/v1/inactive', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC inactive packages', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    public function getOutgoingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+            if ($lastModifiedStart) {
+                $params['lastModifiedStart'] = $lastModifiedStart;
+            }
+            if ($lastModifiedEnd) {
+                $params['lastModifiedEnd'] = $lastModifiedEnd;
+            }
+            return $this->makeRequest('GET', '/transfers/v1/outgoing', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC outgoing transfers', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    public function getTransferDeliveries(int|string $transferId)
+    {
+        try {
+            return $this->makeRequest('GET', "/transfers/v1/{$transferId}/deliveries");
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC transfer deliveries', [ 'transfer_id' => $transferId, 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    public function getDeliveryPackages(int|string $deliveryId)
+    {
+        try {
+            return $this->makeRequest('GET', "/transfers/v1/deliveries/{$deliveryId}/packages");
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC delivery packages', [ 'delivery_id' => $deliveryId, 'error' => $e->getMessage() ]);
             throw $e;
         }
     }
