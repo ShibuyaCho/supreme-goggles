@@ -36,6 +36,11 @@
                     <button onclick="exportProducts()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Export
                     </button>
+
+                    <!-- METRC Sync -->
+                    <button onclick="syncMetrcInventory()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Sync METRC Inventory
+                    </button>
                 </div>
             </div>
         </div>
@@ -599,6 +604,32 @@ function generateBarcode(productId) {
 
 function generateLabel(productId) {
     window.open(`/products/${productId}/label`, '_blank');
+}
+
+async function syncMetrcInventory() {
+    try {
+        const btn = event?.currentTarget;
+        if (btn) { btn.disabled = true; btn.textContent = 'Syncing...'; }
+        const res = await fetch('/api/metrc/sync-inventory', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({})
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.success) {
+            POS.showToast(data.message || 'Sync failed', 'error');
+            if (btn) { btn.disabled = false; btn.textContent = 'Sync METRC Inventory'; }
+            return;
+        }
+        POS.showToast('METRC inventory synced', 'success');
+        window.location.reload();
+    } catch (e) {
+        console.error(e);
+        POS.showToast('Sync failed', 'error');
+    }
 }
 // Secure Delete State and Logic
 const secureDeleteState = {
