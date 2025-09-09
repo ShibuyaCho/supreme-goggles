@@ -170,7 +170,7 @@ Route::prefix('analytics')->name('analytics.')->group(function () {
 });
 
 // Employee Management Routes
-Route::prefix('employees')->name('employees.')->group(function () {
+Route::prefix('employees')->name('employees.')->middleware('auth')->group(function () {
     Route::get('/', [EmployeesController::class, 'index'])->name('index');
     Route::get('/create', [EmployeesController::class, 'create'])->name('create');
     Route::post('/', [EmployeesController::class, 'store'])->name('store');
