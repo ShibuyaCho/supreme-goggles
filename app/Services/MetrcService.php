@@ -557,6 +557,25 @@ class MetrcService
     }
 
     /**
+     * Get available plant tags (premium)
+     */
+    public function getAvailablePlantTags(?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/tags/v2/plant/available', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching available METRC plant tags', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Get facility details
      */
     public function getFacilityDetails()
