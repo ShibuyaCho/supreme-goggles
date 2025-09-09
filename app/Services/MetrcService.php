@@ -260,7 +260,9 @@ class MetrcService
                 $params['lastModifiedEnd'] = $lastModifiedEnd;
             }
 
-            return $this->makeRequest('GET', '/packages/v1/active', $params);
+            $raw = $this->makeRequest('GET', '/packages/v1/active', $params);
+            if (isset($raw['Data']) && is_array($raw['Data'])) { return $raw['Data']; }
+            return is_array($raw) ? $raw : [];
 
         } catch (\Exception $e) {
             Log::error('Error fetching all METRC packages', [
@@ -283,7 +285,9 @@ class MetrcService
             if ($lastModifiedEnd) {
                 $params['lastModifiedEnd'] = $lastModifiedEnd;
             }
-            return $this->makeRequest('GET', '/packages/v1/inactive', $params);
+            $raw = $this->makeRequest('GET', '/packages/v1/inactive', $params);
+            if (isset($raw['Data']) && is_array($raw['Data'])) { return $raw['Data']; }
+            return is_array($raw) ? $raw : [];
         } catch (\Exception $e) {
             Log::error('Error fetching METRC inactive packages', [ 'error' => $e->getMessage() ]);
             throw $e;
