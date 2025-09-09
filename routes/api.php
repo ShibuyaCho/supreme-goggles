@@ -124,6 +124,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->middleware('permission:metrc:sales');
         Route::get('/facility', [MetrcController::class, 'getFacilityDetails']);
         Route::get('/categories', [MetrcController::class, 'getItemCategories']);
+        Route::get('/tags/package/available', [MetrcController::class, 'getAvailablePackageTags']);
     });
 
     /*
