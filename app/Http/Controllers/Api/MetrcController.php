@@ -813,6 +813,23 @@ class MetrcController extends Controller
     }
 
     /**
+     * Get item by ID
+     */
+    public function getItem(Request $request, $id)
+    {
+        try {
+            $license = $request->get('licenseNumber');
+            $item = $this->metrcService->getItemById($id, $license);
+            return response()->json([
+                'success' => true,
+                'item' => $item
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to retrieve item', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get item categories
      */
     public function getItemCategories(Request $request)
