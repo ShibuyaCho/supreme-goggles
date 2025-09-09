@@ -420,7 +420,7 @@ class MetrcService
     /**
      * Get incoming transfers for facility
      */
-    public function getIncomingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null)
+    public function getIncomingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null, ?int $pageNumber = null, ?int $pageSize = null)
     {
         try {
             $params = [];
@@ -433,7 +433,9 @@ class MetrcService
             if ($lastModifiedEnd) {
                 $params['lastModifiedEnd'] = $lastModifiedEnd;
             }
-            return $this->makeRequest('GET', '/transfers/v1/incoming', $params);
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/transfers/v2/incoming', $params);
         } catch (\Exception $e) {
             Log::error('Error fetching METRC incoming transfers', [
                 'error' => $e->getMessage()
