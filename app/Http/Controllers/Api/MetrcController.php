@@ -193,7 +193,9 @@ class MetrcController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'last_modified_start' => 'nullable|date',
-            'last_modified_end' => 'nullable|date|after_or_equal:last_modified_start'
+            'last_modified_end' => 'nullable|date|after_or_equal:last_modified_start',
+            'page_number' => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1|max:20'
         ]);
 
         if ($validator->fails()) {
@@ -204,18 +206,34 @@ class MetrcController extends Controller
         }
 
         try {
-            $transfers = $this->metrcService->getIncomingTransfers(
+            $raw = $this->metrcService->getIncomingTransfers(
                 $request->last_modified_start,
-                $request->last_modified_end
+                $request->last_modified_end,
+                $request->page_number,
+                $request->page_size
             );
 
+            $transfers = (isset($raw['Data']) && is_array($raw['Data'])) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+
             return response()->json([
+                'success' => true,
                 'transfers' => $transfers,
-                'count' => is_array($transfers) ? count($transfers) : 0,
+                'count' => count($transfers),
                 'retrieved_at' => now()->toISOString(),
                 'filters' => [
                     'last_modified_start' => $request->last_modified_start,
-                    'last_modified_end' => $request->last_modified_end
+                    'last_modified_end' => $request->last_modified_end,
+                    'page_number' => $request->page_number,
+                    'page_size' => $request->page_size
+                ],
+                'pagination' => [
+                    'total' => $raw['Total'] ?? null,
+                    'total_records' => $raw['TotalRecords'] ?? null,
+                    'page' => $raw['Page'] ?? null,
+                    'current_page' => $raw['CurrentPage'] ?? null,
+                    'page_size' => $raw['PageSize'] ?? null,
+                    'records_on_page' => $raw['RecordsOnPage'] ?? null,
+                    'total_pages' => $raw['TotalPages'] ?? null,
                 ]
             ]);
         } catch (\Exception $e) {
