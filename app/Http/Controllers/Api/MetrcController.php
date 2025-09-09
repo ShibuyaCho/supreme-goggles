@@ -984,13 +984,91 @@ class MetrcController extends Controller
         ];
 
         try {
+            // If no prior cursor or explicit full sync requested, do a one-time full active fetch first
+            $doFull = $request->boolean('full') || !cache('metrc_sync_cursor');
+            if ($doFull) {
+                $allActive = (array) $this->metrcService->getAllPackages();
+                $activeLabels = collect($allActive)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+                $retailMap = [];
+                if (!empty($activeLabels)) {
+                    try {
+                        $retResp = $this->metrcService->getRetailIdPackagesInfo($activeLabels);
+                        $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                        foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                    } catch (\Throwable $e) {}
+                }
+                foreach ($allActive as $pkg) {
+                    $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+
+                    $item = $pkg['Item'] ?? [];
+                    $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                    $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                    $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                    $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                    $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                    $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+
+                    $itemId = null;
+                    if (is_array($item)) { $itemId = $item['Id'] ?? $item['ID'] ?? null; }
+                    elseif (is_numeric($item)) { $itemId = (int)$item; }
+                    if ((!$uom || !$category || !$itemName) && isset($pkg['ItemId'])) { $itemId = $itemId ?: $pkg['ItemId']; }
+                    if ($itemId) {
+                        try {
+                            $it = $this->metrcService->getItemById($itemId);
+                            $itemName = $itemName ?: ($it['Name'] ?? null);
+                            $category = $category ?: ($it['ProductCategoryName'] ?? null);
+                            $uom = $uom ?: ($it['UnitOfMeasureName'] ?? null);
+                            if (empty($strainName)) { $strainName = $it['StrainName'] ?? null; }
+                        } catch (\Throwable $e) {}
+                    }
+
+                    $strainName = null; $strainId = null;
+                    if (is_array($item)) { $strainName = $item['StrainName'] ?? $item['Strain'] ?? null; $strainId = $item['StrainId'] ?? null; }
+                    if (!$strainName && ($pkg['StrainName'] ?? null)) { $strainName = $pkg['StrainName']; }
+                    if (!$strainName && $strainId) { try { $sr = $this->metrcService->getStrainById($strainId); $strainName = $sr['Name'] ?? null; } catch (\Throwable $e) {} }
+
+                    $data = [
+                        'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                        'category' => $category ?: 'Unknown',
+                        'price' => 0,
+                        'cost' => 0,
+                        'sku' => $label,
+                        'weight' => $uom ?: 'Units',
+                        'unit' => $uom ?: 'Each',
+                        'room' => 'Inventory',
+                        'supplier' => $vendor ?: 'METRC',
+                        'vendor' => $vendor ?: 'METRC',
+                        'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                        'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                        'metrc_tag' => $label,
+                        'quantity' => $qty,
+                        'strain' => $strainName,
+                    ];
+
+                    $pkgId = $pkg['Id'] ?? $pkg['PackageId'] ?? null;
+                    if ($pkgId) {
+                        $labResp = $this->metrcService->getLabTestResults($pkgId, null, 20);
+                        if ($labResp) { $parsed = $this->metrcService->parseLabResults($labResp); $data = array_merge($data, array_filter($parsed, fn($v) => $v !== null)); }
+                    }
+                    if (isset($retailMap[$label])) { $ri = $retailMap[$label]; if (($ri['RequiresVerification'] ?? false) === true) { $data['administrative_hold'] = true; $note = 'RetailID: Requires Verification'; $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note; } $data['lab_results'] = [ 'retail_id' => $ri ]; }
+
+                    $existing = Product::where('metrc_tag', $label)->first();
+                    if ($existing) { $existing->fill($data)->save(); $summary['products_updated']++; }
+                    else { Product::create($data); $summary['products_created']++; }
+                    $summary['active_processed']++;
+                }
+                cache(['metrc_sync_cursor' => now()->toIso8601String()], now()->addDays(7));
+            }
+
             $cursor = $start->clone();
             while ($cursor->lt($end)) {
                 $windowStart = $cursor->clone();
                 $windowEnd = $cursor->clone()->addDays($windowDays);
                 if ($windowEnd->gt($end)) { $windowEnd = $end->clone(); }
 
-                // 1) Active packages -> upsert
+                // 1) Active packages -> upsert (windowed)
                 $active = (array) $this->metrcService->getAllPackages($windowStart->toIso8601String(), $windowEnd->toIso8601String());
 
                 // Prefetch Retail ID info for this window
@@ -1039,9 +1117,7 @@ class MetrcController extends Controller
                         $strainId = $item['StrainId'] ?? null;
                     }
                     if (!$strainName && ($pkg['StrainName'] ?? null)) { $strainName = $pkg['StrainName']; }
-                    if (!$strainName && $strainId) {
-                        try { $sr = $this->metrcService->getStrainById($strainId); $strainName = $sr['Name'] ?? null; } catch (\Throwable $e) {}
-                    }
+                    if (!$strainName && $strainId) { try { $sr = $this->metrcService->getStrainById($strainId); $strainName = $sr['Name'] ?? null; } catch (\Throwable $e) {} }
 
                     $data = [
                         'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
@@ -1065,20 +1141,13 @@ class MetrcController extends Controller
                     $pkgId = $pkg['Id'] ?? $pkg['PackageId'] ?? null;
                     if ($pkgId) {
                         $labResp = $this->metrcService->getLabTestResults($pkgId, null, 20);
-                        if ($labResp) {
-                            $parsed = $this->metrcService->parseLabResults($labResp);
-                            $data = array_merge($data, array_filter($parsed, function($v){ return $v !== null; }));
-                        }
+                        if ($labResp) { $parsed = $this->metrcService->parseLabResults($labResp); $data = array_merge($data, array_filter($parsed, fn($v) => $v !== null)); }
                     }
 
                     // Retail ID enrich
                     if (isset($retailMap[$label])) {
                         $ri = $retailMap[$label];
-                        if (($ri['RequiresVerification'] ?? false) === true) {
-                            $data['administrative_hold'] = true;
-                            $note = 'RetailID: Requires Verification';
-                            $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note;
-                        }
+                        if (($ri['RequiresVerification'] ?? false) === true) { $data['administrative_hold'] = true; $note = 'RetailID: Requires Verification'; $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note; }
                         $data['lab_results'] = [ 'retail_id' => $ri ];
                     }
 
