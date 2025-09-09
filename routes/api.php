@@ -125,6 +125,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/facility', [MetrcController::class, 'getFacilityDetails']);
         Route::get('/categories', [MetrcController::class, 'getItemCategories']);
         Route::get('/tags/package/available', [MetrcController::class, 'getAvailablePackageTags']);
+        Route::get('/tags/plant/available', [MetrcController::class, 'getAvailablePlantTags']);
     });
 
     /*
