@@ -102,6 +102,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/packages', [MetrcController::class, 'getAllPackages']);
         Route::post('/import-packages', [MetrcController::class, 'importActivePackages'])
             ->middleware('permission:products:write');
+        Route::post('/sync-inventory', [MetrcController::class, 'syncInventory']);
         Route::get('/packages/{packageTag}', [MetrcController::class, 'getPackageDetails']);
         Route::get('/packages/{packageTag}/history', [MetrcController::class, 'getPackageHistory']);
         Route::get('/transfers/incoming', [MetrcController::class, 'getIncomingTransfers']);
