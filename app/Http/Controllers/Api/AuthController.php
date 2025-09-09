@@ -273,6 +273,11 @@ class AuthController extends Controller
      */
     public function selfRegister(Request $request)
     {
+        // Optionally disable public self-register for tighter authorization
+        if (!config('auth.allow_self_register', false)) {
+            return response()->json(['error' => 'Self-registration is disabled'], 403);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email|unique:employees,email',
