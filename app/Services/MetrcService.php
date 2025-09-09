@@ -538,6 +538,25 @@ class MetrcService
     }
 
     /**
+     * Retail ID: get packages info for a list of labels
+     */
+    public function getRetailIdPackagesInfo(array $packageLabels)
+    {
+        try {
+            $endpoint = '/retailid/v2/packages/info';
+            if (!empty($this->facilityLicense)) {
+                $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense);
+            }
+            $payload = [ 'packageLabels' => array_values(array_unique(array_filter($packageLabels))) ];
+            if (empty($payload['packageLabels'])) { return ['Packages' => []]; }
+            return $this->makeRequest('POST', $endpoint, $payload);
+        } catch (\Exception $e) {
+            Log::error('Error fetching Retail ID packages info', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Get available package tags (premium)
      */
     public function getAvailablePackageTags(?int $pageNumber = null, ?int $pageSize = null)
