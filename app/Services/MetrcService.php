@@ -601,7 +601,7 @@ class MetrcService
     {
         try {
             $cacheKey = "metrc_facility_{$this->facilityLicense}";
-            
+
             return Cache::remember($cacheKey, now()->addHours(1), function () {
                 return $this->makeRequest('GET', '/facilities/v1');
             });
@@ -610,6 +610,46 @@ class MetrcService
             Log::error('Error fetching METRC facility details', [
                 'error' => $e->getMessage()
             ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get strain by ID (v2) optionally scoped by facility license
+     */
+    public function getStrainById(int|string $id, ?string $licenseNumber = null)
+    {
+        try {
+            $cacheKey = "metrc_strain_{$id}_" . ($licenseNumber ?: $this->facilityLicense ?: 'all');
+            return Cache::remember($cacheKey, now()->addHours(6), function () use ($id, $licenseNumber) {
+                $endpoint = "/strains/v2/{$id}";
+                $params = [];
+                $license = $licenseNumber ?: $this->facilityLicense;
+                if (!empty($license)) { $params['licenseNumber'] = $license; }
+                return $this->makeRequest('GET', $endpoint, $params);
+            });
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC strain', [ 'strain_id' => $id, 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get item by ID (v2) optionally scoped by facility license
+     */
+    public function getItemById(int|string $id, ?string $licenseNumber = null)
+    {
+        try {
+            $cacheKey = "metrc_item_{$id}_" . ($licenseNumber ?: $this->facilityLicense ?: 'all');
+            return Cache::remember($cacheKey, now()->addHours(6), function () use ($id, $licenseNumber) {
+                $endpoint = "/items/v2/{$id}";
+                $params = [];
+                $license = $licenseNumber ?: $this->facilityLicense;
+                if (!empty($license)) { $params['licenseNumber'] = $license; }
+                return $this->makeRequest('GET', $endpoint, $params);
+            });
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC item', [ 'item_id' => $id, 'error' => $e->getMessage() ]);
             throw $e;
         }
     }
