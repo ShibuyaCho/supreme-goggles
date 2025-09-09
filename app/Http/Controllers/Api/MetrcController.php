@@ -174,6 +174,17 @@ class MetrcController extends Controller
                     'strain' => $strainName,
                 ];
 
+                // Retail ID enrich
+                if (isset($retailMap[$label])) {
+                    $ri = $retailMap[$label];
+                    if (($ri['RequiresVerification'] ?? false) === true) {
+                        $data['administrative_hold'] = true;
+                        $note = 'RetailID: Requires Verification';
+                        $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note;
+                    }
+                    $data['lab_results'] = [ 'retail_id' => $ri ];
+                }
+
                 // Pull lab results to auto-fill potency and test info
                 $pkgId = $pkg['Id'] ?? $pkg['PackageId'] ?? null;
                 if ($pkgId) {
