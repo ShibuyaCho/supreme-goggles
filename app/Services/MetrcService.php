@@ -494,17 +494,17 @@ class MetrcService
             foreach ($deliveries as &$d) {
                 if (isset($d['SalesDateTime'])) {
                     $dt = \Carbon\Carbon::parse($d['SalesDateTime']);
-                    $d['SalesDateTime'] = $dt->format('Y-m-d\TH:i:s.u'); // no TZ suffix
+                    $d['SalesDateTime'] = $dt->format('Y-m-d\TH:i:s.000'); // no TZ suffix
                 }
             }
             unset($d);
 
-            $params = [];
+            $endpoint = '/sales/v2/deliveries';
             if (!empty($this->facilityLicense)) {
-                $params['licenseNumber'] = $this->facilityLicense;
+                $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense);
             }
 
-            return $this->makeRequest('POST', '/sales/v2/deliveries', $deliveries + $params ? $deliveries : $deliveries);
+            return $this->makeRequest('POST', $endpoint, $deliveries);
         } catch (\Exception $e) {
             Log::error('Error creating METRC sales deliveries', [
                 'deliveries' => $deliveries,
