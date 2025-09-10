@@ -895,4 +895,14 @@ class MetrcService
         if ($g) return 'Hybrid';
         return null;
     }
+
+    private function toUtcZulu(string $dt): string
+    {
+        try {
+            $c = \Carbon\Carbon::parse($dt)->utc();
+            return $c->format('Y-m-d\TH:i:s\Z');
+        } catch (\Throwable $e) {
+            return $dt;
+        }
+    }
 }
