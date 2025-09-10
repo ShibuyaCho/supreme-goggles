@@ -743,6 +743,7 @@ function cannabisPOS() {
         }
 
         this.calculateTotals();
+        try { this.filterLoyaltyCustomers(); } catch (_) {}
       } catch (error) {
         console.warn("POS initialization error:", error);
         // Ensure basic state is set
