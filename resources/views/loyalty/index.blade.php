@@ -263,22 +263,23 @@
                         </button>
                     </div>
 
-                    <form @submit.prevent="enrollCustomer()" class="space-y-4">
+                    <form action="{{ route('loyalty.enroll') }}" method="POST" @submit.prevent="enrollCustomer()" class="space-y-4">
+                        @csrf
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                            <input id="loyalty-enroll-name" type="text" x-model="enrollmentForm.name" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
+                            <input id="loyalty-enroll-name" name="name" type="text" x-model="enrollmentForm.name" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                            <input id="loyalty-enroll-phone" type="tel" x-model="enrollmentForm.phone" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
+                            <input id="loyalty-enroll-phone" name="phone" type="tel" x-model="enrollmentForm.phone" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                            <input id="loyalty-enroll-email" type="email" x-model="enrollmentForm.email" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
+                            <input id="loyalty-enroll-email" name="email" type="email" x-model="enrollmentForm.email" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Starting Loyalty Tier</label>
-                            <select id="loyalty-enroll-tier" x-model="enrollmentForm.tier" @keydown.enter.prevent="enrollCustomer()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                            <select id="loyalty-enroll-tier" name="tier" x-model="enrollmentForm.tier" @keydown.enter.prevent="enrollCustomer()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                                 <template x-for="tier in tiers" :key="tier.name">
                                     <option :value="tier.name" x-text="tier.name"></option>
                                 </template>
@@ -286,7 +287,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Starting Points</label>
-                            <input id="loyalty-enroll-points" type="number" x-model.number="enrollmentForm.starting_points" @keydown.enter.prevent="enrollCustomer()" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
+                            <input id="loyalty-enroll-points" name="starting_points" type="number" x-model.number="enrollmentForm.starting_points" @keydown.enter.prevent="enrollCustomer()" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
                         </div>
 
                         <div class="flex gap-3">
