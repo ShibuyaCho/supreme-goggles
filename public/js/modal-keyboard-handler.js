@@ -80,16 +80,20 @@
   // Global METRC refresh utility usable from any page (demo or live)
   window.__refreshMetrc = async function () {
     try {
-      const res = await fetch("/api/metrc/debug/packages", {
-        credentials: "same-origin",
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json().catch(() => ({}));
+      const res = await fetch("/api/metrc/debug/packages", { credentials: "same-origin" });
+      const text = await res.text();
+      let data = {};
+      try { data = JSON.parse(text); } catch (_) { data = {}; }
+      if (!res.ok) {
+        const bodyMsg = data && (data.message || data.error) ? ` - ${data.message || data.error}` : "";
+        throw new Error(`HTTP ${res.status}${bodyMsg}`);
+      }
       const count = Number((data && (data.count || data.TotalRecords)) || 0);
+      const msg = `METRC packages retrieved: ${count}`;
       if (window.POS && typeof window.POS.showToast === "function") {
-        window.POS.showToast(`METRC packages retrieved: ${count}`, "success");
+        window.POS.showToast(msg, count > 0 ? "success" : "warning");
       } else {
-        alert(`METRC packages retrieved: ${count}`);
+        alert(msg);
       }
     } catch (e) {
       const msg = (e && e.message) || "Failed to refresh METRC";
