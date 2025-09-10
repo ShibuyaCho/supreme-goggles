@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class MetrcService
 {
@@ -27,6 +28,18 @@ class MetrcService
             $this->userKey = $this->userKey ?: ($cached['metrc_user_key'] ?? null);
             $this->vendorKey = $this->vendorKey ?: ($cached['metrc_vendor_key'] ?? null);
             $this->facilityLicense = $this->facilityLicense ?: ($cached['metrc_facility'] ?? null);
+        }
+
+        // Prefer per-user METRC key from authenticated employee when available
+        try {
+            if (Auth::check()) {
+                $emp = optional(Auth::user())->employee;
+                if ($emp && !empty($emp->metrc_api_key)) {
+                    $this->userKey = $emp->metrc_api_key;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Ignore if auth is not available in context
         }
     }
 
