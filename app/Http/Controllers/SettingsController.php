@@ -184,13 +184,22 @@ class SettingsController extends Controller
                 $settings['receipt_autoprint'] = (bool)$settings['auto_print_receipt'];
             }
 
-            // Store settings in cache with a long TTL
+            // Handle per-user METRC user key (do not store globally)
+            if (!empty($settings['metrc_user_key'])) {
+                $user = auth()->user();
+                if ($user && $user->employee) {
+                    $emp = $user->employee;
+                    $emp->metrc_api_key = $settings['metrc_user_key'];
+                    $emp->save();
+                }
+                // Remove from global settings payload before caching
+                unset($settings['metrc_user_key']);
+            }
+
+            // Store remaining settings in cache with a long TTL
             Cache::put('pos_settings', $settings, now()->addDays(30));
 
-            // Also store in environment variables for METRC keys (if provided)
-            if (!empty($settings['metrc_user_key'])) {
-                $this->updateEnvVariable('METRC_USER_KEY', $settings['metrc_user_key']);
-            }
+            // Persist org-wide METRC settings to environment if provided
             if (!empty($settings['metrc_vendor_key'])) {
                 $this->updateEnvVariable('METRC_VENDOR_KEY', $settings['metrc_vendor_key']);
             }
