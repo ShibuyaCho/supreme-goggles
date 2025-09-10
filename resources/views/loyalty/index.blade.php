@@ -290,7 +290,7 @@
                         </div>
 
                         <div class="flex gap-3">
-                            <button type="submit" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button type="submit" @click.prevent="enrollCustomer()" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 Enroll Customer
                             </button>
                             <button type="button" @click="closeEnrollmentModal()" class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
