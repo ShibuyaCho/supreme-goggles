@@ -45,8 +45,8 @@ class LoyaltyController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20',
             'email' => 'required|email|max:255|unique:customers,email',
-            'is_veteran' => 'boolean',
-            'data_retention_consent' => 'required|boolean|accepted'
+            'tier' => 'nullable|string|in:Bronze,Silver,Gold,Platinum',
+            'starting_points' => 'nullable|integer|min:0'
         ]);
 
         if ($validator->fails()) {
@@ -60,22 +60,36 @@ class LoyaltyController extends Controller
         try {
             DB::beginTransaction();
 
+            $startingPoints = (int) ($request->starting_points ?? 0);
+            $startingTier = $request->tier ?: 'Bronze';
+
             $customer = Customer::create([
                 'name' => $request->name,
                 'phone' => $request->phone,
                 'email' => $request->email,
-                'is_veteran' => $request->is_veteran ?? false,
-                'data_retention_consent' => $request->data_retention_consent,
+                'is_veteran' => false,
+                'data_retention_consent' => true,
                 'loyalty_member_id' => $this->generateLoyaltyMemberId(),
-                'loyalty_points' => 0,
-                'points_earned' => 0,
+                'loyalty_points' => $startingPoints,
+                'points_earned' => $startingPoints,
                 'points_redeemed' => 0,
                 'total_spent' => 0,
                 'total_visits' => 0,
-                'tier' => 'Bronze',
+                'tier' => $startingTier,
                 'join_date' => now(),
                 'last_visit' => null
             ]);
+
+            // Record starting points as an adjustment transaction if any
+            if ($startingPoints > 0) {
+                LoyaltyTransaction::create([
+                    'customer_id' => $customer->id,
+                    'points' => $startingPoints,
+                    'type' => 'adjustment',
+                    'reason' => 'Starting balance',
+                    'created_by' => auth()->id()
+                ]);
+            }
 
             // Log enrollment
             Log::info('Customer enrolled in loyalty program', [
