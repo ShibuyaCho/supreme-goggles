@@ -382,6 +382,10 @@
 </div>
 
 <script>
+const LOYALTY_ENDPOINTS = {
+    base: "{{ url('/loyalty') }}",
+    enroll: "{{ route('loyalty.enroll') }}"
+};
 function loyaltyManager() {
     return {
         activeTab: 'customers',
@@ -475,7 +479,7 @@ function loyaltyManager() {
 
         async enrollCustomer() {
             try {
-                const response = await fetch('/api/loyalty/enroll', {
+                const response = await fetch(LOYALTY_ENDPOINTS.enroll, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -517,7 +521,7 @@ function loyaltyManager() {
 
         async submitPointsAdjustment() {
             try {
-                const response = await fetch(`/api/loyalty/${this.selectedCustomerForPoints.id}/adjust-points`, {
+                const response = await fetch(`${LOYALTY_ENDPOINTS.base}/${this.selectedCustomerForPoints.id}/adjust-points`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -557,7 +561,7 @@ function loyaltyManager() {
             }
 
             try {
-                const response = await fetch(`/api/loyalty/${customer.id}`, {
+                const response = await fetch(`${LOYALTY_ENDPOINTS.base}/${customer.id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
