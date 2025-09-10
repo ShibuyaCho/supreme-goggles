@@ -384,7 +384,8 @@
 <script>
 const LOYALTY_ENDPOINTS = {
     base: "{{ url('/loyalty') }}",
-    enroll: "{{ route('loyalty.enroll') }}"
+    enroll: "{{ route('loyalty.enroll') }}",
+    apiEnroll: "/api/loyalty/enroll"
 };
 function loyaltyManager() {
     return {
