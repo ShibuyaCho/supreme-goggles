@@ -689,14 +689,18 @@ class MetrcService
         try {
             $params = [];
             if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
-            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
-            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
             if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
             if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
             return $this->makeRequest('GET', '/items/v2/active', $params);
         } catch (\Exception $e) {
-            Log::error('Error fetching METRC active items', [ 'error' => $e->getMessage() ]);
-            throw $e;
+            Log::warning('v2 active items failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $this->makeRequest('GET', '/items/v1/active', $params);
         }
     }
 
