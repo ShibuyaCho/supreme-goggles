@@ -266,19 +266,19 @@
                     <form @submit.prevent="enrollCustomer()" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                            <input type="text" x-model="enrollmentForm.name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
+                            <input type="text" x-model="enrollmentForm.name" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                            <input type="tel" x-model="enrollmentForm.phone" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
+                            <input type="tel" x-model="enrollmentForm.phone" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                            <input type="email" x-model="enrollmentForm.email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
+                            <input type="email" x-model="enrollmentForm.email" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Starting Loyalty Tier</label>
-                            <select x-model="enrollmentForm.tier" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                            <select x-model="enrollmentForm.tier" @keydown.enter.prevent="enrollCustomer()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                                 <template x-for="tier in tiers" :key="tier.name">
                                     <option :value="tier.name" x-text="tier.name"></option>
                                 </template>
@@ -286,7 +286,7 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Starting Points</label>
-                            <input type="number" x-model.number="enrollmentForm.starting_points" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
+                            <input type="number" x-model.number="enrollmentForm.starting_points" @keydown.enter.prevent="enrollCustomer()" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
                         </div>
 
                         <div class="flex gap-3">
