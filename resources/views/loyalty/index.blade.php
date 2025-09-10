@@ -505,7 +505,8 @@ function loyaltyManager() {
                     this.closeEnrollmentModal();
                     this.showToast(`Welcome ${result.customer.name}! You've been enrolled in our loyalty program.`, 'success');
                 } else {
-                    this.showToast('Error enrolling customer: ' + result.message, 'error');
+                    const msg = result && result.message ? result.message : `Request failed (${response.status})`;
+                    this.showToast('Error enrolling customer: ' + msg, 'error');
                 }
             } catch (error) {
                 console.error('Error enrolling customer:', error);
