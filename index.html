@@ -848,7 +848,7 @@
 
             <!-- User Menu -->
             <div class="flex items-center space-x-4">
-              <button id="global-refresh-metrc-demo" @click="refreshMetrc()" class="bg-cannabis-green text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-sm">
+              <button id="global-refresh-metrc-demo" @click="refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="bg-cannabis-green text-white px-3 py-2 rounded-md hover:bg-green-700 transition-colors text-sm">
                 Refresh METRC
               </button>
               <!-- Tax Display -->
@@ -978,7 +978,7 @@
                     >
                       <option value="">All Categories</option>
                       <option value="Flower">🌸 Flower</option>
-                      <option value="Pre-Rolls">���� Pre-Rolls</option>
+                      <option value="Pre-Rolls">����� Pre-Rolls</option>
                       <option value="Infused">
                         🔥 Infused (Joints/Blunts)
                       </option>
