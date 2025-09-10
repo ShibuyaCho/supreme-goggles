@@ -286,31 +286,61 @@ class MetrcService
      */
     public function getAllPackages(string $lastModifiedStart = null, string $lastModifiedEnd = null)
     {
-        try {
-            $params = [];
-            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
-            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
-            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
-            // v2 supports pagination (max 20)
+        $buildParams = function($includeLicense = true, $altKey = null) use ($lastModifiedStart, $lastModifiedEnd) {
+            $p = [];
+            if ($includeLicense && !empty($this->facilityLicense)) {
+                $key = $altKey ?: 'licenseNumber';
+                $p[$key] = $this->facilityLicense;
+            }
+            if ($lastModifiedStart) { $p['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $p['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $p;
+        };
+
+        $paginateV2 = function($endpoint, $params) {
             $page = 1; $pageSize = 20; $all = [];
             do {
                 $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
-                $raw = $this->makeRequest('GET', '/packages/v2/active', $pageParams);
+                $raw = $this->makeRequest('GET', $endpoint, $pageParams);
                 $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
-                foreach ($data as $row) { $all[] = $row; }
+                if (!empty($data)) {
+                    foreach ($data as $row) { $all[] = $row; }
+                }
                 $totalPages = $raw['TotalPages'] ?? null;
                 if ($totalPages && $page < $totalPages) { $page++; } else { break; }
             } while (true);
             return $all;
+        };
+
+        try {
+            // Try v2 with licenseNumber
+            $all = $paginateV2('/packages/v2/active', $buildParams(true));
+            if (count($all) > 0) return $all;
+
+            // Try v2 without license filter (some tenants scope by API key)
+            $all = $paginateV2('/packages/v2/active', $buildParams(false));
+            if (count($all) > 0) return $all;
+
+            // Try v2 with alternate param name
+            $all = $paginateV2('/packages/v2/active', $buildParams(true, 'license'));
+            if (count($all) > 0) return $all;
         } catch (\Exception $e) {
             Log::warning('v2 active packages failed, attempting v1 fallback', ['error' => $e->getMessage()]);
-            $params = [];
-            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
-            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
-            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
-            $raw = $this->makeRequest('GET', '/packages/v1/active', $params);
-            return isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
         }
+
+        // v1 fallbacks
+        foreach ([[true,null],[false,null],[true,'license']] as [$withLicense, $altKey]) {
+            try {
+                $raw = $this->makeRequest('GET', '/packages/v1/active', $buildParams($withLicense, $altKey));
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                if (is_array($data) && count($data) > 0) return $data;
+            } catch (\Exception $e) {
+                Log::warning('v1 active packages variant failed', ['withLicense' => $withLicense, 'altKey' => $altKey, 'error' => $e->getMessage()]);
+            }
+        }
+
+        // As a last resort return empty array
+        return [];
     }
 
     public function getInactivePackages(string $lastModifiedStart = null, string $lastModifiedEnd = null)
