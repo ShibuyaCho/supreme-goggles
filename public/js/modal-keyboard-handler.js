@@ -77,32 +77,41 @@
 
   document.addEventListener("keydown", onKeyDown, true);
 
-// Global METRC refresh utility usable from any page (demo or live)
-window.__refreshMetrc = async function() {
-  try {
-    const res = await fetch('/api/metrc/debug/packages', { credentials: 'same-origin' });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json().catch(() => ({}));
-    const count = Number((data && (data.count || data.TotalRecords)) || 0);
-    if (window.POS && typeof window.POS.showToast === 'function') {
-      window.POS.showToast(`METRC packages retrieved: ${count}`, 'success');
-    } else {
-      alert(`METRC packages retrieved: ${count}`);
+  // Global METRC refresh utility usable from any page (demo or live)
+  window.__refreshMetrc = async function () {
+    try {
+      const res = await fetch("/api/metrc/debug/packages", {
+        credentials: "same-origin",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json().catch(() => ({}));
+      const count = Number((data && (data.count || data.TotalRecords)) || 0);
+      if (window.POS && typeof window.POS.showToast === "function") {
+        window.POS.showToast(`METRC packages retrieved: ${count}`, "success");
+      } else {
+        alert(`METRC packages retrieved: ${count}`);
+      }
+    } catch (e) {
+      const msg = (e && e.message) || "Failed to refresh METRC";
+      if (window.POS && typeof window.POS.showToast === "function") {
+        window.POS.showToast(`Failed to refresh METRC: ${msg}`, "error");
+      } else {
+        alert(`Failed to refresh METRC: ${msg}`);
+      }
     }
-  } catch (e) {
-    const msg = (e && e.message) || 'Failed to refresh METRC';
-    if (window.POS && typeof window.POS.showToast === 'function') {
-      window.POS.showToast(`Failed to refresh METRC: ${msg}`, 'error');
-    } else {
-      alert(`Failed to refresh METRC: ${msg}`);
-    }
-  }
-};
+  };
 
-// Bind to known buttons if present
-['global-refresh-metrc','global-refresh-metrc-demo','settings-refresh-metrc'].forEach((id) => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('click', (e) => { e.preventDefault(); window.__refreshMetrc(); });
-});
-
+  // Bind to known buttons if present
+  [
+    "global-refresh-metrc",
+    "global-refresh-metrc-demo",
+    "settings-refresh-metrc",
+  ].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el)
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        window.__refreshMetrc();
+      });
+  });
 })();
