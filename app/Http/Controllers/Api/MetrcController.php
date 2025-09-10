@@ -71,6 +71,41 @@ class MetrcController extends Controller
     public function debugPackages(Request $request)
     {
         try {
+            $diagnose = (bool)$request->boolean('diagnose');
+            if ($diagnose) {
+                $facilities = (array)$this->metrcService->getFacilityDetails();
+                $licenses = [];
+                foreach ($facilities as $f) {
+                    if (is_array($f)) {
+                        $ln = $f['LicenseNumber'] ?? $f['licenseNumber'] ?? null;
+                        if ($ln) { $licenses[] = $ln; }
+                    }
+                }
+                $licenses = array_values(array_unique(array_filter($licenses)));
+                $diag = [];
+                $bestCount = 0; $bestLicense = null;
+                foreach ($licenses as $ln) {
+                    try {
+                        $pkgs = $this->metrcService->getActivePackagesForLicense($ln);
+                        $cnt = is_array($pkgs) ? count($pkgs) : 0;
+                        $diag[] = ['license' => $ln, 'count' => $cnt];
+                        if ($cnt > $bestCount) { $bestCount = $cnt; $bestLicense = $ln; }
+                    } catch (\Throwable $e) {
+                        $diag[] = ['license' => $ln, 'error' => $e->getMessage()];
+                    }
+                }
+                return response()->json([
+                    'success' => true,
+                    'count' => $bestCount,
+                    'best_license' => $bestLicense,
+                    'used_license' => $this->metrcService->getFacilityLicense(),
+                    'license_diagnostics' => $diag,
+                    'facilities_count' => count($licenses),
+                    'retrieved_at' => now()->toISOString(),
+                    'configured' => $this->metrcService->isConfigured(),
+                ]);
+            }
+
             $packages = $this->metrcService->getAllPackages();
             return response()->json([
                 'success' => true,
