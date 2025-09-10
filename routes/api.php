@@ -460,8 +460,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ];
             $settings = array_merge($defaults, is_array($cached) ? $cached : []);
             // Ensure METRC credentials are available to the settings UI (do not overwrite cached values)
+            // Prefer per-user METRC user key from linked employee when available
             if (!array_key_exists('metrc_user_key', $settings) || empty($settings['metrc_user_key'])) {
-                $settings['metrc_user_key'] = env('METRC_USER_KEY', '');
+                $empKey = null;
+                try {
+                    $user = auth()->user();
+                    if ($user && $user->employee && !empty($user->employee->metrc_api_key)) {
+                        $empKey = $user->employee->metrc_api_key;
+                    }
+                } catch (\Throwable $e) {
+                    $empKey = null;
+                }
+                $settings['metrc_user_key'] = $empKey ?? env('METRC_USER_KEY', '');
             }
             if (!array_key_exists('metrc_vendor_key', $settings) || empty($settings['metrc_vendor_key'])) {
                 $settings['metrc_vendor_key'] = env('METRC_VENDOR_KEY', '');
