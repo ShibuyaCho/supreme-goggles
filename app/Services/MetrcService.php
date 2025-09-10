@@ -260,8 +260,8 @@ class MetrcService
         try {
             $params = [];
             if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
-            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
-            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
             // v2 supports pagination (max 20)
             $page = 1; $pageSize = 20; $all = [];
             do {
@@ -274,8 +274,13 @@ class MetrcService
             } while (true);
             return $all;
         } catch (\Exception $e) {
-            Log::error('Error fetching all METRC packages', [ 'error' => $e->getMessage() ]);
-            throw $e;
+            Log::warning('v2 active packages failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            $raw = $this->makeRequest('GET', '/packages/v1/active', $params);
+            return isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
         }
     }
 
