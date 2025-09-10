@@ -19,6 +19,9 @@
     @stack('styles')
     
     <style>
+        /* Alpine x-cloak */
+        [x-cloak] { display: none !important; }
+
         /* Custom POS Styles */
         .transition-all { transition: all 0.2s ease-in-out; }
         .shadow-sm { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
