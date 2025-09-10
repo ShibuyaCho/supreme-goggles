@@ -483,14 +483,23 @@ function loyaltyManager() {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify(this.enrollmentForm)
+                    body: JSON.stringify(this.enrollmentForm),
+                    credentials: 'same-origin'
                 });
 
-                const result = await response.json();
+                if (response.redirected) {
+                    this.showToast('Session expired. Please log in again.', 'error');
+                    return;
+                }
 
-                if (response.ok) {
+                let result = {};
+                try { result = await response.json(); } catch (e) { result = {}; }
+
+                if (response.ok && result && result.success !== false) {
                     this.customers.push(result.customer);
                     this.calculateStats();
                     this.closeEnrollmentModal();
