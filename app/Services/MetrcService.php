@@ -348,6 +348,58 @@ class MetrcService
         return [];
     }
 
+    /**
+     * Get active packages for a specific license (diagnostics/helper)
+     */
+    public function getActivePackagesForLicense(string $license, string $lastModifiedStart = null, string $lastModifiedEnd = null): array
+    {
+        $buildParams = function($includeLicense = true, $altKey = null) use ($license, $lastModifiedStart, $lastModifiedEnd) {
+            $p = [];
+            if ($includeLicense && !empty($license)) {
+                $key = $altKey ?: 'licenseNumber';
+                $p[$key] = $license;
+            }
+            if ($lastModifiedStart) { $p['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $p['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $p;
+        };
+
+        $paginateV2 = function($endpoint, $params) {
+            $page = 1; $pageSize = 100; $all = [];
+            do {
+                $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
+                $raw = $this->makeRequest('GET', $endpoint, $pageParams);
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                if (!empty($data)) { foreach ($data as $row) { $all[] = $row; } }
+                $totalPages = $raw['TotalPages'] ?? null;
+                if ($totalPages && $page < $totalPages) { $page++; } else { break; }
+            } while (true);
+            return $all;
+        };
+
+        try {
+            $all = $paginateV2('/packages/v2/active', $buildParams(true));
+            if (count($all) > 0) return $all;
+            $all = $paginateV2('/packages/v2/active', $buildParams(false));
+            if (count($all) > 0) return $all;
+            $all = $paginateV2('/packages/v2/active', $buildParams(true, 'license'));
+            if (count($all) > 0) return $all;
+        } catch (\Exception $e) {
+            Log::warning('v2 active packages failed (license scan), attempting v1 fallback', ['error' => $e->getMessage(), 'license' => $license]);
+        }
+
+        foreach ([[true,null],[false,null],[true,'license']] as [$withLicense, $altKey]) {
+            try {
+                $raw = $this->makeRequest('GET', '/packages/v1/active', $buildParams($withLicense, $altKey));
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                if (is_array($data) && count($data) > 0) return $data;
+            } catch (\Exception $e) {
+                Log::warning('v1 active packages variant failed (license scan)', ['withLicense' => $withLicense, 'altKey' => $altKey, 'license' => $license, 'error' => $e->getMessage()]);
+            }
+        }
+        return [];
+    }
+
     public function getInactivePackages(string $lastModifiedStart = null, string $lastModifiedEnd = null)
     {
         try {
