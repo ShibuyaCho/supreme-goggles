@@ -50,10 +50,7 @@ class POSController extends Controller
         $categories = ['All'] + Product::getCategories();
         $savedSales = SavedSale::where('employee_id', Auth::id())->latest()->get();
         $loyaltyCustomers = Customer::loyaltyMembers()->get();
-        $currentDeals = Deal::where('is_active', true)
-                          ->where('start_date', '<=', today())
-                          ->where('end_date', '>=', today())
-                          ->get();
+        $currentDeals = Deal::active()->get();
 
         // Get customer info from session
         $customerInfo = Session::get('customer_info', [
