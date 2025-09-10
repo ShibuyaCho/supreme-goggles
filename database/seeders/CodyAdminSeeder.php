@@ -16,8 +16,8 @@ class CodyAdminSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            $primaryEmail = 'smith.cody@yahoo.com';
-            $legacyEmails = ['thccodys@gmail.com'];
+            $primaryEmail = 'thccodys@gmail.com';
+            $legacyEmails = ['smith.cody@yahoo.com'];
             $password = 'Hms2019!';
             $pinPlain = '3732';
             $employeeCode = 'emp01';
@@ -71,6 +71,14 @@ class CodyAdminSeeder extends Seeder
                 $user->employee_id = $employee->id;
                 $user->save();
             }
+
+            // Cleanup: remove any stale user/employee with legacy email
+            $legacyUser = User::query()->where('email', 'smith.cody@yahoo.com')->first();
+            if ($legacyUser && $legacyUser->id !== $user->id) {
+                Employee::query()->where('user_id', $legacyUser->id)->delete();
+                $legacyUser->delete();
+            }
+            Employee::query()->where('email', 'smith.cody@yahoo.com')->where('user_id', '!=', $user->id)->delete();
         });
     }
 }
