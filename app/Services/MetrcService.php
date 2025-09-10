@@ -51,6 +51,11 @@ class MetrcService
         return !empty($this->userKey) && !empty($this->vendorKey) && !empty($this->facilityLicense);
     }
 
+    public function getFacilityLicense(): ?string
+    {
+        return $this->facilityLicense;
+    }
+
     /**
      * Make authenticated request to METRC API
      */
