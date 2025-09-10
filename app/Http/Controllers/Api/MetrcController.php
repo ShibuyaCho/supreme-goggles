@@ -138,7 +138,7 @@ class MetrcController extends Controller
                 $item = $pkg['Item'] ?? [];
                 $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
                 $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
-                $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
                 $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
                 $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
                 $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
@@ -1005,7 +1005,7 @@ class MetrcController extends Controller
                     $item = $pkg['Item'] ?? [];
                     $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
                     $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
-                    $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                    $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
                     $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
                     $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
                     $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
@@ -1090,7 +1090,7 @@ class MetrcController extends Controller
                     $item = $pkg['Item'] ?? [];
                     $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
                     $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
-                    $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                    $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
                     $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
                     $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
                     $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
@@ -1209,7 +1209,7 @@ class MetrcController extends Controller
                     $item = $pkg['Item'] ?? [];
                     $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
                     $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
-                    $uom = $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['unit_of_measure'] ?? '';
+                    $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
                     $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
                     $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
                     $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
