@@ -669,6 +669,7 @@ window.__loyaltyEnrollFallback = async function(e){
     if (window.POS && typeof window.POS.showToast === 'function') window.POS.showToast(msg, res?.success ? 'success':'error'); else alert(msg);
     if (res?.success) {
       try { document.querySelector('[x-data]')?.dispatchEvent(new CustomEvent('close-enrollment-modal')); } catch(_) {}
+      try { location.reload(); } catch(_) {}
     }
   } catch (err) {
     const msg = err?.message || 'Enrollment error';
