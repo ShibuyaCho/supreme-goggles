@@ -317,14 +317,18 @@ class MetrcService
         try {
             $params = [];
             if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
-            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
-            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
             if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
             if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
             return $this->makeRequest('GET', '/transfers/v2/outgoing', $params);
         } catch (\Exception $e) {
-            Log::error('Error fetching METRC outgoing transfers', [ 'error' => $e->getMessage() ]);
-            throw $e;
+            Log::warning('v2 outgoing transfers failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $this->makeRequest('GET', '/transfers/v1/outgoing', $params);
         }
     }
 
