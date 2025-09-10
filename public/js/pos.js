@@ -317,10 +317,11 @@ function cannabisPOS() {
       calculatedAmount: 0,
     },
     enrollForm: {
-      customerId: "",
       customerName: "",
       email: "",
       phone: "",
+      tier: "Bronze",
+      startingPoints: 0,
     },
     pointsForm: {
       action: "add",
@@ -1446,6 +1447,31 @@ function cannabisPOS() {
     selectCustomer(customer) {
       this.selectedCustomer = customer;
       this.calculateTotals();
+    },
+
+    enrollCustomerInLoyalty() {
+      const name = (this.enrollForm.customerName || '').trim();
+      const email = (this.enrollForm.email || '').trim();
+      const phone = (this.enrollForm.phone || '').trim();
+      if (!name || !email || !phone) {
+        this.showToast('Please fill in name, phone, and email', 'error');
+        return;
+      }
+      const starting = Number(this.enrollForm.startingPoints || 0);
+      const tier = this.enrollForm.tier || 'Bronze';
+      const newCustomer = {
+        id: Date.now(),
+        name,
+        email,
+        phone,
+        isMedical: false,
+        loyaltyPoints: starting,
+        tier,
+      };
+      this.customers.push(newCustomer);
+      this.showEnrollCustomerModal = false;
+      this.enrollForm = { customerName: '', email: '', phone: '', tier: 'Bronze', startingPoints: 0 };
+      this.showToast(`Enrolled ${name} in loyalty program`, 'success');
     },
 
     // Sale flow functions
