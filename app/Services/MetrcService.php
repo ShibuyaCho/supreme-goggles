@@ -104,7 +104,9 @@ class MetrcService
             $cacheKey = "metrc_package_{$packageTag}";
             
             return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($packageTag) {
-                return $this->makeRequest('GET', "/packages/v1/{$packageTag}");
+                $params = [];
+                if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+                return $this->makeRequest('GET', "/packages/v1/{$packageTag}", $params);
             });
 
         } catch (\Exception $e) {
@@ -128,7 +130,9 @@ class MetrcService
                 'ActualDate' => now()->toISOString()
             ];
 
-            $result = $this->makeRequest('POST', '/packages/v1/change/package/status', [$data]);
+            $endpoint = '/packages/v1/change/package/status';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            $result = $this->makeRequest('POST', $endpoint, [$data]);
             
             // Clear cache for this package
             Cache::forget("metrc_package_{$packageTag}");
@@ -158,7 +162,9 @@ class MetrcService
                 'Notes' => $notes
             ];
 
-            $result = $this->makeRequest('POST', '/packages/v1/change/locations', [$data]);
+            $endpoint = '/packages/v1/change/locations';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            $result = $this->makeRequest('POST', $endpoint, [$data]);
             
             // Clear cache for this package
             Cache::forget("metrc_package_{$packageTag}");
@@ -187,7 +193,9 @@ class MetrcService
                 'ReasonNote' => $reason
             ];
 
-            $result = $this->makeRequest('POST', '/packages/v1/finish', [$data]);
+            $endpoint = '/packages/v1/finish';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            $result = $this->makeRequest('POST', $endpoint, [$data]);
             
             // Clear cache for this package
             Cache::forget("metrc_package_{$packageTag}");
@@ -229,7 +237,9 @@ class MetrcService
                 'IsDonation' => false
             ], $packageData);
 
-            return $this->makeRequest('POST', '/packages/v1/create', [$data]);
+            $endpoint = '/packages/v1/create';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            return $this->makeRequest('POST', $endpoint, [$data]);
 
         } catch (\Exception $e) {
             Log::error('Error creating METRC package', [
@@ -454,7 +464,9 @@ class MetrcService
     public function getPackageHistory(string $packageTag)
     {
         try {
-            return $this->makeRequest('GET', "/packages/v1/{$packageTag}/history");
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            return $this->makeRequest('GET', "/packages/v1/{$packageTag}/history", $params);
 
         } catch (\Exception $e) {
             Log::error('Error fetching METRC package history', [
@@ -479,7 +491,9 @@ class MetrcService
                 }
             }
 
-            return $this->makeRequest('POST', '/sales/v1/receipts', [$salesData]);
+            $endpoint = '/sales/v1/receipts';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            return $this->makeRequest('POST', $endpoint, [$salesData]);
 
         } catch (\Exception $e) {
             Log::error('Error creating METRC sales receipt', [
@@ -531,6 +545,7 @@ class MetrcService
                 'salesDateEnd' => $salesDateEnd
             ];
 
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
             return $this->makeRequest('GET', '/sales/v1/receipts', $params);
 
         } catch (\Exception $e) {
