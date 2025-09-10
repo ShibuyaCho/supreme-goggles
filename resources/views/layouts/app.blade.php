@@ -194,7 +194,7 @@
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4">
                     <!-- Quick Actions -->
-                    <button id="global-refresh-metrc" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-cannabis-green hover:bg-green-700 rounded-md transition-colors">
+                    <button id="global-refresh-metrc" @click="$window.__refreshMetrc && $window.__refreshMetrc()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-cannabis-green hover:bg-green-700 rounded-md transition-colors">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/></svg>
                         Refresh METRC
                     </button>
