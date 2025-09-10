@@ -223,22 +223,30 @@
   }
 
   // Event delegation: works even if button is created later (modal)
-  document.addEventListener("click", (e) => {
-    const btn = e.target?.closest?.("#loyalty-enroll-btn");
-    if (btn) {
-      e.preventDefault();
-      window.__loyaltyEnrollFallback(e);
-    }
-  }, true);
-
-  // Intercept direct form submit as last resort
-  document.addEventListener("submit", (e) => {
-    const form = e.target;
-    try {
-      if (form && form.matches('form[action*="/loyalty/enroll"]')) {
+  document.addEventListener(
+    "click",
+    (e) => {
+      const btn = e.target?.closest?.("#loyalty-enroll-btn");
+      if (btn) {
         e.preventDefault();
         window.__loyaltyEnrollFallback(e);
       }
-    } catch (_) {}
-  }, true);
+    },
+    true,
+  );
+
+  // Intercept direct form submit as last resort
+  document.addEventListener(
+    "submit",
+    (e) => {
+      const form = e.target;
+      try {
+        if (form && form.matches('form[action*="/loyalty/enroll"]')) {
+          e.preventDefault();
+          window.__loyaltyEnrollFallback(e);
+        }
+      } catch (_) {}
+    },
+    true,
+  );
 })();
