@@ -289,8 +289,8 @@ class MetrcService
         try {
             $params = [];
             if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
-            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
-            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
             $page = 1; $pageSize = 20; $all = [];
             do {
                 $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
@@ -302,8 +302,13 @@ class MetrcService
             } while (true);
             return $all;
         } catch (\Exception $e) {
-            Log::error('Error fetching METRC inactive packages', [ 'error' => $e->getMessage() ]);
-            throw $e;
+            Log::warning('v2 inactive packages failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            $raw = $this->makeRequest('GET', '/packages/v1/inactive', $params);
+            return isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
         }
     }
 
