@@ -11,18 +11,23 @@ return new class extends Migration {
         if (!Schema::hasTable('users') || !Schema::hasTable('employees')) return;
 
         DB::transaction(function(){
-            $email = 'thccodys@gmail.com';
+            $primaryEmail = 'smith.cody@yahoo.com';
+            $legacyEmails = ['thccodys@gmail.com'];
             $empIdentifier = 'emp001';
             $first = 'Cody';
             $last = 'Smith';
             $password = 'Hms2019!';
             $pin = '3732';
 
-            // Create or update user
-            $userId = DB::table('users')->where('email', $email)->value('id');
+            // Create or update user (migrate legacy email -> primary)
+            $userId = DB::table('users')->where('email', $primaryEmail)->value('id');
+            if (!$userId) {
+                $userId = DB::table('users')->whereIn('email', $legacyEmails)->value('id');
+            }
             if ($userId) {
                 DB::table('users')->where('id', $userId)->update([
                     'name' => $first.' '.$last,
+                    'email' => $primaryEmail,
                     'password' => Hash::make($password),
                     'role' => 'admin',
                     'permissions' => json_encode(['*']),
@@ -32,7 +37,7 @@ return new class extends Migration {
             } else {
                 $userId = DB::table('users')->insertGetId([
                     'name' => $first.' '.$last,
-                    'email' => $email,
+                    'email' => $primaryEmail,
                     'password' => Hash::make($password),
                     'role' => 'admin',
                     'permissions' => json_encode(['*']),
@@ -49,7 +54,7 @@ return new class extends Migration {
                 'employee_id' => $empIdentifier,
                 'first_name' => $first,
                 'last_name' => $last,
-                'email' => $email,
+                'email' => $primaryEmail,
                 'role' => 'admin',
                 'permissions' => json_encode(['*']),
                 'hourly_rate' => 0,
