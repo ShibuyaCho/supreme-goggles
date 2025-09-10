@@ -52,6 +52,8 @@ class MetrcService
         // Per METRC docs: Basic base64("user_api_key:integrator_api_key")
         $response = Http::withBasicAuth($this->userKey, $this->vendorKey)
             ->acceptJson()
+            ->timeout(30)
+            ->retry(3, 200)
             ->withHeaders([
                 'Content-Type' => 'application/json'
             ]);
@@ -257,27 +259,22 @@ class MetrcService
     {
         try {
             $params = [];
-
-            if (!empty($this->facilityLicense)) {
-                $params['licenseNumber'] = $this->facilityLicense;
-            }
-
-            if ($lastModifiedStart) {
-                $params['lastModifiedStart'] = $lastModifiedStart;
-            }
-
-            if ($lastModifiedEnd) {
-                $params['lastModifiedEnd'] = $lastModifiedEnd;
-            }
-
-            $raw = $this->makeRequest('GET', '/packages/v1/active', $params);
-            if (isset($raw['Data']) && is_array($raw['Data'])) { return $raw['Data']; }
-            return is_array($raw) ? $raw : [];
-
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            // v2 supports pagination (max 20)
+            $page = 1; $pageSize = 20; $all = [];
+            do {
+                $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
+                $raw = $this->makeRequest('GET', '/packages/v2/active', $pageParams);
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                foreach ($data as $row) { $all[] = $row; }
+                $totalPages = $raw['TotalPages'] ?? null;
+                if ($totalPages && $page < $totalPages) { $page++; } else { break; }
+            } while (true);
+            return $all;
         } catch (\Exception $e) {
-            Log::error('Error fetching all METRC packages', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Error fetching all METRC packages', [ 'error' => $e->getMessage() ]);
             throw $e;
         }
     }
@@ -286,38 +283,35 @@ class MetrcService
     {
         try {
             $params = [];
-            if (!empty($this->facilityLicense)) {
-                $params['licenseNumber'] = $this->facilityLicense;
-            }
-            if ($lastModifiedStart) {
-                $params['lastModifiedStart'] = $lastModifiedStart;
-            }
-            if ($lastModifiedEnd) {
-                $params['lastModifiedEnd'] = $lastModifiedEnd;
-            }
-            $raw = $this->makeRequest('GET', '/packages/v1/inactive', $params);
-            if (isset($raw['Data']) && is_array($raw['Data'])) { return $raw['Data']; }
-            return is_array($raw) ? $raw : [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            $page = 1; $pageSize = 20; $all = [];
+            do {
+                $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
+                $raw = $this->makeRequest('GET', '/packages/v2/inactive', $pageParams);
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                foreach ($data as $row) { $all[] = $row; }
+                $totalPages = $raw['TotalPages'] ?? null;
+                if ($totalPages && $page < $totalPages) { $page++; } else { break; }
+            } while (true);
+            return $all;
         } catch (\Exception $e) {
             Log::error('Error fetching METRC inactive packages', [ 'error' => $e->getMessage() ]);
             throw $e;
         }
     }
 
-    public function getOutgoingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null)
+    public function getOutgoingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null, ?int $pageNumber = null, ?int $pageSize = null)
     {
         try {
             $params = [];
-            if (!empty($this->facilityLicense)) {
-                $params['licenseNumber'] = $this->facilityLicense;
-            }
-            if ($lastModifiedStart) {
-                $params['lastModifiedStart'] = $lastModifiedStart;
-            }
-            if ($lastModifiedEnd) {
-                $params['lastModifiedEnd'] = $lastModifiedEnd;
-            }
-            return $this->makeRequest('GET', '/transfers/v1/outgoing', $params);
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $lastModifiedStart; }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $lastModifiedEnd; }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/transfers/v2/outgoing', $params);
         } catch (\Exception $e) {
             Log::error('Error fetching METRC outgoing transfers', [ 'error' => $e->getMessage() ]);
             throw $e;
@@ -327,7 +321,9 @@ class MetrcService
     public function getTransferDeliveries(int|string $transferId)
     {
         try {
-            return $this->makeRequest('GET', "/transfers/v1/{$transferId}/deliveries");
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            return $this->makeRequest('GET', "/transfers/v1/{$transferId}/deliveries", $params);
         } catch (\Exception $e) {
             Log::error('Error fetching METRC transfer deliveries', [ 'transfer_id' => $transferId, 'error' => $e->getMessage() ]);
             throw $e;
@@ -337,7 +333,9 @@ class MetrcService
     public function getDeliveryPackages(int|string $deliveryId)
     {
         try {
-            return $this->makeRequest('GET', "/transfers/v1/deliveries/{$deliveryId}/packages");
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            return $this->makeRequest('GET', "/transfers/v1/deliveries/{$deliveryId}/packages", $params);
         } catch (\Exception $e) {
             Log::error('Error fetching METRC delivery packages', [ 'delivery_id' => $deliveryId, 'error' => $e->getMessage() ]);
             throw $e;
