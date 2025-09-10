@@ -619,22 +619,26 @@
           .finally(() => window.POS?.hideLoading?.());
       });
 
-      // Refresh METRC from nav button
+      // Refresh METRC from any button id in the list
       document.addEventListener('DOMContentLoaded', function(){
-        const btn = document.getElementById('global-refresh-metrc');
-        if (!btn) return;
-        btn.addEventListener('click', async function(){
-          try {
-            window.POS?.showLoading?.();
-            const res = await (window.axios || axios).get('/api/metrc/debug/packages');
-            if (!res || res.status < 200 || res.status >= 300 || res.data?.success === false) throw new Error(res?.data?.message || 'Refresh failed');
-            const count = Number(res.data?.count || 0);
-            window.POS?.showToast?.(`METRC packages retrieved: ${count}`, 'success');
-          } catch(e) {
-            window.POS?.showToast?.('Failed to refresh METRC data', 'error');
-          } finally {
-            window.POS?.hideLoading?.();
-          }
+        const ids = ['global-refresh-metrc', 'settings-refresh-metrc', 'global-refresh-metrc-demo'];
+        ids.forEach((id) => {
+          const btn = document.getElementById(id);
+          if (!btn) return;
+          btn.addEventListener('click', async function(){
+            try {
+              window.POS?.showLoading?.();
+              const res = await (window.axios || axios).get('/api/metrc/debug/packages');
+              if (!res || res.status < 200 || res.status >= 300 || res.data?.success === false) throw new Error(res?.data?.message || 'Refresh failed');
+              const count = Number(res.data?.count || 0);
+              window.POS?.showToast?.(`METRC packages retrieved: ${count}`, 'success');
+            } catch(e) {
+              const msg = (e && e.response && (e.response.data?.message || e.response.data?.error)) || e.message || 'Failed to refresh METRC data';
+              window.POS?.showToast?.(`Failed to refresh METRC data: ${msg}`, 'error');
+            } finally {
+              window.POS?.hideLoading?.();
+            }
+          });
         });
       });
     })();
