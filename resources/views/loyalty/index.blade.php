@@ -266,19 +266,19 @@
                     <form @submit.prevent="enrollCustomer()" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                            <input type="text" x-model="enrollmentForm.name" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
+                            <input id="loyalty-enroll-name" type="text" x-model="enrollmentForm.name" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                            <input type="tel" x-model="enrollmentForm.phone" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
+                            <input id="loyalty-enroll-phone" type="tel" x-model="enrollmentForm.phone" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                            <input type="email" x-model="enrollmentForm.email" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
+                            <input id="loyalty-enroll-email" type="email" x-model="enrollmentForm.email" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Starting Loyalty Tier</label>
-                            <select x-model="enrollmentForm.tier" @keydown.enter.prevent="enrollCustomer()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                            <select id="loyalty-enroll-tier" x-model="enrollmentForm.tier" @keydown.enter.prevent="enrollCustomer()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                                 <template x-for="tier in tiers" :key="tier.name">
                                     <option :value="tier.name" x-text="tier.name"></option>
                                 </template>
@@ -286,11 +286,11 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Starting Points</label>
-                            <input type="number" x-model.number="enrollmentForm.starting_points" @keydown.enter.prevent="enrollCustomer()" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
+                            <input id="loyalty-enroll-points" type="number" x-model.number="enrollmentForm.starting_points" @keydown.enter.prevent="enrollCustomer()" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
                         </div>
 
                         <div class="flex gap-3">
-                            <button type="submit" @click.prevent="enrollCustomer()" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button id="loyalty-enroll-btn" type="submit" @click.prevent="enrollCustomer()" onclick="window.__loyaltyEnrollFallback && window.__loyaltyEnrollFallback(event)" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 Enroll Customer
                             </button>
                             <button type="button" @click="closeEnrollmentModal()" class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
@@ -637,5 +637,42 @@ function loyaltyManager() {
         }
     };
 }
+
+// Hard fallback: attach click handler independent of Alpine
+window.__loyaltyEnrollFallback = async function(e){
+  try {
+    if (e) e.preventDefault();
+    const name = (document.getElementById('loyalty-enroll-name')||{}).value || '';
+    const phone = (document.getElementById('loyalty-enroll-phone')||{}).value || '';
+    const email = (document.getElementById('loyalty-enroll-email')||{}).value || '';
+    const tier = (document.getElementById('loyalty-enroll-tier')||{}).value || 'Bronze';
+    const starting_points = parseInt((document.getElementById('loyalty-enroll-points')||{}).value || '0', 10) || 0;
+    if (!name || !phone || !email) return; // respect minimal validation silently
+
+    const payload = { name, phone, email, tier, starting_points };
+    const tryApi = async () => {
+      if (window.posAuth && typeof posAuth.apiRequest === 'function') {
+        return await posAuth.apiRequest('post', '/loyalty/enroll', payload);
+      }
+      return { success: false };
+    };
+    let res = await tryApi();
+    if (!res?.success) {
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const web = await fetch("{{ route('loyalty.enroll') }}", { method: 'POST', headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN': csrf }, body: JSON.stringify(payload), credentials: 'same-origin' });
+      let data = {}; try { data = await web.json(); } catch(_) {}
+      res = { success: web.ok && (data?.success !== false), data, message: data?.message };
+    }
+    const customer = res?.data?.customer || null;
+    const msg = res?.success ? (`Welcome ${customer?.name || name}! You've been enrolled.`) : (`Error enrolling: ${res?.message || res?.data?.message || 'Unknown error'}`);
+    if (window.POS && typeof window.POS.showToast === 'function') window.POS.showToast(msg, res?.success ? 'success':'error'); else alert(msg);
+    if (res?.success) {
+      try { document.querySelector('[x-data]')?.dispatchEvent(new CustomEvent('close-enrollment-modal')); } catch(_) {}
+    }
+  } catch (err) {
+    const msg = err?.message || 'Enrollment error';
+    if (window.POS && typeof window.POS.showToast === 'function') window.POS.showToast(msg, 'error'); else alert(msg);
+  }
+};
 </script>
 @endsection
