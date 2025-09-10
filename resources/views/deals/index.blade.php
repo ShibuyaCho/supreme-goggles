@@ -355,13 +355,14 @@ function dealsManager() {
         },
 
         getDefaultForm() {
+            const today = new Date().toISOString().slice(0, 10);
             return {
                 name: '',
                 description: '',
                 type: 'percentage',
                 value: 0,
                 frequency: 'always',
-                start_date: '',
+                start_date: today,
                 end_date: '',
                 applicable_categories: [],
                 minimum_purchase: null,
