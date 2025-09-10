@@ -56,8 +56,19 @@ class CartService
             // Auto-apply non-BOGO deals
             $nonBogoDeals = collect($applicableDeals)->where('type', '!=', 'bogo');
             if ($nonBogoDeals->isNotEmpty()) {
-                $bestDeal = $nonBogoDeals->sortByDesc('discount_value')->first();
-                $newItem = $this->applyAutomaticDeal($newItem, $bestDeal);
+                // Enforce minimum purchase conditions where applicable
+                $amount = ($product->price ?? 0) * $quantity;
+                $nonBogoDeals = $nonBogoDeals->filter(function($d) use ($amount, $quantity) {
+                    if (!isset($d->minimum_purchase) || !$d->minimum_purchase) return true;
+                    if (($d->minimum_purchase_type ?? 'dollars') === 'grams') {
+                        return $quantity >= $d->minimum_purchase;
+                    }
+                    return $amount >= $d->minimum_purchase;
+                });
+                if ($nonBogoDeals->isNotEmpty()) {
+                    $bestDeal = $nonBogoDeals->sortByDesc('discount_value')->first();
+                    $newItem = $this->applyAutomaticDeal($newItem, $bestDeal);
+                }
             }
 
             $cart[$productId] = $newItem;
@@ -224,13 +235,13 @@ class CartService
         $dayOfWeek = now()->format('l'); // Monday, Tuesday, etc.
         $selectedLoyaltyCustomer = Session::get('selected_loyalty_customer');
 
-        return Deal::where('is_active', true)
-            ->where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
-            ->where(function ($query) use ($product, $dayOfWeek, $selectedLoyaltyCustomer) {
+        $isMedical = (bool) (!empty(Session::get('customer_info')['medical_card']));
+
+        return Deal::active()
+            ->where(function ($query) use ($product, $dayOfWeek, $selectedLoyaltyCustomer, $isMedical) {
                 // Skip GLS products for automatic deals
                 if ($product->is_gls) {
-                    $query->whereRaw('1 = 0'); // No results
+                    $query->whereRaw('1 = 0');
                     return;
                 }
 
@@ -248,17 +259,22 @@ class CartService
                       });
                 });
 
-                // Check loyalty requirement
+                // Loyalty-only filter when no loyalty customer selected
                 if (!$selectedLoyaltyCustomer) {
                     $query->where('loyalty_only', false);
                 }
 
-                // Check category or specific items
+                // Medical-only filter
+                if (!$isMedical) {
+                    $query->where('medical_only', false);
+                }
+
+                // Category or specific items
                 $query->where(function ($itemQuery) use ($product) {
-                    $itemQuery->whereJsonContains('categories', $product->category)
+                    $itemQuery->whereJsonContains('applicable_categories', $product->category)
                              ->orWhereJsonContains('specific_items', $product->id)
-                             ->orWhere('categories', '[]')
-                             ->orWhereNull('categories');
+                             ->orWhere('applicable_categories', '[]')
+                             ->orWhereNull('applicable_categories');
                 });
             })
             ->get();
