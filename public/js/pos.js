@@ -957,14 +957,19 @@ function cannabisPOS() {
         // Load products from API
         const productsResult = await posAuth.getProducts();
         if (productsResult.success) {
-          this.products = productsResult.data.data || productsResult.data;
+          const p = (productsResult.data && (productsResult.data.data || productsResult.data)) || [];
+          if (Array.isArray(p)) this.products = p;
         }
 
         // Load customers from API
         const customersResult = await posAuth.getCustomers();
         if (customersResult.success) {
-          this.customers = customersResult.data.data || customersResult.data;
+          const c = (customersResult.data && (customersResult.data.data || customersResult.data)) || [];
+          if (Array.isArray(c)) this.customers = c;
+          else if (!Array.isArray(this.customers)) this.customers = [];
         }
+        // Ensure collections remain arrays after API calls
+        this.normalizeCollections();
 
         // Load employees for admins/managers
         if (
@@ -1487,6 +1492,7 @@ function cannabisPOS() {
         loyaltyPoints: starting,
         tier,
       };
+      if (!Array.isArray(this.customers)) this.customers = [];
       this.customers.push(newCustomer);
       this.showEnrollCustomerModal = false;
       this.enrollForm = {
