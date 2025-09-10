@@ -1479,7 +1479,7 @@ function cannabisPOS() {
       this.calculateTotals();
     },
 
-    enrollCustomerInLoyalty() {
+    async enrollCustomerInLoyalty() {
       const name = (this.enrollForm.customerName || "").trim();
       const email = (this.enrollForm.email || "").trim();
       const phone = (this.enrollForm.phone || "").trim();
@@ -1489,17 +1489,46 @@ function cannabisPOS() {
       }
       const starting = Number(this.enrollForm.startingPoints || 0);
       const tier = this.enrollForm.tier || "Bronze";
-      const newCustomer = {
-        id: Date.now(),
-        name,
-        email,
-        phone,
-        isMedical: false,
-        loyaltyPoints: starting,
-        tier,
-      };
-      if (!Array.isArray(this.customers)) this.customers = [];
-      this.customers.push(newCustomer);
+
+      // Try real API first when available
+      let enrolled = null;
+      try {
+        if (window.posAuth && typeof posAuth.apiRequest === 'function') {
+          const res = await posAuth.apiRequest('post', '/loyalty/enroll', {
+            name,
+            email,
+            phone,
+            tier,
+            starting_points: starting,
+          });
+          if (res && res.success && res.data && res.data.customer) {
+            enrolled = res.data.customer;
+          }
+        }
+      } catch (_) {}
+
+      // Fallback: local demo push
+      if (!enrolled) {
+        enrolled = {
+          id: Date.now(),
+          name,
+          email,
+          phone,
+          isMedical: false,
+          loyaltyPoints: starting,
+          tier,
+        };
+      }
+
+      // Ensure customers is an array before push
+      if (!Array.isArray(this.customers)) {
+        const list = this.customers;
+        if (list && Array.isArray(list.data)) this.customers = list.data;
+        else if (Array.isArray(list)) this.customers = list;
+        else this.customers = [];
+      }
+
+      this.customers.push(enrolled);
       this.showEnrollCustomerModal = false;
       this.enrollForm = {
         customerName: "",
