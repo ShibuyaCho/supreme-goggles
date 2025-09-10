@@ -99,8 +99,12 @@
       }
       const count = Number((data && (data.count || data.TotalRecords)) || 0);
       const best = data && (data.best_license || data.best_license_number);
-      const used = data && (data.used_license || data.license || data.licenseNumber);
-      const extra = best || used ? ` (best: ${best || 'n/a'}; using: ${used || 'n/a'})` : '';
+      const used =
+        data && (data.used_license || data.license || data.licenseNumber);
+      const extra =
+        best || used
+          ? ` (best: ${best || "n/a"}; using: ${used || "n/a"})`
+          : "";
       const msg = `METRC packages retrieved: ${count}${extra}`;
       if (window.POS && typeof window.POS.showToast === "function") {
         window.POS.showToast(msg, count > 0 ? "success" : "warning");
@@ -141,40 +145,69 @@
         const phone = (byId("loyalty-enroll-phone") || {}).value || "";
         const email = (byId("loyalty-enroll-email") || {}).value || "";
         const tier = (byId("loyalty-enroll-tier") || {}).value || "Bronze";
-        const pts = parseInt(((byId("loyalty-enroll-points") || {}).value || "0").trim() || "0", 10) || 0;
+        const pts =
+          parseInt(
+            ((byId("loyalty-enroll-points") || {}).value || "0").trim() || "0",
+            10,
+          ) || 0;
         if (!name || !phone || !email) {
           const warn = "Please fill name, phone and email";
-          if (window.POS?.showToast) window.POS.showToast(warn, "warning"); else alert(warn);
+          if (window.POS?.showToast) window.POS.showToast(warn, "warning");
+          else alert(warn);
           return;
         }
         const payload = { name, phone, email, tier, starting_points: pts };
-        let ok = false, data = null, msg = null;
+        let ok = false,
+          data = null,
+          msg = null;
         if (window.posAuth && typeof window.posAuth.apiRequest === "function") {
-          const res = await window.posAuth.apiRequest("post", "/loyalty/enroll", payload);
-          ok = !!res?.success && (res?.data?.success !== false);
+          const res = await window.posAuth.apiRequest(
+            "post",
+            "/loyalty/enroll",
+            payload,
+          );
+          ok = !!res?.success && res?.data?.success !== false;
           data = res?.data || null;
           msg = res?.message || res?.data?.message || null;
         }
         if (!ok) {
-          const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
+          const csrf =
+            (document.querySelector('meta[name="csrf-token"]') || {}).content ||
+            "";
           const resp = await fetch("/loyalty/enroll", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": csrf },
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              "X-Requested-With": "XMLHttpRequest",
+              "X-CSRF-TOKEN": csrf,
+            },
             body: JSON.stringify(payload),
             credentials: "same-origin",
           });
-          try { data = await resp.json(); } catch (_) { data = {}; }
-          ok = resp.ok && (data?.success !== false);
+          try {
+            data = await resp.json();
+          } catch (_) {
+            data = {};
+          }
+          ok = resp.ok && data?.success !== false;
           if (!ok && resp.redirected) msg = "Session expired. Please log in.";
         }
-        const toastMsg = ok ? `Welcome ${data?.customer?.name || name}! You've been enrolled.` : (msg || data?.message || "Enrollment failed");
-        if (window.POS?.showToast) window.POS.showToast(toastMsg, ok ? "success" : "error"); else alert(toastMsg);
+        const toastMsg = ok
+          ? `Welcome ${data?.customer?.name || name}! You've been enrolled.`
+          : msg || data?.message || "Enrollment failed";
+        if (window.POS?.showToast)
+          window.POS.showToast(toastMsg, ok ? "success" : "error");
+        else alert(toastMsg);
         if (ok) {
-          try { location.reload(); } catch (_) {}
+          try {
+            location.reload();
+          } catch (_) {}
         }
       } catch (err) {
         const m = err?.message || "Enrollment error";
-        if (window.POS?.showToast) window.POS.showToast(m, "error"); else alert(m);
+        if (window.POS?.showToast) window.POS.showToast(m, "error");
+        else alert(m);
       }
     };
   }
