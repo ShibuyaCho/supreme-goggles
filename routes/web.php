@@ -239,7 +239,14 @@ Route::prefix('loyalty')->name('loyalty.')->group(function () {
     Route::get('/transactions', [LoyaltyController::class, 'transactions'])->name('transactions');
     Route::get('/tiers', [LoyaltyController::class, 'tiers'])->name('tiers');
     Route::post('/tiers', [LoyaltyController::class, 'updateTiers'])->name('update-tiers');
-    
+
+    // Auth-protected web endpoints for enrollment and management (used by Blade UI)
+    Route::middleware('auth')->group(function () {
+        Route::post('/enroll', [LoyaltyController::class, 'enroll'])->name('enroll');
+        Route::post('/{customer}/adjust-points', [LoyaltyController::class, 'adjustPoints'])->name('adjust-points');
+        Route::delete('/{customer}', [LoyaltyController::class, 'destroy'])->name('destroy');
+    });
+
     // Manual Point Management
     Route::post('/add-points', [LoyaltyController::class, 'addPoints'])->name('add-points');
     Route::post('/redeem-points', [LoyaltyController::class, 'redeemPoints'])->name('redeem-points');
