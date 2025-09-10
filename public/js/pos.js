@@ -1493,8 +1493,8 @@ function cannabisPOS() {
       // Try real API first when available
       let enrolled = null;
       try {
-        if (window.posAuth && typeof posAuth.apiRequest === 'function') {
-          const res = await posAuth.apiRequest('post', '/loyalty/enroll', {
+        if (window.posAuth && typeof posAuth.apiRequest === "function") {
+          const res = await posAuth.apiRequest("post", "/loyalty/enroll", {
             name,
             email,
             phone,

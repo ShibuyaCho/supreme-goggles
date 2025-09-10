@@ -4,22 +4,26 @@
 (function () {
   // Global error surfacing so cross-origin/minified errors aren't lost
   try {
-    window.addEventListener('error', function (e) {
+    window.addEventListener("error", function (e) {
       try {
-        const msg = (e && e.message) || 'Script error';
-        const file = (e && e.filename) || '';
+        const msg = (e && e.message) || "Script error";
+        const file = (e && e.filename) || "";
         const line = (e && e.lineno) || 0;
         const col = (e && e.colno) || 0;
         const detail = file ? `${msg} @ ${file}:${line}:${col}` : msg;
-        console.error('GlobalError:', e?.error || e);
-        if (window.POS && typeof window.POS.showToast === 'function') window.POS.showToast(detail, 'error');
+        console.error("GlobalError:", e?.error || e);
+        if (window.POS && typeof window.POS.showToast === "function")
+          window.POS.showToast(detail, "error");
       } catch (_) {}
     });
-    window.addEventListener('unhandledrejection', function (e) {
+    window.addEventListener("unhandledrejection", function (e) {
       try {
-        const reason = e && (e.reason?.message || e.reason) || 'Unhandled promise rejection';
-        console.error('UnhandledRejection:', e?.reason || e);
-        if (window.POS && typeof window.POS.showToast === 'function') window.POS.showToast(String(reason), 'error');
+        const reason =
+          (e && (e.reason?.message || e.reason)) ||
+          "Unhandled promise rejection";
+        console.error("UnhandledRejection:", e?.reason || e);
+        if (window.POS && typeof window.POS.showToast === "function")
+          window.POS.showToast(String(reason), "error");
       } catch (_) {}
     });
   } catch (_) {}
