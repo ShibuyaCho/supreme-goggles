@@ -252,7 +252,7 @@
 
         <!-- Customer Enrollment Modal -->
         <div x-show="showEnrollmentModal" @open-enrollment-modal.window="showEnrollmentModal = true" x-cloak class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto" @click.away="closeEnrollmentModal()">
+            <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto" @click.outside="closeEnrollmentModal()">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold">Loyalty Program Signup</h2>
@@ -336,7 +336,7 @@
 
         <!-- Add Points Modal -->
         <div x-show="showPointsModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg max-w-md w-full" @click.away="closePointsModal()">
+            <div class="bg-white rounded-lg max-w-md w-full" @click.outside="closePointsModal()">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold flex items-center gap-2">
