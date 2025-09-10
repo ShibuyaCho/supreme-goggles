@@ -80,12 +80,21 @@
   // Global METRC refresh utility usable from any page (demo or live)
   window.__refreshMetrc = async function () {
     try {
-      const res = await fetch("/api/metrc/debug/packages?diagnose=1", { credentials: "same-origin" });
+      const res = await fetch("/api/metrc/debug/packages?diagnose=1", {
+        credentials: "same-origin",
+      });
       const text = await res.text();
       let data = {};
-      try { data = JSON.parse(text); } catch (_) { data = {}; }
+      try {
+        data = JSON.parse(text);
+      } catch (_) {
+        data = {};
+      }
       if (!res.ok) {
-        const bodyMsg = data && (data.message || data.error) ? ` - ${data.message || data.error}` : "";
+        const bodyMsg =
+          data && (data.message || data.error)
+            ? ` - ${data.message || data.error}`
+            : "";
         throw new Error(`HTTP ${res.status}${bodyMsg}`);
       }
       const count = Number((data && (data.count || data.TotalRecords)) || 0);
