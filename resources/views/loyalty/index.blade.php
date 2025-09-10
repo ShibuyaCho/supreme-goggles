@@ -480,6 +480,24 @@ function loyaltyManager() {
 
         async enrollCustomer() {
             try {
+                // Prefer API route with token auth if available
+                if (window.posAuth && typeof posAuth.apiRequest === 'function') {
+                    const res = await posAuth.apiRequest('post', '/loyalty/enroll', this.enrollmentForm);
+                    if (res.success && res.data && (res.data.success !== false)) {
+                        const customer = res.data.customer || res.data;
+                        this.customers.push(customer);
+                        this.calculateStats();
+                        this.closeEnrollmentModal();
+                        this.showToast(`Welcome ${customer.name}! You've been enrolled in our loyalty program.`, 'success');
+                        return;
+                    } else {
+                        const msg = res.message || res.data?.message || 'Unknown error';
+                        this.showToast('Error enrolling customer: ' + msg, 'error');
+                        return;
+                    }
+                }
+
+                // Fallback to web route with CSRF/session
                 const response = await fetch(LOYALTY_ENDPOINTS.enroll, {
                     method: 'POST',
                     headers: {
