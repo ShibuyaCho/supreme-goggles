@@ -130,4 +130,62 @@
         window.__refreshMetrc();
       });
   });
+
+  // Global Loyalty enroll fallback (works even if Alpine fails)
+  if (!window.__loyaltyEnrollFallback) {
+    window.__loyaltyEnrollFallback = async function (e) {
+      try {
+        if (e) e.preventDefault();
+        const byId = (id) => document.getElementById(id);
+        const name = (byId("loyalty-enroll-name") || {}).value || "";
+        const phone = (byId("loyalty-enroll-phone") || {}).value || "";
+        const email = (byId("loyalty-enroll-email") || {}).value || "";
+        const tier = (byId("loyalty-enroll-tier") || {}).value || "Bronze";
+        const pts = parseInt(((byId("loyalty-enroll-points") || {}).value || "0").trim() || "0", 10) || 0;
+        if (!name || !phone || !email) {
+          const warn = "Please fill name, phone and email";
+          if (window.POS?.showToast) window.POS.showToast(warn, "warning"); else alert(warn);
+          return;
+        }
+        const payload = { name, phone, email, tier, starting_points: pts };
+        let ok = false, data = null, msg = null;
+        if (window.posAuth && typeof window.posAuth.apiRequest === "function") {
+          const res = await window.posAuth.apiRequest("post", "/loyalty/enroll", payload);
+          ok = !!res?.success && (res?.data?.success !== false);
+          data = res?.data || null;
+          msg = res?.message || res?.data?.message || null;
+        }
+        if (!ok) {
+          const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
+          const resp = await fetch("/loyalty/enroll", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json", "X-Requested-With": "XMLHttpRequest", "X-CSRF-TOKEN": csrf },
+            body: JSON.stringify(payload),
+            credentials: "same-origin",
+          });
+          try { data = await resp.json(); } catch (_) { data = {}; }
+          ok = resp.ok && (data?.success !== false);
+          if (!ok && resp.redirected) msg = "Session expired. Please log in.";
+        }
+        const toastMsg = ok ? `Welcome ${data?.customer?.name || name}! You've been enrolled.` : (msg || data?.message || "Enrollment failed");
+        if (window.POS?.showToast) window.POS.showToast(toastMsg, ok ? "success" : "error"); else alert(toastMsg);
+        if (ok) {
+          try { location.reload(); } catch (_) {}
+        }
+      } catch (err) {
+        const m = err?.message || "Enrollment error";
+        if (window.POS?.showToast) window.POS.showToast(m, "error"); else alert(m);
+      }
+    };
+  }
+
+  // Bind fallback to button if present
+  const enrollBtn = document.getElementById("loyalty-enroll-btn");
+  if (enrollBtn && !enrollBtn.__boundLoyalty) {
+    enrollBtn.__boundLoyalty = true;
+    enrollBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.__loyaltyEnrollFallback(e);
+    });
+  }
 })();
