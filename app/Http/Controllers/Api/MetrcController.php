@@ -66,6 +66,30 @@ class MetrcController extends Controller
     }
 
     /**
+     * Get all packages (admin debug)
+     */
+    public function debugPackages(Request $request)
+    {
+        try {
+            $packages = $this->metrcService->getAllPackages();
+            return response()->json([
+                'success' => true,
+                'count' => is_array($packages) ? count($packages) : 0,
+                'sample' => array_slice((array)$packages, 0, 3),
+                'retrieved_at' => now()->toISOString(),
+                'configured' => $this->metrcService->isConfigured(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'configured' => $this->metrcService->isConfigured(),
+                'base_url' => config('services.metrc.base_url'),
+            ], 500);
+        }
+    }
+
+    /**
      * Get all packages
      */
     public function getAllPackages(Request $request)
