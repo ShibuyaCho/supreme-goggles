@@ -226,11 +226,11 @@ app.all(/^\/api(?:\/.*)?$/, (_req, res) => {
 });
 
 // Optional SPA fallback (serve index.html for any non-API route):
-// app.get(/^(?!\/api(?:\/|$)).*$/, (_req, res) => {
-//   const indexPath = path.join(__dirname, 'index.html');
-//   if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
-//   res.redirect('/');
-// });
+app.get(/^(?!\/api(?:\/|$)).*$/, (_req, res) => {
+  const indexPath = path.join(__dirname, 'index.html');
+  if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
+  res.redirect('/');
+});
 
 // 404 (for anything not matched above)
 app.use((_req, res) => res.status(404).json({ error: "Not found" }));
