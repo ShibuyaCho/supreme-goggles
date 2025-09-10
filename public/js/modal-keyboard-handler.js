@@ -98,7 +98,10 @@
         throw new Error(`HTTP ${res.status}${bodyMsg}`);
       }
       const count = Number((data && (data.count || data.TotalRecords)) || 0);
-      const msg = `METRC packages retrieved: ${count}`;
+      const best = data && (data.best_license || data.best_license_number);
+      const used = data && (data.used_license || data.license || data.licenseNumber);
+      const extra = best || used ? ` (best: ${best || 'n/a'}; using: ${used || 'n/a'})` : '';
+      const msg = `METRC packages retrieved: ${count}${extra}`;
       if (window.POS && typeof window.POS.showToast === "function") {
         window.POS.showToast(msg, count > 0 ? "success" : "warning");
       } else {
