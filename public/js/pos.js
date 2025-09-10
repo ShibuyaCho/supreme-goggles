@@ -1474,6 +1474,15 @@ function cannabisPOS() {
       },
     ],
 
+    // Loyalty view state (demo index.html)
+    loyaltyFilter: {
+      search: "",
+      tier: "all",
+      status: "all",
+      sortBy: "name-asc",
+    },
+    filteredLoyaltyCustomers: [],
+
     selectCustomer(customer) {
       this.selectedCustomer = customer;
       this.calculateTotals();
