@@ -480,6 +480,19 @@ function cannabisPOS() {
       totalProfit: 0,
     },
 
+    // METRC refresh helper for demo
+    async refreshMetrc() {
+      try {
+        const client = window.axios || axios;
+        const res = await client.get('/api/metrc/debug/packages');
+        const count = Number(res?.data?.count || 0);
+        this.showToast(`METRC packages retrieved: ${count}`, 'success');
+      } catch (e) {
+        const msg = (e && e.response && e.response.data && (e.response.data.message || e.response.data.error)) || e.message || 'Failed to refresh METRC';
+        this.showToast(`Failed to refresh METRC: ${msg}`, 'error');
+      }
+    },
+
     // Additional arrays and objects
     employees: [],
     employeeSearchQuery: "",
