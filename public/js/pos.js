@@ -1670,6 +1670,50 @@ function cannabisPOS() {
       this.selectedCustomer = null;
     },
 
+    // Loyalty filtering and stats (for demo index.html)
+    filterLoyaltyCustomers() {
+      this.normalizeCollections();
+      let list = Array.isArray(this.customers) ? this.customers.slice() : [];
+      list = list.map((c) => ({
+        tier: c.tier || "Bronze",
+        loyaltyPoints: typeof c.loyaltyPoints === "number" ? c.loyaltyPoints : Number(c.loyalty_points || 0) || 0,
+        ...c,
+      }));
+      const q = (this.loyaltyFilter.search || "").toLowerCase();
+      if (q) {
+        list = list.filter((c) =>
+          (c.name || "").toLowerCase().includes(q) ||
+          (c.phone || "").toLowerCase().includes(q) ||
+          (c.email || "").toLowerCase().includes(q),
+        );
+      }
+      if (this.loyaltyFilter.tier && this.loyaltyFilter.tier !== "all") {
+        list = list.filter((c) => String(c.tier) === String(this.loyaltyFilter.tier));
+      }
+      if (this.loyaltyFilter.status && this.loyaltyFilter.status !== "all") {
+        if (this.loyaltyFilter.status === "active") list = list.filter((c) => (c.loyaltyPoints || 0) > 0);
+        if (this.loyaltyFilter.status === "inactive") list = list.filter((c) => (c.loyaltyPoints || 0) === 0);
+      }
+      const [field, dir] = (this.loyaltyFilter.sortBy || "name-asc").split("-");
+      list.sort((a, b) => {
+        const av = (a[field] ?? (field === 'name' ? a.name : a.loyaltyPoints)) || 0;
+        const bv = (b[field] ?? (field === 'name' ? b.name : b.loyaltyPoints)) || 0;
+        if (typeof av === 'string' && typeof bv === 'string') {
+          return dir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+        }
+        return dir === 'asc' ? (av > bv ? 1 : -1) : (av < bv ? 1 : -1);
+      });
+      this.filteredLoyaltyCustomers = list;
+    },
+    getLoyaltyStats() {
+      const list = Array.isArray(this.customers) ? this.customers : [];
+      const totalMembers = list.length;
+      const activeMembers = list.filter((c) => (c.loyaltyPoints || c.loyalty_points || 0) > 0).length;
+      const pointsRedeemed = 0;
+      const avgMonthlySpend = 0;
+      return { totalMembers, activeMembers, pointsRedeemed, avgMonthlySpend };
+    },
+
     // Product filtering and sorting
     filterProducts() {
       this.normalizeCollections();
