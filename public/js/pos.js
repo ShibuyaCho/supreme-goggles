@@ -957,14 +957,20 @@ function cannabisPOS() {
         // Load products from API
         const productsResult = await posAuth.getProducts();
         if (productsResult.success) {
-          const p = (productsResult.data && (productsResult.data.data || productsResult.data)) || [];
+          const p =
+            (productsResult.data &&
+              (productsResult.data.data || productsResult.data)) ||
+            [];
           if (Array.isArray(p)) this.products = p;
         }
 
         // Load customers from API
         const customersResult = await posAuth.getCustomers();
         if (customersResult.success) {
-          const c = (customersResult.data && (customersResult.data.data || customersResult.data)) || [];
+          const c =
+            (customersResult.data &&
+              (customersResult.data.data || customersResult.data)) ||
+            [];
           if (Array.isArray(c)) this.customers = c;
           else if (!Array.isArray(this.customers)) this.customers = [];
         }

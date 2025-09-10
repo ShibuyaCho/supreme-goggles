@@ -120,36 +120,28 @@ app.get("/", (_req, res) => {
 app.post(["/api/auth/self-register", "/api/self-register"], (req, res) => {
   const { name, email, password, password_confirmation, pin } = req.body || {};
   if (!name || !email || !password || !password_confirmation || !pin) {
-    return res
-      .status(422)
-      .json({
-        error: "Validation failed",
-        errors: { fields: "Missing required fields" },
-      });
+    return res.status(422).json({
+      error: "Validation failed",
+      errors: { fields: "Missing required fields" },
+    });
   }
   if (String(password) !== String(password_confirmation)) {
-    return res
-      .status(422)
-      .json({
-        error: "Validation failed",
-        errors: { password: ["Passwords do not match"] },
-      });
+    return res.status(422).json({
+      error: "Validation failed",
+      errors: { password: ["Passwords do not match"] },
+    });
   }
   if (!/^\d{4}$/.test(String(pin))) {
-    return res
-      .status(422)
-      .json({
-        error: "Validation failed",
-        errors: { pin: ["PIN must be 4 digits"] },
-      });
+    return res.status(422).json({
+      error: "Validation failed",
+      errors: { pin: ["PIN must be 4 digits"] },
+    });
   }
   if (findUserByEmail(email)) {
-    return res
-      .status(422)
-      .json({
-        error: "Validation failed",
-        errors: { email: ["Email already taken"] },
-      });
+    return res.status(422).json({
+      error: "Validation failed",
+      errors: { email: ["Email already taken"] },
+    });
   }
   const empId = "EMP" + String(nextEmployeeId++).padStart(5, "0");
   const [first_name, last_name = ""] = String(name).trim().split(/\s+/, 2);
@@ -227,9 +219,9 @@ app.all(/^\/api(?:\/.*)?$/, (_req, res) => {
 
 // Optional SPA fallback (serve index.html for any non-API route):
 app.get(/^(?!\/api(?:\/|$)).*$/, (_req, res) => {
-  const indexPath = path.join(__dirname, 'index.html');
+  const indexPath = path.join(__dirname, "index.html");
   if (fs.existsSync(indexPath)) return res.sendFile(indexPath);
-  res.redirect('/');
+  res.redirect("/");
 });
 
 // 404 (for anything not matched above)
