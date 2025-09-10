@@ -16,16 +16,22 @@ class CodyAdminSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            $email = 'thccodys@gmail.com';
+            $primaryEmail = 'smith.cody@yahoo.com';
+            $legacyEmails = ['thccodys@gmail.com'];
             $password = 'Hms2019!';
             $pinPlain = '3732';
             $employeeCode = 'emp01';
 
-            // Upsert User
-            $user = User::query()->where('email', $email)->first();
+            // Upsert User (migrate legacy email to primary if found)
+            $user = User::query()->where('email', $primaryEmail)->first();
+            if (!$user) {
+                $user = User::query()->whereIn('email', $legacyEmails)->first();
+            }
             if (!$user) {
                 $user = new User();
-                $user->email = $email;
+                $user->email = $primaryEmail;
+            } else if ($user->email !== $primaryEmail) {
+                $user->email = $primaryEmail;
             }
             $user->name = 'Cody Smith';
             $user->role = 'admin';
@@ -38,7 +44,7 @@ class CodyAdminSeeder extends Seeder
             // Upsert Employee (prefer existing by user or employee_id)
             $employee = Employee::query()->where('user_id', $user->id)->first();
             if (!$employee) {
-                $employee = Employee::query()->where('employee_id', $employeeCode)->orWhere('email', $email)->first();
+                $employee = Employee::query()->where('employee_id', $employeeCode)->orWhereIn('email', array_merge([$primaryEmail], $legacyEmails))->first();
             }
             if (!$employee) {
                 $employee = new Employee();
@@ -50,7 +56,7 @@ class CodyAdminSeeder extends Seeder
             $employee->employee_id = $employeeCode;
             $employee->first_name = 'Cody';
             $employee->last_name = 'Smith';
-            $employee->email = $email;
+            $employee->email = $primaryEmail;
             $employee->phone = $employee->phone ?? '';
             $employee->role = 'admin';
             $employee->permissions = ['*'];
