@@ -1002,6 +1002,8 @@ function cannabisPOS() {
         this.loadProducts();
         this.loadCustomers();
         this.loadEmployees();
+      } finally {
+        try { this.filterLoyaltyCustomers(); } catch (_) {}
       }
     },
 
