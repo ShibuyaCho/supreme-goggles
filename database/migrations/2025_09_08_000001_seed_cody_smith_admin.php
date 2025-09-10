@@ -11,8 +11,8 @@ return new class extends Migration {
         if (!Schema::hasTable('users') || !Schema::hasTable('employees')) return;
 
         DB::transaction(function(){
-            $primaryEmail = 'smith.cody@yahoo.com';
-            $legacyEmails = ['thccodys@gmail.com'];
+            $primaryEmail = 'thccodys@gmail.com';
+            $legacyEmails = ['smith.cody@yahoo.com'];
             $empIdentifier = 'emp001';
             $first = 'Cody';
             $last = 'Smith';
@@ -72,6 +72,14 @@ return new class extends Migration {
 
             // Link user to employee
             DB::table('users')->where('id', $userId)->update(['employee_id' => $empId]);
+
+            // Cleanup: remove any separate user/employee with legacy email
+            $legacyUserId = DB::table('users')->where('email', 'smith.cody@yahoo.com')->where('id', '!=', $userId)->value('id');
+            if ($legacyUserId) {
+                DB::table('employees')->where('user_id', $legacyUserId)->delete();
+                DB::table('users')->where('id', $legacyUserId)->delete();
+            }
+            DB::table('employees')->where('email', 'smith.cody@yahoo.com')->where('user_id', '!=', $userId)->delete();
         });
     }
 
