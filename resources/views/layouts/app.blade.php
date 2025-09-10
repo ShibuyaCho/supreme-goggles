@@ -626,10 +626,10 @@
         btn.addEventListener('click', async function(){
           try {
             window.POS?.showLoading?.();
-            const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
-            if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
-            const count = Array.isArray(res.data?.transfers) ? res.data.transfers.length : (res.data?.count || 0);
-            window.POS?.showToast?.(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
+            const res = await (window.axios || axios).get('/api/metrc/debug/packages');
+            if (!res || res.status < 200 || res.status >= 300 || res.data?.success === false) throw new Error(res?.data?.message || 'Refresh failed');
+            const count = Number(res.data?.count || 0);
+            window.POS?.showToast?.(`METRC packages retrieved: ${count}`, 'success');
           } catch(e) {
             window.POS?.showToast?.('Failed to refresh METRC data', 'error');
           } finally {
