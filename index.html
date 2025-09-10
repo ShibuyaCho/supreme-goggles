@@ -5077,16 +5077,43 @@
               <form @submit.prevent="enrollCustomerInLoyalty()">
                 <div class="space-y-4">
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                    <input type="text" x-model="enrollForm.customerName" @keydown.enter.prevent="enrollCustomerInLoyalty()" required placeholder="Enter full name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Full Name *</label
+                    >
+                    <input
+                      type="text"
+                      x-model="enrollForm.customerName"
+                      @keydown.enter.prevent="enrollCustomerInLoyalty()"
+                      required
+                      placeholder="Enter full name"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                    <input type="tel" x-model="enrollForm.phone" @keydown.enter.prevent="enrollCustomerInLoyalty()" required placeholder="(555) 123-4567" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Phone Number *</label
+                    >
+                    <input
+                      type="tel"
+                      x-model="enrollForm.phone"
+                      @keydown.enter.prevent="enrollCustomerInLoyalty()"
+                      required
+                      placeholder="(555) 123-4567"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
                   </div>
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                    <input type="email" x-model="enrollForm.email" @keydown.enter.prevent="enrollCustomerInLoyalty()" required placeholder="customer@email.com" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500" />
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Email Address *</label
+                    >
+                    <input
+                      type="email"
+                      x-model="enrollForm.email"
+                      @keydown.enter.prevent="enrollCustomerInLoyalty()"
+                      required
+                      placeholder="customer@email.com"
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+                    />
                   </div>
 
                   <div>

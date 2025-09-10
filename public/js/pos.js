@@ -484,12 +484,18 @@ function cannabisPOS() {
     async refreshMetrc() {
       try {
         const client = window.axios || axios;
-        const res = await client.get('/api/metrc/debug/packages');
+        const res = await client.get("/api/metrc/debug/packages");
         const count = Number(res?.data?.count || 0);
-        this.showToast(`METRC packages retrieved: ${count}`, 'success');
+        this.showToast(`METRC packages retrieved: ${count}`, "success");
       } catch (e) {
-        const msg = (e && e.response && e.response.data && (e.response.data.message || e.response.data.error)) || e.message || 'Failed to refresh METRC';
-        this.showToast(`Failed to refresh METRC: ${msg}`, 'error');
+        const msg =
+          (e &&
+            e.response &&
+            e.response.data &&
+            (e.response.data.message || e.response.data.error)) ||
+          e.message ||
+          "Failed to refresh METRC";
+        this.showToast(`Failed to refresh METRC: ${msg}`, "error");
       }
     },
 
@@ -1463,15 +1469,15 @@ function cannabisPOS() {
     },
 
     enrollCustomerInLoyalty() {
-      const name = (this.enrollForm.customerName || '').trim();
-      const email = (this.enrollForm.email || '').trim();
-      const phone = (this.enrollForm.phone || '').trim();
+      const name = (this.enrollForm.customerName || "").trim();
+      const email = (this.enrollForm.email || "").trim();
+      const phone = (this.enrollForm.phone || "").trim();
       if (!name || !email || !phone) {
-        this.showToast('Please fill in name, phone, and email', 'error');
+        this.showToast("Please fill in name, phone, and email", "error");
         return;
       }
       const starting = Number(this.enrollForm.startingPoints || 0);
-      const tier = this.enrollForm.tier || 'Bronze';
+      const tier = this.enrollForm.tier || "Bronze";
       const newCustomer = {
         id: Date.now(),
         name,
@@ -1483,8 +1489,14 @@ function cannabisPOS() {
       };
       this.customers.push(newCustomer);
       this.showEnrollCustomerModal = false;
-      this.enrollForm = { customerName: '', email: '', phone: '', tier: 'Bronze', startingPoints: 0 };
-      this.showToast(`Enrolled ${name} in loyalty program`, 'success');
+      this.enrollForm = {
+        customerName: "",
+        email: "",
+        phone: "",
+        tier: "Bronze",
+        startingPoints: 0,
+      };
+      this.showToast(`Enrolled ${name} in loyalty program`, "success");
     },
 
     // Sale flow functions

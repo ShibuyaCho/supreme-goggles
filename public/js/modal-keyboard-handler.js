@@ -5,27 +5,38 @@
   function isVisible(el) {
     if (!el) return false;
     const style = window.getComputedStyle(el);
-    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+    return (
+      style.display !== "none" &&
+      style.visibility !== "hidden" &&
+      style.opacity !== "0"
+    );
   }
 
   function getOpenModals() {
     // Any element with class "modal" that is currently visible
-    return Array.from(document.querySelectorAll('.modal')).filter(isVisible);
+    return Array.from(document.querySelectorAll(".modal")).filter(isVisible);
   }
 
   function findCloseButton(modal) {
     // Common close/selectors
     const selectors = [
-      '[data-modal-close]', '[aria-label="Close"]', '.close',
-      'button[title="Close"]', 'button:has(svg), button:has(span)',
-      'button'
+      "[data-modal-close]",
+      '[aria-label="Close"]',
+      ".close",
+      'button[title="Close"]',
+      "button:has(svg), button:has(span)",
+      "button",
     ];
     for (const sel of selectors) {
       const btns = Array.from(modal.querySelectorAll(sel)).filter((b) => {
-        const text = (b.textContent || '').trim().toLowerCase();
-        return isVisible(b) && (
-          b.getAttribute('data-modal-close') !== null ||
-          text === 'cancel' || text === 'close' || text === '×' || text === 'x'
+        const text = (b.textContent || "").trim().toLowerCase();
+        return (
+          isVisible(b) &&
+          (b.getAttribute("data-modal-close") !== null ||
+            text === "cancel" ||
+            text === "close" ||
+            text === "×" ||
+            text === "x")
         );
       });
       if (btns.length) return btns[0];
@@ -34,7 +45,9 @@
   }
 
   function findSubmitButton(modal) {
-    const candidates = modal.querySelectorAll('[data-modal-default], button[type="submit"], .bg-cannabis-green, .bg-yellow-600');
+    const candidates = modal.querySelectorAll(
+      '[data-modal-default], button[type="submit"], .bg-cannabis-green, .bg-yellow-600',
+    );
     for (const el of candidates) {
       if (isVisible(el)) return el;
     }
@@ -46,14 +59,14 @@
     if (!modals.length) return;
     const top = modals[modals.length - 1];
 
-    if (e.key === 'Escape') {
+    if (e.key === "Escape") {
       const closeBtn = findCloseButton(top);
       if (closeBtn) {
         e.preventDefault();
         closeBtn.click();
       }
-    } else if (e.key === 'Enter') {
-      if (e.target && ['TEXTAREA'].includes(e.target.tagName)) return;
+    } else if (e.key === "Enter") {
+      if (e.target && ["TEXTAREA"].includes(e.target.tagName)) return;
       const submitBtn = findSubmitButton(top);
       if (submitBtn) {
         e.preventDefault();
@@ -62,5 +75,5 @@
     }
   }
 
-  document.addEventListener('keydown', onKeyDown, true);
+  document.addEventListener("keydown", onKeyDown, true);
 })();
