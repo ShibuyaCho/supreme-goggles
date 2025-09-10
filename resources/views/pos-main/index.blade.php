@@ -47,7 +47,7 @@
 
                     <!-- Sale Control Buttons -->
                     <div class="flex items-center space-x-3">
-                        <button id="refresh-metrc" class="inline-flex items-center rounded-lg bg-cannabis-green px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                        <button id="refresh-metrc" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="inline-flex items-center rounded-lg bg-cannabis-green px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
                             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5" /></svg>
                             Refresh METRC
                         </button>
@@ -385,10 +385,10 @@
     btn.addEventListener('click', async function(){
       try {
         window.POS?.showLoading?.();
-        const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
-        if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
-        const count = Array.isArray(res.data?.transfers) ? res.data.transfers.length : (res.data?.count || 0);
-        window.POS?.showToast?.(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
+        const res = await (window.axios || axios).get('/api/metrc/debug/packages');
+        if (!res || res.status < 200 || res.status >= 300 || res.data?.success === false) throw new Error(res?.data?.message || 'Refresh failed');
+        const count = Number(res.data?.count || 0);
+        window.POS?.showToast?.(`METRC packages retrieved: ${count}`,'success');
       } catch(e){
         window.POS?.showToast?.('Failed to refresh METRC data', 'error');
       } finally {
