@@ -276,53 +276,21 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
                             <input type="email" x-model="enrollmentForm.email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
                         </div>
-
-                        <!-- Program Benefits Info -->
-                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h3 class="font-medium mb-2">Loyalty Program Benefits</h3>
-                            <div class="text-sm space-y-2">
-                                <div class="font-medium">Tier-Based Rewards:</div>
-                                <ul class="space-y-1 ml-2 text-xs">
-                                    <li>• Bronze Tier (Starting): 1% back in points</li>
-                                    <li>• Silver Tier ($500+ spent): 2% back in points</li>
-                                    <li>• Gold Tier ($1,500+ spent): 3% back in points</li>
-                                    <li>• Platinum Tier ($3,000+ spent): 5% back in points</li>
-                                </ul>
-                                <div class="mt-2 text-xs">
-                                    <li>• Exclusive deals and early access to sales</li>
-                                    <li>• Birthday rewards and special offers</li>
-                                    <li>• Track your purchase history</li>
-                                </div>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Starting Loyalty Tier</label>
+                            <select x-model="enrollmentForm.tier" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <template x-for="tier in tiers" :key="tier.name">
+                                    <option :value="tier.name" x-text="tier.name"></option>
+                                </template>
+                            </select>
                         </div>
-
-                        <div class="space-y-4">
-                            <label class="flex items-start space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <input type="checkbox" x-model="enrollmentForm.is_veteran" class="mt-1 rounded text-cannabis-green focus:ring-cannabis-green">
-                                <div class="space-y-2">
-                                    <div class="text-sm font-medium">Veteran Status</div>
-                                    <p class="text-xs text-gray-600">
-                                        I am a U.S. military veteran and would like to receive the 10% veteran discount
-                                        on all purchases (including Green Leaf Special items).
-                                    </p>
-                                </div>
-                            </label>
-
-                            <label class="flex items-start space-x-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <input type="checkbox" x-model="enrollmentForm.data_retention_consent" required class="mt-1 rounded text-cannabis-green focus:ring-cannabis-green">
-                                <div class="space-y-2">
-                                    <div class="text-sm font-medium">Data Retention Consent *</div>
-                                    <p class="text-xs text-gray-600">
-                                        I consent to Cannabis POS storing my personal information and tracking my sales history
-                                        for the purpose of providing loyalty program benefits. This data will be kept secure
-                                        and used only for program administration and personalized offers.
-                                    </p>
-                                </div>
-                            </label>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Starting Points</label>
+                            <input type="number" x-model.number="enrollmentForm.starting_points" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
                         </div>
 
                         <div class="flex gap-3">
-                            <button type="submit" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email || !enrollmentForm.data_retention_consent" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button type="submit" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 Enroll Customer
                             </button>
                             <button type="button" @click="closeEnrollmentModal()" class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
@@ -433,8 +401,8 @@ function loyaltyManager() {
             name: '',
             phone: '',
             email: '',
-            is_veteran: false,
-            data_retention_consent: false
+            tier: 'Bronze',
+            starting_points: 0
         },
         pointsForm: {
             points: '',
@@ -500,8 +468,8 @@ function loyaltyManager() {
                 name: '',
                 phone: '',
                 email: '',
-                is_veteran: false,
-                data_retention_consent: false
+                tier: 'Bronze',
+                starting_points: 0
             };
         },
 
