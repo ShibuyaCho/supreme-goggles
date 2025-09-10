@@ -1,116 +1,66 @@
-// Universal Modal Keyboard Handler
-// This script automatically adds keyboard functionality to all modals in the application
+// Universal Modal Keyboard Handler (framework-agnostic)
+// Adds Escape to close and Enter to submit for any visible modal across the app
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Define modal selectors and their keyboard behavior
-    const modalConfigs = {
-        // Customer modals
-        'showCustomerModal': { escape: () => window.Alpine.getState().showCustomerModal = false },
-        'showEditCustomerModal': { escape: 'closeEditCustomerModal' },
-        'showAddCustomerModal': { escape: 'closeAddCustomerModal' },
-        'showCustomerViewModal': { escape: () => window.Alpine.getState().showCustomerViewModal = false },
+(function () {
+  function isVisible(el) {
+    if (!el) return false;
+    const style = window.getComputedStyle(el);
+    return style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0';
+  }
 
-        // Product modals
-        'showMetrcModal': { escape: () => window.Alpine.getState().showMetrcModal = false },
-        'showTransferModal': { escape: () => window.Alpine.getState().showTransferModal = false },
-        'showEditModal': { escape: () => window.Alpine.getState().showEditModal = false },
-        'showAddProductModal': { escape: () => window.Alpine.getState().showAddProductModal = false },
-        'showMetrcImportModal': { escape: () => window.Alpine.getState().showMetrcImportModal = false },
-        'showVendorPackagesModal': { escape: () => window.Alpine.getState().showVendorPackagesModal = false },
-        'showAgingModal': { escape: () => window.Alpine.getState().showAgingModal = false },
+  function getOpenModals() {
+    // Any element with class "modal" that is currently visible
+    return Array.from(document.querySelectorAll('.modal')).filter(isVisible);
+  }
 
-        // Print modals
-        'showPrintTypeModal': { escape: () => window.Alpine.getState().showPrintTypeModal = false },
-        'showPrintPreviewModal': { escape: 'cancelPrintPreview' },
-        'showPrintSettingsPreviewModal': { escape: 'closePrintSettingsPreview' },
-        'showPrintModal': { escape: () => window.Alpine.getState().showPrintModal = false },
-
-        // Payment modals
-        'showCashModal': { escape: () => window.Alpine.getState().showCashModal = false },
-        'showDebitModal': { escape: () => window.Alpine.getState().showDebitModal = false },
-
-        // Sales modals
-        'showNewSaleModal': { escape: () => window.Alpine.getState().showNewSaleModal = false },
-        'showRecreationalModal': { escape: 'cancelNewSale' },
-        'showMedicalModal': { escape: 'cancelNewSale' },
-        'showSaleDetailsModal': { escape: () => window.Alpine.getState().showSaleDetailsModal = false },
-        'showVoidSaleModal': { escape: () => window.Alpine.getState().showVoidSaleModal = false },
-
-        // Employee modals
-        'showAddEmployeeModal': { escape: () => window.Alpine.getState().showAddEmployeeModal = false },
-        'showEmployeeModal': { escape: () => window.Alpine.getState().showEmployeeModal = false },
-        'showPinModal': { escape: () => window.Alpine.getState().showPinModal = false },
-        'showEmployeeAssignModal': { escape: () => window.Alpine.getState().showEmployeeAssignModal = false },
-        'showCashCountModal': { escape: () => window.Alpine.getState().showCashCountModal = false },
-
-        // Room and Drawer modals
-        'showAddRoomModal': { escape: 'closeAddRoomModal' },
-        'showRoomDetailsModal': { escape: () => window.Alpine.getState().showRoomDetailsModal = false },
-        'showAddDrawerModal': { escape: () => window.Alpine.getState().showAddDrawerModal = false },
-
-        // Settings modals
-        'showAddTierModal': { escape: 'closeTierModal' },
-        'showCreateDealModal': { escape: 'closeCreateDealModal' },
-
-        // Loyalty modals
-        'showEnrollCustomerModal': { escape: () => window.Alpine.getState().showEnrollCustomerModal = false },
-        'showAdjustPointsModal': { escape: () => window.Alpine.getState().showAdjustPointsModal = false },
-
-        // Discount modals
-        'showDiscountModal': { escape: () => window.Alpine.getState().showDiscountModal = false },
-        'showItemDiscountModal': { escape: () => window.Alpine.getState().showItemDiscountModal = false },
-    };
-
-    // Enhanced keyboard event handler
-    function handleModalKeyboard(event) {
-        // Only handle if Alpine.js is available
-        if (!window.Alpine) return;
-
-        const alpineData = window.Alpine.store('cannabisPOS') || {};
-        
-        // Check which modal is currently open
-        for (const [modalName, config] of Object.entries(modalConfigs)) {
-            if (alpineData[modalName]) {
-                switch (event.key) {
-                    case 'Escape':
-                        event.preventDefault();
-                        event.stopPropagation();
-                        
-                        if (typeof config.escape === 'function') {
-                            config.escape();
-                        } else if (typeof config.escape === 'string') {
-                            // Call the named function if it exists
-                            if (alpineData[config.escape]) {
-                                alpineData[config.escape]();
-                            }
-                        }
-                        break;
-                        
-                    case 'Enter':
-                        // Only handle Enter if the target is not a textarea or if Ctrl/Cmd is pressed
-                        if (event.target.tagName !== 'TEXTAREA' || event.ctrlKey || event.metaKey) {
-                            if (config.enter) {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                
-                                if (typeof config.enter === 'function') {
-                                    config.enter();
-                                } else if (typeof config.enter === 'string') {
-                                    if (alpineData[config.enter]) {
-                                        alpineData[config.enter]();
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                }
-                break; // Only handle the first open modal
-            }
-        }
+  function findCloseButton(modal) {
+    // Common close/selectors
+    const selectors = [
+      '[data-modal-close]', '[aria-label="Close"]', '.close',
+      'button[title="Close"]', 'button:has(svg), button:has(span)',
+      'button'
+    ];
+    for (const sel of selectors) {
+      const btns = Array.from(modal.querySelectorAll(sel)).filter((b) => {
+        const text = (b.textContent || '').trim().toLowerCase();
+        return isVisible(b) && (
+          b.getAttribute('data-modal-close') !== null ||
+          text === 'cancel' || text === 'close' || text === '×' || text === 'x'
+        );
+      });
+      if (btns.length) return btns[0];
     }
+    return null;
+  }
 
-    // Add global keyboard event listener
-    document.addEventListener('keydown', handleModalKeyboard);
-    
-    console.log('🎹 Universal modal keyboard handler initialized');
-});
+  function findSubmitButton(modal) {
+    const candidates = modal.querySelectorAll('[data-modal-default], button[type="submit"], .bg-cannabis-green, .bg-yellow-600');
+    for (const el of candidates) {
+      if (isVisible(el)) return el;
+    }
+    return null;
+  }
+
+  function onKeyDown(e) {
+    const modals = getOpenModals();
+    if (!modals.length) return;
+    const top = modals[modals.length - 1];
+
+    if (e.key === 'Escape') {
+      const closeBtn = findCloseButton(top);
+      if (closeBtn) {
+        e.preventDefault();
+        closeBtn.click();
+      }
+    } else if (e.key === 'Enter') {
+      if (e.target && ['TEXTAREA'].includes(e.target.tagName)) return;
+      const submitBtn = findSubmitButton(top);
+      if (submitBtn) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    }
+  }
+
+  document.addEventListener('keydown', onKeyDown, true);
+})();
