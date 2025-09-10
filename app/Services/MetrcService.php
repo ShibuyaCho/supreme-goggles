@@ -63,34 +63,50 @@ class MetrcService
         $url = rtrim($this->baseUrl, '/') . $endpoint;
 
         // Per METRC docs: Basic base64("user_api_key:integrator_api_key")
-        $response = Http::withBasicAuth($this->userKey, $this->vendorKey)
-            ->acceptJson()
-            ->timeout(30)
-            ->retry(3, 200)
-            ->withHeaders([
-                'Content-Type' => 'application/json'
-            ]);
+        $buildClient = function($username, $password) {
+            return Http::withBasicAuth($username, $password)
+                ->acceptJson()
+                ->timeout(45)
+                ->retry(3, 250)
+                ->withHeaders([
+                    'Content-Type' => 'application/json'
+                ]);
+        };
 
-        $method = strtoupper($method);
-        switch ($method) {
-            case 'GET':
-                if (!empty($data)) {
-                    $query = http_build_query($data, '', '&', PHP_QUERY_RFC3986);
-                    $url = strpos($url, '?') === false ? ($url . '?' . $query) : ($url . '&' . $query);
-                }
-                $response = $response->get($url);
-                break;
-            case 'POST':
-                $response = $response->post($url, $data);
-                break;
-            case 'PUT':
-                $response = $response->put($url, $data);
-                break;
-            case 'DELETE':
-                $response = $response->delete($url, $data);
-                break;
-            default:
-                throw new \Exception("Unsupported HTTP method: $method");
+        $attempt = function($client) use ($method, $url, $data) {
+            $m = strtoupper($method);
+            switch ($m) {
+                case 'GET':
+                    $u = $url;
+                    if (!empty($data)) {
+                        $query = http_build_query($data, '', '&', PHP_QUERY_RFC3986);
+                        $u = strpos($u, '?') === false ? ($u . '?' . $query) : ($u . '&' . $query);
+                    }
+                    return $client->get($u);
+                case 'POST':
+                    return $client->post($url, $data);
+                case 'PUT':
+                    return $client->put($url, $data);
+                case 'DELETE':
+                    return $client->delete($url, $data);
+                default:
+                    throw new \Exception("Unsupported HTTP method: $m");
+            }
+        };
+
+        // First attempt: userKey as username, vendorKey as password (documented for OR)
+        $response = $attempt($buildClient($this->userKey, $this->vendorKey));
+
+        // If unauthorized, try reversed order as fallback for environments configured differently
+        if (in_array($response->status(), [401, 403])) {
+            Log::warning('METRC auth failed with user:vendor; retrying with vendor:user');
+            $retryResp = $attempt($buildClient($this->vendorKey, $this->userKey));
+            if ($retryResp->successful()) {
+                $response = $retryResp;
+            } else {
+                // Keep the more descriptive response body if any
+                if ($retryResp->status() >= 400) { $response = $retryResp; }
+            }
         }
 
         if (!$response->successful()) {
