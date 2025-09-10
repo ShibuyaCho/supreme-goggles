@@ -486,7 +486,8 @@ function loyaltyManager() {
                     const res = await posAuth.apiRequest('post', '/loyalty/enroll', this.enrollmentForm);
                     if (res.success && res.data && (res.data.success !== false)) {
                         const customer = res.data.customer || res.data;
-                        this.customers.push(customer);
+                        this.customers = [customer, ...(Array.isArray(this.customers) ? this.customers : [])];
+                        this.searchQuery = '';
                         this.calculateStats();
                         this.closeEnrollmentModal();
                         this.showToast(`Welcome ${customer.name}! You've been enrolled in our loyalty program.`, 'success');
@@ -520,7 +521,8 @@ function loyaltyManager() {
                 try { result = await response.json(); } catch (e) { result = {}; }
 
                 if (response.ok && result && result.success !== false) {
-                    this.customers.push(result.customer);
+                    this.customers = [result.customer, ...(Array.isArray(this.customers) ? this.customers : [])];
+                    this.searchQuery = '';
                     this.calculateStats();
                     this.closeEnrollmentModal();
                     this.showToast(`Welcome ${result.customer.name}! You've been enrolled in our loyalty program.`, 'success');
