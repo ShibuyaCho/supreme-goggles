@@ -243,7 +243,7 @@ Route::prefix('loyalty')->name('loyalty.')->group(function () {
     // Auth-protected web endpoints for enrollment and management (used by Blade UI)
     Route::middleware('auth')->group(function () {
         Route::post('/enroll', [LoyaltyController::class, 'enroll'])->name('enroll');
-        Route::post('/{customer}/adjust-points', [LoyaltyController::class, 'adjustPoints'])->name('adjust-points');
+        Route::post('/{customer}/adjust-points', [LoyaltyController::class, 'adjustPoints'])->name('customer-adjust-points');
         Route::delete('/{customer}', [LoyaltyController::class, 'destroy'])->name('destroy');
     });
 
