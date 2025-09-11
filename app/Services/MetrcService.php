@@ -138,10 +138,18 @@ class MetrcService
     {
         try {
             $cacheKey = "metrc_package_{$packageTag}";
-            
+
             return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($packageTag) {
                 $params = [];
                 if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+                // Try v2 direct by label first (Oregon docs recommend)
+                try {
+                    $v2 = $this->makeRequest('GET', "/packages/v2/{$packageTag}", $params);
+                    if (!empty($v2)) { return $v2; }
+                } catch (\Throwable $e) {
+                    Log::warning('METRC v2 package lookup failed, falling back to v1', [ 'tag' => $packageTag, 'error' => $e->getMessage() ]);
+                }
+                // Fallback to v1
                 return $this->makeRequest('GET', "/packages/v1/{$packageTag}", $params);
             });
 
