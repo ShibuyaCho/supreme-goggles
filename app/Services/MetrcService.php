@@ -319,7 +319,7 @@ class MetrcService
         };
 
         $paginateV2 = function($endpoint, $params) {
-            $page = 1; $pageSize = 100; $all = [];
+            $page = 1; $pageSize = 20; $all = [];
             do {
                 $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
                 $raw = $this->makeRequest('GET', $endpoint, $pageParams);
@@ -381,7 +381,7 @@ class MetrcService
         };
 
         $paginateV2 = function($endpoint, $params) {
-            $page = 1; $pageSize = 100; $all = [];
+            $page = 1; $pageSize = 20; $all = [];
             do {
                 $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
                 $raw = $this->makeRequest('GET', $endpoint, $pageParams);
