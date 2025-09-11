@@ -484,7 +484,7 @@ function cannabisPOS() {
     async refreshMetrc() {
       try {
         const client = window.axios || axios;
-        const res = await client.get("/api/metrc/debug/packages");
+        const res = await client.get("/api/metrc/debug/packages?diagnose=1");
         const count = Number(res?.data?.count || 0);
         this.showToast(`METRC packages retrieved: ${count}`, "success");
       } catch (e) {
