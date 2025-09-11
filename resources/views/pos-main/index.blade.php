@@ -385,7 +385,7 @@
     btn.addEventListener('click', async function(){
       try {
         window.POS?.showLoading?.();
-        const res = await (window.axios || axios).get('/api/metrc/debug/packages');
+        const res = await (window.axios || axios).get('/api/metrc/debug/packages?diagnose=1');
         if (!res || res.status < 200 || res.status >= 300 || res.data?.success === false) throw new Error(res?.data?.message || 'Refresh failed');
         const count = Number(res.data?.count || 0);
         window.POS?.showToast?.(`METRC packages retrieved: ${count}`,'success');
