@@ -99,20 +99,28 @@ class MetrcService
             }
         };
 
-        // First attempt: userKey as username, vendorKey as password (documented for OR)
-        $response = $attempt($buildClient($this->userKey, $this->vendorKey));
-
-        // If unauthorized, try reversed order as fallback for environments configured differently
-        if (in_array($response->status(), [401, 403])) {
-            Log::warning('METRC auth failed with user:vendor; retrying with vendor:user');
-            $retryResp = $attempt($buildClient($this->vendorKey, $this->userKey));
-            if ($retryResp->successful()) {
-                $response = $retryResp;
-            } else {
-                // Keep the more descriptive response body if any
-                if ($retryResp->status() >= 400) { $response = $retryResp; }
-            }
+        // Build ordered auth attempts
+        $pairs = [
+            [$this->userKey, $this->vendorKey], // user:vendor
+            [$this->vendorKey, $this->userKey], // vendor:user
+        ];
+        // Optional explicit username/password from config
+        $confUser = config('services.metrc.username');
+        $confPass = config('services.metrc.password');
+        if (!empty($confUser) && !empty($confPass)) {
+            $pairs[] = [$confUser, $confPass];
         }
+
+        $response = null;
+        $lastResp = null;
+        foreach ($pairs as [$u, $p]) {
+            if (empty($u) || empty($p)) { continue; }
+            $resp = $attempt($buildClient($u, $p));
+            $lastResp = $resp;
+            if ($resp->successful()) { $response = $resp; break; }
+            if (!in_array($resp->status(), [401,403])) { $response = $resp; break; }
+        }
+        if (!$response) { $response = $lastResp; }
 
         if (!$response->successful()) {
             $status = $response->status();
