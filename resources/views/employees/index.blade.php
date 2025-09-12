@@ -111,6 +111,9 @@
 
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex justify-end mb-4">
+            <a href="{{ route('employees.index', ['tab' => 'permissions']) }}" id="open-permissions-link" class="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700">Role Permissions</a>
+        </div>
         <!-- Time Clock Tab -->
         <div id="timeclock-tab" class="tab-content hidden">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
