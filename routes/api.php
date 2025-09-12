@@ -537,19 +537,39 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/pos', function(\Illuminate\Http\Request $request) {
             try {
                 $settings = $request->all();
+                // Normalize JSON-encoded fields
                 foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','role_permissions'] as $field) {
                     if (isset($settings[$field]) && is_string($settings[$field])) {
                         $decoded = json_decode($settings[$field], true);
                         if (json_last_error() === JSON_ERROR_NONE) $settings[$field] = $decoded;
                     }
                 }
-                \Illuminate\Support\Facades\Cache::put('pos_settings', $settings, now()->addDays(30));
+                // Ensure role_permissions is a map of role => array
+                if (isset($settings['role_permissions']) && is_array($settings['role_permissions'])) {
+                    foreach ($settings['role_permissions'] as $role => $perms) {
+                        if (!is_array($perms)) {
+                            $settings['role_permissions'][$role] = (array)$perms;
+                        }
+                    }
+                }
+
+                // First, persist to DB (source of truth)
                 try {
                     \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
                         ['id' => 'default'],
                         ['settings' => json_encode($settings), 'updated_at' => now()]
                     );
-                } catch (\Throwable $e) {}
+                } catch (\Throwable $e) {
+                    // Surface DB errors so the UI doesn't report success when not durable
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Failed to persist settings to database: ' . $e->getMessage()
+                    ], 500);
+                }
+
+                // If DB write succeeded, update cache with a long TTL
+                \Illuminate\Support\Facades\Cache::put('pos_settings', $settings, now()->addYears(5));
+
                 return response()->json(['success' => true, 'settings' => $settings]);
             } catch (\Throwable $e) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
