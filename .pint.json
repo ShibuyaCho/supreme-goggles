@@ -3,7 +3,7 @@
   "preset": "laravel",
   "rules": {
     "strict_param": true,
-    "array_syntax": {"syntax": "short"},
+    "array_syntax": { "syntax": "short" },
     "ordered_imports": true,
     "no_unused_imports": true
   }

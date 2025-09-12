@@ -13,6 +13,7 @@ labels: bug
 ## Screenshots
 
 ## Environment
+
 - Browser/OS:
 - URL:
 
