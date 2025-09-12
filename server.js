@@ -948,14 +948,23 @@ app.delete("/api/employees/:id", async (req, res) => {
     if (patch.ok) {
       const payload = await patch.json().catch(() => null);
       const affected = Array.isArray(payload) ? payload.length : (payload ? 1 : 0);
-      if (affected === 0) return res.status(404).json({ success: false, error: "Not found" });
-      return res.json({ success: true, softDeleted: true });
+      if (affected > 0) return res.json({ success: true, softDeleted: true });
     }
 
-    // Fallback to hard delete only if patch failed due to schema mismatch
+    // Dev in-memory fallback
+    try {
+      const pinMatch = devStore.users.find(u => String(u?.employee?.employee_id||'') === idRaw || String(u?.id||'') === idRaw || String(u?.employee?.id||'') === idRaw);
+      if (pinMatch) {
+        pinMatch.status = 'inactive';
+        saveDevState();
+        return res.json({ success: true, softDeleted: true, dev: true });
+      }
+    } catch(_) {}
+
+    // Fallback to hard delete only if everything else failed
     const del = await supaFetch(sel, { method: "DELETE" });
-    if (!del.ok) return res.status(404).json({ success: false, error: "Not found" });
-    return res.json({ success: true, softDeleted: false });
+    if (del.ok) return res.json({ success: true, softDeleted: false });
+    return res.status(404).json({ success: false, error: "Not found" });
   } catch (e) {
     return res.status(500).json({ success: false, error: "Failed to delete employee" });
   }
