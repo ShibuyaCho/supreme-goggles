@@ -191,8 +191,9 @@ class EmployeesController extends Controller
             'hourly_rate' => 'nullable|numeric|min:0',
             'worker_permit' => 'nullable|string|max:100',
             'metrc_api_key' => 'nullable|string|max:255',
-            'permissions' => 'required|array'
-        ]);
+            'permissions' => 'required|array',
+            'hire_date' => 'nullable|date'
+        ];)
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
