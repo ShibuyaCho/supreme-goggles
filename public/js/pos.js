@@ -5610,10 +5610,26 @@ function cannabisPOS() {
             },
             { responseType: "blob" },
           );
-          this._triggerDownload(
-            res,
-            `report_${apiType}.${fmt === "excel" ? "xlsx" : fmt}`,
-          );
+          const ctype = res?.headers?.["content-type"] || "";
+          if (ctype.includes("application/json")) {
+            // Fallback: CSV with headings only
+            const headings = this._getReportHeadings(apiType, []);
+            const csv = headings.join(",") + "\n";
+            const blob = new Blob([csv], { type: "text/csv" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `report_${apiType}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 3000);
+          } else {
+            this._triggerDownload(
+              res,
+              `report_${apiType}.${fmt === "excel" ? "xlsx" : fmt}`,
+            );
+          }
         } catch (e) {
           this.showToast("Failed to generate report", "error");
         }
@@ -5626,12 +5642,13 @@ function cannabisPOS() {
         return;
       }
       try {
+        const reportType = this._mapSourceToReport(
+          (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
+        );
         const res = await (window.axios || axios).post(
           "/api/reports/export",
           {
-            report_type: this._mapSourceToReport(
-              (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
-            ),
+            report_type: reportType,
             format: fmt,
             start_date: this.customReport?.startDate || null,
             end_date: this.customReport?.endDate || null,
@@ -5644,11 +5661,24 @@ function cannabisPOS() {
           },
           { responseType: "blob" },
         );
-        const name = (this.customReport?.name || "custom-report").replace(
-          /\s+/g,
-          "_",
-        );
-        this._triggerDownload(res, `${name}.${fmt === "excel" ? "xlsx" : fmt}`);
+        const ctype = res?.headers?.["content-type"] || "";
+        if (ctype.includes("application/json")) {
+          const headings = this._getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
+          const csv = headings.join(",") + "\n";
+          const blob = new Blob([csv], { type: "text/csv" });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
+          a.download = `${name}.csv`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 3000);
+        } else {
+          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
+          this._triggerDownload(res, `${name}.${fmt === "excel" ? "xlsx" : fmt}`);
+        }
         this.showToast("Report generated successfully!", "success");
       } catch (e) {
         this.showToast("Failed to generate report", "error");
