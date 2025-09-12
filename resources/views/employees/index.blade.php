@@ -23,6 +23,10 @@
                     <button onclick="exportEmployees()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                         Export
                     </button>
+                    <!-- Open Permissions Button -->
+                    <button id="open-permissions" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Permissions
+                    </button>
                 </div>
             </div>
         </div>
@@ -478,6 +482,9 @@ document.addEventListener('DOMContentLoaded', function() {
             switchTab(targetTab);
         });
     });
+    // Quick open permissions
+    const openPermBtn = document.getElementById('open-permissions');
+    if (openPermBtn) openPermBtn.addEventListener('click', () => switchTab('permissions'));
 
     // Search functionality
     let searchTimeout;
