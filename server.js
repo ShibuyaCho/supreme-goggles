@@ -393,9 +393,7 @@ app.post(["/api/auth/refresh", "/api/refresh"], (req, res) => {
 
 // Auth: verify current user's PIN
 app.post("/api/auth/verify-pin", async (req, res) => {
-  const current = authFromReq(req);
-  if (!current)
-    return res.status(401).json({ success: false, error: "Unauthorized" });
+  // Do NOT require an authenticated session here; PIN itself is the second factor for privileged actions
   const pin = String(req.body?.pin || "").trim();
   if (!pin)
     return res.status(422).json({ success: false, error: "PIN required" });
