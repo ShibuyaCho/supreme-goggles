@@ -452,6 +452,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'inventory_view_mode' => 'cards',
                 'expandable_cart' => true,
 
+                // Role-based permissions (defaults)
+                'role_permissions' => [
+                    'admin' => ['*'],
+                    'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                    'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+                    'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                    'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+                ],
+
                 // Auto delete
                 'auto_delete_zero_quantity' => false,
                 'auto_delete_zero_days' => 1,
