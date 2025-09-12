@@ -909,10 +909,13 @@ app.post("/api/employees", async (req, res) => {
 
 // Employees: update
 app.put("/api/employees/:id", async (req, res) => {
-  const id = req.params.id;
+  const idRaw = String(req.params.id || "");
   const b = req.body || {};
   try {
-    const r = await supaFetch(`employees?id=eq.${encodeURIComponent(id)}`, {
+    const target = /^\d+$/.test(idRaw)
+      ? `employees?id=eq.${encodeURIComponent(idRaw)}`
+      : `employees?employee_id=eq.${encodeURIComponent(idRaw)}`;
+    const r = await supaFetch(target, {
       method: "PATCH",
       body: b,
     });
@@ -930,13 +933,16 @@ app.put("/api/employees/:id", async (req, res) => {
 
 // Employees: delete
 app.delete("/api/employees/:id", async (req, res) => {
-  const id = req.params.id;
+  const idRaw = String(req.params.id || "");
   try {
-    const r = await supaFetch(`employees?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
-    if (!r.ok) return res.status(500).json({ success: false, error: 'Failed to delete' });
-    res.json({ success: true });
+    const target = /^\d+$/.test(idRaw)
+      ? `employees?id=eq.${encodeURIComponent(idRaw)}`
+      : `employees?employee_id=eq.${encodeURIComponent(idRaw)}`;
+    const r = await supaFetch(target, { method: "DELETE" });
+    if (!r.ok) return res.status(404).json({ success: false, error: "Not found" });
+    return res.json({ success: true });
   } catch (e) {
-    res.status(500).json({ success: false, error: 'Failed to delete employee' });
+    return res.status(500).json({ success: false, error: "Failed to delete employee" });
   }
 });
 
