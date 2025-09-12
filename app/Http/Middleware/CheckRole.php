@@ -29,6 +29,11 @@ class CheckRole
             ], 403);
         }
 
+        // Admin bypass: always allow admin
+        if (($user->role ?? null) === 'admin') {
+            return $next($request);
+        }
+
         // Check if user has any of the required roles
         if (!in_array($user->role, $roles)) {
             return response()->json([
