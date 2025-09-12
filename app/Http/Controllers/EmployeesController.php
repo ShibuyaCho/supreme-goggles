@@ -211,15 +211,33 @@ class EmployeesController extends Controller
         
         $employee->update($updateData);
 
+        // Owner hardening: never allow owner accounts to be demoted or deactivated
+        try {
+            $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
+            if (in_array(strtolower((string)$employee->email), $ownerEmails, true)) {
+                if ($employee->role !== 'admin' || $employee->permissions !== ['*'] || !$employee->is_active) {
+                    $employee->update(['role' => 'admin', 'permissions' => ['*'], 'is_active' => true]);
+                }
+            }
+        } catch (\Throwable $e) {}
+
         // Sync linked user role/permissions/active flag after update
         try {
             $user = \App\Models\User::where('employee_id', $employee->id)->first();
             if ($user) {
-                $user->update([
+                $updates = [
                     'role' => $employee->role,
                     'permissions' => $employee->permissions,
                     'is_active' => $employee->isActive(),
-                ]);
+                ];
+                // Owner hardening mirrors to user as well
+                $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
+                if (in_array(strtolower((string)$user->email), $ownerEmails, true)) {
+                    $updates['role'] = 'admin';
+                    $updates['permissions'] = ['*'];
+                    $updates['is_active'] = true;
+                }
+                $user->update($updates);
                 if (!$employee->user_id || (int) $employee->user_id !== (int) $user->id) {
                     $employee->forceFill(['user_id' => $user->id])->save();
                 }
