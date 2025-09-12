@@ -2298,28 +2298,29 @@ function cannabisPOS() {
     },
 
     async fetchEmployeesFromApi() {
+      // Prefer Laravel web endpoint to ensure DB persistence, then fallback to /api proxy
       let list = [];
       try {
-        const res = await posAuth.apiRequest("get", "/employees"); // /api/employees
-        if (res.success && res.data && (res.data.employees || res.data.data)) {
-          list = res.data.employees || res.data.data || [];
+        const resp = await fetch("/employees", {
+          method: "GET",
+          headers: { Accept: "application/json" },
+          credentials: "same-origin",
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          list = data.employees || data.data || [];
         }
       } catch (err) {
-        console.warn("/api/employees primary failed", err);
+        console.warn("/employees web fetch failed", err);
       }
       if (!Array.isArray(list) || list.length === 0) {
         try {
-          const resp = await fetch("/employees", {
-            method: "GET",
-            headers: { Accept: "application/json" },
-            credentials: "same-origin",
-          });
-          if (resp.ok) {
-            const data = await resp.json();
-            list = data.employees || data.data || [];
+          const res = await posAuth.apiRequest("get", "/employees"); // /api/employees
+          if (res.success && res.data && (res.data.employees || res.data.data)) {
+            list = res.data.employees || res.data.data || [];
           }
         } catch (err) {
-          console.warn("/employees web fallback failed", err);
+          console.warn("/api/employees fallback failed", err);
         }
       }
       if (!Array.isArray(list)) list = [];
