@@ -203,6 +203,10 @@ class EmployeesController extends Controller
             'first_name', 'last_name', 'email', 'phone',
             'department', 'position', 'hourly_rate', 'worker_permit', 'metrc_api_key'
         ]);
+        // Preserve hire_date unless explicitly provided
+        if ($request->filled('hire_date')) {
+            $updateData['hire_date'] = $request->hire_date;
+        }
         // Normalize role persistence
         $updateData['role'] = $request->get('role')
             ? strtolower($request->get('role'))
