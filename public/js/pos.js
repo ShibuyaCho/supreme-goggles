@@ -1039,7 +1039,11 @@ function cannabisPOS() {
           const local = JSON.parse(localStorage.getItem(`report_templates_${uid}`) || "[]");
           list = [...list, ...local];
         } catch (_) {}
-        this.recentReports = list.map((t) => ({
+        let recent = [];
+        try {
+          recent = JSON.parse(localStorage.getItem("cannabisPOS-reports") || "[]");
+        } catch (_) { recent = []; }
+        const templatesMapped = list.map((t) => ({
           id: t.id,
           name: t.name,
           type: t.report_type,
@@ -1048,6 +1052,7 @@ function cannabisPOS() {
           status: "saved",
           config: t.config,
         }));
+        this.recentReports = [...recent, ...templatesMapped].slice(0, 10);
       } catch (e) {
         // ignore
       }
