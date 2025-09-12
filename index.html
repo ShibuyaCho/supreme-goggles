@@ -1018,7 +1018,7 @@
                       <option value="Concentrates">�� Concentrates</option>
                       <option value="Vape Products">💨 Vape Products</option>
                       <option value="Tinctures">🧪 Tinctures</option>
-                      <option value="Topicals">���� Topicals</option>
+                      <option value="Topicals">🧴 Topicals</option>
                       <option value="Capsules">💊 Capsules</option>
                       <option value="Beverages">🥤 Beverages</option>
                       <option value="Suppositories">⚕️ Suppositories</option>
@@ -13377,16 +13377,18 @@
                       </div>
                     </div>
 
-                    <div class="flex items-center gap-3 mb-6">
+                    <div class="flex items-center gap-3 mb-4">
                       <label class="text-sm font-medium text-gray-700">Select Role</label>
                       <select x-model="selectedRole" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        <option value="admin">Administrator</option>
-                        <option value="manager">Manager</option>
-                        <option value="inventory">Inventory</option>
-                        <option value="budtender">Budtender</option>
-                        <option value="cashier">Cashier</option>
+                        <template x-for="rk in Object.keys(rolePermissions)" :key="rk">
+                          <option :value="rk" x-text="rk.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())"></option>
+                        </template>
                       </select>
-                      <div class="ml-auto text-sm text-gray-600" x-text="selectedRole.toUpperCase() + ': ' + (rolePermissions[selectedRole]?.length || 0) + ' permissions selected'"></div>
+                      <label class="ml-auto inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                        <input type="checkbox" :checked="isAllSelectedMain()" @change="toggleSelectAllMain($event)" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                        <span>Select all permissions</span>
+                      </label>
+                      <div class="text-sm text-gray-600" x-text="selectedRole.toUpperCase() + ': ' + (rolePermissions[selectedRole]?.includes('*') ? allPermissions().length : (rolePermissions[selectedRole]?.length || 0)) + ' permissions selected'"></div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
