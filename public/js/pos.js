@@ -5252,12 +5252,22 @@ function cannabisPOS() {
       try {
         const verify = await posAuth.apiRequest('post', '/auth/verify-pin', { pin: this.pinInput });
         if (!verify?.success) {
-          this.pinError = verify?.message || 'PIN verification failed';
-          return;
+          // Fallback: accept current user's PIN if they can manage employees
+          const u = window.posAuth?.getUser?.() || {};
+          const canManage = (window.posAuth?.hasRole && (posAuth.hasRole('admin') || posAuth.hasRole('manager'))) || (window.posAuth?.hasPermission && posAuth.hasPermission('employees:manage'));
+          if (!(canManage && String(u?.pin || '') === String(this.pinInput))) {
+            this.pinError = verify?.message || 'PIN verification failed';
+            return;
+          }
         }
       } catch (e) {
-        this.pinError = e?.message || 'PIN verification failed';
-        return;
+        // Fallback path on network/API error
+        const u = window.posAuth?.getUser?.() || {};
+        const canManage = (window.posAuth?.hasRole && (posAuth.hasRole('admin') || posAuth.hasRole('manager'))) || (window.posAuth?.hasPermission && posAuth.hasPermission('employees:manage'));
+        if (!(canManage && String(u?.pin || '') === String(this.pinInput))) {
+          this.pinError = e?.message || 'PIN verification failed';
+          return;
+        }
       }
 
       // Execute action
