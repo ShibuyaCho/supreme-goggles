@@ -30,6 +30,11 @@ class CheckPermission
             ], 403);
         }
 
+        // Admin bypass: admins have full access
+        if (($user->role ?? null) === 'admin') {
+            return $next($request);
+        }
+
         // Direct user permission (supports wildcards)
         if ($this->hasPermission($user->permissions ?? [], $permission)) {
             return $next($request);
