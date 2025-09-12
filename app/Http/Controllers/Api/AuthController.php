@@ -168,13 +168,20 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        // Keep user role/permissions in sync with linked employee
+        // Keep employee role/permissions in sync with authenticated user (email/password login)
+        // Do NOT downgrade user's role based on employee defaults here
         if ($user && $user->employee) {
             $emp = $user->employee;
-            $updates = [];
-            if ($emp->role && $user->role !== $emp->role) $updates['role'] = $emp->role;
-            if (is_array($emp->permissions) && $emp->permissions !== $user->permissions) $updates['permissions'] = $emp->permissions;
-            if (!empty($updates)) $user->update($updates);
+            $empUpdates = [];
+            if (!empty($user->role) && $emp->role !== $user->role) {
+                $empUpdates['role'] = $user->role;
+            }
+            if (is_array($user->permissions) && $user->permissions !== $emp->permissions) {
+                $empUpdates['permissions'] = $user->permissions;
+            }
+            if (!empty($empUpdates)) {
+                $emp->update($empUpdates);
+            }
         }
 
         if (!$user->is_active) {
@@ -426,13 +433,19 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        // Sync user role/permissions with employee on fetch
+        // Align employee role/permissions with user on fetch to avoid accidental downgrades
         if ($user && $user->employee) {
             $emp = $user->employee;
-            $updates = [];
-            if ($emp->role && $user->role !== $emp->role) $updates['role'] = $emp->role;
-            if (is_array($emp->permissions) && $emp->permissions !== $user->permissions) $updates['permissions'] = $emp->permissions;
-            if (!empty($updates)) $user->update($updates);
+            $empUpdates = [];
+            if (!empty($user->role) && $emp->role !== $user->role) {
+                $empUpdates['role'] = $user->role;
+            }
+            if (is_array($user->permissions) && $user->permissions !== $emp->permissions) {
+                $empUpdates['permissions'] = $user->permissions;
+            }
+            if (!empty($empUpdates)) {
+                $emp->update($empUpdates);
+            }
         }
 
         return response()->json([
