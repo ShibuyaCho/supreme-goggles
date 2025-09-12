@@ -5702,14 +5702,42 @@ function cannabisPOS() {
     },
 
     // Preview Report
-    previewReport() {
+    async previewReport() {
       if (!this.isReportValid()) {
         this.showToast("Please complete all required fields", "error");
         return;
       }
-
-      this.showToast("Opening report preview...", "info");
-      // Preview logic would open a new modal or window
+      try {
+        this.showToast("Opening report preview...", "info");
+        const payload = {
+          report_type: this._mapSourceToReport(
+            (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
+          ),
+          format: "pdf",
+          start_date: this.customReport?.startDate || null,
+          end_date: this.customReport?.endDate || null,
+          filters: {
+            metrics: this.customReport?.selectedMetrics || [],
+            include_comparisons: !!this.customReport?.includeComparisons,
+            include_trends: !!this.customReport?.includeTrends,
+            include_breakdowns: !!this.customReport?.includeBreakdowns,
+          },
+        };
+        const res = await (window.axios || axios).post(
+          "/api/reports/export",
+          payload,
+          { responseType: "blob" },
+        );
+        const ctype = res?.headers?.["content-type"] || "text/html";
+        const file =
+          res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+        const url = URL.createObjectURL(file);
+        const w = window.open(url, "_blank");
+        if (!w) this.showToast("Popup blocked. Enable popups to preview.", "warning");
+        setTimeout(() => URL.revokeObjectURL(url), 8000);
+      } catch (e) {
+        this.showToast("Failed to open preview", "error");
+      }
     },
 
     // Report Management Functions
