@@ -259,10 +259,18 @@
       roleEditSelect.appendChild(opt);
     });
   }
+  function canDeleteRoles(){
+    try {
+      if (window.posAuth?.hasRole && (posAuth.hasRole('admin') || posAuth.hasRole('manager'))) return true;
+      if (window.posAuth?.hasPermission && posAuth.hasPermission('employees:manage')) return true;
+    } catch(e) {}
+    return false;
+  }
   function showModal(mode, roleKey){
     modalMode = mode; editingRoleKey = roleKey || null;
     modalTitle.textContent = mode === 'create' ? 'Create Role' : `Edit Role`;
-    modalDeleteBtn.classList.toggle('hidden', !(mode === 'edit' && editingRoleKey && editingRoleKey !== 'admin'));
+    const allowDelete = canDeleteRoles() && (mode === 'edit') && editingRoleKey && editingRoleKey !== 'admin';
+    modalDeleteBtn.classList.toggle('hidden', !allowDelete);
     if (mode === 'edit' && editingRoleKey){
       roleNameInput.classList.add('hidden');
       roleEditSelect.classList.remove('hidden');
@@ -382,13 +390,27 @@
     }
   });
 
+  async function resolveEmployeeId(){
+    try { const el = document.getElementById('user-menu-container'); const id = el?.dataset?.employeeId; if (id) return id; } catch(e) {}
+    try { const u = await window.posAuth?.refreshUser?.(); if (u?.employee?.id) return u.employee.id; } catch(e) {}
+    try { const u = window.posAuth?.user; if (u?.employee?.id) return u.employee.id; } catch(e) {}
+    return '';
+  }
   modalDeleteBtn?.addEventListener('click', async function(){
     if (modalMode !== 'edit') return;
+    if (!canDeleteRoles()){ if (window.POS?.showToast) POS.showToast('Insufficient permissions', 'error'); else alert('Insufficient permissions'); return; }
     const key = roleEditSelect.value || editingRoleKey;
     if (!key) return;
     if (key === 'admin'){ if (window.POS?.showToast) POS.showToast('Cannot delete admin role', 'error'); else alert('Cannot delete admin role'); return; }
-    const okConfirm = confirm(`Delete role "${key}"? This cannot be undone.`);
-    if (!okConfirm) return;
+    const pin = prompt('Enter your employee PIN to confirm deletion');
+    if (!pin || !/^\d{4,6}$/.test(pin)){ if (window.POS?.showToast) POS.showToast('Invalid PIN', 'error'); else alert('Invalid PIN'); return; }
+    const empId = await resolveEmployeeId();
+    if (!empId){ if (window.POS?.showToast) POS.showToast('Could not resolve employee ID', 'error'); else alert('Could not resolve employee ID'); return; }
+    try {
+      const resp = await (window.axios || axios).post('/api/pin-login', { employee_id: empId, pin: pin });
+      const okPin = resp?.data?.success === true || resp?.status === 200;
+      if (!okPin){ if (window.POS?.showToast) POS.showToast('PIN verification failed', 'error'); else alert('PIN verification failed'); return; }
+    } catch(e){ if (window.POS?.showToast) POS.showToast('PIN verification failed', 'error'); else alert('PIN verification failed'); return; }
     delete rolePerms[key];
     const ok = await saveAllRoles();
     if (ok){ refreshRoleOptions(); render(); hideModal(); if (window.POS?.showToast) POS.showToast('Role deleted', 'success'); else alert('Role deleted'); } else { if (window.POS?.showToast) POS.showToast('Failed to delete role', 'error'); else alert('Failed to delete role'); }
