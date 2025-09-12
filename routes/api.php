@@ -78,6 +78,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/change-password', [AuthController::class, 'changePassword']);
         Route::post('/verify-metrc', [AuthController::class, 'verifyMetrc'])
             ->middleware('permission:metrc:access');
+        Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'send'])
+            ->middleware('throttle:6,1')
+            ->name('api.verification.send');
     });
 
     // User management
