@@ -13361,8 +13361,6 @@
                 </div>
               </template>
 
-
-
               <!-- Roles & Permissions Page -->
               <template x-if="currentPage === 'roles-permissions'">
                 <div class="space-y-6">
@@ -20672,37 +20670,48 @@
         });
       });
     </script>
-  <script>
-(function(){
-  document.addEventListener('DOMContentLoaded',function(){
-    var menu=document.getElementById('nav-dropdown-menu');
-    if(!menu) return;
-    function label(btn){
-      return (btn.textContent||'').replace(/\s+/g,' ').trim();
-    }
-    function isTopCandidate(text){
-      return /^(Cashier|Point of Sale|POS)/i.test(text);
-    }
-    function isBottomCandidate(text){
-      return /^Settings$/i.test(text);
-    }
-    function reorder(){
-      var items=Array.from(menu.querySelectorAll('button'));
-      if(!items.length) return;
-      var top = items.find(function(b){ return isTopCandidate(label(b)); });
-      var bottom = items.find(function(b){ return isBottomCandidate(label(b)); });
-      var others = items.filter(function(b){ return b!==top && b!==bottom; })
-        .sort(function(a,b){ return label(a).localeCompare(label(b)); });
-      var frag=document.createDocumentFragment();
-      if(top) frag.appendChild(top);
-      others.forEach(function(b){ frag.appendChild(b); });
-      if(bottom) frag.appendChild(bottom);
-      menu.innerHTML='';
-      menu.appendChild(frag);
-    }
-    reorder();
-  });
-})();
-</script>
-</body>
+    <script>
+      (function () {
+        document.addEventListener("DOMContentLoaded", function () {
+          var menu = document.getElementById("nav-dropdown-menu");
+          if (!menu) return;
+          function label(btn) {
+            return (btn.textContent || "").replace(/\s+/g, " ").trim();
+          }
+          function isTopCandidate(text) {
+            return /^(Cashier|Point of Sale|POS)/i.test(text);
+          }
+          function isBottomCandidate(text) {
+            return /^Settings$/i.test(text);
+          }
+          function reorder() {
+            var items = Array.from(menu.querySelectorAll("button"));
+            if (!items.length) return;
+            var top = items.find(function (b) {
+              return isTopCandidate(label(b));
+            });
+            var bottom = items.find(function (b) {
+              return isBottomCandidate(label(b));
+            });
+            var others = items
+              .filter(function (b) {
+                return b !== top && b !== bottom;
+              })
+              .sort(function (a, b) {
+                return label(a).localeCompare(label(b));
+              });
+            var frag = document.createDocumentFragment();
+            if (top) frag.appendChild(top);
+            others.forEach(function (b) {
+              frag.appendChild(b);
+            });
+            if (bottom) frag.appendChild(bottom);
+            menu.innerHTML = "";
+            menu.appendChild(frag);
+          }
+          reorder();
+        });
+      })();
+    </script>
+  </body>
 </html>

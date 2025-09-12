@@ -347,8 +347,10 @@ app.post(["/api/auth/pin-login", "/api/pin-login"], (req, res) => {
       .status(401)
       .json({ error: "Invalid employee ID or PIN", success: false });
   }
-  if (String(user.status || 'active').toLowerCase() === 'inactive') {
-    return res.status(403).json({ error: "Account is inactive", success: false });
+  if (String(user.status || "active").toLowerCase() === "inactive") {
+    return res
+      .status(403)
+      .json({ error: "Account is inactive", success: false });
   }
   const token = genToken();
   devStore.tokens.set(token, user.id);
@@ -392,35 +394,60 @@ app.post(["/api/auth/refresh", "/api/refresh"], (req, res) => {
 // Auth: verify current user's PIN
 app.post("/api/auth/verify-pin", async (req, res) => {
   const current = authFromReq(req);
-  if (!current) return res.status(401).json({ success: false, error: "Unauthorized" });
+  if (!current)
+    return res.status(401).json({ success: false, error: "Unauthorized" });
   const pin = String(req.body?.pin || "").trim();
-  if (!pin) return res.status(422).json({ success: false, error: "PIN required" });
+  if (!pin)
+    return res.status(422).json({ success: false, error: "PIN required" });
 
   function hasManagePerm(u) {
-    const role = String(u?.role || '').toLowerCase();
+    const role = String(u?.role || "").toLowerCase();
     const perms = Array.isArray(u?.permissions) ? u.permissions : [];
-    return role === 'admin' || perms.includes('*') || perms.includes('employees:*') || perms.includes('employees:manage');
+    return (
+      role === "admin" ||
+      perms.includes("*") ||
+      perms.includes("employees:*") ||
+      perms.includes("employees:manage")
+    );
   }
 
   // Accept any user's PIN with sufficient permissions (not only the current user)
   // 1) In-memory dev users
   try {
-    const match = devStore.users.find((u) => String(u.pin || '') === pin && hasManagePerm(u));
-    if (match) return res.json({ success: true, actor: { email: match.email, role: match.role } });
+    const match = devStore.users.find(
+      (u) => String(u.pin || "") === pin && hasManagePerm(u),
+    );
+    if (match)
+      return res.json({
+        success: true,
+        actor: { email: match.email, role: match.role },
+      });
   } catch (_) {}
 
   // 2) Supabase app_users by pin
   try {
-    const r = await supaFetch(`app_users?pin=eq.${encodeURIComponent(pin)}&select=email,role,permissions`, { method: 'GET' });
+    const r = await supaFetch(
+      `app_users?pin=eq.${encodeURIComponent(pin)}&select=email,role,permissions`,
+      { method: "GET" },
+    );
     if (r.ok) {
       const rows = await r.json();
       const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
-      if (row && hasManagePerm(row)) return res.json({ success: true, actor: { email: row.email, role: row.role } });
-      if (row) return res.status(403).json({ success: false, error: 'Insufficient permissions' });
+      if (row && hasManagePerm(row))
+        return res.json({
+          success: true,
+          actor: { email: row.email, role: row.role },
+        });
+      if (row)
+        return res
+          .status(403)
+          .json({ success: false, error: "Insufficient permissions" });
     }
   } catch (_) {}
 
-  return res.status(401).json({ success: false, error: "Invalid employee ID or PIN" });
+  return res
+    .status(401)
+    .json({ success: false, error: "Invalid employee ID or PIN" });
 });
 
 // In-memory saved report templates are declared above and persisted to disk
@@ -941,19 +968,24 @@ app.delete("/api/employees/:id", async (req, res) => {
     candidates.push(`employees?id=eq.${encodeURIComponent(idRaw)}`);
     candidates.push(`employees?employee_id=eq.${encodeURIComponent(idRaw)}`);
     // If numeric, also ensure numeric id first
-    const ordered = isNumeric ? [candidates[0], candidates[1]] : [candidates[1], candidates[0]];
+    const ordered = isNumeric
+      ? [candidates[0], candidates[1]]
+      : [candidates[1], candidates[0]];
 
     // Soft-delete attempts
     for (const sel of ordered) {
       const r = await supaFetch(sel, {
         method: "PATCH",
-        body: { is_active: false, termination_date: new Date().toISOString().slice(0, 10) },
+        body: {
+          is_active: false,
+          termination_date: new Date().toISOString().slice(0, 10),
+        },
       });
       if (r.ok) {
         let affected = 0;
         try {
           const payload = await r.json();
-          affected = Array.isArray(payload) ? payload.length : (payload ? 1 : 0);
+          affected = Array.isArray(payload) ? payload.length : payload ? 1 : 0;
         } catch (_) {}
         if (affected > 0) return res.json({ success: true, softDeleted: true });
       }
@@ -962,7 +994,10 @@ app.delete("/api/employees/:id", async (req, res) => {
     // Dev in-memory fallback
     try {
       const match = devStore.users.find(
-        (u) => String(u?.employee?.employee_id || "") === idRaw || String(u?.id || "") === idRaw || String(u?.employee?.id || "") === idRaw,
+        (u) =>
+          String(u?.employee?.employee_id || "") === idRaw ||
+          String(u?.id || "") === idRaw ||
+          String(u?.employee?.id || "") === idRaw,
       );
       if (match) {
         match.status = "inactive";
@@ -978,9 +1013,15 @@ app.delete("/api/employees/:id", async (req, res) => {
     }
 
     // Idempotent success if nothing matched (avoid leaking existence via errors)
-    return res.json({ success: true, softDeleted: false, note: "No matching record; treated as completed" });
+    return res.json({
+      success: true,
+      softDeleted: false,
+      note: "No matching record; treated as completed",
+    });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to delete employee" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to delete employee" });
   }
 });
 

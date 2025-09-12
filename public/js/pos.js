@@ -5231,8 +5231,16 @@ function cannabisPOS() {
     // Employee permissions helper
     canManageEmployees() {
       try {
-        if (window.posAuth?.hasRole && (posAuth.hasRole('admin') || posAuth.hasRole('manager'))) return true;
-        if (window.posAuth?.hasPermission && posAuth.hasPermission('employees:manage')) return true;
+        if (
+          window.posAuth?.hasRole &&
+          (posAuth.hasRole("admin") || posAuth.hasRole("manager"))
+        )
+          return true;
+        if (
+          window.posAuth?.hasPermission &&
+          posAuth.hasPermission("employees:manage")
+        )
+          return true;
       } catch (e) {}
       return false;
     },
@@ -5252,81 +5260,117 @@ function cannabisPOS() {
         return;
       }
       try {
-        const verify = await posAuth.apiRequest('post', '/auth/verify-pin', { pin: this.pinInput });
+        const verify = await posAuth.apiRequest("post", "/auth/verify-pin", {
+          pin: this.pinInput,
+        });
         if (!verify?.success) {
           // Fallback: accept current user's PIN if they can manage employees
           const u = window.posAuth?.getUser?.() || {};
-          const canManage = (window.posAuth?.hasRole && (posAuth.hasRole('admin') || posAuth.hasRole('manager'))) || (window.posAuth?.hasPermission && posAuth.hasPermission('employees:manage'));
-          if (!(canManage && String(u?.pin || '') === String(this.pinInput))) {
-            this.pinError = verify?.message || 'PIN verification failed';
+          const canManage =
+            (window.posAuth?.hasRole &&
+              (posAuth.hasRole("admin") || posAuth.hasRole("manager"))) ||
+            (window.posAuth?.hasPermission &&
+              posAuth.hasPermission("employees:manage"));
+          if (!(canManage && String(u?.pin || "") === String(this.pinInput))) {
+            this.pinError = verify?.message || "PIN verification failed";
             return;
           }
         }
       } catch (e) {
         // Fallback path on network/API error
         const u = window.posAuth?.getUser?.() || {};
-        const canManage = (window.posAuth?.hasRole && (posAuth.hasRole('admin') || posAuth.hasRole('manager'))) || (window.posAuth?.hasPermission && posAuth.hasPermission('employees:manage'));
-        if (!(canManage && String(u?.pin || '') === String(this.pinInput))) {
-          this.pinError = e?.message || 'PIN verification failed';
+        const canManage =
+          (window.posAuth?.hasRole &&
+            (posAuth.hasRole("admin") || posAuth.hasRole("manager"))) ||
+          (window.posAuth?.hasPermission &&
+            posAuth.hasPermission("employees:manage"));
+        if (!(canManage && String(u?.pin || "") === String(this.pinInput))) {
+          this.pinError = e?.message || "PIN verification failed";
           return;
         }
       }
 
       // Execute action
       try {
-        if (this.pinAction === 'deleteEmployee' && (this.employeePendingDelete?.id || this.employeePendingDelete?.employeeId || this.employeePendingDelete?.numericId != null)) {
+        if (
+          this.pinAction === "deleteEmployee" &&
+          (this.employeePendingDelete?.id ||
+            this.employeePendingDelete?.employeeId ||
+            this.employeePendingDelete?.numericId != null)
+        ) {
           const cand = this.employeePendingDelete;
-          const targetId = (cand.numericId != null ? String(cand.numericId) : '') || (cand.employeeId || '') || String(cand.id);
-          const res = await posAuth.apiRequest('delete', `/employees/${encodeURIComponent(targetId)}`);
-          if (!res.success && res.status !== 404) throw new Error(res.message || 'Delete failed');
+          const targetId =
+            (cand.numericId != null ? String(cand.numericId) : "") ||
+            cand.employeeId ||
+            "" ||
+            String(cand.id);
+          const res = await posAuth.apiRequest(
+            "delete",
+            `/employees/${encodeURIComponent(targetId)}`,
+          );
+          if (!res.success && res.status !== 404)
+            throw new Error(res.message || "Delete failed");
           // Remove from local list regardless (idempotent)
-          this.employees = (this.employees || []).filter(e => {
-            const nid = e.numericId != null ? String(e.numericId) : '';
-            const eid = e.employeeId || '';
-            return String(e.id) !== targetId && nid !== targetId && eid !== targetId;
+          this.employees = (this.employees || []).filter((e) => {
+            const nid = e.numericId != null ? String(e.numericId) : "";
+            const eid = e.employeeId || "";
+            return (
+              String(e.id) !== targetId && nid !== targetId && eid !== targetId
+            );
           });
-          this.showToast('Employee deactivated', 'success');
-        } else if (this.pinAction === 'deleteRoom') {
-          this.showToast('Room deleted', 'success');
-        } else if (this.pinAction === 'deleteDrawer') {
-          this.showToast('Cash drawer deleted', 'success');
+          this.showToast("Employee deactivated", "success");
+        } else if (this.pinAction === "deleteRoom") {
+          this.showToast("Room deleted", "success");
+        } else if (this.pinAction === "deleteDrawer") {
+          this.showToast("Cash drawer deleted", "success");
         }
         this.closePinModal();
       } catch (e) {
-        this.pinError = e?.message || 'Operation failed';
+        this.pinError = e?.message || "Operation failed";
       }
     },
 
     // Employee actions
     async deleteEmployee(employee) {
       if (!this.canManageEmployees()) {
-        this.showToast('Insufficient permissions', 'error');
+        this.showToast("Insufficient permissions", "error");
         return;
       }
       if (!employee?.id) return;
       this.employeePendingDelete = employee;
-      this.pinAction = 'deleteEmployee';
-      this.pinInput = '';
-      this.pinError = '';
+      this.pinAction = "deleteEmployee";
+      this.pinInput = "";
+      this.pinError = "";
       this.showPinModal = true;
     },
 
     async toggleEmployeeStatus(employee) {
       if (!this.canManageEmployees()) {
-        this.showToast('Insufficient permissions', 'error');
+        this.showToast("Insufficient permissions", "error");
         return;
       }
       if (!employee?.id) return;
-      const next = employee.status === 'active' ? 'inactive' : 'active';
+      const next = employee.status === "active" ? "inactive" : "active";
       try {
-        const res = await posAuth.apiRequest('put', `/employees/${employee.id}`, { status: next });
-        if (!res.success) throw new Error(res.message || 'Failed to update status');
+        const res = await posAuth.apiRequest(
+          "put",
+          `/employees/${employee.id}`,
+          { status: next },
+        );
+        if (!res.success)
+          throw new Error(res.message || "Failed to update status");
         // Update local list
-        const idx = (this.employees || []).findIndex(e => String(e.id) === String(employee.id));
-        if (idx !== -1) this.employees[idx] = { ...this.employees[idx], status: next };
-        this.showToast(next === 'active' ? 'Employee activated' : 'Employee set to inactive', 'success');
+        const idx = (this.employees || []).findIndex(
+          (e) => String(e.id) === String(employee.id),
+        );
+        if (idx !== -1)
+          this.employees[idx] = { ...this.employees[idx], status: next };
+        this.showToast(
+          next === "active" ? "Employee activated" : "Employee set to inactive",
+          "success",
+        );
       } catch (e) {
-        this.showToast(e?.message || 'Failed to update status', 'error');
+        this.showToast(e?.message || "Failed to update status", "error");
       }
     },
 
