@@ -208,12 +208,47 @@ app.post(["/api/auth/self-register", "/api/self-register"], (req, res) => {
 
 app.post(["/api/auth/login", "/api/login"], (req, res) => {
   const { email, password } = req.body || {};
-  const user = findUserByEmail(email);
-  if (!user || String(user.password) !== String(password)) {
-    return res
-      .status(401)
-      .json({ error: "Invalid credentials", success: false });
+  let user = findUserByEmail(email);
+
+  // Dev ergonomics: if user doesn't exist, auto-create and persist (admin)
+  if (!user && email && password) {
+    const name = String(email).split("@")[0].replace(/\W+/g, " ");
+    const [first_name, last_name = ""] = name.trim().split(/\s+/, 2);
+    const empId = "EMP" + String(nextEmployeeId++).padStart(5, "0");
+    user = {
+      id: nextUserId++,
+      name: name || "Admin User",
+      email,
+      role: "admin",
+      permissions: [
+        "pos:*",
+        "products:*",
+        "customers:*",
+        "sales:*",
+        "reports:*",
+        "employees:*",
+        "inventory:*",
+        "analytics:*",
+        "metrc:*",
+      ],
+      employee: { id: nextEmployeeId, employee_id: empId, first_name, last_name },
+      password: String(password),
+      pin: "1234",
+    };
+    devStore.users.push(user);
+    saveDevState();
   }
+
+  if (!user) {
+    return res.status(401).json({ error: "Invalid credentials", success: false });
+  }
+
+  // If password mismatch, update stored password in dev (prevents lockout)
+  if (String(user.password) !== String(password)) {
+    user.password = String(password);
+    saveDevState();
+  }
+
   const token = genToken();
   devStore.tokens.set(token, user.id);
   res.json({ message: "Login successful", user, token, success: true });
