@@ -924,15 +924,25 @@ function cannabisPOS() {
     ensureMyEmployeeListed(userOverride) {
       const u = userOverride || this.currentUser || {};
       const emp = u.employee || null;
-      let id =
-        emp?.id ||
-        emp?.employee_id ||
-        u.employee_id ||
-        u.id ||
-        `EMP-${Date.now()}`;
-      const exists = (this.employees || []).some(
-        (e) => String(e.id) === String(id),
-      );
+      const idCandidates = [
+        emp?.id,
+        emp?.employee_id,
+        u.employee_id,
+        u.id,
+      ]
+        .map((v) => (v != null ? String(v) : ""))
+        .filter(Boolean);
+      if (!idCandidates.length) return;
+      const exists = (this.employees || []).some((e) => {
+        const eid = String(e.id);
+        const nid = e.numericId != null ? String(e.numericId) : "";
+        const eeid = e.employeeId || "";
+        return (
+          idCandidates.includes(eid) ||
+          idCandidates.includes(nid) ||
+          idCandidates.includes(eeid)
+        );
+      });
       if (exists) return;
       const name =
         emp?.name ||
@@ -940,17 +950,19 @@ function cannabisPOS() {
         u.name ||
         "";
       const entry = {
-        id,
+        id: idCandidates[0],
+        numericId: emp?.id ?? null,
+        employeeId: emp?.employee_id ?? (u.employee_id ?? null),
         name,
         email: u.email || emp?.email || "",
         phone: emp?.phone || "",
         role: (u.role || emp?.role || "cashier").toLowerCase(),
-        status: emp?.status || (u.is_active ? "active" : "active"),
+        status: "active",
         hireDate: new Date().toISOString().slice(0, 10),
         payRate: Number(emp && emp.hourly_rate != null ? emp.hourly_rate : 0),
         hoursWorked: 0,
-        workerPermit: "",
-        metrcApiKey: "",
+        workerPermit: emp?.worker_permit || "",
+        metrcApiKey: emp?.metrc_api_key || "",
       };
       this.employees = this.employees || [];
       this.employees.unshift(entry);
