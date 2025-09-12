@@ -924,12 +924,7 @@ function cannabisPOS() {
     ensureMyEmployeeListed(userOverride) {
       const u = userOverride || this.currentUser || {};
       const emp = u.employee || null;
-      const idCandidates = [
-        emp?.id,
-        emp?.employee_id,
-        u.employee_id,
-        u.id,
-      ]
+      const idCandidates = [emp?.id, emp?.employee_id, u.employee_id, u.id]
         .map((v) => (v != null ? String(v) : ""))
         .filter(Boolean);
       if (!idCandidates.length) return;
@@ -952,7 +947,7 @@ function cannabisPOS() {
       const entry = {
         id: idCandidates[0],
         numericId: emp?.id ?? null,
-        employeeId: emp?.employee_id ?? (u.employee_id ?? null),
+        employeeId: emp?.employee_id ?? u.employee_id ?? null,
         name,
         email: u.email || emp?.email || "",
         phone: emp?.phone || "",
@@ -2317,14 +2312,20 @@ function cannabisPOS() {
             email: e.email || "",
             phone: e.phone || "",
             role: (e.role || e.position || "budtender").toLowerCase(),
-            status: (e.is_active === false || String(e.status||'').toLowerCase()==='inactive') ? 'inactive' : 'active',
+            status:
+              e.is_active === false ||
+              String(e.status || "").toLowerCase() === "inactive"
+                ? "inactive"
+                : "active",
             hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : "",
             payRate: Number(e.hourly_rate ?? 0),
             hoursWorked: Number(e.hours_worked ?? 0),
             workerPermit: e.worker_permit || e.workerPermit || "",
             metrcApiKey: e.metrc_api_key || e.metrcApiKey || "",
           }));
-          try { this.ensureMyEmployeeListed(); } catch(_) {}
+          try {
+            this.ensureMyEmployeeListed();
+          } catch (_) {}
         }
       } catch (err) {
         console.warn("Failed to fetch employees", err);
@@ -5270,7 +5271,11 @@ function cannabisPOS() {
       // Verify PIN (primary API). If unauthorized, re-auth using PIN.
       let pinOk = false;
       try {
-        const verify = await window.posAuth?.apiRequest?.("post", "/auth/verify-pin", { pin: this.pinInput });
+        const verify = await window.posAuth?.apiRequest?.(
+          "post",
+          "/auth/verify-pin",
+          { pin: this.pinInput },
+        );
         pinOk = !!(verify && verify.success);
       } catch (err) {
         pinOk = false;
@@ -5281,7 +5286,10 @@ function cannabisPOS() {
         try {
           const empId = await this.resolveMyEmployeeId();
           if (empId) {
-            const login = await window.posAuth?.pinLogin?.(empId, this.pinInput);
+            const login = await window.posAuth?.pinLogin?.(
+              empId,
+              this.pinInput,
+            );
             pinOk = !!(login && login.success);
             if (pinOk) {
               this.isAuthenticated = true;
@@ -5297,7 +5305,11 @@ function cannabisPOS() {
       if (!pinOk) {
         try {
           const u = window.posAuth?.getUser?.() || {};
-          const canManage = !!(window.posAuth?.hasRole?.("admin") || window.posAuth?.hasRole?.("manager") || window.posAuth?.hasPermission?.("employees:manage"));
+          const canManage = !!(
+            window.posAuth?.hasRole?.("admin") ||
+            window.posAuth?.hasRole?.("manager") ||
+            window.posAuth?.hasPermission?.("employees:manage")
+          );
           if (!(canManage && String(u?.pin || "") === String(this.pinInput))) {
             this.pinError = "PIN verification failed";
             this.showToast(this.pinError, "error");
@@ -5321,7 +5333,8 @@ function cannabisPOS() {
           const cand = this.employeePendingDelete;
           const targetId =
             (cand.numericId != null ? String(cand.numericId) : "") ||
-            (cand.employeeId || "") ||
+            cand.employeeId ||
+            "" ||
             String(cand.id);
 
           let res = await window.posAuth?.apiRequest?.(
@@ -5334,8 +5347,12 @@ function cannabisPOS() {
             if (res?.status !== 404) {
               try {
                 const headers = { Accept: "application/json" };
-                const resp = await (window.axios || axios).delete(`/api/employees/${encodeURIComponent(targetId)}`, { headers });
-                if (!(resp && resp.status >= 200 && resp.status < 300)) throw new Error("Delete failed");
+                const resp = await (window.axios || axios).delete(
+                  `/api/employees/${encodeURIComponent(targetId)}`,
+                  { headers },
+                );
+                if (!(resp && resp.status >= 200 && resp.status < 300))
+                  throw new Error("Delete failed");
               } catch (e) {
                 throw new Error(res?.message || "Delete failed");
               }
@@ -5350,8 +5367,12 @@ function cannabisPOS() {
               String(e.id) !== targetId && nid !== targetId && eid !== targetId
             );
           });
-          try { await this.fetchEmployeesFromApi(); } catch (_) {}
-          try { this.ensureMyEmployeeListed(); } catch (_) {}
+          try {
+            await this.fetchEmployeesFromApi();
+          } catch (_) {}
+          try {
+            this.ensureMyEmployeeListed();
+          } catch (_) {}
           this.showToast("Employee deactivated", "success");
         } else if (this.pinAction === "deleteRoom") {
           this.showToast("Room deleted", "success");
@@ -5367,7 +5388,7 @@ function cannabisPOS() {
     // Resolve current employee ID for PIN re-auth flows
     async resolveMyEmployeeId() {
       try {
-        const el = document.getElementById('user-menu-container');
+        const el = document.getElementById("user-menu-container");
         const id = el?.dataset?.employeeId;
         if (id) return String(id);
       } catch (_) {}
@@ -5379,7 +5400,7 @@ function cannabisPOS() {
         const u = window.posAuth?.getUser?.();
         if (u?.employee?.id) return String(u.employee.id);
       } catch (_) {}
-      return '';
+      return "";
     },
 
     // Employee actions
