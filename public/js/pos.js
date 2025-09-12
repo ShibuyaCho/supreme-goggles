@@ -1189,7 +1189,7 @@ function cannabisPOS() {
 
     getCurrentPageTitle() {
       const titles = {
-        pos: "Point of Sale",
+        pos: "Cashier",
         customers: "Customer Management",
         products: "Products",
         "metrc-vendors": "METRC Transfers",
