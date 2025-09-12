@@ -3191,6 +3191,15 @@ function cannabisPOS() {
         timestamp: new Date().toISOString(),
       };
 
+      // Persist sale locally
+      try {
+        const uid = posAuth?.getUser()?.id || "anon";
+        const key = `cannabisPOS-sales-${uid}`;
+        const list = JSON.parse(localStorage.getItem(key) || "[]");
+        list.push(paymentData);
+        localStorage.setItem(key, JSON.stringify(list));
+      } catch (_) {}
+
       // Simulate payment processing
       this.showToast("Debit payment processed successfully", "success");
 
@@ -3243,6 +3252,15 @@ function cannabisPOS() {
         taxAmount: this.taxAmount,
         timestamp: new Date().toISOString(),
       };
+
+      // Persist sale locally
+      try {
+        const uid = posAuth?.getUser()?.id || "anon";
+        const key = `cannabisPOS-sales-${uid}`;
+        const list = JSON.parse(localStorage.getItem(key) || "[]");
+        list.push(paymentData);
+        localStorage.setItem(key, JSON.stringify(list));
+      } catch (_) {}
 
       // Simulate payment processing
       this.showToast("Cash payment processed successfully", "success");
