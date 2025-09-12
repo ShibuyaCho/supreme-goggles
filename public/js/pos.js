@@ -5273,6 +5273,7 @@ function cannabisPOS() {
               posAuth.hasPermission("employees:manage"));
           if (!(canManage && String(u?.pin || "") === String(this.pinInput))) {
             this.pinError = verify?.message || "PIN verification failed";
+            this.showToast(this.pinError, 'error');
             return;
           }
         }
