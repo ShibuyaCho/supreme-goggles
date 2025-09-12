@@ -1912,7 +1912,7 @@ function cannabisPOS() {
               : [e.first_name, e.last_name].filter(Boolean).join(" "),
             email: e.email || "",
             phone: e.phone || "",
-            role: (e.position || e.role || "budtender").toLowerCase(),
+            role: (e.role || e.position || "budtender").toLowerCase(),
             status: e.status || (e.is_active ? "active" : "inactive"),
             hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : "",
             payRate: Number(e.hourly_rate ?? 0),
