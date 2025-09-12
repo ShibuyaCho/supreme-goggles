@@ -5738,7 +5738,7 @@ function cannabisPOS() {
           `Report template "${this.customReport.name}" saved successfully!`,
           "success",
         );
-        // Optimistically add to recentReports
+        // Optimistically add to Recent Reports with expected shape and persist
         try {
           const t = res.data?.template || null;
           if (t) {
@@ -5746,10 +5746,18 @@ function cannabisPOS() {
               id: t.id,
               name: t.name,
               type: t.report_type,
-              updatedAt: t.updated_at || t.created_at || new Date().toISOString(),
+              createdAt: new Date().toISOString(),
+              createdBy: this.currentUser?.name || "User",
+              status: "saved",
               config: t.config,
             };
-            this.recentReports = [item, ...this.recentReports];
+            this.recentReports = [item, ...this.recentReports].slice(0, 10);
+            try {
+              localStorage.setItem(
+                "cannabisPOS-reports",
+                JSON.stringify(this.recentReports),
+              );
+            } catch (_) {}
           }
         } catch (_) {}
         await this.fetchReportTemplates();
