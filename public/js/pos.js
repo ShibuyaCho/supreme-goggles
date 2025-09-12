@@ -14,6 +14,7 @@ function cannabisPOS() {
       this.normalizeCollections();
       this.initAuth();
       this.loadSettings();
+      this.loadCartState();
       this.loadData();
       this.filterProducts();
       this.initializeReportData();
@@ -1443,6 +1444,7 @@ function cannabisPOS() {
     clearCart() {
       this.cart = [];
       this.calculateTotals();
+      try { this.persistCartState(); } catch (_) {}
       this.showToast("Cart cleared", "info");
     },
 
@@ -1451,6 +1453,7 @@ function cannabisPOS() {
         this.subtotal = 0;
         this.taxAmount = 0;
         this.total = 0;
+        try { this.persistCartState(); } catch (_) {}
         return;
       }
 
@@ -1484,6 +1487,7 @@ function cannabisPOS() {
 
       // Calculate final total
       this.total = finalSubtotal + this.taxAmount;
+      try { this.persistCartState(); } catch (_) {}
     },
 
     getEffectiveTaxRate() {
@@ -1528,6 +1532,43 @@ function cannabisPOS() {
     },
     filteredLoyaltyCustomers: [],
 
+    // Persistent cart state (no data loss across refresh)
+    cartStorageKey() {
+      try {
+        const uid = posAuth?.getUser()?.id || "anon";
+        return `cannabisPOS-cart-${uid}`;
+      } catch (_) {
+        return "cannabisPOS-cart-anon";
+      }
+    },
+    persistCartState() {
+      try {
+        const state = {
+          cart: Array.isArray(this.cart) ? this.cart : [],
+          selectedCustomer: this.selectedCustomer || null,
+          cartDiscount: this.cartDiscount || { type: "percentage", value: 0, amount: 0 },
+          subtotal: this.subtotal || 0,
+          taxAmount: this.taxAmount || 0,
+          total: this.total || 0,
+          taxRate: this.taxRate,
+        };
+        localStorage.setItem(this.cartStorageKey(), JSON.stringify(state));
+      } catch (_) {}
+    },
+    loadCartState() {
+      try {
+        const raw = localStorage.getItem(this.cartStorageKey());
+        if (!raw) return;
+        const state = JSON.parse(raw);
+        this.cart = Array.isArray(state.cart) ? state.cart : [];
+        this.selectedCustomer = state.selectedCustomer || null;
+        this.cartDiscount = state.cartDiscount || this.cartDiscount;
+        this.subtotal = state.subtotal || 0;
+        this.taxAmount = state.taxAmount || 0;
+        this.total = state.total || 0;
+      } catch (_) {}
+    },
+
     // Persist demo customers locally (fallback when not authenticated)
     _saveCustomersLocal() {
       try {
@@ -1539,6 +1580,7 @@ function cannabisPOS() {
     selectCustomer(customer) {
       this.selectedCustomer = customer;
       this.calculateTotals();
+      try { this.persistCartState(); } catch (_) {}
     },
 
     async enrollCustomerInLoyalty() {
@@ -2414,7 +2456,7 @@ function cannabisPOS() {
       }
 
       const sizes = {
-        small: '2" × 1"',
+        small: '2" �� 1"',
         medium: '3" × 2"',
         large: '4" × 3"',
         "extra-large": '6" × 4"',
