@@ -3883,7 +3883,7 @@ function cannabisPOS() {
         };
         const department = deptMap[role] || "sales";
         const hourly_rate = parseFloat(this.employeeForm.payRate || 0) || 0;
-        const hire_date = this.employeeForm.hireDate;
+        const hire_date = this.employeeForm.hireDate || this.selectedEmployee?.hireDate || this.selectedEmployee?.hire_date || "";
         const payload = {
           first_name,
           last_name,
