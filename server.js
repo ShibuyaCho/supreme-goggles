@@ -10,13 +10,51 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// In-memory dev auth store (non-persistent)
+// In-memory dev auth store with disk persistence
 const devStore = {
   users: [], // { id, name, email, role, permissions, employee, password, pin, employee_id }
-  tokens: new Map(), // token -> userId
+  tokens: new Map(), // token -> userId (not persisted)
 };
 let nextUserId = 1;
 let nextEmployeeId = 1;
+
+// Dev report templates (persisted)
+let devTemplates = [];
+let nextTemplateId = 1;
+
+const AUTH_FILE = path.join(__dirname, ".dev-auth.json");
+function loadDevState() {
+  try {
+    if (fs.existsSync(AUTH_FILE)) {
+      const raw = fs.readFileSync(AUTH_FILE, "utf8");
+      const data = JSON.parse(raw || "{}");
+      if (Array.isArray(data.users)) devStore.users = data.users;
+      if (typeof data.nextUserId === "number") nextUserId = data.nextUserId;
+      if (typeof data.nextEmployeeId === "number") nextEmployeeId = data.nextEmployeeId;
+      if (Array.isArray(data.devTemplates)) devTemplates = data.devTemplates;
+      if (typeof data.nextTemplateId === "number") nextTemplateId = data.nextTemplateId;
+    }
+  } catch (e) {
+    console.warn("Failed to load dev auth state:", e.message);
+  }
+}
+function saveDevState() {
+  try {
+    const data = {
+      users: devStore.users,
+      nextUserId,
+      nextEmployeeId,
+      devTemplates,
+      nextTemplateId,
+    };
+    fs.writeFileSync(AUTH_FILE, JSON.stringify(data, null, 2), "utf8");
+  } catch (e) {
+    console.warn("Failed to save dev auth state:", e.message);
+  }
+}
+
+// Load persisted state on boot
+loadDevState();
 
 function genToken() {
   return (
@@ -156,6 +194,8 @@ app.post(["/api/auth/self-register", "/api/self-register"], (req, res) => {
     pin: String(pin),
   };
   devStore.users.push(user);
+  // Persist users so credentials survive restarts
+  saveDevState();
   const token = genToken();
   devStore.tokens.set(token, user.id);
   return res.status(201).json({
@@ -209,9 +249,7 @@ app.get("/api/user", (req, res) => {
   res.json(user);
 });
 
-// In-memory saved report templates (dev only)
-const devTemplates = [];
-let nextTemplateId = 1;
+// In-memory saved report templates are declared above and persisted to disk
 
 function getAuthUser(req) {
   return authFromReq(req);
@@ -396,6 +434,7 @@ app.post("/api/reports/templates", (req, res) => {
     updated_at: new Date().toISOString(),
   };
   devTemplates.push(tpl);
+  saveDevState();
   res.status(201).json({ message: "Template saved", template: tpl });
 });
 
@@ -428,6 +467,7 @@ app.put("/api/reports/templates/:id", (req, res) => {
     updated_at: new Date().toISOString(),
   };
   devTemplates[idx] = updated;
+  saveDevState();
   res.json({ message: "Template updated", template: updated });
 });
 
@@ -441,6 +481,7 @@ app.delete("/api/reports/templates/:id", (req, res) => {
   if (!user || tpl.user_id !== user.id)
     return res.status(403).json({ error: "Not authorized" });
   devTemplates.splice(idx, 1);
+  saveDevState();
   res.json({ message: "Template deleted" });
 });
 
