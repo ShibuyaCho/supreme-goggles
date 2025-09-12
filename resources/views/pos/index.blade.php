@@ -282,20 +282,43 @@
 <script>
   document.addEventListener('DOMContentLoaded', function(){
     const btn = document.getElementById('refresh-metrc');
-    if (!btn) return;
-    btn.addEventListener('click', async function(){
+    if (btn) {
+      btn.addEventListener('click', async function(){
+        try {
+          if (window.POS && typeof POS.showLoading === 'function') POS.showLoading();
+          const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
+          const count = Array.isArray(res?.data?.transfers) ? res.data.transfers.length : (res?.data?.count || 0);
+          if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
+          if (window.POS && typeof POS.showToast === 'function') POS.showToast(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
+        } catch (e) {
+          if (window.POS && typeof POS.showToast === 'function') POS.showToast('Failed to refresh METRC data', 'error');
+        } finally {
+          if (window.POS && typeof POS.hideLoading === 'function') POS.hideLoading();
+        }
+      });
+    }
+
+    // Enforce scanner-only mode (block card click) when enabled for current role
+    (async function(){
       try {
-        if (window.POS && typeof POS.showLoading === 'function') POS.showLoading();
-        const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
-        const count = Array.isArray(res?.data?.transfers) ? res.data.transfers.length : (res?.data?.count || 0);
-        if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
-        if (window.POS && typeof POS.showToast === 'function') POS.showToast(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
-      } catch (e) {
-        if (window.POS && typeof POS.showToast === 'function') POS.showToast('Failed to refresh METRC data', 'error');
-      } finally {
-        if (window.POS && typeof POS.hideLoading === 'function') POS.hideLoading();
-      }
-    });
+        const settingsRes = await (window.axios || axios).get('/api/settings/pos');
+        const settings = settingsRes?.data?.settings || {};
+        let role = '';
+        try { role = (window.posAuth?.getUser()?.role || '').toLowerCase(); } catch(e) { role = ''; }
+        const rolePerms = (settings.role_permissions && settings.role_permissions[role]) || [];
+        const scannerOnly = Array.isArray(rolePerms) && rolePerms.includes('pos:scanner_only');
+        if (!scannerOnly) return;
+        document.addEventListener('click', function(e){
+          const card = e.target.closest('.product-card');
+          if (!card) return;
+          const onAddButton = !!e.target.closest('.add-to-cart');
+          if (onAddButton) return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (window.POS?.showToast) POS.showToast('Scanner required: use a barcode scanner or the Add button.', 'info');
+        }, true);
+      } catch (_) {}
+    })();
   });
 </script>
 @endpush
