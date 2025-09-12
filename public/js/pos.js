@@ -2298,38 +2298,52 @@ function cannabisPOS() {
     },
 
     async fetchEmployeesFromApi() {
+      let list = [];
       try {
-        const res = await posAuth.apiRequest("get", "/employees");
+        const res = await posAuth.apiRequest("get", "/employees"); // /api/employees
         if (res.success && res.data && (res.data.employees || res.data.data)) {
-          const list = res.data.employees || res.data.data || [];
-          this.employees = list.map((e) => ({
-            id: e.id || e.employee_id,
-            numericId: e.id ?? null,
-            employeeId: e.employee_id ?? null,
-            name: e.full_name
-              ? e.full_name
-              : [e.first_name, e.last_name].filter(Boolean).join(" "),
-            email: e.email || "",
-            phone: e.phone || "",
-            role: (e.role || e.position || "budtender").toLowerCase(),
-            status:
-              e.is_active === false ||
-              String(e.status || "").toLowerCase() === "inactive"
-                ? "inactive"
-                : "active",
-            hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : "",
-            payRate: Number(e.hourly_rate ?? 0),
-            hoursWorked: Number(e.hours_worked ?? 0),
-            workerPermit: e.worker_permit || e.workerPermit || "",
-            metrcApiKey: e.metrc_api_key || e.metrcApiKey || "",
-          }));
-          try {
-            this.ensureMyEmployeeListed();
-          } catch (_) {}
+          list = res.data.employees || res.data.data || [];
         }
       } catch (err) {
-        console.warn("Failed to fetch employees", err);
+        console.warn("/api/employees primary failed", err);
       }
+      if (!Array.isArray(list) || list.length === 0) {
+        try {
+          const resp = await fetch("/employees", {
+            method: "GET",
+            headers: { Accept: "application/json" },
+            credentials: "same-origin",
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            list = data.employees || data.data || [];
+          }
+        } catch (err) {
+          console.warn("/employees web fallback failed", err);
+        }
+      }
+      if (!Array.isArray(list)) list = [];
+      this.employees = list.map((e) => ({
+        id: e.id || e.employee_id,
+        numericId: e.id ?? null,
+        employeeId: e.employee_id ?? null,
+        name: e.full_name
+          ? e.full_name
+          : [e.first_name, e.last_name].filter(Boolean).join(" "),
+        email: e.email || "",
+        phone: e.phone || "",
+        role: (e.role || e.position || "budtender").toLowerCase(),
+        status:
+          e.is_active === false || String(e.status || "").toLowerCase() === "inactive"
+            ? "inactive"
+            : "active",
+        hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : "",
+        payRate: Number(e.hourly_rate ?? 0),
+        hoursWorked: Number(e.hours_worked ?? 0),
+        workerPermit: e.worker_permit || e.workerPermit || "",
+        metrcApiKey: e.metrc_api_key || e.metrcApiKey || "",
+      }));
+      try { this.ensureMyEmployeeListed(window.posAuth?.getUser?.()); } catch (_) {}
     },
 
     loadEmployees() {
