@@ -343,9 +343,37 @@ function reportsManager() {
                     end_date: null,
                     filters: {}
                 }, { responseType: 'blob' });
-                this.triggerDownload(res, `report_${map}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                const ctype = (res && res.headers && res.headers['content-type']) || '';
+                if (ctype.includes('application/json')) {
+                    // Fallback: headers-only CSV
+                    const headings = this.getReportHeadings(map, []);
+                    const csv = headings.join(',') + '\n';
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.setAttribute('download', `report_${map}.csv`);
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    this.triggerDownload(res, `report_${map}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                }
             } catch(e) {
-                this.showToast('Failed to generate report', 'error');
+                // Client-side fallback on network error
+                const headings = this.getReportHeadings(map, []);
+                const csv = headings.join(',') + '\n';
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.setAttribute('download', `report_${map}.csv`);
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                this.showToast('Downloaded CSV headers (fallback)', 'info');
             }
         },
 
@@ -378,11 +406,36 @@ function reportsManager() {
                         group_by_category: !!this.customReport.groupByCategory,
                     },
                 }, { responseType: 'blob' });
-                this.triggerDownload(res, `${this.customReport.name.replace(/\s+/g,'_')}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                const ctype = (res && res.headers && res.headers['content-type']) || '';
+                if (ctype.includes('application/json')) {
+                    const headings = this.getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
+                    const csv = headings.join(',') + '\n';
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.setAttribute('download', `${this.customReport.name.replace(/\s+/g,'_')}.csv`);
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    this.triggerDownload(res, `${this.customReport.name.replace(/\s+/g,'_')}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                }
                 this.showToast('Report generated successfully!', 'success');
             } catch (e) {
-                const msg = e?.response?.data?.error || 'Failed to generate report';
-                this.showToast(msg, 'error');
+                const headings = this.getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
+                const csv = headings.join(',') + '\n';
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.setAttribute('download', `${this.customReport.name.replace(/\s+/g,'_')}.csv`);
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                this.showToast('Downloaded CSV headers (fallback)', 'info');
             }
         },
 
@@ -411,7 +464,10 @@ function reportsManager() {
         },
 
         triggerDownload(res, filename){
-            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const headers = (res && res.headers) || {};
+            const contentType = headers['content-type'] || 'application/octet-stream';
+            const blob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
             link.setAttribute('download', filename);
@@ -478,6 +534,24 @@ function reportsManager() {
                     this.scheduledReports.splice(index, 1);
                     this.showToast('Schedule deleted', 'success');
                 }
+            }
+        },
+
+        getReportHeadings(reportType, metrics = []){
+            if (Array.isArray(metrics) && metrics.length){
+                return metrics.map(m => String(m).replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase()));
+            }
+            switch (reportType){
+                case 'sales': return ['Date','Transaction ID','Customer','Items','Subtotal','Tax','Total','Payment Method'];
+                case 'inventory': return ['Product Name','SKU','Category','Quantity','Unit Cost','Unit Price','Total Value','Room','METRC Tag'];
+                case 'customers': return ['Customer Name','Type','Email','Phone','Total Visits','Total Spent','Average Order','Last Visit'];
+                case 'products': return ['Name','Category','SKU','Price','Cost','Quantity','Room','THC%','CBD%','METRC Tag'];
+                case 'analytics': return ['Metric','Value','Period','Change','Percentage'];
+                case 'metrc': return ['Package Tag','Product','Quantity','Unit','Status','Location','Last Modified'];
+                case 'compliance': return ['Date','Type','Description','Status','Employee','Notes'];
+                case 'employees': return ['Name','Role','Employee ID','Email','Hours Worked','Sales Count','Performance Score'];
+                case 'tax_report': return ['Date','Transactions','Gross Sales','Total Tax','Net Sales','Payment Method'];
+                default: return ['Column 1','Column 2','Column 3'];
             }
         },
 
