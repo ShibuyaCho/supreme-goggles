@@ -558,6 +558,37 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoryTabs = document.querySelectorAll('.room-category-tab');
     const roomCards = document.querySelectorAll('.room-card');
 
+    // Activity Log state
+    const activityEl = document.getElementById('rd-activity');
+    const LOG_KEY = 'rd-activity-log';
+    function loadActivity(){ try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch(_) { return []; } }
+    let activityLog = loadActivity();
+    function saveActivity(){ try { localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); } catch(_) {} }
+    function currentUserName(){
+      try { const n = window.posAuth?.getUser?.()?.name; if (n) return n; } catch(_) {}
+      try { return @json(auth()->user()->name ?? 'User'); } catch(_) { return 'User'; }
+    }
+    function renderActivity(){
+      if (!activityEl) return;
+      activityEl.innerHTML = '';
+      if (!activityLog.length){ activityEl.innerHTML = '<div class="text-gray-500">No activity yet</div>'; return; }
+      activityLog.slice().reverse().forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'p-2 border rounded';
+        row.innerHTML = `<div class="flex justify-between"><span class="font-medium">${item.title}</span><span class="text-xs text-gray-500">${new Date(item.at).toLocaleString()}</span></div>
+                         <div class="text-xs text-gray-600">${item.by}</div>
+                         ${item.details ? `<div class="text-xs mt-1">${item.details}</div>` : ''}`;
+        activityEl.appendChild(row);
+      });
+    }
+    function addActivity(title, details=''){
+      activityLog.push({ at: new Date().toISOString(), by: currentUserName(), title, details });
+      saveActivity();
+      renderActivity();
+    }
+    document.getElementById('rd-clear-log')?.addEventListener('click', ()=>{ activityLog = []; saveActivity(); renderActivity(); });
+    renderActivity();
+
     categoryTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             const category = this.getAttribute('data-category');
