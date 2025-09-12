@@ -2353,6 +2353,7 @@ function cannabisPOS() {
 
     get filteredEmployees() {
       const q = (this.employeeSearchQuery || "").toLowerCase();
+      const statusFilter = (this.employeeStatusFilter || "").toLowerCase();
       return (this.employees || []).filter((e) => {
         const matchQ =
           !q ||
@@ -2361,8 +2362,15 @@ function cannabisPOS() {
             .some((v) => String(v).toLowerCase().includes(q));
         const matchRole =
           !this.employeeRoleFilter || e.role === this.employeeRoleFilter;
-        const matchStatus =
-          !this.employeeStatusFilter || e.status === this.employeeStatusFilter;
+        // Default behavior: hide inactive unless the user searches or explicitly selects a status
+        let matchStatus = true;
+        if (!statusFilter) {
+          matchStatus = q ? true : e.status === "active";
+        } else if (statusFilter === "all") {
+          matchStatus = true;
+        } else {
+          matchStatus = e.status === statusFilter;
+        }
         return matchQ && matchRole && matchStatus;
       });
     },
