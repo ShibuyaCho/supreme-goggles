@@ -5631,17 +5631,53 @@ function cannabisPOS() {
     },
 
     // Save Report Template
-    saveReportTemplate() {
+    async saveReportTemplate() {
       if (!this.isReportValid()) {
         this.showToast("Please complete all required fields", "error");
         return;
       }
-
-      // Save template logic here
-      this.showToast(
-        `Report template "${this.customReport.name}" saved successfully!`,
-        "success",
-      );
+      try {
+        const payload = {
+          name: this.customReport.name,
+          description: this.customReport.description || "",
+          report_type: this._mapSourceToReport(
+            (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
+          ),
+          format: (this.customReport?.exportFormats?.[0] || "pdf").toLowerCase(),
+          include_charts: !!this.customReport?.includeTrends || !!this.customReport?.includeBreakdowns,
+          orientation: this.customReport?.orientation || "portrait",
+          paper_size: this.customReport?.paperSize || "a4",
+          config: {
+            date_range: this.customReport?.dateRange || "last-30-days",
+            start_date: this.customReport?.startDate || null,
+            end_date: this.customReport?.endDate || null,
+            selected_metrics: this.customReport?.selectedMetrics || [],
+            filters: {
+              categoryFilters: this.customReport?.categoryFilters || [],
+              employeeFilter: this.customReport?.employeeFilter || "",
+              customerType: this.customReport?.customerType || "",
+              paymentMethod: this.customReport?.paymentMethod || "",
+            },
+            data_sources: this.customReport?.dataSources || [],
+            chart_type: this.customReport?.chartType || "table",
+            color_scheme: this.customReport?.colorScheme || "cannabis",
+            schedule: {
+              enabled: !!this.customReport?.autoSchedule,
+              frequency: this.customReport?.scheduleFrequency || "weekly",
+              email: this.customReport?.scheduleEmail || "",
+            },
+          },
+        };
+        const res = await posAuth.apiRequest("post", "/reports/templates", payload);
+        if (!res.success) throw new Error(res.message || "Failed to save template");
+        this.showToast(
+          `Report template "${this.customReport.name}" saved successfully!`,
+          "success",
+        );
+        await this.fetchReportTemplates();
+      } catch (e) {
+        this.showToast("Failed to save report template", "error");
+      }
     },
 
     // Preview Report
