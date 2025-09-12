@@ -223,6 +223,7 @@ app.post(
       name,
       email,
       role: "cashier",
+      status: "active",
       permissions: ["pos:*", "products:read", "customers:read", "sales:create"],
       employee: {
         id: nextEmployeeId,
