@@ -1,7 +1,5 @@
 @extends('layouts.app')
 
-@extends('layouts.app')
-
 @section('title', 'Roles & Permissions - Cannabis POS')
 
 @section('content')
@@ -24,10 +22,16 @@
     <!-- Content -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div class="flex items-center gap-3 mb-6">
+            <div class="flex items-center gap-3 mb-4">
                 <label class="text-sm font-medium text-gray-700">Select Role</label>
                 <select id="role-selector" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500"></select>
-                <div id="summary" class="ml-auto text-sm text-gray-600"></div>
+                <div class="ml-auto flex items-center gap-4">
+                  <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                    <input id="perm-select-all" type="checkbox" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                    <span>Select all permissions</span>
+                  </label>
+                  <div id="summary" class="text-sm text-gray-600"></div>
+                </div>
             </div>
 
             <div id="perm-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -95,6 +99,12 @@
       </div>
       <div>
         <h4 class="font-medium text-gray-900 mb-2">Permissions</h4>
+        <div class="mb-2">
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+            <input id="modal-select-all" type="checkbox" class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+            <span>Select all permissions</span>
+          </label>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="space-y-4">
             <div>
@@ -160,6 +170,7 @@
   const roleSelect = document.getElementById('role-selector');
   const permInputs = Array.from(document.querySelectorAll('#perm-grid input.perm'));
   const summaryEl = document.getElementById('summary');
+  const selectAll = document.getElementById('perm-select-all');
 
   const createBtn = document.getElementById('create-role-btn');
   const editBtn = document.getElementById('edit-role-btn');
@@ -168,6 +179,7 @@
   const modalTitle = document.getElementById('role-modal-title');
   const roleNameInput = document.getElementById('role-name-input');
   const modalPermInputs = Array.from(document.querySelectorAll('#role-modal input.modal-perm'));
+  const modalSelectAll = document.getElementById('modal-select-all');
   const modalDeleteBtn = document.getElementById('role-delete-btn');
   const modalSaveBtn = document.getElementById('role-save-btn');
   const modalCancelBtn = document.getElementById('role-cancel-btn');
@@ -216,10 +228,25 @@
     });
     if (keys.includes(current)) roleSelect.value = current; else roleSelect.value = keys[0] || '';
   }
+  function syncSelectAllMain(){
+    const total = permInputs.length;
+    const checked = permInputs.filter(cb => cb.checked).length;
+    if (!selectAll) return;
+    selectAll.indeterminate = checked > 0 && checked < total;
+    selectAll.checked = checked === total;
+  }
   function render(){
     const role = roleSelect?.value || '';
     setChecksFromPerms(permInputs, rolePerms[role] || []);
     updateSummary();
+    syncSelectAllMain();
+  }
+  function syncSelectAllModal(){
+    const total = modalPermInputs.length;
+    const checked = modalPermInputs.filter(cb => cb.checked).length;
+    if (!modalSelectAll) return;
+    modalSelectAll.indeterminate = checked > 0 && checked < total;
+    modalSelectAll.checked = checked === total;
   }
   function showModal(mode, roleKey){
     modalMode = mode; editingRoleKey = roleKey || null;
@@ -232,6 +259,7 @@
       roleNameInput.value = '';
       setChecksFromPerms(modalPermInputs, []);
     }
+    syncSelectAllModal();
     modal.classList.remove('hidden');
     document.body.classList.add('overflow-hidden');
   }
@@ -294,6 +322,22 @@
   modalCancelBtn?.addEventListener('click', hideModal);
   modalCancelBtn2?.addEventListener('click', hideModal);
 
+  if (selectAll){
+    selectAll.addEventListener('change', () => {
+      const check = !!selectAll.checked;
+      permInputs.forEach(cb => cb.checked = check);
+      updateSummary();
+      syncSelectAllMain();
+    });
+  }
+  if (modalSelectAll){
+    modalSelectAll.addEventListener('change', () => {
+      const check = !!modalSelectAll.checked;
+      modalPermInputs.forEach(cb => cb.checked = check);
+      syncSelectAllModal();
+    });
+  }
+
   modalSaveBtn?.addEventListener('click', async function(){
     const nameRaw = roleNameInput.value;
     const key = slugifyRole(nameRaw);
@@ -343,7 +387,8 @@
   });
 
   roleSelect?.addEventListener('change', render);
-  permInputs.forEach(cb => cb.addEventListener('change', updateSummary));
+  permInputs.forEach(cb => cb.addEventListener('change', () => { updateSummary(); syncSelectAllMain(); }));
+  modalPermInputs.forEach(cb => cb.addEventListener('change', syncSelectAllModal));
 
   load();
 })();
