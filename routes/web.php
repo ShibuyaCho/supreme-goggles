@@ -223,7 +223,7 @@ Route::get('/metrc/transfers', function() {
 })->name('metrc.transfers');
 
 // Roles & Permissions Page (Blade)
-Route::middleware('auth')->get('/roles-permissions', function () {
+Route::get('/roles-permissions', function () {
     return view('roles-permissions.index');
 })->name('roles-permissions.index');
 

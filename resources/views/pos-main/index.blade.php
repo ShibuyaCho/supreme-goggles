@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@extends('layouts.app')
+
 @section('title', 'Point of Sale System')
 
 @section('content')

@@ -1,5 +1,7 @@
 @extends('layouts.app')
 
+@extends('layouts.app')
+
 @section('title', 'Customer Management - Cannabis POS')
 
 @section('content')
