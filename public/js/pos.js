@@ -5245,10 +5245,14 @@ function cannabisPOS() {
     // Employee permissions helper
     canManageEmployees() {
       try {
-        const hasRole = window.posAuth?.hasRole?.bind(window.posAuth);
-        const hasPerm = window.posAuth?.hasPermission?.bind(window.posAuth);
-        if (hasRole?.("admin") || hasRole?.("manager")) return true;
-        if (hasPerm?.("employees:manage")) return true;
+        if (
+          window.posAuth?.hasRole &&
+          (posAuth.hasRole("admin") || posAuth.hasRole("manager"))
+        ) return true;
+        if (
+          window.posAuth?.hasPermission &&
+          posAuth.hasPermission("employees:manage")
+        ) return true;
       } catch (e) {}
       return false;
     },
