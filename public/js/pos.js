@@ -3919,7 +3919,7 @@ function cannabisPOS() {
             phone: payload.phone,
             role,
             payRate: hourly_rate,
-            hireDate: hire_date,
+            hireDate: hire_date || this.employees[idx].hireDate || this.employees[idx].hire_date || "",
             status: payload.status,
             workerPermit: payload.worker_permit,
             metrcApiKey: payload.metrc_api_key,
