@@ -380,6 +380,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/export', [App\Http\Controllers\EnhancedReportsController::class, 'exportReport'])
             ->middleware('permission:reports:export');
         Route::get('/available', [App\Http\Controllers\EnhancedReportsController::class, 'getAvailableReports']);
+
+        // Report templates (saved reports)
+        Route::get('/templates', [App\Http\Controllers\ReportTemplatesController::class, 'index'])
+            ->middleware('permission:reports:read');
+        Route::post('/templates', [App\Http\Controllers\ReportTemplatesController::class, 'store'])
+            ->middleware('permission:reports:read');
+        Route::get('/templates/{template}', [App\Http\Controllers\ReportTemplatesController::class, 'show'])
+            ->middleware('permission:reports:read');
+        Route::put('/templates/{template}', [App\Http\Controllers\ReportTemplatesController::class, 'update'])
+            ->middleware('permission:reports:read');
+        Route::delete('/templates/{template}', [App\Http\Controllers\ReportTemplatesController::class, 'destroy'])
+            ->middleware('permission:reports:read');
     });
 
     /*
