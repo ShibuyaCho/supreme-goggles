@@ -76,6 +76,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/verify-pin', [AuthController::class, 'verifyPin']);
         Route::post('/verify-metrc', [AuthController::class, 'verifyMetrc'])
             ->middleware('permission:metrc:access');
         Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'send'])
