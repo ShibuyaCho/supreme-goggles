@@ -5716,6 +5716,30 @@ function cannabisPOS() {
         this.showToast("Please complete all required fields", "error");
         return;
       }
+      // Optimistically add to Recent Reports before API call
+      try {
+        const optimisticItem = {
+          id: `tmp_${Date.now()}`,
+          name: this.customReport.name || "Custom Report",
+          type: this._mapSourceToReport(
+            (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
+          ),
+          createdAt: new Date().toISOString(),
+          createdBy: this.currentUser?.name || "User",
+          status: "saved",
+          config: {
+            date_range: this.customReport?.dateRange || "last-30-days",
+            selected_metrics: this.customReport?.selectedMetrics || [],
+          },
+        };
+        this.recentReports = [optimisticItem, ...this.recentReports].slice(0, 10);
+        try {
+          localStorage.setItem(
+            "cannabisPOS-reports",
+            JSON.stringify(this.recentReports),
+          );
+        } catch (_) {}
+      } catch (_) {}
       try {
         const payload = {
           name: this.customReport.name,
