@@ -112,11 +112,11 @@ class AuthController extends Controller
             }
 
             // Fallback: allow employees to login with email + PIN (4 digits) or employee password if present
-            $employee = Employee::where('email', $request->email)->where('is_active', true)->first();
-            if ($employee) {
+            $employee = Employee::where('email', $request->email)->first();
+            if ($employee && $employee->isActive()) {
                 $pwd = (string) $request->password;
                 $isPin = strlen($pwd) === 4 && ctype_digit($pwd);
-                $pinOk = $isPin && Hash::check($pwd, $employee->pin);
+                $pinOk = $isPin && $employee->pin && Hash::check($pwd, $employee->pin);
                 $pwOk = !$isPin && isset($employee->password) && $employee->password && Hash::check($pwd, $employee->password);
                 if ($pinOk || $pwOk) {
                     // Ensure a corresponding user exists
@@ -128,7 +128,7 @@ class AuthController extends Controller
                             'employee_id' => $employee->id,
                             'role' => $employee->role,
                             'permissions' => $employee->permissions,
-                            'is_active' => $employee->is_active,
+                            'is_active' => $employee->isActive(),
                             'password' => Hash::make(Str::random(32)),
                         ]);
                     }
@@ -239,11 +239,9 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $employee = Employee::where('employee_id', $request->employee_id)
-            ->where('is_active', true)
-            ->first();
+        $employee = Employee::where('employee_id', $request->employee_id)->first();
 
-        if (!$employee || !Hash::check($request->pin, $employee->pin)) {
+        if (!$employee || !$employee->isActive() || !Hash::check($request->pin, (string)$employee->pin)) {
             return response()->json([
                 'error' => 'Invalid employee ID or PIN'
             ], 401);
