@@ -187,6 +187,9 @@
             <a href="{{ route('settings.index') }}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md">
                 Settings
             </a>
+            <a href="{{ route('roles-permissions.index') }}" class="block px-3 py-2 text-base font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-md">
+                Roles & Permissions
+            </a>
         </div>
     </div>
 </nav>
