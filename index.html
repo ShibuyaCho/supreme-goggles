@@ -1921,7 +1921,7 @@
                       class="mb-3 text-xs text-gray-500"
                     >
                       <span x-show="cartViewMode === 'narrow'"
-                        >📱 Narrow view - See more products, compact cart</span
+                        >��� Narrow view - See more products, compact cart</span
                       >
                       <span x-show="cartViewMode === 'wide'"
                         >📺 Wide view - Large cart, single product column</span
@@ -13831,7 +13831,7 @@
                                 data-export-format="pdf"
                                 class="flex-1 btn-export btn-pdf text-xs py-1"
                               >
-                                📄 PDF
+                                ��� PDF
                               </button>
                               <button
                                 data-export-report="analytics"
@@ -19935,6 +19935,55 @@
         })();
 
         console.log("Cannabis POS system initialized successfully!");
+      });
+    </script>
+
+    <script>
+      // Roles & Permissions SPA state (Alpine + POS)
+      document.addEventListener('DOMContentLoaded', function(){
+        if (!window.POS) return;
+        Object.assign(window.POS, {
+          selectedRole: 'admin',
+          rolePermissions: {},
+          async loadRolePermissions(){
+            try {
+              const res = await (window.axios || axios).get('/api/settings/pos');
+              const s = res?.data?.settings || {};
+              this.rolePermissions = s.role_permissions || {
+                admin: ['*'],
+                manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                inventory: ['products:*','metrc:access','metrc:sync','analytics:read'],
+                budtender: ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+              };
+            } catch (e) { /* keep defaults */ }
+          },
+          hasPerm(p){
+            const list = this.rolePermissions[this.selectedRole] || [];
+            if (list.includes('*')) return true;
+            if (list.includes(p)) return true;
+            if (p.includes(':')) { const ns = p.split(':')[0]; if (list.includes(ns + ':*')) return true; }
+            return false;
+          },
+          togglePerm(p){
+            const list = this.rolePermissions[this.selectedRole] || [];
+            const i = list.indexOf(p);
+            if (i >= 0) list.splice(i,1); else list.push(p);
+            this.rolePermissions[this.selectedRole] = list;
+          },
+          async saveRolePermissions(){
+            try {
+              const res = await (window.axios || axios).get('/api/settings/pos');
+              const settings = res?.data?.settings || {};
+              settings.role_permissions = this.rolePermissions;
+              const r = await (window.axios || axios).post('/api/settings/pos', settings);
+              const ok = r?.data?.success === true;
+              (this.showToast || alert)(ok ? 'Permissions saved' : 'Failed to save', ok ? 'success' : 'error');
+            } catch (e) {
+              (this.showToast || alert)('Failed to save permissions', 'error');
+            }
+          }
+        });
       });
     </script>
   </body>
