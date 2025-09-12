@@ -15,7 +15,7 @@
       <p id="msg" class="text-sm text-gray-600 mt-4"></p>
     </div>
   </div>
-  <script src="/public/lib/axios/axios.min.js"></script>
+  <script src="/lib/axios/axios.min.js"></script>
   <script>
     (function(){
       const btn = document.getElementById('resend');
