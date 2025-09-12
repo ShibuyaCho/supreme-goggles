@@ -410,6 +410,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         $decoded = json_decode($row->settings, true);
                         if (json_last_error() === JSON_ERROR_NONE) {
                             $cached = $decoded;
+                            // refresh cache from DB source of truth
+                            try { \Illuminate\Support\Facades\Cache::put('pos_settings', $cached, now()->addYears(5)); } catch (\Throwable $e) {}
                         }
                     }
                 } catch (\Throwable $e) {}
