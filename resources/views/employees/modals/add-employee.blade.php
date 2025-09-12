@@ -150,7 +150,8 @@ document.getElementById('add-employee-form').addEventListener('submit', async fu
         phone,
         employee_id,
         department,
-        position: role,
+        position: role.toLowerCase(),
+        role: role.toLowerCase(),
         hire_date,
         hourly_rate: null,
         permissions,
@@ -160,7 +161,7 @@ document.getElementById('add-employee-form').addEventListener('submit', async fu
 
     try {
         document.getElementById('loading-overlay')?.classList.remove('hidden');
-        const res = await (window.axios || axios).post('/employees', payload, { headers: { 'Accept': 'application/json' } });
+        const res = await (window.axios || axios).post('/api/employees', payload, { headers: { 'Accept': 'application/json' } });
         if (res && res.status >= 200 && res.status < 300){
             window.POS?.showToast?.('Employee created successfully', 'success');
             closeAddEmployeeModal();
