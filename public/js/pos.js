@@ -755,6 +755,15 @@ function cannabisPOS() {
         this.subtotal = this.subtotal || 0;
         this.taxAmount = this.taxAmount || 0;
         this.total = this.total || 0;
+      } finally {
+        // Load persisted drawers
+        try { const raw = localStorage.getItem('pos_drawers'); if (raw) this.cashDrawers = JSON.parse(raw); } catch(_){}
+        // Merge external activity log if present
+        try { const rawLog = localStorage.getItem('rd-activity-log'); if (rawLog) {
+          const arr = JSON.parse(rawLog);
+          const mapped = (Array.isArray(arr)?arr:[]).map(x=>({ id: (Date.now()+Math.random()).toString(36), timestamp: new Date(x.at||Date.now()).toLocaleString(), action: x.title, type: x.title?.toLowerCase().includes('room')?'room':'drawer', location: x.details||'', employee: x.by|| (this.currentUser?.name||'User'), details: x.title }));
+          this.activityLog = [...mapped, ...(this.activityLog||[])];
+        } } catch(_){}
       }
     },
 
