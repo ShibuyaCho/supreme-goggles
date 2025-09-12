@@ -1217,6 +1217,7 @@ function cannabisPOS() {
     roleModalMode: 'create', // 'create' | 'edit'
     roleModalKey: null,
     roleModalName: '',
+    roleModalSelectKey: null,
     roleModalPerms: [],
 
     allPermissions() {
