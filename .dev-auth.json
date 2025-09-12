@@ -1,0 +1,33 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "thccodys",
+      "email": "thccodys@gmail.com",
+      "role": "admin",
+      "permissions": [
+        "pos:*",
+        "products:*",
+        "customers:*",
+        "sales:*",
+        "reports:*",
+        "employees:*",
+        "inventory:*",
+        "analytics:*",
+        "metrc:*"
+      ],
+      "employee": {
+        "id": 2,
+        "employee_id": "EMP00001",
+        "first_name": "thccodys",
+        "last_name": ""
+      },
+      "password": "Hms2019!",
+      "pin": "1234"
+    }
+  ],
+  "nextUserId": 2,
+  "nextEmployeeId": 2,
+  "devTemplates": [],
+  "nextTemplateId": 1
+}
