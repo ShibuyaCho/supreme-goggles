@@ -3891,6 +3891,7 @@ function cannabisPOS() {
           phone: this.employeeForm.phone || "",
           department,
           position: role,
+          role, // ensure role is persisted explicitly
           hourly_rate,
           hire_date,
           permissions: this.employeeForm.permissions || [],
@@ -5371,38 +5372,46 @@ function cannabisPOS() {
             "" ||
             String(cand.id);
 
-          // Try Laravel web route first to ensure DB persistence
+          // Prefer API route (token auth) for reliable persistence; fallback to web if available
           let ok = false;
+          // 1) API via helper (respects axios interceptors and token refresh)
           try {
-            const headers = { Accept: "application/json" };
-            const csrf = document
-              .querySelector('meta[name="csrf-token"]')
-              ?.getAttribute("content");
-            if (csrf) headers["X-CSRF-TOKEN"] = csrf;
-            const respWeb = await (window.axios || axios).delete(
-              `/employees/${encodeURIComponent(targetId)}`,
-              { headers },
-            );
-            ok = respWeb && respWeb.status >= 200 && respWeb.status < 300;
-          } catch (_) { ok = false; }
-
-          if (!ok) {
             const res = await window.posAuth?.apiRequest?.(
               "delete",
               `/employees/${encodeURIComponent(targetId)}`,
             );
-            if (res?.success === false && res?.status !== 404) {
-              try {
-                const respApi = await (window.axios || axios).delete(
-                  `/api/employees/${encodeURIComponent(targetId)}`,
-                  { headers: { Accept: "application/json" } },
-                );
-                ok = respApi && respApi.status >= 200 && respApi.status < 300;
-                if (!ok) throw new Error("Delete failed");
-              } catch (e) {
-                throw new Error(res?.message || "Delete failed");
-              }
-            }
+            ok = !!(res && res.success);
+          } catch (_) { ok = false; }
+
+          // 2) Direct API call fallback
+          if (!ok) {
+            try {
+              const respApi = await (window.axios || axios).delete(
+                `/api/employees/${encodeURIComponent(targetId)}`,
+                { headers: { Accept: "application/json" } },
+              );
+              ok = respApi && respApi.status >= 200 && respApi.status < 300;
+            } catch (_) { ok = false; }
+          }
+
+          // 3) Web route as last resort (requires web auth + CSRF)
+          if (!ok) {
+            try {
+              const headers = { Accept: "application/json" };
+              const csrf = document
+                .querySelector('meta[name="csrf-token"]')
+                ?.getAttribute("content");
+              if (csrf) headers["X-CSRF-TOKEN"] = csrf;
+              const respWeb = await (window.axios || axios).delete(
+                `/employees/${encodeURIComponent(targetId)}`,
+                { headers },
+              );
+              ok = respWeb && respWeb.status >= 200 && respWeb.status < 300;
+            } catch (_) { ok = false; }
+          }
+
+          if (!ok) {
+            throw new Error("Delete failed");
           }
 
           // Remove from local list regardless (idempotent)
