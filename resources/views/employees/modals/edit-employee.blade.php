@@ -187,7 +187,10 @@ document.getElementById('edit-employee-form').addEventListener('submit', async f
 
     try {
         document.getElementById('loading-overlay')?.classList.remove('hidden');
-        const res = await (window.axios || axios).put(`/api/employees/${id}`, payload, { headers: { 'Accept': 'application/json' } });
+        const headers = { 'Accept': 'application/json' };
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        if (csrf) headers['X-CSRF-TOKEN'] = csrf;
+        const res = await (window.axios || axios).patch(`/employees/${id}`, payload, { headers });
         if (res && res.status >= 200 && res.status < 300){
             window.POS?.showToast?.('Employee updated successfully', 'success');
             closeEditEmployeeModal();
