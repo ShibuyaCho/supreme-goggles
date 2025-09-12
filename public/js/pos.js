@@ -1203,6 +1203,7 @@ function cannabisPOS() {
         deals: "Deals & Specials",
         loyalty: "Loyalty Program",
         settings: "Settings",
+        "roles-permissions": "Roles & Permissions",
       };
       return titles[this.currentPage] || "Cannabis POS";
     },
