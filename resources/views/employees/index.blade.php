@@ -492,6 +492,63 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('role-filter').addEventListener('change', applyFilters);
     document.getElementById('status-filter').addEventListener('change', applyFilters);
     document.getElementById('department-filter').addEventListener('change', applyFilters);
+    // Role permissions UI logic
+    const roleSelect = document.getElementById('role-perm-selector');
+    const permInputs = Array.from(document.querySelectorAll('#role-perm-container input.perm'));
+    const summaryEl = document.getElementById('role-perm-summary');
+    let rolePerms = {};
+
+    async function loadRolePerms() {
+        try {
+            const res = await (window.axios || axios).get('/api/settings/pos');
+            const settings = res?.data?.settings || {};
+            rolePerms = settings.role_permissions || {
+                admin: ['*'],
+                manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                inventory: ['products:*','metrc:access','metrc:sync','analytics:read'],
+                budtender: ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+            };
+            renderPerms();
+        } catch (e) {
+            console.warn('Failed to load role permissions', e);
+            rolePerms = rolePerms || {};
+            renderPerms();
+        }
+    }
+
+    function renderPerms(){
+        const role = roleSelect?.value || 'cashier';
+        const current = new Set(rolePerms[role] || []);
+        permInputs.forEach(cb => { cb.checked = current.has(cb.value); });
+        updateSummary();
+    }
+
+    function updateSummary(){
+        const role = roleSelect?.value || '';
+        const selected = permInputs.filter(cb => cb.checked).map(cb => cb.value);
+        summaryEl.textContent = `${role.toUpperCase()}: ${selected.length} permissions selected`;
+    }
+
+    roleSelect?.addEventListener('change', renderPerms);
+    permInputs.forEach(cb => cb.addEventListener('change', updateSummary));
+
+    document.getElementById('save-role-perms')?.addEventListener('click', async function(){
+        const role = roleSelect?.value || 'cashier';
+        const selected = permInputs.filter(cb => cb.checked).map(cb => cb.value);
+        rolePerms[role] = selected;
+        try {
+            const res = await (window.axios || axios).post('/api/settings', {
+                role_permissions: rolePerms
+            });
+            const ok = (res?.data?.success === true) || (res?.status && res.status >= 200 && res.status < 300);
+            if (window.POS?.showToast) POS.showToast(ok ? 'Permissions saved' : 'Failed to save', ok ? 'success' : 'error');
+        } catch (e) {
+            if (window.POS?.showToast) POS.showToast('Failed to save permissions', 'error');
+        }
+    });
+
+    loadRolePerms();
 });
 
 const EmployeeUI = {
