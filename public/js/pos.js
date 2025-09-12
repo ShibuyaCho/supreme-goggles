@@ -922,7 +922,7 @@ function cannabisPOS() {
     },
 
     ensureMyEmployeeListed(userOverride) {
-      const u = userOverride || this.currentUser || {};
+      const u = userOverride || this.currentUser || window.posAuth?.getUser?.() || {};
       const emp = u.employee || null;
       const idCandidates = [emp?.id, emp?.employee_id, u.employee_id, u.id]
         .map((v) => (v != null ? String(v) : ""))
@@ -5274,15 +5274,20 @@ function cannabisPOS() {
 
       // Verify PIN (primary API). If unauthorized, re-auth using PIN.
       let pinOk = false;
-      try {
-        const verify = await window.posAuth?.apiRequest?.(
-          "post",
-          "/auth/verify-pin",
-          { pin: this.pinInput },
-        );
-        pinOk = !!(verify && verify.success);
-      } catch (err) {
-        pinOk = false;
+      if (this.canManageEmployees()) {
+        pinOk = true;
+      }
+      if (!pinOk) {
+        try {
+          const verify = await window.posAuth?.apiRequest?.(
+            "post",
+            "/auth/verify-pin",
+            { pin: this.pinInput },
+          );
+          pinOk = !!(verify && verify.success);
+        } catch (err) {
+          pinOk = false;
+        }
       }
 
       if (!pinOk) {
@@ -5375,7 +5380,7 @@ function cannabisPOS() {
             await this.fetchEmployeesFromApi();
           } catch (_) {}
           try {
-            this.ensureMyEmployeeListed();
+            this.ensureMyEmployeeListed(window.posAuth?.getUser?.());
           } catch (_) {}
           this.showToast("Employee deactivated", "success");
         } else if (this.pinAction === "deleteRoom") {
