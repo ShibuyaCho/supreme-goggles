@@ -5278,8 +5278,8 @@ function cannabisPOS() {
           const cand = this.employeePendingDelete;
           const targetId = (cand.numericId != null ? String(cand.numericId) : '') || (cand.employeeId || '') || String(cand.id);
           const res = await posAuth.apiRequest('delete', `/employees/${encodeURIComponent(targetId)}`);
-          if (!res.success) throw new Error(res.message || 'Delete failed');
-          // Remove from local list
+          if (!res.success && res.status !== 404) throw new Error(res.message || 'Delete failed');
+          // Remove from local list regardless (idempotent)
           this.employees = (this.employees || []).filter(e => {
             const nid = e.numericId != null ? String(e.numericId) : '';
             const eid = e.employeeId || '';
