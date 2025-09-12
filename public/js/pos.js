@@ -1212,6 +1212,104 @@ function cannabisPOS() {
     selectedRole: 'admin',
     rolePermissions: {},
 
+    // Role modal state
+    showRoleModal: false,
+    roleModalMode: 'create', // 'create' | 'edit'
+    roleModalKey: null,
+    roleModalName: '',
+    roleModalPerms: [],
+
+    allPermissions() {
+      return [
+        'pos:access','pos:sales','pos:scanner_only',
+        'products:read','products:write','products:print','products:transfer','products:delete',
+        'sales:read','sales:create','sales:manage',
+        'customers:read','customers:write',
+        'analytics:read','reports:read','reports:export',
+        'employees:read','employees:manage',
+        'metrc:access','metrc:sync','metrc:create','metrc:sales'
+      ];
+    },
+
+    isAllSelectedMain() {
+      const list = this.rolePermissions[this.selectedRole] || [];
+      if (list.includes('*')) return true;
+      const set = new Set(list);
+      return this.allPermissions().every(p => set.has(p));
+    },
+    toggleSelectAllMain(evt){
+      const check = evt?.target?.checked ?? !this.isAllSelectedMain();
+      this.rolePermissions[this.selectedRole] = check ? ['*'] : [];
+    },
+
+    openRoleModal(mode){
+      this.roleModalMode = mode;
+      if (mode === 'edit'){
+        this.roleModalKey = this.selectedRole;
+        this.roleModalName = this.selectedRole;
+        const list = this.rolePermissions[this.selectedRole] || [];
+        this.roleModalPerms = list.includes('*') ? this.allPermissions().slice() : list.slice();
+      } else {
+        this.roleModalKey = null;
+        this.roleModalName = '';
+        this.roleModalPerms = [];
+      }
+      this.showRoleModal = true;
+    },
+    closeRoleModal(){ this.showRoleModal = false; },
+
+    hasModalPerm(p){ return (this.roleModalPerms || []).includes(p); },
+    toggleModalPerm(p){
+      const i = this.roleModalPerms.indexOf(p);
+      if (i>=0) this.roleModalPerms.splice(i,1); else this.roleModalPerms.push(p);
+    },
+    isAllSelectedModal(){
+      const set = new Set(this.roleModalPerms || []);
+      return this.allPermissions().every(p => set.has(p));
+    },
+    toggleSelectAllModal(evt){
+      const check = evt?.target?.checked ?? !this.isAllSelectedModal();
+      this.roleModalPerms = check ? this.allPermissions().slice() : [];
+    },
+
+    slugifyRole(name){
+      return (name || '').toLowerCase().trim().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'');
+    },
+
+    async saveRoleModal(){
+      const key = this.slugifyRole(this.roleModalName);
+      if (!key) { this.showToast('Enter a role name','error'); return; }
+      const normalized = (this.roleModalPerms.length >= this.allPermissions().length) ? ['*'] : Array.from(new Set(this.roleModalPerms));
+      if (this.roleModalMode === 'create'){
+        if (this.rolePermissions[key]){ this.showToast('Role already exists','error'); return; }
+        this.rolePermissions[key] = normalized;
+        this.selectedRole = key;
+      } else if (this.roleModalMode === 'edit' && this.roleModalKey){
+        if (key !== this.roleModalKey && this.rolePermissions[key]){ this.showToast('Another role already has that name','error'); return; }
+        if (key !== this.roleModalKey){
+          this.rolePermissions[key] = normalized;
+          delete this.rolePermissions[this.roleModalKey];
+          this.selectedRole = key;
+        } else {
+          this.rolePermissions[key] = normalized;
+        }
+      }
+      await this.saveRolePermissions();
+      this.closeRoleModal();
+      this.showToast('Role saved','success');
+    },
+
+    async deleteRole(){
+      if (!(this.roleModalMode === 'edit' && this.roleModalKey)) return;
+      if (this.roleModalKey === 'admin'){ this.showToast('Cannot delete admin role','error'); return; }
+      delete this.rolePermissions[this.roleModalKey];
+      const keys = Object.keys(this.rolePermissions);
+      this.selectedRole = keys[0] || 'admin';
+      await this.saveRolePermissions();
+      this.closeRoleModal();
+      this.showToast('Role deleted','success');
+    },
+
     async loadRolePermissions() {
       try {
         const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
