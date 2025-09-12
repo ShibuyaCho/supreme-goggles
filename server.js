@@ -935,36 +935,50 @@ app.put("/api/employees/:id", async (req, res) => {
 app.delete("/api/employees/:id", async (req, res) => {
   const idRaw = String(req.params.id || "");
   try {
-    const byNumeric = /^\d+$/.test(idRaw);
-    const sel = byNumeric
-      ? `employees?id=eq.${encodeURIComponent(idRaw)}`
-      : `employees?employee_id=eq.${encodeURIComponent(idRaw)}`;
+    const candidates = [];
+    const isNumeric = /^\d+$/.test(idRaw);
+    // Try both id and employee_id selectors to be robust
+    candidates.push(`employees?id=eq.${encodeURIComponent(idRaw)}`);
+    candidates.push(`employees?employee_id=eq.${encodeURIComponent(idRaw)}`);
+    // If numeric, also ensure numeric id first
+    const ordered = isNumeric ? [candidates[0], candidates[1]] : [candidates[1], candidates[0]];
 
-    // Try soft-delete first (retain history): set is_active=false and termination_date=now
-    const patch = await supaFetch(sel, {
-      method: "PATCH",
-      body: { is_active: false, termination_date: new Date().toISOString().slice(0,10) },
-    });
-    if (patch.ok) {
-      const payload = await patch.json().catch(() => null);
-      const affected = Array.isArray(payload) ? payload.length : (payload ? 1 : 0);
-      if (affected > 0) return res.json({ success: true, softDeleted: true });
+    // Soft-delete attempts
+    for (const sel of ordered) {
+      const r = await supaFetch(sel, {
+        method: "PATCH",
+        body: { is_active: false, termination_date: new Date().toISOString().slice(0, 10) },
+      });
+      if (r.ok) {
+        let affected = 0;
+        try {
+          const payload = await r.json();
+          affected = Array.isArray(payload) ? payload.length : (payload ? 1 : 0);
+        } catch (_) {}
+        if (affected > 0) return res.json({ success: true, softDeleted: true });
+      }
     }
 
     // Dev in-memory fallback
     try {
-      const pinMatch = devStore.users.find(u => String(u?.employee?.employee_id||'') === idRaw || String(u?.id||'') === idRaw || String(u?.employee?.id||'') === idRaw);
-      if (pinMatch) {
-        pinMatch.status = 'inactive';
+      const match = devStore.users.find(
+        (u) => String(u?.employee?.employee_id || "") === idRaw || String(u?.id || "") === idRaw || String(u?.employee?.id || "") === idRaw,
+      );
+      if (match) {
+        match.status = "inactive";
         saveDevState();
         return res.json({ success: true, softDeleted: true, dev: true });
       }
-    } catch(_) {}
+    } catch (_) {}
 
-    // Fallback to hard delete only if everything else failed
-    const del = await supaFetch(sel, { method: "DELETE" });
-    if (del.ok) return res.json({ success: true, softDeleted: false });
-    return res.status(404).json({ success: false, error: "Not found" });
+    // Hard delete attempts (only if soft-delete didn’t affect any row)
+    for (const sel of ordered) {
+      const d = await supaFetch(sel, { method: "DELETE" });
+      if (d.ok) return res.json({ success: true, softDeleted: false });
+    }
+
+    // Idempotent success if nothing matched (avoid leaking existence via errors)
+    return res.json({ success: true, softDeleted: false, note: "No matching record; treated as completed" });
   } catch (e) {
     return res.status(500).json({ success: false, error: "Failed to delete employee" });
   }
