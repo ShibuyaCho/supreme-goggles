@@ -538,7 +538,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const selected = permInputs.filter(cb => cb.checked).map(cb => cb.value);
         rolePerms[role] = selected;
         try {
-            const res = await (window.axios || axios).post('/api/settings', {
+            const res = await (window.axios || axios).post('/api/settings/pos', {
                 role_permissions: rolePerms
             });
             const ok = (res?.data?.success === true) || (res?.status && res.status >= 200 && res.status < 300);
