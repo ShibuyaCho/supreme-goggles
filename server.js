@@ -751,6 +751,75 @@ app.get("/api/customers", async (req, res) => {
   }
 });
 
+// Inventory: transfer room
+app.post("/api/products/transfer-room", async (req, res) => {
+  const b = req.body || {};
+  try {
+    if (b.product_id) {
+      await supaFetch(`products?id=eq.${encodeURIComponent(b.product_id)}`, { method: "PATCH", body: { room: b.destinationRoom, on_sales_floor: !!b.setSalesFloorStatus, updated_at: new Date().toISOString() } });
+      await supaFetch("inventory_movements", { method: "POST", body: [{ product_id: Number(b.product_id), from_room: b.fromRoom || null, to_room: b.destinationRoom || null, quantity: b.quantity ?? null, reason: b.reason || 'transfer', actor: (authFromReq(req)?.email)||'system' }] });
+    }
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed transfer" });
+  }
+});
+
+// Deals
+app.get("/api/deals", async (_req, res) => {
+  try { const r = await supaFetch("deals?select=*"); const payload = r.ok ? await r.json() : []; res.json({ success:true, deals: payload }); } catch(_) { res.json({ success:true, deals: []}); }
+});
+app.post("/api/deals", async (req, res) => {
+  try { const r = await supaFetch("deals", { method: "POST", body: [req.body||{}] }); const payload = r.ok ? await r.json() : null; res.status(201).json({ success:true, deal: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+});
+app.put("/api/deals/:id", async (req, res) => {
+  try { const r = await supaFetch(`deals?id=eq.${encodeURIComponent(req.params.id)}`, { method:"PATCH", body: req.body||{} }); const payload = r.ok ? await r.json() : null; res.json({ success:true, deal: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+});
+
+// Price tiers
+app.get("/api/price-tiers", async (_req, res) => {
+  try { const r = await supaFetch("price_tiers?select=*"); const payload = r.ok ? await r.json() : []; res.json({ success:true, tiers: payload }); } catch(_) { res.json({ success:true, tiers: []}); }
+});
+app.post("/api/price-tiers", async (req, res) => {
+  try { const r = await supaFetch("price_tiers", { method: "POST", body: [req.body||{}] }); const payload = r.ok ? await r.json() : null; res.status(201).json({ success:true, tier: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+});
+app.put("/api/price-tiers/:id", async (req, res) => {
+  try { const r = await supaFetch(`price_tiers?id=eq.${encodeURIComponent(req.params.id)}`, { method:"PATCH", body: req.body||{} }); const payload = r.ok ? await r.json() : null; res.json({ success:true, tier: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+});
+
+// Loyalty points adjustments
+app.post("/api/loyalty/:customerId/adjust-points", async (req, res) => {
+  try {
+    const id = Number(req.params.customerId);
+    const amt = Number(req.body?.amount || 0);
+    const reason = req.body?.reason || 'adjust';
+    await supaFetch(`customers?id=eq.${id}`, { method:"PATCH", body: { loyalty_points: {"increment": amt } } });
+    await supaFetch("loyalty_transactions", { method:"POST", body: [{ customer_id: id, points: amt, type: 'adjust', reason }] });
+    res.json({ success:true });
+  } catch (e) { res.status(500).json({ success:false, error:"Failed"}); }
+});
+app.post("/api/loyalty/:customerId/earn-points", async (req, res) => {
+  try {
+    const id = Number(req.params.customerId); const pts = Number(req.body?.points||0); const reason = req.body?.reason||'earn';
+    await supaFetch(`customers?id=eq.${id}`, { method:"PATCH", body: { loyalty_points: {"increment": pts } } });
+    await supaFetch("loyalty_transactions", { method:"POST", body: [{ customer_id: id, points: pts, type: 'earn', reason }] });
+    res.json({ success:true });
+  } catch (e) { res.status(500).json({ success:false, error:"Failed"}); }
+});
+app.post("/api/loyalty/:customerId/redeem-points", async (req, res) => {
+  try {
+    const id = Number(req.params.customerId); const pts = Number(req.body?.points||0); const reason = req.body?.reason||'redeem';
+    await supaFetch(`customers?id=eq.${id}`, { method:"PATCH", body: { loyalty_points: {"decrement": pts } } });
+    await supaFetch("loyalty_transactions", { method:"POST", body: [{ customer_id: id, points: -pts, type: 'redeem', reason }] });
+    res.json({ success:true });
+  } catch (e) { res.status(500).json({ success:false, error:"Failed"}); }
+});
+
+// Activity log (catch-all)
+app.post("/api/activity", async (req, res) => {
+  try { const user = getAuthUser(req); const r = await supaFetch("activity_logs", { method: "POST", body: [{ actor_user_id: user? String(user.id) : null, action: req.body?.action || 'event', payload: req.body||{} }] }); const payload = r.ok ? await r.json() : null; res.json({ success:true, log: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.json({ success:true }); }
+});
+
 // POS: process payment -> persist sale to Supabase
 app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
   const user = getAuthUser(req);
