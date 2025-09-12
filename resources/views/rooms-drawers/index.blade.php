@@ -829,7 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const roomCard = Array.from(document.querySelectorAll('.room-card')).find(card =>
           card.querySelector('button[onclick^="openAddDrawerModal("]')?.getAttribute('onclick')?.includes(`(${roomId},`)
         );
-        if (roomCard) {
+        if (roomCard) { addActivity('Drawer created', `${name} in room ${roomId}`);
             let grid = roomCard.querySelector('.grid.grid-cols-3');
             if (!grid) {
                 const container = document.createElement('div');
