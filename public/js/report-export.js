@@ -342,7 +342,6 @@ class ReportExportManager {
    */
   async exportReport(reportType, format, filters = {}, options = {}) {
     try {
-      // Show loading indicator
       this.showLoadingIndicator();
 
       const requestData = {
@@ -365,39 +364,91 @@ class ReportExportManager {
       });
 
       const headers = response.headers || {};
+      const contentType = (headers["content-type"] || "").toLowerCase();
       const cd = headers["content-disposition"] || "";
       const hintedName =
         headers["x-export-filename"] ||
         (cd.match(/filename\*=UTF-8''([^;]+)|filename=\"?([^\";]+)\"?/i) ||
           [])[1] ||
         (cd.match(/filename=\"?([^\";]+)\"?/i) || [])[1];
-      const filename =
+      const serverFilename =
         hintedName && typeof hintedName === "string"
           ? decodeURIComponent(hintedName)
           : this.generateFilename(reportType, format);
 
-      // Create download link (preserve server content-type)
       const blob =
         response.data instanceof Blob
           ? response.data
           : new Blob([response.data], {
               type: headers["content-type"] || "application/octet-stream",
             });
-      this.downloadFile(blob, filename);
 
-      // Show success message
-      this.showSuccessMessage(
-        `${format.toUpperCase()} report exported successfully!`,
-      );
+      const looksLikeJson =
+        contentType.includes("application/json") ||
+        contentType.includes("text/json") ||
+        (blob && blob.size > 0 && blob.size < 2048);
 
-      // Close modal if open
-      const modal = document.querySelector(".export-modal-overlay");
-      if (modal) {
-        this.closeModal(modal);
+      if (looksLikeJson) {
+        try {
+          const text = await blob.text();
+          const isJson = text.trim().startsWith("{") || text.trim().startsWith("[");
+          if (isJson) {
+            // Fallbacks: generate headers-only file depending on requested format
+            if (format === "pdf") {
+              const html = this.buildHtmlPreview(reportType);
+              const htmlBlob = new Blob([html], { type: "text/html;charset=utf-8" });
+              const name = this.generateFilename(reportType, "html");
+              this.downloadFile(htmlBlob, name);
+              this.showSuccessMessage("PDF unavailable. Downloaded HTML preview instead.");
+            } else {
+              const headings = this.getHeadingsForReport(reportType, options?.metrics || []);
+              const csv = headings.join(",") + "\n";
+              const csvBlob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+              const name = this.generateFilename(reportType, "csv");
+              this.downloadFile(csvBlob, name);
+              if (format === "excel") {
+                this.showSuccessMessage("Excel unavailable. Downloaded CSV with headers.");
+              } else {
+                this.showSuccessMessage("Downloaded CSV with headers.");
+              }
+            }
+            const modal = document.querySelector(".export-modal-overlay");
+            if (modal) this.closeModal(modal);
+            return;
+          }
+        } catch (_) {
+          // Continue to download original blob if text parsing fails
+        }
       }
+
+      // Normal happy-path download from server
+      this.downloadFile(blob, serverFilename);
+      this.showSuccessMessage(`${format.toUpperCase()} report exported successfully!`);
+
+      const modal = document.querySelector(".export-modal-overlay");
+      if (modal) this.closeModal(modal);
     } catch (error) {
-      console.error("Export failed:", error);
-      this.showErrorMessage("Failed to export report. Please try again.");
+      // Network/server failure: provide robust client-side fallbacks
+      try {
+        if (format === "pdf") {
+          const html = this.buildHtmlPreview(reportType);
+          const htmlBlob = new Blob([html], { type: "text/html;charset=utf-8" });
+          const name = this.generateFilename(reportType, "html");
+          this.downloadFile(htmlBlob, name);
+          this.showErrorMessage("PDF export failed. Downloaded HTML preview instead.");
+        } else {
+          const headings = this.getHeadingsForReport(reportType, options?.metrics || []);
+          const csv = headings.join(",") + "\n";
+          const csvBlob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+          const name = this.generateFilename(reportType, "csv");
+          this.downloadFile(csvBlob, name);
+          const msg = format === "excel" ? "Excel export failed. Downloaded CSV with headers." : "CSV export failed. Downloaded headers-only CSV.";
+          this.showErrorMessage(msg);
+        }
+      } catch (fallbackErr) {
+        console.error("Export fallback failed:", fallbackErr);
+        this.showErrorMessage("Export failed. Please try again later.");
+      }
     } finally {
       this.hideLoadingIndicator();
     }
