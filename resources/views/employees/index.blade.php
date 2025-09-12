@@ -488,6 +488,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Quick open permissions
     const openPermBtn = document.getElementById('open-permissions');
     if (openPermBtn) openPermBtn.addEventListener('click', () => switchTab('permissions'));
+    const openPermLink = document.getElementById('open-permissions-link');
+    if (openPermLink) openPermLink.addEventListener('click', function(e){ e.preventDefault(); switchTab('permissions'); });
 
     // Open tab by query param ?tab=permissions
     try {
