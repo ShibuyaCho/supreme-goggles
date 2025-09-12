@@ -5249,18 +5249,21 @@ function cannabisPOS() {
       }
 
       const newDrawer = {
-        id: Math.max(...(this.cashDrawers || []).map((d) => d.id), 0) + 1,
+        id: Math.max(...(this.cashDrawers || []).map((d) => Number(d.id) || 0), 0) + 1,
         name: this.drawerForm.name,
         location: this.drawerForm.location,
         assignedEmployee: this.drawerForm.assignedEmployee,
         startingAmount: parseFloat(this.drawerForm.startingAmount),
         currentAmount: parseFloat(this.drawerForm.startingAmount),
-        status: "active",
+        status: "open",
+        openedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(),
       };
 
       this.cashDrawers = this.cashDrawers || [];
       this.cashDrawers.push(newDrawer);
+      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      try { this.logActivity && this.logActivity('drawer','created', newDrawer.name, `Starting $${newDrawer.startingAmount.toFixed(2)}`); } catch(_) {}
       this.showToast(
         `Cash drawer "${newDrawer.name}" created successfully`,
         "success",
