@@ -1043,7 +1043,9 @@ function cannabisPOS() {
           id: t.id,
           name: t.name,
           type: t.report_type,
-          updatedAt: t.updated_at || t.created_at || null,
+          createdAt: t.updated_at || t.created_at || new Date().toISOString(),
+          createdBy: this.currentUser?.name || "User",
+          status: "saved",
           config: t.config,
         }));
       } catch (e) {
