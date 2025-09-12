@@ -1179,6 +1179,11 @@ function cannabisPOS() {
           }
         }
       }
+      if (page === "roles-permissions") {
+        if (typeof this.loadRolePermissions === 'function') {
+          this.loadRolePermissions();
+        }
+      }
     },
 
     getCurrentPageTitle() {
