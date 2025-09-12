@@ -10,6 +10,28 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Supabase REST helper
+const SUPABASE_URL = process.env.SUPABASE_URL || "";
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
+async function supaFetch(path, { method = "GET", body = null, query = null } = {}) {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    return { ok: false, status: 503, json: async () => ({ error: "Supabase not configured" }) };
+  }
+  const url = new URL(`${SUPABASE_URL}/rest/v1/${path}`);
+  if (query && typeof query === "object") Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
+  const res = await fetch(url, {
+    method,
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation",
+    },
+    body: body ? JSON.stringify(body) : null,
+  });
+  return res;
+}
+
 // In-memory dev auth store with disk persistence
 const devStore = {
   users: [], // { id, name, email, role, permissions, employee, password, pin, employee_id }
