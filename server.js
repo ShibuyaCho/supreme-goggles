@@ -612,6 +612,132 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res, next) => {
   }
 });
 
+// Settings: POS get
+app.get("/api/settings/pos", async (_req, res) => {
+  // Defaults (mirrors Laravel defaults)
+  const defaults = {
+    sales_tax: 0.0,
+    excise_tax: 10.0,
+    cannabis_tax: 17.0,
+    tax_inclusive: false,
+    store_name: "Cannabest POS",
+    store_address: "",
+    store_phone: "",
+    store_email: "",
+    website: "",
+    store_manager: "",
+    license_number: "",
+    receipt_footer: "Thank you for your business!\nKeep receipt for returns and warranty.",
+    exit_label_categories: ["Flower","Pre-Rolls","Concentrates","Edibles"],
+    auto_print_receipt: false,
+    receipt_autoprint: false,
+    receipt_categories_autoprint: [],
+    receipt_show_tax_breakdown: true,
+    receipt_show_metrc: true,
+    receipt_show_loyalty: true,
+    receipt_show_qr_code: false,
+    default_receipt_printer: "",
+    receipt_paper_size: "80mm",
+    require_customer: true,
+    age_verification: true,
+    limit_enforcement: true,
+    accept_cash: true,
+    accept_debit: true,
+    accept_check: false,
+    round_to_nearest: false,
+    minimum_price_enabled: false,
+    minimum_price_amount: 0.01,
+    minimum_price_categories: [],
+    inventory_view_mode: "cards",
+    expandable_cart: true,
+    auto_delete_zero_quantity: false,
+    auto_delete_zero_days: 1,
+    metrc_enabled: true,
+    dark_mode: false,
+    theme_color: "green",
+    font_size: "medium",
+    high_contrast: false,
+    reduce_motion: false,
+    business_hours: [
+      { day: 'Monday', is_open: true, open_time: '09:00', close_time: '21:00' },
+      { day: 'Tuesday', is_open: true, open_time: '09:00', close_time: '21:00' },
+      { day: 'Wednesday', is_open: true, open_time: '09:00', close_time: '21:00' },
+      { day: 'Thursday', is_open: true, open_time: '09:00', close_time: '21:00' },
+      { day: 'Friday', is_open: true, open_time: '09:00', close_time: '21:00' },
+      { day: 'Saturday', is_open: true, open_time: '10:00', close_time: '20:00' },
+      { day: 'Sunday', is_open: true, open_time: '11:00', close_time: '19:00' },
+    ],
+  };
+  try {
+    const r = await supaFetch("pos_settings?id=eq.default&select=*", { method: "GET" });
+    if (r.ok) {
+      const arr = await r.json();
+      const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+      const settings = row?.settings && typeof row.settings === 'object' ? { ...defaults, ...row.settings } : defaults;
+      return res.json({ success: true, settings, tax_rate: settings.sales_tax ?? 20.0, medical_tax_rate: 0.0, currency: 'USD', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+    }
+  } catch (_) {}
+  return res.json({ success: true, settings: defaults, tax_rate: defaults.sales_tax ?? 20.0, medical_tax_rate: 0.0, currency: 'USD', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+});
+
+// Settings: POS update
+app.post("/api/settings/pos", async (req, res) => {
+  const incoming = req.body?.settings || req.body || {};
+  try {
+    const r = await supaFetch("pos_settings", { method: "POST", body: [{ id: "default", settings: incoming, updated_at: new Date().toISOString() }], query: { on_conflict: "id" } });
+    const payload = r.ok ? await r.json() : null;
+    return res.json({ success: true, settings: incoming, saved: payload });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: "Failed to save settings" });
+  }
+});
+
+// Employees: list
+app.get("/api/employees", async (_req, res) => {
+  try {
+    const r = await supaFetch("employees?select=*", { method: "GET" });
+    const payload = r.ok ? await r.json() : [];
+    res.json({ success: true, employees: payload });
+  } catch (e) {
+    res.json({ success: true, employees: [] });
+  }
+});
+
+// Employees: create
+app.post("/api/employees", async (req, res) => {
+  const b = req.body || {};
+  const row = {
+    employee_id: b.employee_id || ("EMP" + Math.random().toString(36).slice(2,7).toUpperCase()),
+    first_name: b.first_name || b.name?.split(' ')[0] || "",
+    last_name: b.last_name || b.name?.split(' ').slice(1).join(' ') || "",
+    role: b.role || "cashier",
+    email: b.email || null,
+    phone: b.phone || null,
+    hourly_rate: b.hourly_rate ?? null,
+    last_login: new Date().toISOString(),
+  };
+  try {
+    const r = await supaFetch("employees", { method: "POST", body: [row] });
+    const payload = r.ok ? await r.json() : null;
+    res.status(201).json({ success: true, employee: Array.isArray(payload) ? payload[0] : payload });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed to create employee" });
+  }
+});
+
+// Employees: update
+app.put("/api/employees/:id", async (req, res) => {
+  const id = req.params.id;
+  const b = req.body || {};
+  try {
+    const r = await supaFetch(`employees?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: b });
+    const payload = r.ok ? await r.json() : null;
+    res.json({ success: true, employee: Array.isArray(payload) ? payload[0] : payload });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed to update employee" });
+  }
+});
+
 // Customers: list
 app.get("/api/customers", async (req, res) => {
   try {
