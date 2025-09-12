@@ -91,6 +91,7 @@ class EmployeesController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
+        $hashedPassword = Hash::make($request->password);
         $employee = Employee::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
@@ -105,24 +106,30 @@ class EmployeesController extends Controller
             'worker_permit' => $request->worker_permit,
             'metrc_api_key' => $request->metrc_api_key,
             'permissions' => $request->permissions,
-            'pin' => Hash::make(str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT))
+            'pin' => Hash::make(str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT)),
+            'password' => $hashedPassword,
         ]);
 
-        // Sync or create linked user with employee role/permissions
+        // Sync or create linked user with employee role/permissions and same login password
         try {
             $user = \App\Models\User::firstOrCreate(
                 ['employee_id' => $employee->id],
                 [
                     'name' => $employee->full_name,
                     'email' => $employee->email,
-                    'password' => Hash::make(\Illuminate\Support\Str::random(32)),
+                    'password' => $hashedPassword,
                     'is_active' => true,
                 ]
             );
-            $user->update([
+            $updates = [
                 'role' => $employee->role,
                 'permissions' => $employee->permissions,
-            ]);
+            ];
+            // If user already existed, ensure their password matches the provided one
+            if ($user && !\Illuminate\Support\Facades\Hash::check($request->password, $user->password)) {
+                $updates['password'] = $hashedPassword;
+            }
+            $user->update($updates);
             if (!$employee->user_id || (int) $employee->user_id !== (int) $user->id) {
                 $employee->forceFill(['user_id' => $user->id])->save();
             }
