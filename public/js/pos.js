@@ -1036,13 +1036,19 @@ function cannabisPOS() {
         if (res.success) list = res.data.templates || [];
         try {
           const uid = posAuth?.getUser()?.id || "anon";
-          const local = JSON.parse(localStorage.getItem(`report_templates_${uid}`) || "[]");
+          const local = JSON.parse(
+            localStorage.getItem(`report_templates_${uid}`) || "[]",
+          );
           list = [...list, ...local];
         } catch (_) {}
         let recent = [];
         try {
-          recent = JSON.parse(localStorage.getItem("cannabisPOS-reports") || "[]");
-        } catch (_) { recent = []; }
+          recent = JSON.parse(
+            localStorage.getItem("cannabisPOS-reports") || "[]",
+          );
+        } catch (_) {
+          recent = [];
+        }
         const templatesMapped = list.map((t) => ({
           id: t.id,
           name: t.name,
@@ -5670,21 +5676,33 @@ function cannabisPOS() {
         );
         const ctype = res?.headers?.["content-type"] || "";
         if (ctype.includes("application/json")) {
-          const headings = this._getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
+          const headings = this._getReportHeadings(
+            reportType,
+            this.customReport?.selectedMetrics || [],
+          );
           const csv = headings.join(",") + "\n";
           const blob = new Blob([csv], { type: "text/csv" });
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
+          const name = (this.customReport?.name || "custom-report").replace(
+            /\s+/g,
+            "_",
+          );
           a.download = `${name}.csv`;
           document.body.appendChild(a);
           a.click();
           a.remove();
           setTimeout(() => URL.revokeObjectURL(url), 3000);
         } else {
-          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
-          this._triggerDownload(res, `${name}.${fmt === "excel" ? "xlsx" : fmt}`);
+          const name = (this.customReport?.name || "custom-report").replace(
+            /\s+/g,
+            "_",
+          );
+          this._triggerDownload(
+            res,
+            `${name}.${fmt === "excel" ? "xlsx" : fmt}`,
+          );
         }
         this.showToast("Report generated successfully!", "success");
       } catch (e) {
@@ -5782,9 +5800,15 @@ function cannabisPOS() {
             user_id: uid,
             name: this.customReport.name,
             description: this.customReport.description || "",
-            report_type: this._mapSourceToReport((this.customReport?.dataSources?.[0] || "sales").toLowerCase()),
-            format: (this.customReport?.exportFormats?.[0] || "pdf").toLowerCase(),
-            include_charts: !!this.customReport?.includeTrends || !!this.customReport?.includeBreakdowns,
+            report_type: this._mapSourceToReport(
+              (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
+            ),
+            format: (
+              this.customReport?.exportFormats?.[0] || "pdf"
+            ).toLowerCase(),
+            include_charts:
+              !!this.customReport?.includeTrends ||
+              !!this.customReport?.includeBreakdowns,
             orientation: this.customReport?.orientation || "portrait",
             paper_size: this.customReport?.paperSize || "a4",
             config: payload.config,
@@ -5793,7 +5817,10 @@ function cannabisPOS() {
           };
           list.push(tpl);
           localStorage.setItem(key, JSON.stringify(list));
-          this.showToast(`Report template "${tpl.name}" saved (offline).`, "warning");
+          this.showToast(
+            `Report template "${tpl.name}" saved (offline).`,
+            "warning",
+          );
           // Optimistically add to Recent Reports with expected shape and persist
           try {
             const item = {
@@ -5825,25 +5852,84 @@ function cannabisPOS() {
 
     _getReportHeadings(reportType, metrics) {
       if (Array.isArray(metrics) && metrics.length) {
-        return metrics.map((m) => String(m).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+        return metrics.map((m) =>
+          String(m)
+            .replace(/_/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+        );
       }
       switch (reportType) {
         case "sales":
-          return ["Date", "Transaction ID", "Customer", "Items", "Subtotal", "Tax", "Total", "Payment Method"];
+          return [
+            "Date",
+            "Transaction ID",
+            "Customer",
+            "Items",
+            "Subtotal",
+            "Tax",
+            "Total",
+            "Payment Method",
+          ];
         case "inventory":
-          return ["Product Name", "SKU", "Category", "Quantity", "Unit Cost", "Unit Price", "Total Value", "Room", "METRC Tag"];
+          return [
+            "Product Name",
+            "SKU",
+            "Category",
+            "Quantity",
+            "Unit Cost",
+            "Unit Price",
+            "Total Value",
+            "Room",
+            "METRC Tag",
+          ];
         case "customers":
-          return ["Customer Name", "Type", "Email", "Phone", "Total Visits", "Total Spent", "Average Order", "Last Visit"];
+          return [
+            "Customer Name",
+            "Type",
+            "Email",
+            "Phone",
+            "Total Visits",
+            "Total Spent",
+            "Average Order",
+            "Last Visit",
+          ];
         case "products":
-          return ["Name", "Category", "SKU", "Price", "Cost", "Quantity", "Room", "THC%", "CBD%", "METRC Tag"];
+          return [
+            "Name",
+            "Category",
+            "SKU",
+            "Price",
+            "Cost",
+            "Quantity",
+            "Room",
+            "THC%",
+            "CBD%",
+            "METRC Tag",
+          ];
         case "analytics":
           return ["Metric", "Value", "Period", "Change", "Percentage"];
         case "metrc":
-          return ["Package Tag", "Product", "Quantity", "Unit", "Status", "Location", "Last Modified"];
+          return [
+            "Package Tag",
+            "Product",
+            "Quantity",
+            "Unit",
+            "Status",
+            "Location",
+            "Last Modified",
+          ];
         case "compliance":
           return ["Date", "Type", "Description", "Status", "Employee", "Notes"];
         case "employees":
-          return ["Name", "Role", "Employee ID", "Email", "Hours Worked", "Sales Count", "Performance Score"];
+          return [
+            "Name",
+            "Role",
+            "Employee ID",
+            "Email",
+            "Hours Worked",
+            "Sales Count",
+            "Performance Score",
+          ];
         default:
           return ["Column 1", "Column 2", "Column 3"];
       }
@@ -5892,12 +5978,16 @@ function cannabisPOS() {
         const rt = this._mapSourceToReport(
           (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
         );
-        const headings = this._getReportHeadings(rt, this.customReport?.selectedMetrics || []);
-        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${rt} Report</title></head><body><h1>${rt} Report</h1><table border="1" cellspacing="0" cellpadding="6"><thead><tr>${headings.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody><tr>${headings.map(()=>"<td></td>").join("")}</tr></tbody></table></body></html>`;
+        const headings = this._getReportHeadings(
+          rt,
+          this.customReport?.selectedMetrics || [],
+        );
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${rt} Report</title></head><body><h1>${rt} Report</h1><table border="1" cellspacing="0" cellpadding="6"><thead><tr>${headings.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody><tr>${headings.map(() => "<td></td>").join("")}</tr></tbody></table></body></html>`;
         const blob = new Blob([html], { type: "text/html" });
         const url = URL.createObjectURL(blob);
         const w = window.open(url, "_blank");
-        if (!w) this.showToast("Popup blocked. Enable popups to preview.", "warning");
+        if (!w)
+          this.showToast("Popup blocked. Enable popups to preview.", "warning");
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       }
     },
@@ -5923,7 +6013,10 @@ function cannabisPOS() {
         );
         const ctype = res?.headers?.["content-type"] || "text/csv";
         if (ctype.includes("application/json")) throw new Error("stub");
-        const file = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+        const file =
+          res?.data instanceof Blob
+            ? res.data
+            : new Blob([res.data], { type: ctype });
         const url = URL.createObjectURL(file);
         const a = document.createElement("a");
         a.href = url;
@@ -5935,7 +6028,10 @@ function cannabisPOS() {
       } catch (e) {
         // Client-side CSV fallback with headers only
         const rt = this._mapReportType(type);
-        const headings = this._getReportHeadings(rt, this.customReport?.selectedMetrics || []);
+        const headings = this._getReportHeadings(
+          rt,
+          this.customReport?.selectedMetrics || [],
+        );
         const csv = headings.join(",") + "\n";
         const blob = new Blob([csv], { type: "text/csv" });
         const url = URL.createObjectURL(blob);
