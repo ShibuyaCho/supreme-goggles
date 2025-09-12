@@ -332,6 +332,60 @@ class AuthController extends Controller
     }
 
     /**
+     * Verify a 4-digit PIN for the current user or a specified employee.
+     */
+    public function verifyPin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pin' => 'required|digits:4',
+            'employee_id' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Resolve employee: explicit employee_id or linked to current user
+        $employee = null;
+        if ($request->filled('employee_id')) {
+            $employee = Employee::where('employee_id', $request->employee_id)->first();
+        }
+        if (!$employee && $user->employee) {
+            $employee = $user->employee;
+        }
+        if (!$employee) {
+            return response()->json(['error' => 'Employee not found'], 404);
+        }
+
+        if (!$employee->isActive()) {
+            return response()->json(['error' => 'Employee inactive'], 403);
+        }
+
+        // Admin/manager bypass allowed if caller has role
+        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return response()->json(['success' => true]);
+        }
+        if (method_exists($user, 'isManager') && $user->isManager()) {
+            return response()->json(['success' => true]);
+        }
+
+        $ok = $employee->pin && Hash::check($request->pin, (string)$employee->pin);
+        if (!$ok) {
+            return response()->json(['error' => 'Invalid PIN'], 401);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
      * Register new user (admin only)
      */
     public function register(Request $request)
