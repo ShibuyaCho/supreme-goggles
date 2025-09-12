@@ -2305,13 +2305,14 @@ function cannabisPOS() {
             email: e.email || "",
             phone: e.phone || "",
             role: (e.role || e.position || "budtender").toLowerCase(),
-            status: e.status || (e.is_active ? "active" : "inactive"),
+            status: (e.is_active === false || String(e.status||'').toLowerCase()==='inactive') ? 'inactive' : 'active',
             hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : "",
             payRate: Number(e.hourly_rate ?? 0),
             hoursWorked: Number(e.hours_worked ?? 0),
             workerPermit: e.worker_permit || e.workerPermit || "",
             metrcApiKey: e.metrc_api_key || e.metrcApiKey || "",
           }));
+          try { this.ensureMyEmployeeListed(); } catch(_) {}
         }
       } catch (err) {
         console.warn("Failed to fetch employees", err);
