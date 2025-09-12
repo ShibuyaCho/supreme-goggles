@@ -992,6 +992,9 @@ function cannabisPOS() {
         // Load settings from API
         await this.loadApiSettings();
 
+        // Load saved report templates
+        await this.fetchReportTemplates();
+
         // Test METRC connection if user has permission
         if (this.hasPermission("metrc:access")) {
           await this.testMetrcConnection();
