@@ -23,7 +23,8 @@
         "last_name": ""
       },
       "password": "Hms2019!",
-      "pin": "1234"
+      "pin": "1234",
+      "status": "inactive"
     }
   ],
   "nextUserId": 2,
