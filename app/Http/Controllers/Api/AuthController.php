@@ -185,20 +185,33 @@ class AuthController extends Controller
             }
         } catch (\Throwable $e) {}
 
-        // Keep employee role/permissions in sync with authenticated user (email/password login)
-        // Do NOT downgrade user's role based on employee defaults here
+        // Resolve role/permission conflicts by promoting to the highest role
         if ($user && $user->employee) {
             $emp = $user->employee;
-            $empUpdates = [];
-            if (!empty($user->role) && $emp->role !== $user->role) {
-                $empUpdates['role'] = $user->role;
+            $rank = ['cashier' => 1, 'budtender' => 2, 'inventory' => 3, 'manager' => 4, 'admin' => 5];
+            $uRole = strtolower((string)$user->role);
+            $eRole = strtolower((string)$emp->role);
+            $desiredRole = ($rank[$uRole] ?? 0) >= ($rank[$eRole] ?? 0) ? $uRole : $eRole;
+            if (!in_array($desiredRole, array_keys($rank), true)) {
+                $desiredRole = $uRole ?: ($eRole ?: 'cashier');
             }
-            if (is_array($user->permissions) && $user->permissions !== $emp->permissions) {
-                $empUpdates['permissions'] = $user->permissions;
+            $unionPerms = [];
+            $uPerms = is_array($user->permissions) ? $user->permissions : [];
+            $ePerms = is_array($emp->permissions) ? $emp->permissions : [];
+            $hasAll = ($desiredRole === 'admin') || in_array('*', $uPerms, true) || in_array('*', $ePerms, true);
+            if ($hasAll) {
+                $unionPerms = ['*'];
+            } else {
+                $unionPerms = array_values(array_unique(array_merge($uPerms, $ePerms)));
             }
-            if (!empty($empUpdates)) {
-                $emp->update($empUpdates);
-            }
+            $uUpdates = [];
+            $eUpdates = [];
+            if ($user->role !== $desiredRole) $uUpdates['role'] = $desiredRole;
+            if ($emp->role !== $desiredRole) $eUpdates['role'] = $desiredRole;
+            if ($user->permissions !== $unionPerms) $uUpdates['permissions'] = $unionPerms;
+            if ($emp->permissions !== $unionPerms) $eUpdates['permissions'] = $unionPerms;
+            if (!empty($uUpdates)) $user->update($uUpdates);
+            if (!empty($eUpdates)) $emp->update($eUpdates);
         }
 
         if (!$user->is_active) {
@@ -448,19 +461,28 @@ class AuthController extends Controller
     public function me(Request $request)
     {
         $user = $request->user();
-        // Align employee role/permissions with user on fetch to avoid accidental downgrades
+        // Promote both User and Employee to the highest role on fetch as well
         if ($user && $user->employee) {
             $emp = $user->employee;
-            $empUpdates = [];
-            if (!empty($user->role) && $emp->role !== $user->role) {
-                $empUpdates['role'] = $user->role;
+            $rank = ['cashier' => 1, 'budtender' => 2, 'inventory' => 3, 'manager' => 4, 'admin' => 5];
+            $uRole = strtolower((string)$user->role);
+            $eRole = strtolower((string)$emp->role);
+            $desiredRole = ($rank[$uRole] ?? 0) >= ($rank[$eRole] ?? 0) ? $uRole : $eRole;
+            if (!in_array($desiredRole, array_keys($rank), true)) {
+                $desiredRole = $uRole ?: ($eRole ?: 'cashier');
             }
-            if (is_array($user->permissions) && $user->permissions !== $emp->permissions) {
-                $empUpdates['permissions'] = $user->permissions;
-            }
-            if (!empty($empUpdates)) {
-                $emp->update($empUpdates);
-            }
+            $uPerms = is_array($user->permissions) ? $user->permissions : [];
+            $ePerms = is_array($emp->permissions) ? $emp->permissions : [];
+            $hasAll = ($desiredRole === 'admin') || in_array('*', $uPerms, true) || in_array('*', $ePerms, true);
+            $unionPerms = $hasAll ? ['*'] : array_values(array_unique(array_merge($uPerms, $ePerms)));
+            $uUpdates = [];
+            $eUpdates = [];
+            if ($user->role !== $desiredRole) $uUpdates['role'] = $desiredRole;
+            if ($emp->role !== $desiredRole) $eUpdates['role'] = $desiredRole;
+            if ($user->permissions !== $unionPerms) $uUpdates['permissions'] = $unionPerms;
+            if ($emp->permissions !== $unionPerms) $eUpdates['permissions'] = $unionPerms;
+            if (!empty($uUpdates)) $user->update($uUpdates);
+            if (!empty($eUpdates)) $emp->update($eUpdates);
         }
 
         return response()->json([
