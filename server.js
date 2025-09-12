@@ -30,9 +30,11 @@ function loadDevState() {
       const data = JSON.parse(raw || "{}");
       if (Array.isArray(data.users)) devStore.users = data.users;
       if (typeof data.nextUserId === "number") nextUserId = data.nextUserId;
-      if (typeof data.nextEmployeeId === "number") nextEmployeeId = data.nextEmployeeId;
+      if (typeof data.nextEmployeeId === "number")
+        nextEmployeeId = data.nextEmployeeId;
       if (Array.isArray(data.devTemplates)) devTemplates = data.devTemplates;
-      if (typeof data.nextTemplateId === "number") nextTemplateId = data.nextTemplateId;
+      if (typeof data.nextTemplateId === "number")
+        nextTemplateId = data.nextTemplateId;
     }
   } catch (e) {
     console.warn("Failed to load dev auth state:", e.message);
@@ -231,7 +233,12 @@ app.post(["/api/auth/login", "/api/login"], (req, res) => {
         "analytics:*",
         "metrc:*",
       ],
-      employee: { id: nextEmployeeId, employee_id: empId, first_name, last_name },
+      employee: {
+        id: nextEmployeeId,
+        employee_id: empId,
+        first_name,
+        last_name,
+      },
       password: String(password),
       pin: "1234",
     };
@@ -240,7 +247,9 @@ app.post(["/api/auth/login", "/api/login"], (req, res) => {
   }
 
   if (!user) {
-    return res.status(401).json({ error: "Invalid credentials", success: false });
+    return res
+      .status(401)
+      .json({ error: "Invalid credentials", success: false });
   }
 
   // If password mismatch, update stored password in dev (prevents lockout)
@@ -294,7 +303,8 @@ app.get(["/api/auth/me", "/api/me"], (req, res) => {
 // Auth: refresh token
 app.post(["/api/auth/refresh", "/api/refresh"], (req, res) => {
   const user = authFromReq(req);
-  if (!user) return res.status(401).json({ error: "Unauthorized", success: false });
+  if (!user)
+    return res.status(401).json({ error: "Unauthorized", success: false });
   const token = genToken();
   devStore.tokens.set(token, user.id);
   res.json({ message: "Token refreshed", token, success: true });
