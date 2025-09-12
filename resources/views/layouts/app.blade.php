@@ -184,9 +184,13 @@
                                class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('analytics.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                                 Analytics
                             </a>
-                            <a href="{{ route('sales.index') }}" 
+                            <a href="{{ route('sales.index') }}"
                                class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('sales.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                                 Sales
+                            </a>
+                            <a href="{{ route('roles-permissions.index') }}"
+                               class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('roles-permissions.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
+                                Roles & Permissions
                             </a>
                         </div>
                     </div>
