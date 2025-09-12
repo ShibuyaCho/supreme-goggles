@@ -502,6 +502,7 @@ function cannabisPOS() {
 
     // Additional arrays and objects
     employees: [],
+    employeePendingDelete: null,
     employeeSearchQuery: "",
     employeeRoleFilter: "",
     employeeStatusFilter: "",
@@ -5225,25 +5226,101 @@ function cannabisPOS() {
       this.closeAddDrawerModal();
     },
 
+    // Employee permissions helper
+    canManageEmployees() {
+      try {
+        if (window.posAuth?.hasRole && (posAuth.hasRole('admin') || posAuth.hasRole('manager'))) return true;
+        if (window.posAuth?.hasPermission && posAuth.hasPermission('employees:manage')) return true;
+      } catch (e) {}
+      return false;
+    },
+
     // PIN Modal Functions
     closePinModal() {
       this.showPinModal = false;
       this.pinInput = "";
       this.pinError = "";
       this.pinAction = "";
+      this.employeePendingDelete = null;
     },
 
-    verifyPinAndDelete() {
+    async verifyPinAndDelete() {
       if (!this.pinInput || this.pinInput.length < 4) {
         this.pinError = "Please enter a valid PIN";
         return;
       }
+      // Verify current user's PIN via API (uses aliases /api/auth/pin-login or /api/pin-login)
+      try {
+        const me = window.posAuth?.getUser?.() || {};
+        let empId = me?.employee?.employee_id || '';
+        if (!empId && window.posAuth?.refreshUser) {
+          const refreshed = await posAuth.refreshUser();
+          empId = refreshed?.employee?.employee_id || '';
+        }
+        if (!empId) {
+          this.pinError = 'Unable to verify PIN: missing employee ID';
+          return;
+        }
+        const verify = await posAuth.apiRequest('post', '/pin-login', { employee_id: empId, pin: this.pinInput });
+        if (!verify?.success) {
+          this.pinError = verify?.message || 'PIN verification failed';
+          return;
+        }
+      } catch (e) {
+        this.pinError = e?.message || 'PIN verification failed';
+        return;
+      }
 
-      if (this.pinInput.length >= 4) {
-        this.showToast("Item deleted successfully", "success");
+      // Execute action
+      try {
+        if (this.pinAction === 'deleteEmployee' && this.employeePendingDelete?.id) {
+          const id = this.employeePendingDelete.id;
+          const res = await posAuth.apiRequest('delete', `/employees/${id}`);
+          if (!res.success) throw new Error(res.message || 'Delete failed');
+          // Remove from local list
+          this.employees = (this.employees || []).filter(e => String(e.id) !== String(id));
+          this.showToast('Employee deleted', 'success');
+        } else if (this.pinAction === 'deleteRoom') {
+          this.showToast('Room deleted', 'success');
+        } else if (this.pinAction === 'deleteDrawer') {
+          this.showToast('Cash drawer deleted', 'success');
+        }
         this.closePinModal();
-      } else {
-        this.pinError = "Invalid PIN";
+      } catch (e) {
+        this.pinError = e?.message || 'Operation failed';
+      }
+    },
+
+    // Employee actions
+    async deleteEmployee(employee) {
+      if (!this.canManageEmployees()) {
+        this.showToast('Insufficient permissions', 'error');
+        return;
+      }
+      if (!employee?.id) return;
+      this.employeePendingDelete = employee;
+      this.pinAction = 'deleteEmployee';
+      this.pinInput = '';
+      this.pinError = '';
+      this.showPinModal = true;
+    },
+
+    async toggleEmployeeStatus(employee) {
+      if (!this.canManageEmployees()) {
+        this.showToast('Insufficient permissions', 'error');
+        return;
+      }
+      if (!employee?.id) return;
+      const next = employee.status === 'active' ? 'inactive' : 'active';
+      try {
+        const res = await posAuth.apiRequest('put', `/employees/${employee.id}`, { status: next });
+        if (!res.success) throw new Error(res.message || 'Failed to update status');
+        // Update local list
+        const idx = (this.employees || []).findIndex(e => String(e.id) === String(employee.id));
+        if (idx !== -1) this.employees[idx] = { ...this.employees[idx], status: next };
+        this.showToast(next === 'active' ? 'Employee activated' : 'Employee set to inactive', 'success');
+      } catch (e) {
+        this.showToast(e?.message || 'Failed to update status', 'error');
       }
     },
 
