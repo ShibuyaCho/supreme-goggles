@@ -5776,6 +5776,17 @@ function cannabisPOS() {
           list.push(tpl);
           localStorage.setItem(key, JSON.stringify(list));
           this.showToast(`Report template "${tpl.name}" saved (offline).`, "warning");
+          // Optimistically add to recentReports
+          try {
+            const item = {
+              id: tpl.id,
+              name: tpl.name,
+              type: tpl.report_type,
+              updatedAt: tpl.updated_at,
+              config: tpl.config,
+            };
+            this.recentReports = [item, ...this.recentReports];
+          } catch (_) {}
           await this.fetchReportTemplates();
         } catch (_) {
           this.showToast("Failed to save report template", "error");
