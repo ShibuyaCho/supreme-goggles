@@ -5267,12 +5267,31 @@ function cannabisPOS() {
         return;
       }
 
-      // Verify PIN (primary API)
+      // Verify PIN (primary API). If unauthorized, re-auth using PIN.
       let pinOk = false;
       try {
         const verify = await window.posAuth?.apiRequest?.("post", "/auth/verify-pin", { pin: this.pinInput });
         pinOk = !!(verify && verify.success);
-      } catch (_) { pinOk = false; }
+      } catch (err) {
+        pinOk = false;
+      }
+
+      if (!pinOk) {
+        // Attempt PIN-based login to refresh token/session
+        try {
+          const empId = await this.resolveMyEmployeeId();
+          if (empId) {
+            const login = await window.posAuth?.pinLogin?.(empId, this.pinInput);
+            pinOk = !!(login && login.success);
+            if (pinOk) {
+              this.isAuthenticated = true;
+              this.currentUser = login.user || window.posAuth?.getUser?.();
+            }
+          }
+        } catch (_) {
+          pinOk = false;
+        }
+      }
 
       // Fallback: accept current user's PIN if they can manage employees
       if (!pinOk) {
@@ -5311,7 +5330,7 @@ function cannabisPOS() {
           );
 
           if (!res || res.success === false) {
-            // Treat 404 as idempotent success; otherwise try web API fallback
+            // Treat 404 as idempotent success; otherwise try API fallback
             if (res?.status !== 404) {
               try {
                 const headers = { Accept: "application/json" };
@@ -5332,6 +5351,7 @@ function cannabisPOS() {
             );
           });
           try { await this.fetchEmployeesFromApi(); } catch (_) {}
+          try { this.ensureMyEmployeeListed(); } catch (_) {}
           this.showToast("Employee deactivated", "success");
         } else if (this.pinAction === "deleteRoom") {
           this.showToast("Room deleted", "success");
@@ -5342,6 +5362,24 @@ function cannabisPOS() {
       } catch (e) {
         this.pinError = e?.message || "Operation failed";
       }
+    },
+
+    // Resolve current employee ID for PIN re-auth flows
+    async resolveMyEmployeeId() {
+      try {
+        const el = document.getElementById('user-menu-container');
+        const id = el?.dataset?.employeeId;
+        if (id) return String(id);
+      } catch (_) {}
+      try {
+        const u = await window.posAuth?.refreshUser?.();
+        if (u?.employee?.id) return String(u.employee.id);
+      } catch (_) {}
+      try {
+        const u = window.posAuth?.getUser?.();
+        if (u?.employee?.id) return String(u.employee.id);
+      } catch (_) {}
+      return '';
     },
 
     // Employee actions
