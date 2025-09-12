@@ -16,6 +16,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\OrderQueueController;
 use App\Http\Controllers\PriceTiersController;
 use App\Http\Controllers\ProductActionsController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +33,12 @@ use App\Http\Controllers\ProductActionsController;
 Route::get('/', function () {
     return view('pos-main.index');
 });
+
+// Email Verification (web callback)
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed','throttle:6,1'])
+    ->name('verification.verify');
 
 // Redirect legacy routes
 Route::get('/pos', function () {
