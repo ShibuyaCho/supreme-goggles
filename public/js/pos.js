@@ -1313,13 +1313,17 @@ function cannabisPOS() {
       try {
         const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
         const s = (res && res.success && (res.data?.settings || res.data)) || {};
-        this.rolePermissions = s.role_permissions || {
+        const __apiPerms = s.role_permissions && typeof s.role_permissions === 'object' ? s.role_permissions : null;
+        let __backup = null; try { __backup = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null'); } catch(_) { __backup = null; }
+        const __defaults = {
           admin: ['*'],
           manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
           inventory: ['products:*','metrc:access','metrc:sync','analytics:read'],
           budtender: ['pos:*','products:read','customers:read','sales:create','analytics:read'],
           cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
         };
+        const __isDefaults = (obj) => { if (!obj || typeof obj !== 'object') return true; return Object.keys(obj).sort().join(',') === Object.keys(__defaults).sort().join(','); };
+        this.rolePermissions = __apiPerms && !__isDefaults(__apiPerms) ? __apiPerms : (__backup && typeof __backup === 'object' ? __backup : __defaults);
       } catch (e) {
         try {
           const b = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null');
