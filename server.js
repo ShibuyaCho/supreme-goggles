@@ -390,12 +390,34 @@ app.post(["/api/auth/refresh", "/api/refresh"], (req, res) => {
 });
 
 // Auth: verify current user's PIN
-app.post("/api/auth/verify-pin", (req, res) => {
+app.post("/api/auth/verify-pin", async (req, res) => {
   const user = authFromReq(req);
   if (!user) return res.status(401).json({ success: false, error: "Unauthorized" });
-  const pin = String(req.body?.pin || "");
-  const expected = String(user.pin || "1234");
-  if (pin && pin === expected) return res.json({ success: true });
+  const pin = String(req.body?.pin || "").trim();
+  if (!pin) return res.status(422).json({ success: false, error: "PIN required" });
+  const hasPerm = (() => {
+    if ((user.role || '').toLowerCase() === 'admin') return true;
+    if (Array.isArray(user.permissions)) {
+      if (user.permissions.includes('*')) return true;
+      if (user.permissions.includes('employees:*')) return true;
+      if (user.permissions.includes('employees:manage')) return true;
+    }
+    return false;
+  })();
+  if (!hasPerm) return res.status(403).json({ success: false, error: "Insufficient permissions" });
+  // First, compare against in-memory/dev value if present
+  if (user.pin && String(user.pin) === pin) return res.json({ success: true });
+  // Fallback: check Supabase app_users by email
+  try {
+    if (user.email) {
+      const r = await supaFetch(`app_users?email=eq.${encodeURIComponent(user.email)}&select=pin`, { method: 'GET' });
+      if (r.ok) {
+        const rows = await r.json();
+        const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+        if (row && String(row.pin || '') === pin) return res.json({ success: true });
+      }
+    }
+  } catch (_) {}
   return res.status(401).json({ success: false, error: "Invalid employee ID or PIN" });
 });
 
