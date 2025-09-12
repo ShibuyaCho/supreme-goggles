@@ -135,7 +135,14 @@ class AuthManager {
             return true;
         }
 
-        return this.user.permissions.includes(permission);
+        if (this.user.permissions.includes(permission)) return true;
+        // Support wildcard namespace, e.g., "products:*"
+        const idx = permission.indexOf(':');
+        if (idx > 0) {
+            const ns = permission.slice(0, idx);
+            if (this.user.permissions.includes(`${ns}:*`)) return true;
+        }
+        return false;
     }
 
     hasRole(role) {
