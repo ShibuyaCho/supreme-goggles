@@ -389,6 +389,16 @@ app.post(["/api/auth/refresh", "/api/refresh"], (req, res) => {
   res.json({ message: "Token refreshed", token, success: true });
 });
 
+// Auth: verify current user's PIN
+app.post("/api/auth/verify-pin", (req, res) => {
+  const user = authFromReq(req);
+  if (!user) return res.status(401).json({ success: false, error: "Unauthorized" });
+  const pin = String(req.body?.pin || "");
+  const expected = String(user.pin || "1234");
+  if (pin && pin === expected) return res.json({ success: true });
+  return res.status(401).json({ success: false, error: "Invalid employee ID or PIN" });
+});
+
 // In-memory saved report templates are declared above and persisted to disk
 
 function getAuthUser(req) {
