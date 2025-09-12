@@ -7760,7 +7760,7 @@
                       monitoring
                     </p>
                     <p class="text-sm text-gray-500">
-                      ✅ Package detail viewing and inventory import
+                      �� Package detail viewing and inventory import
                       functionality
                     </p>
                     <p class="text-sm text-gray-500">
@@ -13357,6 +13357,85 @@
                         </button>
                       </div>
                     </div>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Roles & Permissions Page -->
+              <template x-if="currentPage === 'roles-permissions'">
+                <div class="space-y-6">
+                  <div class="bg-white border border-gray-200 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                      <div>
+                        <h2 class="text-2xl font-bold text-gray-900">Roles & Permissions</h2>
+                        <p class="text-sm text-gray-600">Define what each role can access across the POS.</p>
+                      </div>
+                      <button @click="saveRolePermissions()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">Save Changes</button>
+                    </div>
+
+                    <div class="flex items-center gap-3 mb-6">
+                      <label class="text-sm font-medium text-gray-700">Select Role</label>
+                      <select x-model="selectedRole" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
+                        <option value="admin">Administrator</option>
+                        <option value="manager">Manager</option>
+                        <option value="inventory">Inventory</option>
+                        <option value="budtender">Budtender</option>
+                        <option value="cashier">Cashier</option>
+                      </select>
+                      <div class="ml-auto text-sm text-gray-600" x-text="selectedRole.toUpperCase() + ': ' + (rolePermissions[selectedRole]?.length || 0) + ' permissions selected'"></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div class="space-y-4">
+                        <div>
+                          <h4 class="font-medium text-gray-900 mb-2">POS</h4>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('pos:access')" @change="togglePerm('pos:access')"> <span>POS Access</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('pos:sales')" @change="togglePerm('pos:sales')"> <span>Process Sales</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('pos:scanner_only')" @change="togglePerm('pos:scanner_only')"> <span>Require scanner to add to cart</span></label>
+                        </div>
+                        <div>
+                          <h4 class="font-medium text-gray-900 mb-2">Products</h4>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('products:read')" @change="togglePerm('products:read')"> <span>View Products</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('products:write')" @change="togglePerm('products:write')"> <span>Create/Update Products</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('products:print')" @change="togglePerm('products:print')"> <span>Print Barcodes/Labels</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('products:transfer')" @change="togglePerm('products:transfer')"> <span>Transfer Rooms</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('products:delete')" @change="togglePerm('products:delete')"> <span>Delete Products</span></label>
+                        </div>
+                        <div>
+                          <h4 class="font-medium text-gray-900 mb-2">Sales</h4>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('sales:read')" @change="togglePerm('sales:read')"> <span>View Sales</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('sales:create')" @change="togglePerm('sales:create')"> <span>Create Sales</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('sales:manage')" @change="togglePerm('sales:manage')"> <span>Manage/Refund/Void</span></label>
+                        </div>
+                      </div>
+                      <div class="space-y-4">
+                        <div>
+                          <h4 class="font-medium text-gray-900 mb-2">Customers</h4>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('customers:read')" @change="togglePerm('customers:read')"> <span>View Customers</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('customers:write')" @change="togglePerm('customers:write')"> <span>Create/Update Customers</span></label>
+                        </div>
+                        <div>
+                          <h4 class="font-medium text-gray-900 mb-2">Analytics & Reports</h4>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('analytics:read')" @change="togglePerm('analytics:read')"> <span>View Analytics</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('reports:read')" @change="togglePerm('reports:read')"> <span>View Reports</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('reports:export')" @change="togglePerm('reports:export')"> <span>Export Reports</span></label>
+                        </div>
+                        <div>
+                          <h4 class="font-medium text-gray-900 mb-2">Employees & METRC</h4>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('employees:read')" @change="togglePerm('employees:read')"> <span>View Employees</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('employees:manage')" @change="togglePerm('employees:manage')"> <span>Create/Manage Employees</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('metrc:access')" @change="togglePerm('metrc:access')"> <span>METRC Access</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('metrc:sync')" @change="togglePerm('metrc:sync')"> <span>Sync Inventory</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('metrc:create')" @change="togglePerm('metrc:create')"> <span>Create Packages/Receipts</span></label>
+                          <label class="flex items-center gap-2 mb-1"><input type="checkbox" :checked="hasPerm('metrc:sales')" @change="togglePerm('metrc:sales')"> <span>Push Sales</span></label>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div class="border border-gray-200 rounded-lg p-4">
+                    <p class="text-gray-600">Laravel Implementation: <code class="bg-gray-100 px-2 py-1 rounded text-sm">/roles-permissions</code></p>
+                    <p class="text-sm text-gray-500 mt-1">Centralized role-based access control for the entire POS.</p>
                   </div>
                 </div>
               </template>
