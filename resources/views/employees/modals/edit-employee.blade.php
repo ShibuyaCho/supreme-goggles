@@ -163,13 +163,15 @@ document.getElementById('edit-employee-form').addEventListener('submit', async f
     if (!id) return;
     const form = e.currentTarget;
     const fd = new FormData(form);
+    const selectedRole = String(fd.get('role')||'').trim().toLowerCase();
     const payload = {
         first_name: String(fd.get('first_name')||'').trim(),
         last_name: String(fd.get('last_name')||'').trim(),
         email: String(fd.get('email')||'').trim(),
         phone: String(fd.get('phone')||'').trim(),
         department: String(fd.get('department')||'').trim(),
-        position: String(fd.get('role')||'').trim(),
+        position: selectedRole,
+        role: selectedRole,
         hourly_rate: null,
         permissions: Array.from(form.querySelectorAll('input[name="permissions[]"]:checked')).map(i=>i.value)
     };
@@ -185,7 +187,7 @@ document.getElementById('edit-employee-form').addEventListener('submit', async f
 
     try {
         document.getElementById('loading-overlay')?.classList.remove('hidden');
-        const res = await (window.axios || axios).patch(`/employees/${id}`, payload, { headers: { 'Accept': 'application/json' } });
+        const res = await (window.axios || axios).put(`/api/employees/${id}`, payload, { headers: { 'Accept': 'application/json' } });
         if (res && res.status >= 200 && res.status < 300){
             window.POS?.showToast?.('Employee updated successfully', 'success');
             closeEditEmployeeModal();
