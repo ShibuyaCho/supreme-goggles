@@ -501,7 +501,7 @@
                   x-transition:leave-end="opacity-0 scale-95"
                   class="absolute top-full left-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50"
                 >
-                  <div class="py-1" role="menu">
+                  <div id="nav-dropdown-menu" class="py-1" role="menu">
                     <!-- Point of Sale -->
                     <button
                       @click="setCurrentPage('pos'); showNavDropdown = false"
@@ -20672,5 +20672,6 @@
         });
       });
     </script>
-  </body>
+  <script>(function(){document.addEventListener('DOMContentLoaded',function(){var menu=document.getElementById('nav-dropdown-menu');if(!menu)return;function label(btn){return (btn.textContent||'').replace(/\s+/g,' ').trim();}function reorder(){var items=Array.from(menu.querySelectorAll('button'));if(!items.length)return;var top=items.find(function(b){return /Point of Sale/i.test(label(b));});var bottom=items.find(function(b){return /^Settings$/i.test(label(b));});var others=items.filter(function(b){return b!==top&&b!==bottom;}).sort(function(a,b){return label(a).localeCompare(label(b));});var frag=document.createDocumentFragment();if(top)frag.appendChild(top);others.forEach(function(b){frag.appendChild(b);});if(bottom)frag.appendChild(bottom);menu.innerHTML='';menu.appendChild(frag);}reorder();});})();</script>
+</body>
 </html>
