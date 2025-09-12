@@ -5738,6 +5738,20 @@ function cannabisPOS() {
           `Report template "${this.customReport.name}" saved successfully!`,
           "success",
         );
+        // Optimistically add to recentReports
+        try {
+          const t = res.data?.template || null;
+          if (t) {
+            const item = {
+              id: t.id,
+              name: t.name,
+              type: t.report_type,
+              updatedAt: t.updated_at || t.created_at || new Date().toISOString(),
+              config: t.config,
+            };
+            this.recentReports = [item, ...this.recentReports];
+          }
+        } catch (_) {}
         await this.fetchReportTemplates();
       } catch (e) {
         // Local fallback save
