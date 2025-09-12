@@ -531,7 +531,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     'age_verification' => (bool)($settings['age_verification'] ?? true)
                 ]
             ]);
-        });
+        })->withoutMiddleware('auth:sanctum')->middleware(['web','auth']);
 
         // Save POS settings (persist to DB and cache)
         Route::post('/pos', function(\Illuminate\Http\Request $request) {
