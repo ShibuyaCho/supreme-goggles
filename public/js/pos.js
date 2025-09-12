@@ -5768,6 +5768,7 @@ function cannabisPOS() {
           }
         } catch (_) {}
         await this.fetchReportTemplates();
+        this.initializeReportData();
         this.showCreateReportModal = false;
         this.resetCustomReport();
       } catch (e) {
