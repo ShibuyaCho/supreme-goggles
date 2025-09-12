@@ -1029,6 +1029,24 @@ function cannabisPOS() {
       }
     },
 
+    async fetchReportTemplates() {
+      try {
+        const res = await posAuth.apiRequest("get", "/reports/templates");
+        if (res.success) {
+          const list = res.data.templates || [];
+          this.recentReports = list.map((t) => ({
+            id: t.id,
+            name: t.name,
+            type: t.report_type,
+            updatedAt: t.updated_at,
+            config: t.config,
+          }));
+        }
+      } catch (e) {
+        // ignore
+      }
+    },
+
     async testMetrcConnection() {
       try {
         const result = await posAuth.testMetrcConnectionDirect();
