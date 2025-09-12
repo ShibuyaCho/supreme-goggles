@@ -105,5 +105,11 @@
             </svg>
             Settings
         </a>
+        <a href="{{ route('roles-permissions.index') }}" class="w-full flex items-center px-3 py-2 text-sm font-medium rounded-md pos-sidebar-button hover:bg-gray-700">
+            <svg class="w-4 h-4 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" clip-rule="evenodd"/>
+            </svg>
+            Roles &amp; Permissions
+        </a>
     </nav>
 </aside>
