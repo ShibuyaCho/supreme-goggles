@@ -1246,13 +1246,13 @@ function cannabisPOS() {
     openRoleModal(mode){
       this.roleModalMode = mode;
       if (mode === 'edit'){
-        this.roleModalKey = this.selectedRole;
-        this.roleModalName = this.selectedRole;
-        const list = this.rolePermissions[this.selectedRole] || [];
+        this.roleModalSelectKey = this.selectedRole;
+        const list = this.rolePermissions[this.roleModalSelectKey] || [];
         this.roleModalPerms = list.includes('*') ? this.allPermissions().slice() : list.slice();
       } else {
         this.roleModalKey = null;
         this.roleModalName = '';
+        this.roleModalSelectKey = null;
         this.roleModalPerms = [];
       }
       this.showRoleModal = true;
@@ -1278,22 +1278,18 @@ function cannabisPOS() {
     },
 
     async saveRoleModal(){
-      const key = this.slugifyRole(this.roleModalName);
-      if (!key) { this.showToast('Enter a role name','error'); return; }
       const normalized = (this.roleModalPerms.length >= this.allPermissions().length) ? ['*'] : Array.from(new Set(this.roleModalPerms));
       if (this.roleModalMode === 'create'){
+        const key = this.slugifyRole(this.roleModalName);
+        if (!key) { this.showToast('Enter a role name','error'); return; }
         if (this.rolePermissions[key]){ this.showToast('Role already exists','error'); return; }
         this.rolePermissions[key] = normalized;
         this.selectedRole = key;
-      } else if (this.roleModalMode === 'edit' && this.roleModalKey){
-        if (key !== this.roleModalKey && this.rolePermissions[key]){ this.showToast('Another role already has that name','error'); return; }
-        if (key !== this.roleModalKey){
-          this.rolePermissions[key] = normalized;
-          delete this.rolePermissions[this.roleModalKey];
-          this.selectedRole = key;
-        } else {
-          this.rolePermissions[key] = normalized;
-        }
+      } else if (this.roleModalMode === 'edit'){
+        const key = this.roleModalSelectKey || this.selectedRole;
+        if (!key){ this.showToast('Select a role','error'); return; }
+        this.rolePermissions[key] = normalized;
+        this.selectedRole = key;
       }
       await this.saveRolePermissions();
       this.closeRoleModal();
@@ -1301,9 +1297,11 @@ function cannabisPOS() {
     },
 
     async deleteRole(){
-      if (!(this.roleModalMode === 'edit' && this.roleModalKey)) return;
-      if (this.roleModalKey === 'admin'){ this.showToast('Cannot delete admin role','error'); return; }
-      delete this.rolePermissions[this.roleModalKey];
+      if (this.roleModalMode !== 'edit') return;
+      const key = this.roleModalSelectKey || this.selectedRole;
+      if (!key) return;
+      if (key === 'admin'){ this.showToast('Cannot delete admin role','error'); return; }
+      delete this.rolePermissions[key];
       const keys = Object.keys(this.rolePermissions);
       this.selectedRole = keys[0] || 'admin';
       await this.saveRolePermissions();
