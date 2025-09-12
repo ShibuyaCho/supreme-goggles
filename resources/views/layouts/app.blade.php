@@ -163,8 +163,22 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo and Navigation -->
                 <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <h1 class="text-xl font-bold text-cannabis-green">Cannabis POS</h1>
+                    <div class="flex-shrink-0 relative" x-data="{ open:false }">
+                        <button @click="open=!open" class="flex items-center text-xl font-bold text-cannabis-green hover:text-green-700">
+                            <span>Cannabis POS</span>
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div x-show="open" @click.outside="open=false" x-transition class="absolute z-50 mt-2 w-56 bg-white shadow-lg rounded-md ring-1 ring-black ring-opacity-5">
+                            <div class="py-1">
+                                <a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Point of Sale</a>
+                                <a href="{{ route('customers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Customers</a>
+                                <a href="{{ route('products.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Inventory</a>
+                                <a href="{{ route('analytics.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Analytics</a>
+                                <a href="{{ route('sales.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Sales</a>
+                                <a href="{{ route('roles-permissions.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Roles &amp; Permissions</a>
+                                <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Settings</a>
+                            </div>
+                        </div>
                     </div>
                     <div class="hidden md:block ml-10">
                         <div class="flex items-baseline space-x-4">
