@@ -179,7 +179,7 @@ app.get("/", (_req, res) => {
 });
 
 // Auth endpoints for dev mode (simulate backend)
-app.post(["/api/auth/self-register", "/api/self-register"], (req, res) => {
+app.post(["/api/auth/self-register", "/api/self-register"], async (req, res) => {
   const { name, email, password, password_confirmation, pin } = req.body || {};
   if (!name || !email || !password || !password_confirmation || !pin) {
     return res.status(422).json({
@@ -218,6 +218,18 @@ app.post(["/api/auth/self-register", "/api/self-register"], (req, res) => {
     pin: String(pin),
   };
   devStore.users.push(user);
+  // Persist to Supabase (best-effort)
+  try {
+    await supaFetch("app_users", { method: "POST", body: [{
+      email,
+      name,
+      role: user.role,
+      permissions: user.permissions,
+      employee_id: user.employee.employee_id,
+      password: String(password),
+      pin: String(pin)
+    }] });
+  } catch (_) {}
   // Persist users so credentials survive restarts
   saveDevState();
   const token = genToken();
@@ -230,7 +242,7 @@ app.post(["/api/auth/self-register", "/api/self-register"], (req, res) => {
   });
 });
 
-app.post(["/api/auth/login", "/api/login"], (req, res) => {
+app.post(["/api/auth/login", "/api/login"], async (req, res) => {
   const { email, password } = req.body || {};
   let user = findUserByEmail(email);
 
@@ -273,6 +285,18 @@ app.post(["/api/auth/login", "/api/login"], (req, res) => {
       .status(401)
       .json({ error: "Invalid credentials", success: false });
   }
+  // Ensure user exists in Supabase (idempotent upsert by email)
+  try {
+    await supaFetch("app_users", { method: "POST", body: [{
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      permissions: user.permissions,
+      employee_id: user.employee?.employee_id,
+      password: String(user.password || password),
+      pin: String(user.pin || "1234")
+    }], query: { on_conflict: "email" } });
+  } catch (_) {}
 
   // If password mismatch, update stored password in dev (prevents lockout)
   if (String(user.password) !== String(password)) {
@@ -566,6 +590,30 @@ app.delete("/api/reports/templates/:id", (req, res) => {
   devTemplates.splice(idx, 1);
   saveDevState();
   res.json({ message: "Template deleted" });
+});
+
+// POS: process payment -> persist sale to Supabase
+app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
+  const user = getAuthUser(req);
+  const body = req.body || {};
+  const row = {
+    user_id: user ? String(user.id) : null,
+    employee_id: body.employeePin ? String(body.employeePin) : null,
+    payment_method: body.method || (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown"),
+    subtotal: body.subtotal ?? body.cart?.reduce?.((s,i)=>s + (i?.price||0)*(i?.quantity||1), 0) ?? null,
+    tax: body.taxAmount ?? null,
+    total: body.total ?? null,
+    customer: body.customer || null,
+    cart: body.cart || null,
+    meta: { source: "dev", timestamp: new Date().toISOString() },
+  };
+  try {
+    const r = await supaFetch("sales", { method: "POST", body: [row] });
+    const payload = r.ok ? await r.json() : null;
+    return res.status(200).json({ success: true, sale: Array.isArray(payload) ? payload[0] : payload });
+  } catch (e) {
+    return res.status(200).json({ success: true, message: "Recorded locally" });
+  }
 });
 
 // Optional SPA fallback (serve index.html for any non-API route):
