@@ -16,7 +16,8 @@
     "production:setup": "./scripts/setup-production.sh",
     "production:build": "npm run build:production && php artisan config:cache && php artisan route:cache && php artisan view:cache",
     "fresh": "php artisan migrate:fresh --seed && npm run dev",
-    "setup": "composer install && npm install && cp .env.example .env && php artisan key:generate && php artisan migrate --seed"
+    "setup": "composer install && npm install && cp .env.example .env && php artisan key:generate && php artisan migrate --seed",
+    "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
     "alpinejs": "^3.14.9",
