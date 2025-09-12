@@ -194,6 +194,7 @@ const statusColors = {
 
 export default function Employees() {
   const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
+  const [tab, setTab] = useState<string>('employees');
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
@@ -369,7 +370,12 @@ export default function Employees() {
       </header>
 
       <div className="container mx-auto p-6">
-        <Tabs defaultValue="employees" className="space-y-6">
+        <div className="flex justify-end mb-4">
+          <Button onClick={() => setTab('roles')} className="bg-purple-600 hover:bg-purple-700">
+            Roles & Permissions
+          </Button>
+        </div>
+        <Tabs value={tab} onValueChange={setTab} className="space-y-6">
           <TabsList>
             <TabsTrigger value="employees">Employees</TabsTrigger>
             <TabsTrigger value="roles">Roles & Permissions</TabsTrigger>
