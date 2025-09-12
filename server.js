@@ -637,12 +637,10 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res, next) => {
           };
     const r = await supaFetch("customers", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    return res
-      .status(201)
-      .json({
-        success: true,
-        customer: Array.isArray(payload) ? payload[0] : payload,
-      });
+    return res.status(201).json({
+      success: true,
+      customer: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
     return res
       .status(500)
@@ -798,11 +796,14 @@ app.post("/api/settings/pos", async (req, res) => {
     // Fetch current settings to merge
     let current = {};
     try {
-      const r0 = await supaFetch("pos_settings?id=eq.default&select=*", { method: "GET" });
+      const r0 = await supaFetch("pos_settings?id=eq.default&select=*", {
+        method: "GET",
+      });
       if (r0.ok) {
         const arr = await r0.json();
         const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-        if (row && row.settings && typeof row.settings === "object") current = row.settings;
+        if (row && row.settings && typeof row.settings === "object")
+          current = row.settings;
       }
     } catch (_) {}
     const merged = { ...current, ...incoming };
@@ -856,12 +857,10 @@ app.post("/api/employees", async (req, res) => {
   try {
     const r = await supaFetch("employees", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    res
-      .status(201)
-      .json({
-        success: true,
-        employee: Array.isArray(payload) ? payload[0] : payload,
-      });
+    res.status(201).json({
+      success: true,
+      employee: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
     res
       .status(500)
@@ -953,12 +952,10 @@ app.post("/api/deals", async (req, res) => {
       body: [req.body || {}],
     });
     const payload = r.ok ? await r.json() : null;
-    res
-      .status(201)
-      .json({
-        success: true,
-        deal: Array.isArray(payload) ? payload[0] : payload,
-      });
+    res.status(201).json({
+      success: true,
+      deal: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (_) {
     res.status(500).json({ success: false, error: "Failed" });
   }
@@ -996,12 +993,10 @@ app.post("/api/price-tiers", async (req, res) => {
       body: [req.body || {}],
     });
     const payload = r.ok ? await r.json() : null;
-    res
-      .status(201)
-      .json({
-        success: true,
-        tier: Array.isArray(payload) ? payload[0] : payload,
-      });
+    res.status(201).json({
+      success: true,
+      tier: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (_) {
     res.status(500).json({ success: false, error: "Failed" });
   }
@@ -1128,12 +1123,10 @@ app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    return res
-      .status(200)
-      .json({
-        success: true,
-        sale: Array.isArray(payload) ? payload[0] : payload,
-      });
+    return res.status(200).json({
+      success: true,
+      sale: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
     return res.status(200).json({ success: true, message: "Recorded locally" });
   }

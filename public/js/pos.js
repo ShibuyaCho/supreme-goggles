@@ -1180,7 +1180,7 @@ function cannabisPOS() {
         }
       }
       if (page === "roles-permissions") {
-        if (typeof this.loadRolePermissions === 'function') {
+        if (typeof this.loadRolePermissions === "function") {
           this.loadRolePermissions();
         }
       }
@@ -1209,156 +1209,277 @@ function cannabisPOS() {
     },
 
     // Roles & Permissions (SPA state and actions)
-    selectedRole: 'admin',
+    selectedRole: "admin",
     rolePermissions: {},
 
     // Role modal state
     showRoleModal: false,
-    roleModalMode: 'create', // 'create' | 'edit'
+    roleModalMode: "create", // 'create' | 'edit'
     roleModalKey: null,
-    roleModalName: '',
+    roleModalName: "",
     roleModalSelectKey: null,
     roleModalPerms: [],
 
     allPermissions() {
       return [
-        'pos:access','pos:sales','pos:scanner_only',
-        'products:read','products:write','products:print','products:transfer','products:delete',
-        'sales:read','sales:create','sales:manage',
-        'customers:read','customers:write',
-        'analytics:read','reports:read','reports:export',
-        'employees:read','employees:manage',
-        'metrc:access','metrc:sync','metrc:create','metrc:sales'
+        "pos:access",
+        "pos:sales",
+        "pos:scanner_only",
+        "products:read",
+        "products:write",
+        "products:print",
+        "products:transfer",
+        "products:delete",
+        "sales:read",
+        "sales:create",
+        "sales:manage",
+        "customers:read",
+        "customers:write",
+        "analytics:read",
+        "reports:read",
+        "reports:export",
+        "employees:read",
+        "employees:manage",
+        "metrc:access",
+        "metrc:sync",
+        "metrc:create",
+        "metrc:sales",
       ];
     },
 
     isAllSelectedMain() {
       const list = this.rolePermissions[this.selectedRole] || [];
-      if (list.includes('*')) return true;
+      if (list.includes("*")) return true;
       const set = new Set(list);
-      return this.allPermissions().every(p => set.has(p));
+      return this.allPermissions().every((p) => set.has(p));
     },
-    toggleSelectAllMain(evt){
+    toggleSelectAllMain(evt) {
       const check = evt?.target?.checked ?? !this.isAllSelectedMain();
-      this.rolePermissions[this.selectedRole] = check ? ['*'] : [];
+      this.rolePermissions[this.selectedRole] = check ? ["*"] : [];
     },
 
-    openRoleModal(mode){
+    openRoleModal(mode) {
       this.roleModalMode = mode;
-      if (mode === 'edit'){
+      if (mode === "edit") {
         this.roleModalSelectKey = this.selectedRole;
         const list = this.rolePermissions[this.roleModalSelectKey] || [];
-        this.roleModalPerms = list.includes('*') ? this.allPermissions().slice() : list.slice();
+        this.roleModalPerms = list.includes("*")
+          ? this.allPermissions().slice()
+          : list.slice();
       } else {
         this.roleModalKey = null;
-        this.roleModalName = '';
+        this.roleModalName = "";
         this.roleModalSelectKey = null;
         this.roleModalPerms = [];
       }
       this.showRoleModal = true;
     },
-    closeRoleModal(){ this.showRoleModal = false; },
+    closeRoleModal() {
+      this.showRoleModal = false;
+    },
 
-    hasModalPerm(p){ return (this.roleModalPerms || []).includes(p); },
-    toggleModalPerm(p){
+    hasModalPerm(p) {
+      return (this.roleModalPerms || []).includes(p);
+    },
+    toggleModalPerm(p) {
       const i = this.roleModalPerms.indexOf(p);
-      if (i>=0) this.roleModalPerms.splice(i,1); else this.roleModalPerms.push(p);
+      if (i >= 0) this.roleModalPerms.splice(i, 1);
+      else this.roleModalPerms.push(p);
     },
-    isAllSelectedModal(){
+    isAllSelectedModal() {
       const set = new Set(this.roleModalPerms || []);
-      return this.allPermissions().every(p => set.has(p));
+      return this.allPermissions().every((p) => set.has(p));
     },
-    toggleSelectAllModal(evt){
+    toggleSelectAllModal(evt) {
       const check = evt?.target?.checked ?? !this.isAllSelectedModal();
       this.roleModalPerms = check ? this.allPermissions().slice() : [];
     },
 
-    slugifyRole(name){
-      return (name || '').toLowerCase().trim().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'');
+    slugifyRole(name) {
+      return (name || "")
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9_-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
     },
 
-    async saveRoleModal(){
-      const normalized = (this.roleModalPerms.length >= this.allPermissions().length) ? ['*'] : Array.from(new Set(this.roleModalPerms));
-      if (this.roleModalMode === 'create'){
+    async saveRoleModal() {
+      const normalized =
+        this.roleModalPerms.length >= this.allPermissions().length
+          ? ["*"]
+          : Array.from(new Set(this.roleModalPerms));
+      if (this.roleModalMode === "create") {
         const key = this.slugifyRole(this.roleModalName);
-        if (!key) { this.showToast('Enter a role name','error'); return; }
-        if (this.rolePermissions[key]){ this.showToast('Role already exists','error'); return; }
+        if (!key) {
+          this.showToast("Enter a role name", "error");
+          return;
+        }
+        if (this.rolePermissions[key]) {
+          this.showToast("Role already exists", "error");
+          return;
+        }
         this.rolePermissions[key] = normalized;
         this.selectedRole = key;
-      } else if (this.roleModalMode === 'edit'){
+      } else if (this.roleModalMode === "edit") {
         const key = this.roleModalSelectKey || this.selectedRole;
-        if (!key){ this.showToast('Select a role','error'); return; }
+        if (!key) {
+          this.showToast("Select a role", "error");
+          return;
+        }
         this.rolePermissions[key] = normalized;
         this.selectedRole = key;
       }
       await this.saveRolePermissions();
       this.closeRoleModal();
-      this.showToast('Role saved','success');
+      this.showToast("Role saved", "success");
     },
 
-    async deleteRole(){
-      if (this.roleModalMode !== 'edit') return;
+    async deleteRole() {
+      if (this.roleModalMode !== "edit") return;
       const key = this.roleModalSelectKey || this.selectedRole;
       if (!key) return;
-      if (key === 'admin'){ this.showToast('Cannot delete admin role','error'); return; }
+      if (key === "admin") {
+        this.showToast("Cannot delete admin role", "error");
+        return;
+      }
       delete this.rolePermissions[key];
       const keys = Object.keys(this.rolePermissions);
-      this.selectedRole = keys[0] || 'admin';
+      this.selectedRole = keys[0] || "admin";
       await this.saveRolePermissions();
       this.closeRoleModal();
-      this.showToast('Role deleted','success');
+      this.showToast("Role deleted", "success");
     },
 
     async loadRolePermissions() {
       try {
-        const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
-        const s = (res && res.success && (res.data?.settings || res.data)) || {};
-        const __apiPerms = s.role_permissions && typeof s.role_permissions === 'object' ? s.role_permissions : null;
-        let __backup = null; try { __backup = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null'); } catch(_) { __backup = null; }
+        const res = await (window.posAuth
+          ? posAuth.apiRequest("get", "/settings/pos")
+          : Promise.resolve({ success: false }));
+        const s =
+          (res && res.success && (res.data?.settings || res.data)) || {};
+        const __apiPerms =
+          s.role_permissions && typeof s.role_permissions === "object"
+            ? s.role_permissions
+            : null;
+        let __backup = null;
+        try {
+          __backup = JSON.parse(
+            localStorage.getItem("role_permissions_backup") || "null",
+          );
+        } catch (_) {
+          __backup = null;
+        }
         const __defaults = {
-          admin: ['*'],
-          manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
-          inventory: ['products:*','metrc:access','metrc:sync','analytics:read'],
-          budtender: ['pos:*','products:read','customers:read','sales:create','analytics:read'],
-          cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+          admin: ["*"],
+          manager: [
+            "pos:*",
+            "products:*",
+            "customers:*",
+            "sales:*",
+            "analytics:read",
+            "deals:*",
+            "employees:read",
+            "metrc:access",
+            "metrc:sync",
+            "reports:read",
+            "reports:export",
+          ],
+          inventory: [
+            "products:*",
+            "metrc:access",
+            "metrc:sync",
+            "analytics:read",
+          ],
+          budtender: [
+            "pos:*",
+            "products:read",
+            "customers:read",
+            "sales:create",
+            "analytics:read",
+          ],
+          cashier: [
+            "pos:*",
+            "products:read",
+            "sales:create",
+            "products:print",
+            "analytics:read",
+            "pos:scanner_only",
+          ],
         };
-        const __isDefaults = (obj) => { if (!obj || typeof obj !== 'object') return true; return Object.keys(obj).sort().join(',') === Object.keys(__defaults).sort().join(','); };
-        this.rolePermissions = __apiPerms && !__isDefaults(__apiPerms) ? __apiPerms : (__backup && typeof __backup === 'object' ? __backup : __defaults);
+        const __isDefaults = (obj) => {
+          if (!obj || typeof obj !== "object") return true;
+          return (
+            Object.keys(obj).sort().join(",") ===
+            Object.keys(__defaults).sort().join(",")
+          );
+        };
+        this.rolePermissions =
+          __apiPerms && !__isDefaults(__apiPerms)
+            ? __apiPerms
+            : __backup && typeof __backup === "object"
+              ? __backup
+              : __defaults;
       } catch (e) {
         try {
-          const b = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null');
-          if (b && typeof b === 'object') this.rolePermissions = b;
-        } catch(_){}
+          const b = JSON.parse(
+            localStorage.getItem("role_permissions_backup") || "null",
+          );
+          if (b && typeof b === "object") this.rolePermissions = b;
+        } catch (_) {}
       }
-      try { localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions)); } catch(_){}
+      try {
+        localStorage.setItem(
+          "role_permissions_backup",
+          JSON.stringify(this.rolePermissions),
+        );
+      } catch (_) {}
     },
 
     hasPerm(p) {
       const list = this.rolePermissions[this.selectedRole] || [];
-      if (list.includes('*')) return true;
+      if (list.includes("*")) return true;
       if (list.includes(p)) return true;
-      if (p.includes(':')) { const ns = p.split(':')[0]; if (list.includes(ns + ':*')) return true; }
+      if (p.includes(":")) {
+        const ns = p.split(":")[0];
+        if (list.includes(ns + ":*")) return true;
+      }
       return false;
     },
 
     togglePerm(p) {
       const list = this.rolePermissions[this.selectedRole] || [];
       const i = list.indexOf(p);
-      if (i >= 0) list.splice(i,1); else list.push(p);
+      if (i >= 0) list.splice(i, 1);
+      else list.push(p);
       this.rolePermissions[this.selectedRole] = list;
     },
 
     async saveRolePermissions() {
       try {
-        const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
-        const settings = (res && res.success && (res.data?.settings || res.data)) || {};
+        const res = await (window.posAuth
+          ? posAuth.apiRequest("get", "/settings/pos")
+          : Promise.resolve({ success: false }));
+        const settings =
+          (res && res.success && (res.data?.settings || res.data)) || {};
         settings.role_permissions = this.rolePermissions;
-        const r = await (window.posAuth ? posAuth.apiRequest('post', '/settings/pos', settings) : Promise.resolve({ success:false }));
+        const r = await (window.posAuth
+          ? posAuth.apiRequest("post", "/settings/pos", settings)
+          : Promise.resolve({ success: false }));
         const ok = r?.success === true || r?.data?.success === true;
-        if (ok) { try { localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions)); } catch(_){} }
-        this.showToast(ok ? 'Permissions saved' : 'Failed to save permissions', ok ? 'success' : 'error');
+        if (ok) {
+          try {
+            localStorage.setItem(
+              "role_permissions_backup",
+              JSON.stringify(this.rolePermissions),
+            );
+          } catch (_) {}
+        }
+        this.showToast(
+          ok ? "Permissions saved" : "Failed to save permissions",
+          ok ? "success" : "error",
+        );
       } catch (e) {
-        this.showToast('Failed to save permissions', 'error');
+        this.showToast("Failed to save permissions", "error");
       }
     },
 
