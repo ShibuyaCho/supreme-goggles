@@ -5623,9 +5623,19 @@ function cannabisPOS() {
             },
             { responseType: "blob" },
           );
-          const ctype = res?.headers?.["content-type"] || "";
-          if (ctype.includes("application/json")) {
-            // Fallback: CSV with headings only
+          const ctype = (res?.headers?.["content-type"] || "").toLowerCase();
+          const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || "application/octet-stream" });
+          let treatAsStub = ctype.includes("application/json");
+          if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+            try {
+              const text = await dataBlob.text();
+              const t = text.trim();
+              if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+                treatAsStub = true;
+              }
+            } catch (_) {}
+          }
+          if (treatAsStub) {
             const headings = this._getReportHeadings(apiType, []);
             const csv = headings.join(",") + "\n";
             const blob = new Blob([csv], { type: "text/csv" });
@@ -5639,7 +5649,7 @@ function cannabisPOS() {
             setTimeout(() => URL.revokeObjectURL(url), 3000);
           } else {
             this._triggerDownload(
-              res,
+              { data: dataBlob, headers: res.headers },
               `report_${apiType}.${fmt === "excel" ? "xlsx" : fmt}`,
             );
           }
@@ -5674,8 +5684,19 @@ function cannabisPOS() {
           },
           { responseType: "blob" },
         );
-        const ctype = res?.headers?.["content-type"] || "";
-        if (ctype.includes("application/json")) {
+        const ctype = (res?.headers?.["content-type"] || "").toLowerCase();
+        const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || "application/octet-stream" });
+        let treatAsStub = ctype.includes("application/json");
+        if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+          try {
+            const text = await dataBlob.text();
+            const t = text.trim();
+            if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+              treatAsStub = true;
+            }
+          } catch (_) {}
+        }
+        if (treatAsStub) {
           const headings = this._getReportHeadings(
             reportType,
             this.customReport?.selectedMetrics || [],
@@ -5685,22 +5706,16 @@ function cannabisPOS() {
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          const name = (this.customReport?.name || "custom-report").replace(
-            /\s+/g,
-            "_",
-          );
+          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
           a.download = `${name}.csv`;
           document.body.appendChild(a);
           a.click();
           a.remove();
           setTimeout(() => URL.revokeObjectURL(url), 3000);
         } else {
-          const name = (this.customReport?.name || "custom-report").replace(
-            /\s+/g,
-            "_",
-          );
+          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
           this._triggerDownload(
-            res,
+            { data: dataBlob, headers: res.headers },
             `${name}.${fmt === "excel" ? "xlsx" : fmt}`,
           );
         }
@@ -5986,13 +6001,20 @@ function cannabisPOS() {
           payload,
           { responseType: "blob" },
         );
-        const ctype = res?.headers?.["content-type"] || "text/html";
-        if (ctype.includes("application/json")) throw new Error("stub");
-        const file =
-          res?.data instanceof Blob
-            ? res.data
-            : new Blob([res.data], { type: ctype });
-        const url = URL.createObjectURL(file);
+        const ctype = (res?.headers?.["content-type"] || "text/html").toLowerCase();
+        const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+        let treatAsStub = ctype.includes("application/json");
+        if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+          try {
+            const text = await dataBlob.text();
+            const t = text.trim();
+            if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+              treatAsStub = true;
+            }
+          } catch (_) {}
+        }
+        if (treatAsStub) throw new Error("stub");
+        const url = URL.createObjectURL(dataBlob);
         const w = window.open(url, "_blank");
         if (!w)
           this.showToast("Popup blocked. Enable popups to preview.", "warning");
@@ -6035,13 +6057,20 @@ function cannabisPOS() {
           payload,
           { responseType: "blob" },
         );
-        const ctype = res?.headers?.["content-type"] || "text/csv";
-        if (ctype.includes("application/json")) throw new Error("stub");
-        const file =
-          res?.data instanceof Blob
-            ? res.data
-            : new Blob([res.data], { type: ctype });
-        const url = URL.createObjectURL(file);
+        const ctype = (res?.headers?.["content-type"] || "text/csv").toLowerCase();
+        const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+        let treatAsStub = ctype.includes("application/json");
+        if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+          try {
+            const text = await dataBlob.text();
+            const t = text.trim();
+            if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+              treatAsStub = true;
+            }
+          } catch (_) {}
+        }
+        if (treatAsStub) throw new Error("stub");
+        const url = URL.createObjectURL(dataBlob);
         const a = document.createElement("a");
         a.href = url;
         a.download = `report_${payload.report_type}.csv`;
