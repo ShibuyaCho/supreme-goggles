@@ -590,6 +590,55 @@ class ReportExportManager {
   }
 
   /**
+   * Get default headings for a report type
+   */
+  getHeadingsForReport(reportType, metrics = []) {
+    if (Array.isArray(metrics) && metrics.length) {
+      return metrics.map((m) => String(m).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+    }
+    switch (String(reportType).toLowerCase()) {
+      case "sales":
+        return ["Date", "Transaction ID", "Customer", "Items", "Subtotal", "Tax", "Total", "Payment Method"];
+      case "inventory":
+        return ["Product Name", "SKU", "Category", "Quantity", "Unit Cost", "Unit Price", "Total Value", "Room", "METRC Tag"];
+      case "customers":
+        return ["Customer Name", "Type", "Email", "Phone", "Total Visits", "Total Spent", "Average Order", "Last Visit"];
+      case "products":
+        return ["Name", "Category", "SKU", "Price", "Cost", "Quantity", "Room", "THC%", "CBD%", "METRC Tag"];
+      case "analytics":
+        return ["Metric", "Value", "Period", "Change", "Percentage"];
+      case "metrc":
+        return ["Package Tag", "Product", "Quantity", "Unit", "Status", "Location", "Last Modified"];
+      case "compliance":
+        return ["Date", "Type", "Description", "Status", "Employee", "Notes"];
+      case "employees":
+        return ["Name", "Role", "Employee ID", "Email", "Hours Worked", "Sales Count", "Performance Score"];
+      case "tax_report":
+        return ["Date", "Transactions", "Gross Sales", "Total Tax", "Net Sales", "Payment Method"];
+      default:
+        return ["Column 1", "Column 2", "Column 3"];
+    }
+  }
+
+  /**
+   * Build minimal HTML preview table for PDF fallback
+   */
+  buildHtmlPreview(reportType) {
+    const headings = this.getHeadingsForReport(reportType);
+    const title = String(reportType).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    const thead = headings.map((h) => `<th style="border:1px solid #ddd;padding:8px;text-align:left;">${h}</th>`).join("");
+    const blankRow = headings.map(() => `<td style="border:1px solid #eee;padding:8px;">&nbsp;</td>`).join("");
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title} Report</title></head><body style="font-family:Arial,Helvetica,sans-serif;">
+      <h1 style="margin:0 0 12px 0;">${title} Report</h1>
+      <p style="color:#555;margin:0 0 16px 0;">Generated at: ${new Date().toISOString()}</p>
+      <table style="border-collapse:collapse;width:100%;">
+        <thead><tr>${thead}</tr></thead>
+        <tbody><tr>${blankRow}</tr></tbody>
+      </table>
+    </body></html>`;
+  }
+
+  /**
    * Set current filters (useful for page-specific filtering)
    */
   setCurrentFilters(filters) {
@@ -602,17 +651,17 @@ class ReportExportManager {
   addQuickExportButtons(container, reportType, filters = {}) {
     const buttonsHtml = `
             <div class="export-buttons">
-                <button type="button" data-export-report="${reportType}" data-export-format="pdf" 
+                <button type="button" data-export-report="${reportType}" data-export-format="pdf"
                         data-export-filters='${JSON.stringify(filters)}'
                         class="btn btn-export btn-pdf">
                     📄 PDF
                 </button>
-                <button type="button" data-export-report="${reportType}" data-export-format="excel" 
+                <button type="button" data-export-report="${reportType}" data-export-format="excel"
                         data-export-filters='${JSON.stringify(filters)}'
                         class="btn btn-export btn-excel">
                     📊 Excel
                 </button>
-                <button type="button" data-export-report="${reportType}" data-export-format="csv" 
+                <button type="button" data-export-report="${reportType}" data-export-format="csv"
                         data-export-filters='${JSON.stringify(filters)}'
                         class="btn btn-export btn-csv">
                     📋 CSV
