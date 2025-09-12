@@ -314,6 +314,15 @@
         </div>
         <div id="rd-drawers" class="space-y-3"></div>
     </div>
+
+    <!-- Activity Log -->
+    <div class="mt-8 rounded-lg bg-white p-6 shadow">
+        <div class="flex items-center justify-between mb-2">
+            <h2 class="text-lg font-semibold text-gray-900">Activity Log</h2>
+            <button id="rd-clear-log" class="px-3 py-1 text-xs rounded border border-gray-300 text-gray-700 hover:bg-gray-50">Clear</button>
+        </div>
+        <div id="rd-activity" class="space-y-2 text-sm text-gray-700"></div>
+    </div>
 </div>
 
 <!-- Count Drawer Modal -->
