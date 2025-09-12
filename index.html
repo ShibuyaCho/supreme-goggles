@@ -839,9 +839,10 @@
                     </button>
 
                     <!-- Roles & Permissions -->
-                    <a
-                      href="/roles-permissions"
-                      class="w-full text-left px-4 py-3 text-sm font-medium flex items-center transition-colors text-gray-700 hover:bg-gray-100"
+                    <button
+                      @click="setCurrentPage('roles-permissions'); showNavDropdown = false"
+                      :class="currentPage === 'roles-permissions' ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:bg-gray-100'"
+                      class="w-full text-left px-4 py-3 text-sm font-medium flex items-center transition-colors"
                     >
                       <svg
                         class="w-4 h-4 mr-3"
@@ -857,7 +858,7 @@
                         />
                       </svg>
                       Roles & Permissions
-                    </a>
+                    </button>
                   </div>
                 </div>
               </div>
