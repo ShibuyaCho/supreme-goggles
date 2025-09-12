@@ -894,6 +894,18 @@ app.put("/api/employees/:id", async (req, res) => {
   }
 });
 
+// Employees: delete
+app.delete("/api/employees/:id", async (req, res) => {
+  const id = req.params.id;
+  try {
+    const r = await supaFetch(`employees?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+    if (!r.ok) return res.status(500).json({ success: false, error: 'Failed to delete' });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: 'Failed to delete employee' });
+  }
+});
+
 // Customers: list
 app.get("/api/customers", async (req, res) => {
   try {
