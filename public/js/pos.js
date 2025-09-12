@@ -1490,6 +1490,14 @@ function cannabisPOS() {
     },
     filteredLoyaltyCustomers: [],
 
+    // Persist demo customers locally (fallback when not authenticated)
+    _saveCustomersLocal() {
+      try {
+        const list = Array.isArray(this.customers) ? this.customers : [];
+        localStorage.setItem("cannabisPOS-customers", JSON.stringify(list));
+      } catch (e) {}
+    },
+
     selectCustomer(customer) {
       this.selectedCustomer = customer;
       this.calculateTotals();
@@ -1545,6 +1553,7 @@ function cannabisPOS() {
       }
 
       this.customers.push(enrolled);
+      try { this._saveCustomersLocal(); } catch (_) {}
       try { this.filterLoyaltyCustomers(); } catch (_) {}
       this.showEnrollCustomerModal = false;
       this.enrollForm = {
@@ -1555,6 +1564,17 @@ function cannabisPOS() {
         startingPoints: 0,
       };
       this.showToast(`Enrolled ${name} in loyalty program`, "success");
+    },
+
+    deleteCustomerFromLoyalty(id) {
+      // Demo-only removal helper used in index.html
+      const before = Array.isArray(this.customers) ? this.customers.length : 0;
+      this.customers = (Array.isArray(this.customers) ? this.customers : []).filter(c => String(c.id) !== String(id));
+      if (Array.isArray(this.customers) && this.customers.length !== before) {
+        try { this._saveCustomersLocal(); } catch (_) {}
+        try { this.filterLoyaltyCustomers(); } catch (_) {}
+        this.showToast("Customer removed from loyalty program", "success");
+      }
     },
 
     // Sale flow functions
@@ -1863,6 +1883,8 @@ function cannabisPOS() {
         }
       } catch (error) {
         console.error("Error loading customers:", error);
+      } finally {
+        try { this.filterLoyaltyCustomers(); } catch (_) {}
       }
     },
 
