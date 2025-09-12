@@ -5261,7 +5261,7 @@ function cannabisPOS() {
           this.pinError = 'Unable to verify PIN: missing employee ID';
           return;
         }
-        const verify = await posAuth.apiRequest('post', '/pin-login', { employee_id: empId, pin: this.pinInput });
+        const verify = await posAuth.apiRequest('post', '/auth/verify-pin', { pin: this.pinInput });
         if (!verify?.success) {
           this.pinError = verify?.message || 'PIN verification failed';
           return;
