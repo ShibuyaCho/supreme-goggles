@@ -758,7 +758,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toast('Room created successfully', 'success');
             // Optimistically add the new room card to the grid without reload
             const grid = document.querySelector('.grid.grid-cols-1');
-            if (grid && data.room) {
+            if (grid && data.room) { addActivity('Room created', `${data.room.name} (${data.room.type})`);
                 const usagePercent = 0;
                 const roomHtml = `
                 <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="${data.room.type}">
