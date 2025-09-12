@@ -5738,6 +5738,7 @@ function cannabisPOS() {
           { responseType: "blob" },
         );
         const ctype = res?.headers?.["content-type"] || "text/html";
+        if (ctype.includes("application/json")) throw new Error("stub");
         const file =
           res?.data instanceof Blob
             ? res.data
@@ -5748,7 +5749,17 @@ function cannabisPOS() {
           this.showToast("Popup blocked. Enable popups to preview.", "warning");
         setTimeout(() => URL.revokeObjectURL(url), 8000);
       } catch (e) {
-        this.showToast("Failed to open preview", "error");
+        // Fallback HTML preview with headings only
+        const rt = this._mapSourceToReport(
+          (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
+        );
+        const headings = this._getReportHeadings(rt, this.customReport?.selectedMetrics || []);
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${rt} Report</title></head><body><h1>${rt} Report</h1><table border="1" cellspacing="0" cellpadding="6"><thead><tr>${headings.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody><tr>${headings.map(()=>"<td></td>").join("")}</tr></tbody></table></body></html>`;
+        const blob = new Blob([html], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+        const w = window.open(url, "_blank");
+        if (!w) this.showToast("Popup blocked. Enable popups to preview.", "warning");
+        setTimeout(() => URL.revokeObjectURL(url), 5000);
       }
     },
 
