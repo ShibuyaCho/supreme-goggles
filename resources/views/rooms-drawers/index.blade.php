@@ -803,6 +803,61 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add Drawer Modal controls
     let addDrawerRoomId = null;
     const addDrawerModal = document.getElementById('add-drawer-modal');
+
+    // Cash Drawers state and helpers for this page
+    const drawersEl = document.getElementById('rd-drawers');
+    const countModal = document.getElementById('rd-count-modal');
+    let activeDrawerId = null;
+    const cashDrawers = [ { id: 1, name: 'Till #1', status: 'active', assignedTo: 'Cody', startingAmount: 220.00, currentAmount: 220.00, openedAt: null } ];
+    function renderDrawers(){
+      if (!drawersEl) return;
+      drawersEl.innerHTML = '';
+      cashDrawers.forEach(d => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'border rounded-lg p-4 flex items-center justify-between';
+        wrapper.innerHTML = `
+          <div>
+            <div class=\"font-medium\">${d.name} <span class=\"ml-2 text-xs ${d.status==='active'?'text-green-700':'text-gray-600'}\">${d.status==='active'?'Active':'Closed'}</span></div>
+            <div class=\"text-sm text-gray-600\">Assigned To: <span class=\"font-medium\">${d.assignedTo||'-'}</span></div>
+            <div class=\"text-sm text-gray-600\">Starting Amount: $${(d.startingAmount||0).toFixed(2)}</div>
+            <div class=\"text-sm text-gray-600\">Current Amount: $${(d.currentAmount||0).toFixed(2)}</div>
+          </div>
+          <div class=\"flex gap-2\">
+            <button data-act=\"open\" data-id=\"${d.id}\" class=\"px-3 py-1 text-sm rounded border ${d.status==='active'?'border-gray-300 text-gray-700 hover:bg-gray-50':'border-green-300 text-green-700 hover:bg-green-50'}\">Open</button>
+            <button data-act=\"close\" data-id=\"${d.id}\" class=\"px-3 py-1 text-sm rounded border border-gray-300 text-gray-700 hover:bg-gray-50\">Close</button>
+            <button data-act=\"count\" data-id=\"${d.id}\" class=\"px-3 py-1 text-sm rounded bg-blue-600 text-white hover:bg-blue-700\">Count</button>
+            <button data-act=\"delete\" data-id=\"${d.id}\" class=\"px-3 py-1 text-sm rounded border border-red-300 text-red-700 hover:bg-red-50\">Delete Drawer</button>
+            <button data-act=\"assign\" data-id=\"${d.id}\" class=\"px-3 py-1 text-sm rounded border border-purple-300 text-purple-700 hover:bg-purple-50\">Assign Employee</button>
+          </div>`;
+        drawersEl.appendChild(wrapper);
+      });
+    }
+    function getDrawer(id){ return cashDrawers.find(d=>String(d.id)===String(id)); }
+    function openCountModal(drawer){ activeDrawerId = drawer.id; countModal.classList.remove('hidden'); countModal.classList.add('flex'); countModal.querySelectorAll('.rd-denom').forEach(i=> i.value = ''); updateCountSummary(); }
+    function closeCountModal(){ countModal.classList.add('hidden'); countModal.classList.remove('flex'); activeDrawerId = null; }
+    function calcDebitTotalForDrawer(){ try { const uid = window.posAuth?.getUser?.()?.id || null; const key = uid ? `cannabisPOS-sales-${uid}` : null; const list = key ? JSON.parse(localStorage.getItem(key) || '[]') : []; const total = list.filter(s=>s?.method==='debit').reduce((sum,s)=> sum + (parseFloat(s.amount)||parseFloat(s.total)||0), 0); return +(+total).toFixed(2); } catch(_) { return 0; } }
+    function calculateCounted(){ let total = 0; countModal.querySelectorAll('.rd-denom').forEach(input => { const denom = parseFloat(input.dataset.denom); const qty = parseInt(input.value||'0',10)||0; if (!isNaN(denom) && qty>0){ total += denom*qty; } }); return +(+total).toFixed(2); }
+    function updateCountSummary(){ const d = getDrawer(activeDrawerId) || { currentAmount: 0 }; const counted = calculateCounted(); const debit = calcDebitTotalForDrawer(); const variance = +(counted - (d.currentAmount||0)).toFixed(2); document.getElementById('rd-counted').textContent = `$${counted.toFixed(2)}`; document.getElementById('rd-debit').textContent = `$${debit.toFixed(2)}`; const varEl = document.getElementById('rd-variance'); varEl.textContent = `${variance<0?'-':''}$${Math.abs(variance).toFixed(2)}`; varEl.className = `text-xl font-semibold ${variance<0?'text-red-600':variance>0?'text-green-600':'text-gray-900'}`; }
+    drawersEl?.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-act]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      const act = btn.getAttribute('data-act');
+      const d = getDrawer(id);
+      if (!d) return;
+      if (act==='open') { d.status='active'; d.openedAt = new Date().toISOString(); toast(`${d.name} opened`, 'success'); addActivity('Drawer opened', d.name); renderDrawers(); }
+      if (act==='close') { d.status='closed'; toast(`${d.name} closed`, 'info'); addActivity('Drawer closed', d.name); renderDrawers(); }
+      if (act==='count') { openCountModal(d); }
+      if (act==='delete') { if (confirm('Delete this drawer?')) { const idx=cashDrawers.findIndex(x=>x.id===d.id); if (idx>=0) cashDrawers.splice(idx,1); toast('Drawer deleted','success'); addActivity('Drawer deleted', d.name); renderDrawers(); } }
+      if (act==='assign') { const name = prompt('Assign to employee name:'); if (name){ d.assignedTo = name; toast(`Assigned to ${name}`, 'success'); addActivity('Drawer assigned', `${d.name} -> ${name}`); renderDrawers(); } }
+    });
+    document.getElementById('rd-add-drawer')?.addEventListener('click', ()=>{ const name = prompt('Drawer name'); const amt = parseFloat(prompt('Starting amount (e.g. 200)')||'0')||0; const nextId = Math.max(0,...cashDrawers.map(d=>d.id))+1; cashDrawers.push({ id: nextId, name: name||`Till #${nextId}`, status: 'active', assignedTo: '', startingAmount: amt, currentAmount: amt, openedAt: new Date().toISOString() }); addActivity('Drawer created', `${name||`Till #${nextId}`} starting $${amt.toFixed(2)}`); renderDrawers(); });
+    countModal?.querySelectorAll('.rd-denom').forEach(inp=> inp.addEventListener('input', updateCountSummary));
+    document.getElementById('rd-count-close')?.addEventListener('click', closeCountModal);
+    document.getElementById('rd-count-cancel')?.addEventListener('click', closeCountModal);
+    document.getElementById('rd-count-save')?.addEventListener('click', ()=>{ const d = getDrawer(activeDrawerId); if (!d) return closeCountModal(); const counted = calculateCounted(); const debit = calcDebitTotalForDrawer(); const variance = +(counted - (d.currentAmount||0)).toFixed(2); d.currentAmount = counted; addActivity('Drawer counted', `${d.name}: counted $${counted.toFixed(2)}, debit $${debit.toFixed(2)}, variance ${variance<0?'-':''}$${Math.abs(variance).toFixed(2)}`); toast('Cash count saved','success'); closeCountModal(); renderDrawers(); });
+    renderDrawers();
+
     function openAddDrawerModal(roomId, roomName) {
         addDrawerRoomId = roomId || null;
         document.getElementById('drawer-name').value = '';
