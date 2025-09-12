@@ -323,16 +323,39 @@ class POSAuth {
   async refreshUser() {
     try {
       const response = await axios.get(`${this.baseUrl}/auth/me`);
-      this.user = response.data.user;
-      try {
-        localStorage.setItem("pos_user", JSON.stringify(this.user));
-        localStorage.setItem("user_data", JSON.stringify(this.user));
-      } catch (e) {}
+      const serverUser = response?.data?.user || null;
+      if (serverUser) {
+        // Prevent role downgrades; prefer the higher role and union permissions
+        const current = this.user || {};
+        const rank = (r) => ({ cashier: 1, budtender: 2, inventory: 3, manager: 4, admin: 5 })[String(r || '').toLowerCase()] || 0;
+        const bestRole = rank(current.role) >= rank(serverUser.role) ? current.role || serverUser.role : serverUser.role;
+        const permsA = Array.isArray(current.permissions) ? current.permissions : [];
+        const permsB = Array.isArray(serverUser.permissions) ? serverUser.permissions : [];
+        const hasAll = (String(bestRole).toLowerCase() === 'admin') || permsA.includes('*') || permsB.includes('*');
+        const unionPerms = hasAll ? ['*'] : Array.from(new Set([...(permsA||[]), ...(permsB||[])]));
+        const mergedEmployee = {
+          ...(serverUser.employee || {}),
+          ...(current.employee || {}),
+          role: (bestRole || (serverUser.employee?.role || current.employee?.role || serverUser.role || current.role)) || 'cashier',
+          permissions: unionPerms,
+        };
+        this.user = {
+          ...serverUser,
+          ...current,
+          role: bestRole || serverUser.role || current.role,
+          permissions: unionPerms,
+          employee: mergedEmployee,
+        };
+        try {
+          localStorage.setItem("pos_user", JSON.stringify(this.user));
+          localStorage.setItem("user_data", JSON.stringify(this.user));
+        } catch (e) {}
+      }
       this.touchActivity();
       return this.user;
     } catch (error) {
       console.error("Failed to refresh user:", error);
-      return null;
+      return this.user || null;
     }
   }
 
