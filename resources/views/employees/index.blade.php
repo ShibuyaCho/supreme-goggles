@@ -486,6 +486,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const openPermBtn = document.getElementById('open-permissions');
     if (openPermBtn) openPermBtn.addEventListener('click', () => switchTab('permissions'));
 
+    // Open tab by query param ?tab=permissions
+    try {
+        const params = new URLSearchParams(window.location.search);
+        const tab = params.get('tab');
+        if (tab) switchTab(tab);
+    } catch (_) {}
+
     // Search functionality
     let searchTimeout;
     document.getElementById('employee-search').addEventListener('input', function() {
