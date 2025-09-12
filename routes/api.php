@@ -554,7 +554,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             } catch (\Throwable $e) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
-        });
+        })->withoutMiddleware('auth:sanctum')->middleware(['web','auth']);
 
         // METRC settings (with permission check)
         Route::get('/metrc', function() {
