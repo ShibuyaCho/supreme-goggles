@@ -1545,6 +1545,7 @@ function cannabisPOS() {
       }
 
       this.customers.push(enrolled);
+      try { this.filterLoyaltyCustomers(); } catch (_) {}
       this.showEnrollCustomerModal = false;
       this.enrollForm = {
         customerName: "",
