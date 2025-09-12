@@ -232,21 +232,76 @@ function getHeadingsForReport(reportType, metrics) {
   }
   switch (reportType) {
     case "sales":
-      return ["Date", "Transaction ID", "Customer", "Items", "Subtotal", "Tax", "Total", "Payment Method"];
+      return [
+        "Date",
+        "Transaction ID",
+        "Customer",
+        "Items",
+        "Subtotal",
+        "Tax",
+        "Total",
+        "Payment Method",
+      ];
     case "inventory":
-      return ["Product Name", "SKU", "Category", "Quantity", "Unit Cost", "Unit Price", "Total Value", "Room", "METRC Tag"];
+      return [
+        "Product Name",
+        "SKU",
+        "Category",
+        "Quantity",
+        "Unit Cost",
+        "Unit Price",
+        "Total Value",
+        "Room",
+        "METRC Tag",
+      ];
     case "customers":
-      return ["Customer Name", "Type", "Email", "Phone", "Total Visits", "Total Spent", "Average Order", "Last Visit"];
+      return [
+        "Customer Name",
+        "Type",
+        "Email",
+        "Phone",
+        "Total Visits",
+        "Total Spent",
+        "Average Order",
+        "Last Visit",
+      ];
     case "products":
-      return ["Name", "Category", "SKU", "Price", "Cost", "Quantity", "Room", "THC%", "CBD%", "METRC Tag"];
+      return [
+        "Name",
+        "Category",
+        "SKU",
+        "Price",
+        "Cost",
+        "Quantity",
+        "Room",
+        "THC%",
+        "CBD%",
+        "METRC Tag",
+      ];
     case "analytics":
       return ["Metric", "Value", "Period", "Change", "Percentage"];
     case "metrc":
-      return ["Package Tag", "Product", "Quantity", "Unit", "Status", "Location", "Last Modified"];
+      return [
+        "Package Tag",
+        "Product",
+        "Quantity",
+        "Unit",
+        "Status",
+        "Location",
+        "Last Modified",
+      ];
     case "compliance":
       return ["Date", "Type", "Description", "Status", "Employee", "Notes"];
     case "employees":
-      return ["Name", "Role", "Employee ID", "Email", "Hours Worked", "Sales Count", "Performance Score"];
+      return [
+        "Name",
+        "Role",
+        "Employee ID",
+        "Email",
+        "Hours Worked",
+        "Sales Count",
+        "Performance Score",
+      ];
     default:
       return ["Column 1", "Column 2", "Column 3"];
   }
@@ -254,27 +309,43 @@ function getHeadingsForReport(reportType, metrics) {
 
 // Reports: export (dev implementation returns headers-only CSV/HTML)
 app.post("/api/reports/export", (req, res) => {
-  const { report_type = "sales", format = "csv", filters = {}, orientation = "portrait", paper_size = "a4" } = req.body || {};
-  const metrics = (filters && Array.isArray(filters.metrics)) ? filters.metrics : [];
-  const headings = getHeadingsForReport(String(report_type).toLowerCase(), metrics);
+  const {
+    report_type = "sales",
+    format = "csv",
+    filters = {},
+    orientation = "portrait",
+    paper_size = "a4",
+  } = req.body || {};
+  const metrics =
+    filters && Array.isArray(filters.metrics) ? filters.metrics : [];
+  const headings = getHeadingsForReport(
+    String(report_type).toLowerCase(),
+    metrics,
+  );
 
   if (String(format).toLowerCase() === "pdf") {
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titleCase(report_type)} Report</title></head><body>
       <h1>${titleCase(report_type)} Report</h1>
       <p>Generated at: ${new Date().toISOString()}</p>
-      <table border="1" cellspacing="0" cellpadding="6"><thead><tr>${headings.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody><tr>${headings.map(()=>"<td></td>").join("")}</tr></tbody></table>
+      <table border="1" cellspacing="0" cellpadding="6"><thead><tr>${headings.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody><tr>${headings.map(() => "<td></td>").join("")}</tr></tbody></table>
     </body></html>`;
     res
       .status(200)
       .setHeader("Content-Type", "text/html; charset=UTF-8")
-      .setHeader("Content-Disposition", `attachment; filename="dev_${report_type}_report.html"`)
+      .setHeader(
+        "Content-Disposition",
+        `attachment; filename="dev_${report_type}_report.html"`,
+      )
       .send(html);
     return;
   }
 
   // CSV (also used as Excel fallback)
   res.setHeader("Content-Type", "text/csv");
-  res.setHeader("Content-Disposition", `attachment; filename="dev_${report_type}_report.csv"`);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename="dev_${report_type}_report.csv"`,
+  );
   res.setHeader("Pragma", "no-cache");
   res.setHeader("Cache-Control", "must-revalidate, post-check=0, pre-check=0");
   res.setHeader("Expires", "0");
@@ -332,21 +403,28 @@ app.get("/api/reports/templates/:id", (req, res) => {
   const user = getAuthUser(req);
   const tpl = devTemplates.find((t) => String(t.id) === String(req.params.id));
   if (!tpl) return res.status(404).json({ error: "Not found" });
-  if (user && (tpl.user_id === user.id)) return res.json({ template: tpl });
+  if (user && tpl.user_id === user.id) return res.json({ template: tpl });
   return res.status(403).json({ error: "Not authorized" });
 });
 
 app.put("/api/reports/templates/:id", (req, res) => {
   const user = getAuthUser(req);
-  const idx = devTemplates.findIndex((t) => String(t.id) === String(req.params.id));
+  const idx = devTemplates.findIndex(
+    (t) => String(t.id) === String(req.params.id),
+  );
   if (idx === -1) return res.status(404).json({ error: "Not found" });
   const tpl = devTemplates[idx];
-  if (!user || tpl.user_id !== user.id) return res.status(403).json({ error: "Not authorized" });
+  if (!user || tpl.user_id !== user.id)
+    return res.status(403).json({ error: "Not authorized" });
   const updated = {
     ...tpl,
     ...req.body,
-    report_type: req.body?.report_type ? String(req.body.report_type).toLowerCase() : tpl.report_type,
-    format: req.body?.format ? String(req.body.format).toLowerCase() : tpl.format,
+    report_type: req.body?.report_type
+      ? String(req.body.report_type).toLowerCase()
+      : tpl.report_type,
+    format: req.body?.format
+      ? String(req.body.format).toLowerCase()
+      : tpl.format,
     updated_at: new Date().toISOString(),
   };
   devTemplates[idx] = updated;
@@ -355,10 +433,13 @@ app.put("/api/reports/templates/:id", (req, res) => {
 
 app.delete("/api/reports/templates/:id", (req, res) => {
   const user = getAuthUser(req);
-  const idx = devTemplates.findIndex((t) => String(t.id) === String(req.params.id));
+  const idx = devTemplates.findIndex(
+    (t) => String(t.id) === String(req.params.id),
+  );
   if (idx === -1) return res.status(404).json({ error: "Not found" });
   const tpl = devTemplates[idx];
-  if (!user || tpl.user_id !== user.id) return res.status(403).json({ error: "Not authorized" });
+  if (!user || tpl.user_id !== user.id)
+    return res.status(403).json({ error: "Not authorized" });
   devTemplates.splice(idx, 1);
   res.json({ message: "Template deleted" });
 });

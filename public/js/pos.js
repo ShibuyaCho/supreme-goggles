@@ -5664,8 +5664,12 @@ function cannabisPOS() {
           report_type: this._mapSourceToReport(
             (this.customReport?.dataSources?.[0] || "sales").toLowerCase(),
           ),
-          format: (this.customReport?.exportFormats?.[0] || "pdf").toLowerCase(),
-          include_charts: !!this.customReport?.includeTrends || !!this.customReport?.includeBreakdowns,
+          format: (
+            this.customReport?.exportFormats?.[0] || "pdf"
+          ).toLowerCase(),
+          include_charts:
+            !!this.customReport?.includeTrends ||
+            !!this.customReport?.includeBreakdowns,
           orientation: this.customReport?.orientation || "portrait",
           paper_size: this.customReport?.paperSize || "a4",
           config: {
@@ -5689,8 +5693,13 @@ function cannabisPOS() {
             },
           },
         };
-        const res = await posAuth.apiRequest("post", "/reports/templates", payload);
-        if (!res.success) throw new Error(res.message || "Failed to save template");
+        const res = await posAuth.apiRequest(
+          "post",
+          "/reports/templates",
+          payload,
+        );
+        if (!res.success)
+          throw new Error(res.message || "Failed to save template");
         this.showToast(
           `Report template "${this.customReport.name}" saved successfully!`,
           "success",
@@ -5730,10 +5739,13 @@ function cannabisPOS() {
         );
         const ctype = res?.headers?.["content-type"] || "text/html";
         const file =
-          res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+          res?.data instanceof Blob
+            ? res.data
+            : new Blob([res.data], { type: ctype });
         const url = URL.createObjectURL(file);
         const w = window.open(url, "_blank");
-        if (!w) this.showToast("Popup blocked. Enable popups to preview.", "warning");
+        if (!w)
+          this.showToast("Popup blocked. Enable popups to preview.", "warning");
         setTimeout(() => URL.revokeObjectURL(url), 8000);
       } catch (e) {
         this.showToast("Failed to open preview", "error");
