@@ -265,7 +265,7 @@ export default function Employees() {
   const [tab, setTab] = useState<string>("employees");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
-  const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [selectedStatus, setSelectedStatus] = useState<string>("active");
   const [showAddEmployeeDialog, setShowAddEmployeeDialog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(
     null,
