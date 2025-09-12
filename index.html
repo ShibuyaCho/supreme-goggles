@@ -20037,7 +20037,13 @@
                 cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
               };
             } catch (e) { /* keep defaults */ }
-            try { localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions)); } catch(_){}
+            try {
+              const b = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null');
+              if (b && typeof b === 'object') {
+                this.rolePermissions = Object.assign({}, this.rolePermissions, b);
+              }
+              localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions));
+            } catch(_){}
           },
           hasPerm(p){
             const list = this.rolePermissions[this.selectedRole] || [];
