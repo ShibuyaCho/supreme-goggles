@@ -34,7 +34,13 @@ class EmployeesController extends Controller
 
         // Default: hide inactive unless explicitly requested or searching
         if ($statusFilter !== 'all') {
-            $query->where('status', $statusFilter);
+            $normalized = strtolower((string)$statusFilter);
+            if (in_array($normalized, ['active','inactive'], true)) {
+                $query->where('is_active', $normalized === 'active');
+            } else {
+                // For other custom statuses if present in schema
+                $query->where('status', $normalized);
+            }
         } else if (!$searchQuery) {
             $query->where(function($q){
                 $q->where('is_active', true)->orWhereNull('is_active');
