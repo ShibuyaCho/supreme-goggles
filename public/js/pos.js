@@ -5271,6 +5271,67 @@ function cannabisPOS() {
       this.closeAddDrawerModal();
     },
 
+    // Simple activity logger (used by Activity Log tab)
+    logActivity(type, action, location = "", details = "") {
+      const entry = {
+        id: String(Date.now()) + Math.random().toString(36).slice(2),
+        timestamp: new Date().toLocaleString(),
+        action: type,
+        type,
+        location,
+        employee: this.currentUser?.name || "User",
+        details: details || action,
+      };
+      this.activityLog.unshift(entry);
+      try {
+        const key = "pos_activity_log";
+        const prev = JSON.parse(localStorage.getItem(key) || "[]");
+        prev.push(entry);
+        localStorage.setItem(key, JSON.stringify(prev));
+      } catch (_) {}
+    },
+
+    // Alpine-used drawer actions
+    openDrawer(drawer) {
+      if (!drawer) return;
+      drawer.status = "open";
+      drawer.openedAt = new Date().toISOString();
+      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      this.logActivity("drawer", "opened", drawer.name);
+      this.showToast(`${drawer.name} opened`, "success");
+    },
+    closeDrawer(drawer) {
+      if (!drawer) return;
+      drawer.status = "closed";
+      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      this.logActivity("drawer", "closed", drawer.name);
+      this.showToast(`${drawer.name} closed`, "info");
+    },
+    countDrawer(drawer) {
+      try {
+        const modal = document.getElementById("rd-count-modal");
+        if (modal) { modal.classList.remove("hidden"); modal.classList.add("flex"); return; }
+      } catch (_) {}
+      this.showToast("Counting UI is available on Rooms & Drawers page", "info");
+    },
+    deleteDrawerWithPin(drawer) {
+      if (!drawer) return;
+      if (!confirm(`Delete ${drawer.name}?`)) return;
+      this.cashDrawers = (this.cashDrawers || []).filter((d) => String(d.id) !== String(drawer.id));
+      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      this.logActivity("drawer", "deleted", drawer.name);
+      this.showToast("Drawer deleted", "success");
+    },
+    assignEmployeeToDrawer(drawer) {
+      if (!drawer) return;
+      const name = prompt("Assign employee name:");
+      if (!name) return;
+      drawer.assignedEmployee = name;
+      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      this.logActivity("drawer", "assigned", drawer.name, `Assigned to ${name}`);
+      this.showToast(`Assigned to ${name}`, "success");
+    },
+
     // Employee permissions helper
     canManageEmployees() {
       try {
