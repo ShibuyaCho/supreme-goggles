@@ -345,6 +345,9 @@ app.post(["/api/auth/pin-login", "/api/pin-login"], (req, res) => {
       .status(401)
       .json({ error: "Invalid employee ID or PIN", success: false });
   }
+  if (String(user.status || 'active').toLowerCase() === 'inactive') {
+    return res.status(403).json({ error: "Account is inactive", success: false });
+  }
   const token = genToken();
   devStore.tokens.set(token, user.id);
   res.json({
