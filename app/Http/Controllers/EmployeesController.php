@@ -16,9 +16,9 @@ class EmployeesController extends Controller
         $searchQuery = $request->get('search', '');
         $departmentFilter = $request->get('department', 'all');
         $statusFilter = $request->get('status', 'all');
-        
+
         $query = Employee::query();
-        
+
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
                 $q->where('first_name', 'like', "%{$searchQuery}%")
@@ -27,15 +27,20 @@ class EmployeesController extends Controller
                   ->orWhere('employee_id', 'like', "%{$searchQuery}%");
             });
         }
-        
+
         if ($departmentFilter !== 'all') {
             $query->where('department', $departmentFilter);
         }
-        
+
+        // Default: hide inactive unless explicitly requested or searching
         if ($statusFilter !== 'all') {
             $query->where('status', $statusFilter);
+        } else if (!$searchQuery) {
+            $query->where(function($q){
+                $q->where('is_active', true)->orWhereNull('is_active');
+            });
         }
-        
+
         $employees = $query->orderBy('created_at', 'desc')->paginate(20);
 
         if ($request->expectsJson() || $request->wantsJson() || $request->is('api/*')) {
@@ -238,17 +243,23 @@ class EmployeesController extends Controller
 
         $employee = Employee::findOrFail($id);
 
-        // Check if employee has any sales
-        if ($employee->sales()->exists()) {
-            return response()->json([
-                'error' => 'Cannot delete employee with existing sales records'
-            ], 400);
+        // Soft delete: deactivate and set termination date, preserve data
+        if ($employee->is_active !== false || ($employee->status ?? 'active') !== 'inactive') {
+            $employee->update([
+                'is_active' => false,
+                'termination_date' => now()->toDateString(),
+            ]);
         }
-        
-        $employee->delete();
-        
+
+        // Also deactivate linked user
+        try {
+            if ($employee->user_id && ($u = \App\Models\User::find($employee->user_id))) {
+                $u->update(['is_active' => false]);
+            }
+        } catch (\Throwable $e) {}
+
         return response()->json([
-            'message' => 'Employee deleted successfully'
+            'message' => 'Employee deactivated successfully'
         ]);
     }
     
