@@ -108,8 +108,9 @@
 
   async function load(){
     try{
-      const res = await (window.axios || axios).get('/api/settings/pos');
-      const settings = res?.data?.settings || {};
+      const res = await (window.posAuth ? posAuth.apiRequest('get','/settings/pos') : (window.axios || axios).get('/api/settings/pos'));
+      const data = res?.data?.settings || res?.data || res;
+      const settings = data || {};
       rolePerms = settings.role_permissions || {
         admin: ['*'],
         manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
@@ -118,6 +119,7 @@
         cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
       };
     } catch(e){ rolePerms = rolePerms || {}; }
+    try{ localStorage.setItem('role_permissions_backup', JSON.stringify(rolePerms)); }catch(_){ }
     render();
   }
 
@@ -126,8 +128,12 @@
     const selected = permInputs.filter(cb => cb.checked).map(cb => cb.value);
     rolePerms[role] = selected;
     try{
-      const res = await (window.axios || axios).post('/api/settings/pos', { role_permissions: rolePerms });
-      const ok = (res?.data?.success === true) || (res?.status && res.status >= 200 && res.status < 300);
+      const getRes = await (window.posAuth ? posAuth.apiRequest('get','/settings/pos') : (window.axios || axios).get('/api/settings/pos'));
+      const base = getRes?.data?.settings || getRes?.data || {};
+      base.role_permissions = rolePerms;
+      const res = await (window.posAuth ? posAuth.apiRequest('post','/settings/pos', base) : (window.axios || axios).post('/api/settings/pos', base));
+      const ok = (res?.success === true) || (res?.data?.success === true) || (res?.status && res.status >= 200 && res.status < 300);
+      if (ok) { try{ localStorage.setItem('role_permissions_backup', JSON.stringify(rolePerms)); }catch(_){ } }
       if (window.POS?.showToast) POS.showToast(ok ? 'Permissions saved' : 'Failed to save', ok ? 'success' : 'error');
       else alert(ok ? 'Permissions saved' : 'Failed to save');
     }catch(e){ if (window.POS?.showToast) POS.showToast('Failed to save permissions', 'error'); else alert('Failed to save permissions'); }
