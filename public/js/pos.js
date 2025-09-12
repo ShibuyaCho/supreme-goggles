@@ -1348,6 +1348,16 @@ function cannabisPOS() {
 
     // Cart functions
     handleProductCardClick(product) {
+      // If role requires scanner to add items, block card click
+      try {
+        const role = (this.currentUser?.role || '').toLowerCase();
+        const perms = (this.settings?.role_permissions && this.settings.role_permissions[role]) || [];
+        if (Array.isArray(perms) && perms.includes('pos:scanner_only')) {
+          this.showToast('Scanner required: use a barcode scanner or the Add button.', 'info');
+          return;
+        }
+      } catch (_) {}
+
       // For items NOT on sales floor, allow click but prevent cart addition
       if (!product.onSalesFloor) {
         // If no sale is active, start new sale modal
