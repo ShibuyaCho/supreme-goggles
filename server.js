@@ -284,6 +284,22 @@ app.get("/api/user", (req, res) => {
   res.json(user);
 });
 
+// Auth: current user (for /api/auth/me)
+app.get(["/api/auth/me", "/api/me"], (req, res) => {
+  const user = authFromReq(req);
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+  res.json({ user, success: true });
+});
+
+// Auth: refresh token
+app.post(["/api/auth/refresh", "/api/refresh"], (req, res) => {
+  const user = authFromReq(req);
+  if (!user) return res.status(401).json({ error: "Unauthorized", success: false });
+  const token = genToken();
+  devStore.tokens.set(token, user.id);
+  res.json({ message: "Token refreshed", token, success: true });
+});
+
 // In-memory saved report templates are declared above and persisted to disk
 
 function getAuthUser(req) {
