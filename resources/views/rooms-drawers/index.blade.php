@@ -305,6 +305,60 @@
             </div>
         </div>
     </div>
+
+    <!-- Cash Drawer Management -->
+    <div class="mt-8 rounded-lg bg-white p-6 shadow">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">Cash Drawer Management</h2>
+            <button id="rd-add-drawer" class="inline-flex items-center rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700">+ Add Drawer</button>
+        </div>
+        <div id="rd-drawers" class="space-y-3"></div>
+    </div>
+</div>
+
+<!-- Count Drawer Modal -->
+<div id="rd-count-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl">
+    <div class="p-4 border-b flex items-center justify-between">
+      <h3 class="text-lg font-semibold">Count Cash Drawer</h3>
+      <button id="rd-count-close" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <h4 class="font-medium text-gray-900 mb-2">Bills</h4>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between"><label class="text-sm">$100</label><input data-denom="100" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$50</label><input data-denom="50" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$20</label><input data-denom="20" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$10</label><input data-denom="10" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$5</label><input data-denom="5" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$1</label><input data-denom="1" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+          </div>
+        </div>
+        <div>
+          <h4 class="font-medium text-gray-900 mb-2">Coins</h4>
+          <div class="space-y-2">
+            <div class="flex items-center justify-between"><label class="text-sm">25¢</label><input data-denom="0.25" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">10¢</label><input data-denom="0.10" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">5¢</label><input data-denom="0.05" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">1¢</label><input data-denom="0.01" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="p-3 rounded bg-gray-50 border"><div class="text-xs text-gray-500">Counted Total</div><div id="rd-counted" class="text-xl font-semibold">$0.00</div></div>
+        <div class="p-3 rounded bg-gray-50 border"><div class="text-xs text-gray-500">Debit Total (this till)</div><div id="rd-debit" class="text-xl font-semibold">$0.00</div></div>
+        <div class="p-3 rounded bg-gray-50 border"><div class="text-xs text-gray-500">Variance</div><div id="rd-variance" class="text-xl font-semibold">$0.00</div></div>
+      </div>
+      <div class="mt-4 flex items-center justify-end gap-3">
+        <button id="rd-count-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+        <button id="rd-count-save" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Save Count</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- Add Room Modal -->
