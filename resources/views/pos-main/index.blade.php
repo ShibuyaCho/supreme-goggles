@@ -6,12 +6,6 @@
 
 @section('content')
 <div class="min-h-screen bg-gray-50">
-    <!-- Include modals -->
-    @include('pos.modals.new-sale')
-    @include('pos.modals.customer-select')
-    @include('pos.modals.new-customer')
-    @include('pos.modals.payment')
-    @include('pos.modals.age-verification')
 
     <!-- POS Main Interface -->
     <div class="flex h-screen bg-gray-50">
