@@ -531,7 +531,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     'age_verification' => (bool)($settings['age_verification'] ?? true)
                 ]
             ]);
-        })->withoutMiddleware('auth:sanctum')->middleware(['web','auth']);
+        });
 
         // Save POS settings (persist to DB and cache)
         Route::post('/pos', function(\Illuminate\Http\Request $request) {
@@ -554,7 +554,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             } catch (\Throwable $e) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
-        })->withoutMiddleware('auth:sanctum')->middleware(['web','auth']);
+        });
 
         // METRC settings (with permission check)
         Route::get('/metrc', function() {
