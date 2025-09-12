@@ -3093,7 +3093,9 @@ function cannabisPOS() {
     },
 
     getActiveEmployees() {
-      return this.employees.filter((emp) => emp.status === "active");
+      const q = (this.employeeSearchQuery || "").toLowerCase();
+      // Even when searching, assignments should use active employees only
+      return (this.employees || []).filter((emp) => emp.status === "active");
     },
 
     hasAnyPrices() {
