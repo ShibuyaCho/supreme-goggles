@@ -7,6 +7,10 @@
   external_node_modules = ["express"]
   node_bundler = "esbuild"
 
+[functions."weekly-export"]
+  schedule = "@weekly"
+  timeout = 900
+
 # API requests -> Netlify Functions
 [[redirects]]
   from = "/api/*"
