@@ -1032,16 +1032,20 @@ function cannabisPOS() {
     async fetchReportTemplates() {
       try {
         const res = await posAuth.apiRequest("get", "/reports/templates");
-        if (res.success) {
-          const list = res.data.templates || [];
-          this.recentReports = list.map((t) => ({
-            id: t.id,
-            name: t.name,
-            type: t.report_type,
-            updatedAt: t.updated_at,
-            config: t.config,
-          }));
-        }
+        let list = [];
+        if (res.success) list = res.data.templates || [];
+        try {
+          const uid = posAuth?.getUser()?.id || "anon";
+          const local = JSON.parse(localStorage.getItem(`report_templates_${uid}`) || "[]");
+          list = [...list, ...local];
+        } catch (_) {}
+        this.recentReports = list.map((t) => ({
+          id: t.id,
+          name: t.name,
+          type: t.report_type,
+          updatedAt: t.updated_at || t.created_at || null,
+          config: t.config,
+        }));
       } catch (e) {
         // ignore
       }
@@ -5706,7 +5710,58 @@ function cannabisPOS() {
         );
         await this.fetchReportTemplates();
       } catch (e) {
-        this.showToast("Failed to save report template", "error");
+        // Local fallback save
+        try {
+          const uid = posAuth?.getUser()?.id || "anon";
+          const key = `report_templates_${uid}`;
+          const list = JSON.parse(localStorage.getItem(key) || "[]");
+          const tpl = {
+            id: Date.now(),
+            user_id: uid,
+            name: this.customReport.name,
+            description: this.customReport.description || "",
+            report_type: this._mapSourceToReport((this.customReport?.dataSources?.[0] || "sales").toLowerCase()),
+            format: (this.customReport?.exportFormats?.[0] || "pdf").toLowerCase(),
+            include_charts: !!this.customReport?.includeTrends || !!this.customReport?.includeBreakdowns,
+            orientation: this.customReport?.orientation || "portrait",
+            paper_size: this.customReport?.paperSize || "a4",
+            config: payload.config,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          list.push(tpl);
+          localStorage.setItem(key, JSON.stringify(list));
+          this.showToast(`Report template "${tpl.name}" saved (offline).`, "warning");
+          await this.fetchReportTemplates();
+        } catch (_) {
+          this.showToast("Failed to save report template", "error");
+        }
+      }
+    },
+
+    _getReportHeadings(reportType, metrics) {
+      if (Array.isArray(metrics) && metrics.length) {
+        return metrics.map((m) => String(m).replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()));
+      }
+      switch (reportType) {
+        case "sales":
+          return ["Date", "Transaction ID", "Customer", "Items", "Subtotal", "Tax", "Total", "Payment Method"];
+        case "inventory":
+          return ["Product Name", "SKU", "Category", "Quantity", "Unit Cost", "Unit Price", "Total Value", "Room", "METRC Tag"];
+        case "customers":
+          return ["Customer Name", "Type", "Email", "Phone", "Total Visits", "Total Spent", "Average Order", "Last Visit"];
+        case "products":
+          return ["Name", "Category", "SKU", "Price", "Cost", "Quantity", "Room", "THC%", "CBD%", "METRC Tag"];
+        case "analytics":
+          return ["Metric", "Value", "Period", "Change", "Percentage"];
+        case "metrc":
+          return ["Package Tag", "Product", "Quantity", "Unit", "Status", "Location", "Last Modified"];
+        case "compliance":
+          return ["Date", "Type", "Description", "Status", "Employee", "Notes"];
+        case "employees":
+          return ["Name", "Role", "Employee ID", "Email", "Hours Worked", "Sales Count", "Performance Score"];
+        default:
+          return ["Column 1", "Column 2", "Column 3"];
       }
     },
 
