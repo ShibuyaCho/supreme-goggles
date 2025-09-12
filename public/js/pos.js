@@ -5371,36 +5371,33 @@ function cannabisPOS() {
             "" ||
             String(cand.id);
 
-          let res = await window.posAuth?.apiRequest?.(
-            "delete",
-            `/employees/${encodeURIComponent(targetId)}`,
-          );
+          // Try Laravel web route first to ensure DB persistence
+          let ok = false;
+          try {
+            const headers = { Accept: "application/json" };
+            const csrf = document
+              .querySelector('meta[name="csrf-token"]')
+              ?.getAttribute("content");
+            if (csrf) headers["X-CSRF-TOKEN"] = csrf;
+            const respWeb = await (window.axios || axios).delete(
+              `/employees/${encodeURIComponent(targetId)}`,
+              { headers },
+            );
+            ok = respWeb && respWeb.status >= 200 && respWeb.status < 300;
+          } catch (_) { ok = false; }
 
-          if (!res || res.success === false) {
-            // Treat 404 as idempotent success; otherwise try Laravel fallbacks
-            if (res?.status !== 404) {
+          if (!ok) {
+            const res = await window.posAuth?.apiRequest?.(
+              "delete",
+              `/employees/${encodeURIComponent(targetId)}`,
+            );
+            if (res?.success === false && res?.status !== 404) {
               try {
-                const headers = { Accept: "application/json" };
-                const csrf = document
-                  .querySelector('meta[name="csrf-token"]')
-                  ?.getAttribute("content");
-                if (csrf) headers["X-CSRF-TOKEN"] = csrf;
-                // Try web route first
-                let ok = false;
-                try {
-                  const respWeb = await (window.axios || axios).delete(
-                    `/employees/${encodeURIComponent(targetId)}`,
-                    { headers },
-                  );
-                  ok = respWeb && respWeb.status >= 200 && respWeb.status < 300;
-                } catch (_) {}
-                if (!ok) {
-                  const respApi = await (window.axios || axios).delete(
-                    `/api/employees/${encodeURIComponent(targetId)}`,
-                    { headers },
-                  );
-                  ok = respApi && respApi.status >= 200 && respApi.status < 300;
-                }
+                const respApi = await (window.axios || axios).delete(
+                  `/api/employees/${encodeURIComponent(targetId)}`,
+                  { headers: { Accept: "application/json" } },
+                );
+                ok = respApi && respApi.status >= 200 && respApi.status < 300;
                 if (!ok) throw new Error("Delete failed");
               } catch (e) {
                 throw new Error(res?.message || "Delete failed");
