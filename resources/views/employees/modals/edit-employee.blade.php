@@ -172,6 +172,7 @@ document.getElementById('edit-employee-form').addEventListener('submit', async f
         department: String(fd.get('department')||'').trim(),
         position: selectedRole,
         role: selectedRole,
+        hire_date: String(fd.get('hire_date')||'').trim(),
         hourly_rate: null,
         permissions: Array.from(form.querySelectorAll('input[name="permissions[]"]:checked')).map(i=>i.value)
     };
