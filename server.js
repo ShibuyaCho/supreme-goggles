@@ -795,19 +795,31 @@ app.get("/api/settings/pos", async (_req, res) => {
 app.post("/api/settings/pos", async (req, res) => {
   const incoming = req.body?.settings || req.body || {};
   try {
+    // Fetch current settings to merge
+    let current = {};
+    try {
+      const r0 = await supaFetch("pos_settings?id=eq.default&select=*", { method: "GET" });
+      if (r0.ok) {
+        const arr = await r0.json();
+        const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+        if (row && row.settings && typeof row.settings === "object") current = row.settings;
+      }
+    } catch (_) {}
+    const merged = { ...current, ...incoming };
+
     const r = await supaFetch("pos_settings", {
       method: "POST",
       body: [
         {
           id: "default",
-          settings: incoming,
+          settings: merged,
           updated_at: new Date().toISOString(),
         },
       ],
       query: { on_conflict: "id" },
     });
     const payload = r.ok ? await r.json() : null;
-    return res.json({ success: true, settings: incoming, saved: payload });
+    return res.json({ success: true, settings: merged, saved: payload });
   } catch (e) {
     return res
       .status(500)
