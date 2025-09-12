@@ -5320,6 +5320,7 @@ function cannabisPOS() {
               String(e.id) !== targetId && nid !== targetId && eid !== targetId
             );
           });
+          try { await this.fetchEmployeesFromApi(); } catch(_) {}
           this.showToast("Employee deactivated", "success");
         } else if (this.pinAction === "deleteRoom") {
           this.showToast("Room deleted", "success");
