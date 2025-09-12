@@ -5249,18 +5249,7 @@ function cannabisPOS() {
         this.pinError = "Please enter a valid PIN";
         return;
       }
-      // Verify current user's PIN via API (uses aliases /api/auth/pin-login or /api/pin-login)
       try {
-        const me = window.posAuth?.getUser?.() || {};
-        let empId = me?.employee?.employee_id || '';
-        if (!empId && window.posAuth?.refreshUser) {
-          const refreshed = await posAuth.refreshUser();
-          empId = refreshed?.employee?.employee_id || '';
-        }
-        if (!empId) {
-          this.pinError = 'Unable to verify PIN: missing employee ID';
-          return;
-        }
         const verify = await posAuth.apiRequest('post', '/auth/verify-pin', { pin: this.pinInput });
         if (!verify?.success) {
           this.pinError = verify?.message || 'PIN verification failed';
@@ -5279,7 +5268,7 @@ function cannabisPOS() {
           if (!res.success) throw new Error(res.message || 'Delete failed');
           // Remove from local list
           this.employees = (this.employees || []).filter(e => String(e.id) !== String(id));
-          this.showToast('Employee deleted', 'success');
+          this.showToast('Employee deactivated', 'success');
         } else if (this.pinAction === 'deleteRoom') {
           this.showToast('Room deleted', 'success');
         } else if (this.pinAction === 'deleteDrawer') {

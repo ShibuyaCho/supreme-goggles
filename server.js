@@ -935,12 +935,27 @@ app.put("/api/employees/:id", async (req, res) => {
 app.delete("/api/employees/:id", async (req, res) => {
   const idRaw = String(req.params.id || "");
   try {
-    const target = /^\d+$/.test(idRaw)
+    const byNumeric = /^\d+$/.test(idRaw);
+    const sel = byNumeric
       ? `employees?id=eq.${encodeURIComponent(idRaw)}`
       : `employees?employee_id=eq.${encodeURIComponent(idRaw)}`;
-    const r = await supaFetch(target, { method: "DELETE" });
-    if (!r.ok) return res.status(404).json({ success: false, error: "Not found" });
-    return res.json({ success: true });
+
+    // Try soft-delete first (retain history): set is_active=false and termination_date=now
+    const patch = await supaFetch(sel, {
+      method: "PATCH",
+      body: { is_active: false, termination_date: new Date().toISOString().slice(0,10) },
+    });
+    if (patch.ok) {
+      const payload = await patch.json().catch(() => null);
+      const affected = Array.isArray(payload) ? payload.length : (payload ? 1 : 0);
+      if (affected === 0) return res.status(404).json({ success: false, error: "Not found" });
+      return res.json({ success: true, softDeleted: true });
+    }
+
+    // Fallback to hard delete only if patch failed due to schema mismatch
+    const del = await supaFetch(sel, { method: "DELETE" });
+    if (!del.ok) return res.status(404).json({ success: false, error: "Not found" });
+    return res.json({ success: true, softDeleted: false });
   } catch (e) {
     return res.status(500).json({ success: false, error: "Failed to delete employee" });
   }
