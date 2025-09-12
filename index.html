@@ -1018,7 +1018,7 @@
                       <option value="Concentrates">�� Concentrates</option>
                       <option value="Vape Products">💨 Vape Products</option>
                       <option value="Tinctures">🧪 Tinctures</option>
-                      <option value="Topicals">🧴 Topicals</option>
+                      <option value="Topicals">���� Topicals</option>
                       <option value="Capsules">💊 Capsules</option>
                       <option value="Beverages">🥤 Beverages</option>
                       <option value="Suppositories">⚕️ Suppositories</option>
@@ -13370,7 +13370,11 @@
                         <h2 class="text-2xl font-bold text-gray-900">Roles & Permissions</h2>
                         <p class="text-sm text-gray-600">Define what each role can access across the POS.</p>
                       </div>
-                      <button @click="saveRolePermissions()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">Save Changes</button>
+                      <div class="flex items-center gap-2">
+                        <button @click="openRoleModal('create')" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">Create New Role</button>
+                        <button @click="openRoleModal('edit')" class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">Edit Role</button>
+                        <button @click="saveRolePermissions()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors text-sm">Save Changes</button>
+                      </div>
                     </div>
 
                     <div class="flex items-center gap-3 mb-6">
