@@ -94,7 +94,8 @@
     </div>
     <div class="p-6 space-y-6">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Role name</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+        <select id="role-edit-select" class="hidden w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500"></select>
         <input id="role-name-input" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" placeholder="e.g., shift-lead">
       </div>
       <div>
@@ -184,6 +185,7 @@
   const modalSaveBtn = document.getElementById('role-save-btn');
   const modalCancelBtn = document.getElementById('role-cancel-btn');
   const modalCancelBtn2 = document.getElementById('role-cancel-btn-2');
+  const roleEditSelect = document.getElementById('role-edit-select');
 
   let rolePerms = {};
   let modalMode = 'create'; // 'create' | 'edit'
@@ -248,14 +250,28 @@
     modalSelectAll.indeterminate = checked > 0 && checked < total;
     modalSelectAll.checked = checked === total;
   }
+  function populateRoleSelect(){
+    if (!roleEditSelect) return;
+    roleEditSelect.innerHTML = '';
+    Object.keys(rolePerms || {}).forEach(k => {
+      const opt = document.createElement('option');
+      opt.value = k; opt.textContent = labelForRole(k);
+      roleEditSelect.appendChild(opt);
+    });
+  }
   function showModal(mode, roleKey){
     modalMode = mode; editingRoleKey = roleKey || null;
     modalTitle.textContent = mode === 'create' ? 'Create Role' : `Edit Role`;
     modalDeleteBtn.classList.toggle('hidden', !(mode === 'edit' && editingRoleKey && editingRoleKey !== 'admin'));
     if (mode === 'edit' && editingRoleKey){
-      roleNameInput.value = editingRoleKey;
-      setChecksFromPerms(modalPermInputs, rolePerms[editingRoleKey] || []);
+      roleNameInput.classList.add('hidden');
+      roleEditSelect.classList.remove('hidden');
+      populateRoleSelect();
+      roleEditSelect.value = editingRoleKey;
+      setChecksFromPerms(modalPermInputs, rolePerms[roleEditSelect.value] || []);
     } else {
+      roleEditSelect.classList.add('hidden');
+      roleNameInput.classList.remove('hidden');
       roleNameInput.value = '';
       setChecksFromPerms(modalPermInputs, []);
     }
@@ -338,52 +354,44 @@
     });
   }
 
+  roleEditSelect?.addEventListener('change', function(){
+    editingRoleKey = roleEditSelect.value || editingRoleKey;
+    setChecksFromPerms(modalPermInputs, rolePerms[editingRoleKey] || []);
+    syncSelectAllModal();
+  });
+
   modalSaveBtn?.addEventListener('click', async function(){
-    const nameRaw = roleNameInput.value;
-    const key = slugifyRole(nameRaw);
-    if (!key){ if (window.POS?.showToast) POS.showToast('Enter a role name', 'error'); else alert('Enter a role name'); return; }
     if (modalMode === 'create'){
+      const nameRaw = roleNameInput.value;
+      const key = slugifyRole(nameRaw);
+      if (!key){ if (window.POS?.showToast) POS.showToast('Enter a role name', 'error'); else alert('Enter a role name'); return; }
       if (rolePerms[key]){ if (window.POS?.showToast) POS.showToast('Role already exists', 'error'); else alert('Role already exists'); return; }
       const selected = collectPermsFrom(modalPermInputs);
       rolePerms[key] = normalizePerms(selected, modalPermInputs.length);
-    } else if (modalMode === 'edit' && editingRoleKey){
-      const selected = collectPermsFrom(modalPermInputs);
-      const normalized = normalizePerms(selected, modalPermInputs.length);
-      if (key !== editingRoleKey){
-        if (rolePerms[key] && key !== editingRoleKey){ if (window.POS?.showToast) POS.showToast('Another role already has that name', 'error'); else alert('Another role already has that name'); return; }
-        rolePerms[key] = normalized;
-        delete rolePerms[editingRoleKey];
-      } else {
-        rolePerms[key] = normalized;
-      }
+      const ok = await saveAllRoles();
+      if (ok){ refreshRoleOptions(); roleSelect.value = key; render(); hideModal(); if (window.POS?.showToast) POS.showToast('Role saved', 'success'); else alert('Role saved'); } else { if (window.POS?.showToast) POS.showToast('Failed to save role', 'error'); else alert('Failed to save role'); }
+      return;
     }
-    const ok = await saveAllRoles();
-    if (ok){
-      refreshRoleOptions();
-      roleSelect.value = key;
-      render();
-      hideModal();
-      if (window.POS?.showToast) POS.showToast('Role saved', 'success'); else alert('Role saved');
-    } else {
-      if (window.POS?.showToast) POS.showToast('Failed to save role', 'error'); else alert('Failed to save role');
+    if (modalMode === 'edit'){
+      const key = roleEditSelect.value || editingRoleKey;
+      if (!key){ if (window.POS?.showToast) POS.showToast('Select a role', 'error'); else alert('Select a role'); return; }
+      const selected = collectPermsFrom(modalPermInputs);
+      rolePerms[key] = normalizePerms(selected, modalPermInputs.length);
+      const ok = await saveAllRoles();
+      if (ok){ refreshRoleOptions(); roleSelect.value = key; render(); hideModal(); if (window.POS?.showToast) POS.showToast('Role saved', 'success'); else alert('Role saved'); } else { if (window.POS?.showToast) POS.showToast('Failed to save role', 'error'); else alert('Failed to save role'); }
     }
   });
 
   modalDeleteBtn?.addEventListener('click', async function(){
-    if (!(modalMode === 'edit' && editingRoleKey)) return;
-    if (editingRoleKey === 'admin'){ if (window.POS?.showToast) POS.showToast('Cannot delete admin role', 'error'); else alert('Cannot delete admin role'); return; }
-    const okConfirm = confirm(`Delete role "${editingRoleKey}"? This cannot be undone.`);
+    if (modalMode !== 'edit') return;
+    const key = roleEditSelect.value || editingRoleKey;
+    if (!key) return;
+    if (key === 'admin'){ if (window.POS?.showToast) POS.showToast('Cannot delete admin role', 'error'); else alert('Cannot delete admin role'); return; }
+    const okConfirm = confirm(`Delete role "${key}"? This cannot be undone.`);
     if (!okConfirm) return;
-    delete rolePerms[editingRoleKey];
+    delete rolePerms[key];
     const ok = await saveAllRoles();
-    if (ok){
-      refreshRoleOptions();
-      render();
-      hideModal();
-      if (window.POS?.showToast) POS.showToast('Role deleted', 'success'); else alert('Role deleted');
-    } else {
-      if (window.POS?.showToast) POS.showToast('Failed to delete role', 'error'); else alert('Failed to delete role');
-    }
+    if (ok){ refreshRoleOptions(); render(); hideModal(); if (window.POS?.showToast) POS.showToast('Role deleted', 'success'); else alert('Role deleted'); } else { if (window.POS?.showToast) POS.showToast('Failed to delete role', 'error'); else alert('Failed to delete role'); }
   });
 
   roleSelect?.addEventListener('change', render);
