@@ -269,7 +269,7 @@ class AuthController extends Controller
 
         // Generate limited token for POS operations
         $abilities = ['pos:*', 'products:read', 'customers:read', 'sales:create'];
-        $token = $user->generateApiToken('POS Terminal', $abilities);
+        $token = $user->generateApiToken('POS Terminal', $abilities, now()->addHours(8));
 
         return response()->json([
             'message' => 'PIN login successful',
