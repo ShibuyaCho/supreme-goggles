@@ -343,9 +343,19 @@ function reportsManager() {
                     end_date: null,
                     filters: {}
                 }, { responseType: 'blob' });
-                const ctype = (res && res.headers && res.headers['content-type']) || '';
-                if (ctype.includes('application/json')) {
-                    // Fallback: headers-only CSV
+                const ctype = ((res && res.headers && res.headers['content-type']) || '').toLowerCase();
+                const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || 'application/octet-stream' });
+                let treatAsStub = ctype.includes('application/json');
+                if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+                    try {
+                        const text = await dataBlob.text();
+                        const t = text.trim();
+                        if (t.startsWith('{') || t.startsWith('[') || t.includes('Dev API stub active')) {
+                            treatAsStub = true;
+                        }
+                    } catch(_) {}
+                }
+                if (treatAsStub) {
                     const headings = this.getReportHeadings(map, []);
                     const csv = headings.join(',') + '\n';
                     const blob = new Blob([csv], { type: 'text/csv' });
@@ -358,7 +368,7 @@ function reportsManager() {
                     a.remove();
                     window.URL.revokeObjectURL(url);
                 } else {
-                    this.triggerDownload(res, `report_${map}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                    this.triggerDownload({ data: dataBlob, headers: res.headers }, `report_${map}.${fmt === 'excel' ? 'xlsx' : fmt}`);
                 }
             } catch(e) {
                 // Client-side fallback on network error
@@ -406,8 +416,19 @@ function reportsManager() {
                         group_by_category: !!this.customReport.groupByCategory,
                     },
                 }, { responseType: 'blob' });
-                const ctype = (res && res.headers && res.headers['content-type']) || '';
-                if (ctype.includes('application/json')) {
+                const ctype = ((res && res.headers && res.headers['content-type']) || '').toLowerCase();
+                const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || 'application/octet-stream' });
+                let treatAsStub = ctype.includes('application/json');
+                if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+                    try {
+                        const text = await dataBlob.text();
+                        const t = text.trim();
+                        if (t.startsWith('{') || t.startsWith('[') || t.includes('Dev API stub active')) {
+                            treatAsStub = true;
+                        }
+                    } catch(_) {}
+                }
+                if (treatAsStub) {
                     const headings = this.getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
                     const csv = headings.join(',') + '\n';
                     const blob = new Blob([csv], { type: 'text/csv' });
@@ -420,7 +441,7 @@ function reportsManager() {
                     a.remove();
                     window.URL.revokeObjectURL(url);
                 } else {
-                    this.triggerDownload(res, `${this.customReport.name.replace(/\s+/g,'_')}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                    this.triggerDownload({ data: dataBlob, headers: res.headers }, `${this.customReport.name.replace(/\s+/g,'_')}.${fmt === 'excel' ? 'xlsx' : fmt}`);
                 }
                 this.showToast('Report generated successfully!', 'success');
             } catch (e) {
