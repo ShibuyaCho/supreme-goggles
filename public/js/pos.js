@@ -1350,10 +1350,16 @@ function cannabisPOS() {
     handleProductCardClick(product) {
       // If role requires scanner to add items, block card click
       try {
-        const role = (this.currentUser?.role || '').toLowerCase();
-        const perms = (this.settings?.role_permissions && this.settings.role_permissions[role]) || [];
-        if (Array.isArray(perms) && perms.includes('pos:scanner_only')) {
-          this.showToast('Scanner required: use a barcode scanner or the Add button.', 'info');
+        const role = (this.currentUser?.role || "").toLowerCase();
+        const perms =
+          (this.settings?.role_permissions &&
+            this.settings.role_permissions[role]) ||
+          [];
+        if (Array.isArray(perms) && perms.includes("pos:scanner_only")) {
+          this.showToast(
+            "Scanner required: use a barcode scanner or the Add button.",
+            "info",
+          );
           return;
         }
       } catch (_) {}
@@ -1454,7 +1460,9 @@ function cannabisPOS() {
     clearCart() {
       this.cart = [];
       this.calculateTotals();
-      try { this.persistCartState(); } catch (_) {}
+      try {
+        this.persistCartState();
+      } catch (_) {}
       this.showToast("Cart cleared", "info");
     },
 
@@ -1463,7 +1471,9 @@ function cannabisPOS() {
         this.subtotal = 0;
         this.taxAmount = 0;
         this.total = 0;
-        try { this.persistCartState(); } catch (_) {}
+        try {
+          this.persistCartState();
+        } catch (_) {}
         return;
       }
 
@@ -1497,7 +1507,9 @@ function cannabisPOS() {
 
       // Calculate final total
       this.total = finalSubtotal + this.taxAmount;
-      try { this.persistCartState(); } catch (_) {}
+      try {
+        this.persistCartState();
+      } catch (_) {}
     },
 
     getEffectiveTaxRate() {
@@ -1556,7 +1568,11 @@ function cannabisPOS() {
         const state = {
           cart: Array.isArray(this.cart) ? this.cart : [],
           selectedCustomer: this.selectedCustomer || null,
-          cartDiscount: this.cartDiscount || { type: "percentage", value: 0, amount: 0 },
+          cartDiscount: this.cartDiscount || {
+            type: "percentage",
+            value: 0,
+            amount: 0,
+          },
           subtotal: this.subtotal || 0,
           taxAmount: this.taxAmount || 0,
           total: this.total || 0,
@@ -1590,7 +1606,9 @@ function cannabisPOS() {
     selectCustomer(customer) {
       this.selectedCustomer = customer;
       this.calculateTotals();
-      try { this.persistCartState(); } catch (_) {}
+      try {
+        this.persistCartState();
+      } catch (_) {}
     },
 
     async enrollCustomerInLoyalty() {
@@ -5694,13 +5712,27 @@ function cannabisPOS() {
             { responseType: "blob" },
           );
           const ctype = (res?.headers?.["content-type"] || "").toLowerCase();
-          const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || "application/octet-stream" });
+          const dataBlob =
+            res?.data instanceof Blob
+              ? res.data
+              : new Blob([res.data], {
+                  type: ctype || "application/octet-stream",
+                });
           let treatAsStub = ctype.includes("application/json");
-          if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+          if (
+            !treatAsStub &&
+            dataBlob &&
+            dataBlob.size > 0 &&
+            dataBlob.size < 4096
+          ) {
             try {
               const text = await dataBlob.text();
               const t = text.trim();
-              if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+              if (
+                t.startsWith("{") ||
+                t.startsWith("[") ||
+                t.includes("Dev API stub active")
+              ) {
                 treatAsStub = true;
               }
             } catch (_) {}
@@ -5755,13 +5787,27 @@ function cannabisPOS() {
           { responseType: "blob" },
         );
         const ctype = (res?.headers?.["content-type"] || "").toLowerCase();
-        const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || "application/octet-stream" });
+        const dataBlob =
+          res?.data instanceof Blob
+            ? res.data
+            : new Blob([res.data], {
+                type: ctype || "application/octet-stream",
+              });
         let treatAsStub = ctype.includes("application/json");
-        if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+        if (
+          !treatAsStub &&
+          dataBlob &&
+          dataBlob.size > 0 &&
+          dataBlob.size < 4096
+        ) {
           try {
             const text = await dataBlob.text();
             const t = text.trim();
-            if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+            if (
+              t.startsWith("{") ||
+              t.startsWith("[") ||
+              t.includes("Dev API stub active")
+            ) {
               treatAsStub = true;
             }
           } catch (_) {}
@@ -5776,14 +5822,20 @@ function cannabisPOS() {
           const url = URL.createObjectURL(blob);
           const a = document.createElement("a");
           a.href = url;
-          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
+          const name = (this.customReport?.name || "custom-report").replace(
+            /\s+/g,
+            "_",
+          );
           a.download = `${name}.csv`;
           document.body.appendChild(a);
           a.click();
           a.remove();
           setTimeout(() => URL.revokeObjectURL(url), 3000);
         } else {
-          const name = (this.customReport?.name || "custom-report").replace(/\s+/g, "_");
+          const name = (this.customReport?.name || "custom-report").replace(
+            /\s+/g,
+            "_",
+          );
           this._triggerDownload(
             { data: dataBlob, headers: res.headers },
             `${name}.${fmt === "excel" ? "xlsx" : fmt}`,
@@ -5817,7 +5869,10 @@ function cannabisPOS() {
             selected_metrics: this.customReport?.selectedMetrics || [],
           },
         };
-        this.recentReports = [optimisticItem, ...this.recentReports].slice(0, 10);
+        this.recentReports = [optimisticItem, ...this.recentReports].slice(
+          0,
+          10,
+        );
         try {
           localStorage.setItem(
             "cannabisPOS-reports",
@@ -6071,14 +6126,28 @@ function cannabisPOS() {
           payload,
           { responseType: "blob" },
         );
-        const ctype = (res?.headers?.["content-type"] || "text/html").toLowerCase();
-        const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+        const ctype = (
+          res?.headers?.["content-type"] || "text/html"
+        ).toLowerCase();
+        const dataBlob =
+          res?.data instanceof Blob
+            ? res.data
+            : new Blob([res.data], { type: ctype });
         let treatAsStub = ctype.includes("application/json");
-        if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+        if (
+          !treatAsStub &&
+          dataBlob &&
+          dataBlob.size > 0 &&
+          dataBlob.size < 4096
+        ) {
           try {
             const text = await dataBlob.text();
             const t = text.trim();
-            if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+            if (
+              t.startsWith("{") ||
+              t.startsWith("[") ||
+              t.includes("Dev API stub active")
+            ) {
               treatAsStub = true;
             }
           } catch (_) {}
@@ -6127,14 +6196,28 @@ function cannabisPOS() {
           payload,
           { responseType: "blob" },
         );
-        const ctype = (res?.headers?.["content-type"] || "text/csv").toLowerCase();
-        const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
+        const ctype = (
+          res?.headers?.["content-type"] || "text/csv"
+        ).toLowerCase();
+        const dataBlob =
+          res?.data instanceof Blob
+            ? res.data
+            : new Blob([res.data], { type: ctype });
         let treatAsStub = ctype.includes("application/json");
-        if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+        if (
+          !treatAsStub &&
+          dataBlob &&
+          dataBlob.size > 0 &&
+          dataBlob.size < 4096
+        ) {
           try {
             const text = await dataBlob.text();
             const t = text.trim();
-            if (t.startsWith("{") || t.startsWith("[") || t.includes("Dev API stub active")) {
+            if (
+              t.startsWith("{") ||
+              t.startsWith("[") ||
+              t.includes("Dev API stub active")
+            ) {
               treatAsStub = true;
             }
           } catch (_) {}

@@ -23,10 +23,12 @@ function toCSV(rows: any[]): string {
     rows.reduce((set: Set<string>, r: any) => {
       Object.keys(r || {}).forEach((k) => set.add(k));
       return set;
-    }, new Set<string>())
+    }, new Set<string>()),
   );
   const headerLine = headers.map(csvEscape).join(",");
-  const lines = rows.map((row) => headers.map((h) => csvEscape((row as any)[h])).join(","));
+  const lines = rows.map((row) =>
+    headers.map((h) => csvEscape((row as any)[h])).join(","),
+  );
   return [headerLine, ...lines].join("\n");
 }
 
@@ -47,7 +49,11 @@ async function fetchAll(table: string): Promise<any[]> {
   return await res.json();
 }
 
-async function uploadToStorage(path: string, content: string, contentType = "text/csv"): Promise<boolean> {
+async function uploadToStorage(
+  path: string,
+  content: string,
+  contentType = "text/csv",
+): Promise<boolean> {
   const url = new URL(`${SUPABASE_URL}/storage/v1/object/${path}`);
   const res = await fetch(url, {
     method: "POST",
@@ -89,7 +95,7 @@ export const handler = async () => {
     "metrc_logs",
     "activity_logs",
     "report_templates",
-    "settings"
+    "settings",
   ];
 
   const results: Record<string, string> = {};

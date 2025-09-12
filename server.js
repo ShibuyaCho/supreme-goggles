@@ -13,12 +13,20 @@ const PORT = process.env.PORT || 3000;
 // Supabase REST helper
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
-async function supaFetch(path, { method = "GET", body = null, query = null } = {}) {
+async function supaFetch(
+  path,
+  { method = "GET", body = null, query = null } = {},
+) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return { ok: false, status: 503, json: async () => ({ error: "Supabase not configured" }) };
+    return {
+      ok: false,
+      status: 503,
+      json: async () => ({ error: "Supabase not configured" }),
+    };
   }
   const url = new URL(`${SUPABASE_URL}/rest/v1/${path}`);
-  if (query && typeof query === "object") Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
+  if (query && typeof query === "object")
+    Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
   const res = await fetch(url, {
     method,
     headers: {
@@ -179,68 +187,82 @@ app.get("/", (_req, res) => {
 });
 
 // Auth endpoints for dev mode (simulate backend)
-app.post(["/api/auth/self-register", "/api/self-register"], async (req, res) => {
-  const { name, email, password, password_confirmation, pin } = req.body || {};
-  if (!name || !email || !password || !password_confirmation || !pin) {
-    return res.status(422).json({
-      error: "Validation failed",
-      errors: { fields: "Missing required fields" },
-    });
-  }
-  if (String(password) !== String(password_confirmation)) {
-    return res.status(422).json({
-      error: "Validation failed",
-      errors: { password: ["Passwords do not match"] },
-    });
-  }
-  if (!/^\d{4}$/.test(String(pin))) {
-    return res.status(422).json({
-      error: "Validation failed",
-      errors: { pin: ["PIN must be 4 digits"] },
-    });
-  }
-  if (findUserByEmail(email)) {
-    return res.status(422).json({
-      error: "Validation failed",
-      errors: { email: ["Email already taken"] },
-    });
-  }
-  const empId = "EMP" + String(nextEmployeeId++).padStart(5, "0");
-  const [first_name, last_name = ""] = String(name).trim().split(/\s+/, 2);
-  const user = {
-    id: nextUserId++,
-    name,
-    email,
-    role: "cashier",
-    permissions: ["pos:*", "products:read", "customers:read", "sales:create"],
-    employee: { id: nextEmployeeId, employee_id: empId, first_name, last_name },
-    password, // dev only
-    pin: String(pin),
-  };
-  devStore.users.push(user);
-  // Persist to Supabase (best-effort)
-  try {
-    await supaFetch("app_users", { method: "POST", body: [{
-      email,
+app.post(
+  ["/api/auth/self-register", "/api/self-register"],
+  async (req, res) => {
+    const { name, email, password, password_confirmation, pin } =
+      req.body || {};
+    if (!name || !email || !password || !password_confirmation || !pin) {
+      return res.status(422).json({
+        error: "Validation failed",
+        errors: { fields: "Missing required fields" },
+      });
+    }
+    if (String(password) !== String(password_confirmation)) {
+      return res.status(422).json({
+        error: "Validation failed",
+        errors: { password: ["Passwords do not match"] },
+      });
+    }
+    if (!/^\d{4}$/.test(String(pin))) {
+      return res.status(422).json({
+        error: "Validation failed",
+        errors: { pin: ["PIN must be 4 digits"] },
+      });
+    }
+    if (findUserByEmail(email)) {
+      return res.status(422).json({
+        error: "Validation failed",
+        errors: { email: ["Email already taken"] },
+      });
+    }
+    const empId = "EMP" + String(nextEmployeeId++).padStart(5, "0");
+    const [first_name, last_name = ""] = String(name).trim().split(/\s+/, 2);
+    const user = {
+      id: nextUserId++,
       name,
-      role: user.role,
-      permissions: user.permissions,
-      employee_id: user.employee.employee_id,
-      password: String(password),
-      pin: String(pin)
-    }] });
-  } catch (_) {}
-  // Persist users so credentials survive restarts
-  saveDevState();
-  const token = genToken();
-  devStore.tokens.set(token, user.id);
-  return res.status(201).json({
-    message: "Account created successfully",
-    user,
-    token,
-    success: true,
-  });
-});
+      email,
+      role: "cashier",
+      permissions: ["pos:*", "products:read", "customers:read", "sales:create"],
+      employee: {
+        id: nextEmployeeId,
+        employee_id: empId,
+        first_name,
+        last_name,
+      },
+      password, // dev only
+      pin: String(pin),
+    };
+    devStore.users.push(user);
+    // Persist to Supabase (best-effort)
+    try {
+      await supaFetch("app_users", {
+        method: "POST",
+        body: [
+          {
+            email,
+            name,
+            role: user.role,
+            permissions: user.permissions,
+            employee_id: user.employee.employee_id,
+            password: String(password),
+            pin: String(pin),
+          },
+        ],
+      });
+    } catch (_) {}
+    // Persist users so credentials survive restarts
+    saveDevState();
+    const token = genToken();
+    devStore.tokens.set(token, user.id);
+    return res.status(201).json({
+      message: "Account created successfully",
+      user,
+      token,
+      success: true,
+    });
+  },
+);
 
 app.post(["/api/auth/login", "/api/login"], async (req, res) => {
   const { email, password } = req.body || {};
@@ -287,15 +309,21 @@ app.post(["/api/auth/login", "/api/login"], async (req, res) => {
   }
   // Ensure user exists in Supabase (idempotent upsert by email)
   try {
-    await supaFetch("app_users", { method: "POST", body: [{
-      email: user.email,
-      name: user.name,
-      role: user.role,
-      permissions: user.permissions,
-      employee_id: user.employee?.employee_id,
-      password: String(user.password || password),
-      pin: String(user.pin || "1234")
-    }], query: { on_conflict: "email" } });
+    await supaFetch("app_users", {
+      method: "POST",
+      body: [
+        {
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          permissions: user.permissions,
+          employee_id: user.employee?.employee_id,
+          password: String(user.password || password),
+          pin: String(user.pin || "1234"),
+        },
+      ],
+      query: { on_conflict: "email" },
+    });
   } catch (_) {}
 
   // If password mismatch, update stored password in dev (prevents lockout)
@@ -597,18 +625,28 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res, next) => {
   // If POST to /api/customers with full payload, upsert; if /loyalty/enroll, map fields
   try {
     const b = req.body || {};
-    const row = b.name && b.email && b.phone ? b : {
-      name: b.name,
-      email: b.email,
-      phone: b.phone,
-      customer_type: b.tier ? "loyalty" : (b.customer_type || "consumer"),
-      loyalty_points: b.starting_points ?? 0,
-    };
+    const row =
+      b.name && b.email && b.phone
+        ? b
+        : {
+            name: b.name,
+            email: b.email,
+            phone: b.phone,
+            customer_type: b.tier ? "loyalty" : b.customer_type || "consumer",
+            loyalty_points: b.starting_points ?? 0,
+          };
     const r = await supaFetch("customers", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    return res.status(201).json({ success: true, customer: Array.isArray(payload) ? payload[0] : payload });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        customer: Array.isArray(payload) ? payload[0] : payload,
+      });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to save customer" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to save customer" });
   }
 });
 
@@ -627,8 +665,9 @@ app.get("/api/settings/pos", async (_req, res) => {
     website: "",
     store_manager: "",
     license_number: "",
-    receipt_footer: "Thank you for your business!\nKeep receipt for returns and warranty.",
-    exit_label_categories: ["Flower","Pre-Rolls","Concentrates","Edibles"],
+    receipt_footer:
+      "Thank you for your business!\nKeep receipt for returns and warranty.",
+    exit_label_categories: ["Flower", "Pre-Rolls", "Concentrates", "Edibles"],
     auto_print_receipt: false,
     receipt_autoprint: false,
     receipt_categories_autoprint: [],
@@ -652,11 +691,36 @@ app.get("/api/settings/pos", async (_req, res) => {
     expandable_cart: true,
     // Role-based permissions (defaults)
     role_permissions: {
-      admin: ['*'],
-      manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
-      inventory: ['products:*','metrc:access','metrc:sync','analytics:read'],
-      budtender: ['pos:*','products:read','customers:read','sales:create','analytics:read'],
-      cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+      admin: ["*"],
+      manager: [
+        "pos:*",
+        "products:*",
+        "customers:*",
+        "sales:*",
+        "analytics:read",
+        "deals:*",
+        "employees:read",
+        "metrc:access",
+        "metrc:sync",
+        "reports:read",
+        "reports:export",
+      ],
+      inventory: ["products:*", "metrc:access", "metrc:sync", "analytics:read"],
+      budtender: [
+        "pos:*",
+        "products:read",
+        "customers:read",
+        "sales:create",
+        "analytics:read",
+      ],
+      cashier: [
+        "pos:*",
+        "products:read",
+        "sales:create",
+        "products:print",
+        "analytics:read",
+        "pos:scanner_only",
+      ],
     },
     auto_delete_zero_quantity: false,
     auto_delete_zero_days: 1,
@@ -667,36 +731,87 @@ app.get("/api/settings/pos", async (_req, res) => {
     high_contrast: false,
     reduce_motion: false,
     business_hours: [
-      { day: 'Monday', is_open: true, open_time: '09:00', close_time: '21:00' },
-      { day: 'Tuesday', is_open: true, open_time: '09:00', close_time: '21:00' },
-      { day: 'Wednesday', is_open: true, open_time: '09:00', close_time: '21:00' },
-      { day: 'Thursday', is_open: true, open_time: '09:00', close_time: '21:00' },
-      { day: 'Friday', is_open: true, open_time: '09:00', close_time: '21:00' },
-      { day: 'Saturday', is_open: true, open_time: '10:00', close_time: '20:00' },
-      { day: 'Sunday', is_open: true, open_time: '11:00', close_time: '19:00' },
+      { day: "Monday", is_open: true, open_time: "09:00", close_time: "21:00" },
+      {
+        day: "Tuesday",
+        is_open: true,
+        open_time: "09:00",
+        close_time: "21:00",
+      },
+      {
+        day: "Wednesday",
+        is_open: true,
+        open_time: "09:00",
+        close_time: "21:00",
+      },
+      {
+        day: "Thursday",
+        is_open: true,
+        open_time: "09:00",
+        close_time: "21:00",
+      },
+      { day: "Friday", is_open: true, open_time: "09:00", close_time: "21:00" },
+      {
+        day: "Saturday",
+        is_open: true,
+        open_time: "10:00",
+        close_time: "20:00",
+      },
+      { day: "Sunday", is_open: true, open_time: "11:00", close_time: "19:00" },
     ],
   };
   try {
-    const r = await supaFetch("pos_settings?id=eq.default&select=*", { method: "GET" });
+    const r = await supaFetch("pos_settings?id=eq.default&select=*", {
+      method: "GET",
+    });
     if (r.ok) {
       const arr = await r.json();
       const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-      const settings = row?.settings && typeof row.settings === 'object' ? { ...defaults, ...row.settings } : defaults;
-      return res.json({ success: true, settings, tax_rate: settings.sales_tax ?? 20.0, medical_tax_rate: 0.0, currency: 'USD', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+      const settings =
+        row?.settings && typeof row.settings === "object"
+          ? { ...defaults, ...row.settings }
+          : defaults;
+      return res.json({
+        success: true,
+        settings,
+        tax_rate: settings.sales_tax ?? 20.0,
+        medical_tax_rate: 0.0,
+        currency: "USD",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      });
     }
   } catch (_) {}
-  return res.json({ success: true, settings: defaults, tax_rate: defaults.sales_tax ?? 20.0, medical_tax_rate: 0.0, currency: 'USD', timezone: Intl.DateTimeFormat().resolvedOptions().timeZone });
+  return res.json({
+    success: true,
+    settings: defaults,
+    tax_rate: defaults.sales_tax ?? 20.0,
+    medical_tax_rate: 0.0,
+    currency: "USD",
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  });
 });
 
 // Settings: POS update
 app.post("/api/settings/pos", async (req, res) => {
   const incoming = req.body?.settings || req.body || {};
   try {
-    const r = await supaFetch("pos_settings", { method: "POST", body: [{ id: "default", settings: incoming, updated_at: new Date().toISOString() }], query: { on_conflict: "id" } });
+    const r = await supaFetch("pos_settings", {
+      method: "POST",
+      body: [
+        {
+          id: "default",
+          settings: incoming,
+          updated_at: new Date().toISOString(),
+        },
+      ],
+      query: { on_conflict: "id" },
+    });
     const payload = r.ok ? await r.json() : null;
     return res.json({ success: true, settings: incoming, saved: payload });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to save settings" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to save settings" });
   }
 });
 
@@ -715,9 +830,11 @@ app.get("/api/employees", async (_req, res) => {
 app.post("/api/employees", async (req, res) => {
   const b = req.body || {};
   const row = {
-    employee_id: b.employee_id || ("EMP" + Math.random().toString(36).slice(2,7).toUpperCase()),
-    first_name: b.first_name || b.name?.split(' ')[0] || "",
-    last_name: b.last_name || b.name?.split(' ').slice(1).join(' ') || "",
+    employee_id:
+      b.employee_id ||
+      "EMP" + Math.random().toString(36).slice(2, 7).toUpperCase(),
+    first_name: b.first_name || b.name?.split(" ")[0] || "",
+    last_name: b.last_name || b.name?.split(" ").slice(1).join(" ") || "",
     role: b.role || "cashier",
     email: b.email || null,
     phone: b.phone || null,
@@ -727,9 +844,16 @@ app.post("/api/employees", async (req, res) => {
   try {
     const r = await supaFetch("employees", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    res.status(201).json({ success: true, employee: Array.isArray(payload) ? payload[0] : payload });
+    res
+      .status(201)
+      .json({
+        success: true,
+        employee: Array.isArray(payload) ? payload[0] : payload,
+      });
   } catch (e) {
-    res.status(500).json({ success: false, error: "Failed to create employee" });
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to create employee" });
   }
 });
 
@@ -738,11 +862,19 @@ app.put("/api/employees/:id", async (req, res) => {
   const id = req.params.id;
   const b = req.body || {};
   try {
-    const r = await supaFetch(`employees?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: b });
+    const r = await supaFetch(`employees?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: b,
+    });
     const payload = r.ok ? await r.json() : null;
-    res.json({ success: true, employee: Array.isArray(payload) ? payload[0] : payload });
+    res.json({
+      success: true,
+      employee: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
-    res.status(500).json({ success: false, error: "Failed to update employee" });
+    res
+      .status(500)
+      .json({ success: false, error: "Failed to update employee" });
   }
 });
 
@@ -764,8 +896,27 @@ app.post("/api/products/transfer-room", async (req, res) => {
   const b = req.body || {};
   try {
     if (b.product_id) {
-      await supaFetch(`products?id=eq.${encodeURIComponent(b.product_id)}`, { method: "PATCH", body: { room: b.destinationRoom, on_sales_floor: !!b.setSalesFloorStatus, updated_at: new Date().toISOString() } });
-      await supaFetch("inventory_movements", { method: "POST", body: [{ product_id: Number(b.product_id), from_room: b.fromRoom || null, to_room: b.destinationRoom || null, quantity: b.quantity ?? null, reason: b.reason || 'transfer', actor: (authFromReq(req)?.email)||'system' }] });
+      await supaFetch(`products?id=eq.${encodeURIComponent(b.product_id)}`, {
+        method: "PATCH",
+        body: {
+          room: b.destinationRoom,
+          on_sales_floor: !!b.setSalesFloorStatus,
+          updated_at: new Date().toISOString(),
+        },
+      });
+      await supaFetch("inventory_movements", {
+        method: "POST",
+        body: [
+          {
+            product_id: Number(b.product_id),
+            from_room: b.fromRoom || null,
+            to_room: b.destinationRoom || null,
+            quantity: b.quantity ?? null,
+            reason: b.reason || "transfer",
+            actor: authFromReq(req)?.email || "system",
+          },
+        ],
+      });
     }
     res.json({ success: true });
   } catch (e) {
@@ -775,24 +926,88 @@ app.post("/api/products/transfer-room", async (req, res) => {
 
 // Deals
 app.get("/api/deals", async (_req, res) => {
-  try { const r = await supaFetch("deals?select=*"); const payload = r.ok ? await r.json() : []; res.json({ success:true, deals: payload }); } catch(_) { res.json({ success:true, deals: []}); }
+  try {
+    const r = await supaFetch("deals?select=*");
+    const payload = r.ok ? await r.json() : [];
+    res.json({ success: true, deals: payload });
+  } catch (_) {
+    res.json({ success: true, deals: [] });
+  }
 });
 app.post("/api/deals", async (req, res) => {
-  try { const r = await supaFetch("deals", { method: "POST", body: [req.body||{}] }); const payload = r.ok ? await r.json() : null; res.status(201).json({ success:true, deal: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+  try {
+    const r = await supaFetch("deals", {
+      method: "POST",
+      body: [req.body || {}],
+    });
+    const payload = r.ok ? await r.json() : null;
+    res
+      .status(201)
+      .json({
+        success: true,
+        deal: Array.isArray(payload) ? payload[0] : payload,
+      });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
 });
 app.put("/api/deals/:id", async (req, res) => {
-  try { const r = await supaFetch(`deals?id=eq.${encodeURIComponent(req.params.id)}`, { method:"PATCH", body: req.body||{} }); const payload = r.ok ? await r.json() : null; res.json({ success:true, deal: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+  try {
+    const r = await supaFetch(
+      `deals?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "PATCH", body: req.body || {} },
+    );
+    const payload = r.ok ? await r.json() : null;
+    res.json({
+      success: true,
+      deal: Array.isArray(payload) ? payload[0] : payload,
+    });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
 });
 
 // Price tiers
 app.get("/api/price-tiers", async (_req, res) => {
-  try { const r = await supaFetch("price_tiers?select=*"); const payload = r.ok ? await r.json() : []; res.json({ success:true, tiers: payload }); } catch(_) { res.json({ success:true, tiers: []}); }
+  try {
+    const r = await supaFetch("price_tiers?select=*");
+    const payload = r.ok ? await r.json() : [];
+    res.json({ success: true, tiers: payload });
+  } catch (_) {
+    res.json({ success: true, tiers: [] });
+  }
 });
 app.post("/api/price-tiers", async (req, res) => {
-  try { const r = await supaFetch("price_tiers", { method: "POST", body: [req.body||{}] }); const payload = r.ok ? await r.json() : null; res.status(201).json({ success:true, tier: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+  try {
+    const r = await supaFetch("price_tiers", {
+      method: "POST",
+      body: [req.body || {}],
+    });
+    const payload = r.ok ? await r.json() : null;
+    res
+      .status(201)
+      .json({
+        success: true,
+        tier: Array.isArray(payload) ? payload[0] : payload,
+      });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
 });
 app.put("/api/price-tiers/:id", async (req, res) => {
-  try { const r = await supaFetch(`price_tiers?id=eq.${encodeURIComponent(req.params.id)}`, { method:"PATCH", body: req.body||{} }); const payload = r.ok ? await r.json() : null; res.json({ success:true, tier: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.status(500).json({ success:false, error:"Failed"}); }
+  try {
+    const r = await supaFetch(
+      `price_tiers?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "PATCH", body: req.body || {} },
+    );
+    const payload = r.ok ? await r.json() : null;
+    res.json({
+      success: true,
+      tier: Array.isArray(payload) ? payload[0] : payload,
+    });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
 });
 
 // Loyalty points adjustments
@@ -800,32 +1015,79 @@ app.post("/api/loyalty/:customerId/adjust-points", async (req, res) => {
   try {
     const id = Number(req.params.customerId);
     const amt = Number(req.body?.amount || 0);
-    const reason = req.body?.reason || 'adjust';
-    await supaFetch(`customers?id=eq.${id}`, { method:"PATCH", body: { loyalty_points: {"increment": amt } } });
-    await supaFetch("loyalty_transactions", { method:"POST", body: [{ customer_id: id, points: amt, type: 'adjust', reason }] });
-    res.json({ success:true });
-  } catch (e) { res.status(500).json({ success:false, error:"Failed"}); }
+    const reason = req.body?.reason || "adjust";
+    await supaFetch(`customers?id=eq.${id}`, {
+      method: "PATCH",
+      body: { loyalty_points: { increment: amt } },
+    });
+    await supaFetch("loyalty_transactions", {
+      method: "POST",
+      body: [{ customer_id: id, points: amt, type: "adjust", reason }],
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
 });
 app.post("/api/loyalty/:customerId/earn-points", async (req, res) => {
   try {
-    const id = Number(req.params.customerId); const pts = Number(req.body?.points||0); const reason = req.body?.reason||'earn';
-    await supaFetch(`customers?id=eq.${id}`, { method:"PATCH", body: { loyalty_points: {"increment": pts } } });
-    await supaFetch("loyalty_transactions", { method:"POST", body: [{ customer_id: id, points: pts, type: 'earn', reason }] });
-    res.json({ success:true });
-  } catch (e) { res.status(500).json({ success:false, error:"Failed"}); }
+    const id = Number(req.params.customerId);
+    const pts = Number(req.body?.points || 0);
+    const reason = req.body?.reason || "earn";
+    await supaFetch(`customers?id=eq.${id}`, {
+      method: "PATCH",
+      body: { loyalty_points: { increment: pts } },
+    });
+    await supaFetch("loyalty_transactions", {
+      method: "POST",
+      body: [{ customer_id: id, points: pts, type: "earn", reason }],
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
 });
 app.post("/api/loyalty/:customerId/redeem-points", async (req, res) => {
   try {
-    const id = Number(req.params.customerId); const pts = Number(req.body?.points||0); const reason = req.body?.reason||'redeem';
-    await supaFetch(`customers?id=eq.${id}`, { method:"PATCH", body: { loyalty_points: {"decrement": pts } } });
-    await supaFetch("loyalty_transactions", { method:"POST", body: [{ customer_id: id, points: -pts, type: 'redeem', reason }] });
-    res.json({ success:true });
-  } catch (e) { res.status(500).json({ success:false, error:"Failed"}); }
+    const id = Number(req.params.customerId);
+    const pts = Number(req.body?.points || 0);
+    const reason = req.body?.reason || "redeem";
+    await supaFetch(`customers?id=eq.${id}`, {
+      method: "PATCH",
+      body: { loyalty_points: { decrement: pts } },
+    });
+    await supaFetch("loyalty_transactions", {
+      method: "POST",
+      body: [{ customer_id: id, points: -pts, type: "redeem", reason }],
+    });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
 });
 
 // Activity log (catch-all)
 app.post("/api/activity", async (req, res) => {
-  try { const user = getAuthUser(req); const r = await supaFetch("activity_logs", { method: "POST", body: [{ actor_user_id: user? String(user.id) : null, action: req.body?.action || 'event', payload: req.body||{} }] }); const payload = r.ok ? await r.json() : null; res.json({ success:true, log: Array.isArray(payload)?payload[0]:payload }); } catch(_) { res.json({ success:true }); }
+  try {
+    const user = getAuthUser(req);
+    const r = await supaFetch("activity_logs", {
+      method: "POST",
+      body: [
+        {
+          actor_user_id: user ? String(user.id) : null,
+          action: req.body?.action || "event",
+          payload: req.body || {},
+        },
+      ],
+    });
+    const payload = r.ok ? await r.json() : null;
+    res.json({
+      success: true,
+      log: Array.isArray(payload) ? payload[0] : payload,
+    });
+  } catch (_) {
+    res.json({ success: true });
+  }
 });
 
 // POS: process payment -> persist sale to Supabase
@@ -835,8 +1097,16 @@ app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
   const row = {
     user_id: user ? String(user.id) : null,
     employee_id: body.employeePin ? String(body.employeePin) : null,
-    payment_method: body.method || (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown"),
-    subtotal: body.subtotal ?? body.cart?.reduce?.((s,i)=>s + (i?.price||0)*(i?.quantity||1), 0) ?? null,
+    payment_method:
+      body.method ||
+      (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown"),
+    subtotal:
+      body.subtotal ??
+      body.cart?.reduce?.(
+        (s, i) => s + (i?.price || 0) * (i?.quantity || 1),
+        0,
+      ) ??
+      null,
     tax: body.taxAmount ?? null,
     total: body.total ?? null,
     customer: body.customer || null,
@@ -846,7 +1116,12 @@ app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    return res.status(200).json({ success: true, sale: Array.isArray(payload) ? payload[0] : payload });
+    return res
+      .status(200)
+      .json({
+        success: true,
+        sale: Array.isArray(payload) ? payload[0] : payload,
+      });
   } catch (e) {
     return res.status(200).json({ success: true, message: "Recorded locally" });
   }
