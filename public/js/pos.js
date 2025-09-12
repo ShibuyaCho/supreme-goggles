@@ -5753,6 +5753,8 @@ function cannabisPOS() {
           }
         } catch (_) {}
         await this.fetchReportTemplates();
+        this.showCreateReportModal = false;
+        this.resetCustomReport();
       } catch (e) {
         // Local fallback save
         try {
@@ -5788,6 +5790,8 @@ function cannabisPOS() {
             this.recentReports = [item, ...this.recentReports];
           } catch (_) {}
           await this.fetchReportTemplates();
+          this.showCreateReportModal = false;
+          this.resetCustomReport();
         } catch (_) {
           this.showToast("Failed to save report template", "error");
         }
