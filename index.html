@@ -1014,7 +1014,7 @@
                       <option value="Infused">
                         🔥 Infused (Joints/Blunts)
                       </option>
-                      <option value="Edibles">������� Edibles</option>
+                      <option value="Edibles">����� Edibles</option>
                       <option value="Concentrates">�� Concentrates</option>
                       <option value="Vape Products">💨 Vape Products</option>
                       <option value="Tinctures">🧪 Tinctures</option>
@@ -13449,8 +13449,17 @@
                       </div>
                       <div class="p-6 space-y-6">
                         <div>
-                          <label class="block text-sm font-medium text-gray-700 mb-1">Role name</label>
-                          <input x-model="roleModalName" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" placeholder="e.g., shift-lead">
+                          <label class="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                          <div x-show="roleModalMode==='create'">
+                            <input x-model="roleModalName" type="text" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500" placeholder="e.g., shift-lead">
+                          </div>
+                          <div x-show="roleModalMode==='edit'">
+                            <select x-model="roleModalSelectKey" @change="roleModalPerms = (rolePermissions[roleModalSelectKey]?.includes('*') ? allPermissions() : (rolePermissions[roleModalSelectKey] || [])).slice()" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
+                              <template x-for="rk in Object.keys(rolePermissions)" :key="'edit-'+rk">
+                                <option :value="rk" x-text="rk.replace(/[-_]+/g,' ').replace(/\b\w/g,c=>c.toUpperCase())"></option>
+                              </template>
+                            </select>
+                          </div>
                         </div>
                         <div>
                           <div class="mb-2">
