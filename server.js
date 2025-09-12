@@ -279,6 +279,7 @@ app.post(["/api/auth/login", "/api/login"], async (req, res) => {
       name: name || "Admin User",
       email,
       role: "admin",
+      status: "active",
       permissions: [
         "pos:*",
         "products:*",
