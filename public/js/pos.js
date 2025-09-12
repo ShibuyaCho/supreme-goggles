@@ -5759,29 +5759,44 @@ function cannabisPOS() {
 
     async printReport(type) {
       try {
+        const payload = {
+          report_type: this._mapReportType(type),
+          format: "excel",
+          start_date: this.customReport?.startDate || null,
+          end_date: this.customReport?.endDate || null,
+          filters: { metrics: this.customReport?.selectedMetrics || [] },
+        };
         const res = await (window.axios || axios).post(
           "/api/reports/export",
-          {
-            report_type: this._mapReportType(type),
-            format: "pdf",
-            start_date: null,
-            end_date: null,
-            filters: {},
-          },
+          payload,
           { responseType: "blob" },
         );
-        const ctype = res?.headers?.["content-type"] || "application/pdf";
-        const file =
-          res?.data instanceof Blob
-            ? res.data
-            : new Blob([res.data], { type: ctype });
+        const ctype = res?.headers?.["content-type"] || "text/csv";
+        if (ctype.includes("application/json")) throw new Error("stub");
+        const file = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype });
         const url = URL.createObjectURL(file);
-        const w = window.open(url, "_blank");
-        if (!w)
-          this.showToast("Popup blocked. Enable popups to print.", "warning");
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `report_${payload.report_type}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       } catch (e) {
-        this.showToast("Failed to open print preview", "error");
+        // Client-side CSV fallback with headers only
+        const rt = this._mapReportType(type);
+        const headings = this._getReportHeadings(rt, this.customReport?.selectedMetrics || []);
+        const csv = headings.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `report_${rt}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 3000);
+        this.showToast("Downloaded CSV headers (fallback)", "warning");
       }
     },
 
