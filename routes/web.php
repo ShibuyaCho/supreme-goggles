@@ -222,6 +222,11 @@ Route::get('/metrc/transfers', function() {
     return view('metrc.transfers');
 })->name('metrc.transfers');
 
+// Roles & Permissions Page (Blade)
+Route::middleware('auth')->get('/roles-permissions', function () {
+    return view('roles-permissions.index');
+})->name('roles-permissions.index');
+
 // Deals and Promotions Routes
 Route::prefix('deals')->name('deals.')->group(function () {
     Route::get('/', [DealsController::class, 'index'])->name('index');
