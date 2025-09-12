@@ -5786,16 +5786,24 @@ function cannabisPOS() {
           list.push(tpl);
           localStorage.setItem(key, JSON.stringify(list));
           this.showToast(`Report template "${tpl.name}" saved (offline).`, "warning");
-          // Optimistically add to recentReports
+          // Optimistically add to Recent Reports with expected shape and persist
           try {
             const item = {
               id: tpl.id,
               name: tpl.name,
               type: tpl.report_type,
-              updatedAt: tpl.updated_at,
+              createdAt: new Date().toISOString(),
+              createdBy: this.currentUser?.name || "User",
+              status: "saved",
               config: tpl.config,
             };
-            this.recentReports = [item, ...this.recentReports];
+            this.recentReports = [item, ...this.recentReports].slice(0, 10);
+            try {
+              localStorage.setItem(
+                "cannabisPOS-reports",
+                JSON.stringify(this.recentReports),
+              );
+            } catch (_) {}
           } catch (_) {}
           await this.fetchReportTemplates();
           this.showCreateReportModal = false;
