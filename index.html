@@ -7760,7 +7760,7 @@
                       monitoring
                     </p>
                     <p class="text-sm text-gray-500">
-                      �� Package detail viewing and inventory import
+                      ✅ Package detail viewing and inventory import
                       functionality
                     </p>
                     <p class="text-sm text-gray-500">
@@ -20027,8 +20027,8 @@
           rolePermissions: {},
           async loadRolePermissions(){
             try {
-              const res = await (window.axios || axios).get('/api/settings/pos');
-              const s = res?.data?.settings || {};
+              const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
+              const s = (res && res.success && (res.data?.settings || res.data)) || {};
               this.rolePermissions = s.role_permissions || {
                 admin: ['*'],
                 manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
@@ -20037,6 +20037,7 @@
                 cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
               };
             } catch (e) { /* keep defaults */ }
+            try { localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions)); } catch(_){}
           },
           hasPerm(p){
             const list = this.rolePermissions[this.selectedRole] || [];
@@ -20053,11 +20054,15 @@
           },
           async saveRolePermissions(){
             try {
-              const res = await (window.axios || axios).get('/api/settings/pos');
-              const settings = res?.data?.settings || {};
+              // Pull latest, merge, then save using authenticated API
+              const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
+              const settings = (res && res.success && (res.data?.settings || res.data)) || {};
               settings.role_permissions = this.rolePermissions;
-              const r = await (window.axios || axios).post('/api/settings/pos', settings);
-              const ok = r?.data?.success === true;
+              const r = await (window.posAuth ? posAuth.apiRequest('post', '/settings/pos', settings) : Promise.resolve({ success:false }));
+              const ok = r?.success === true || r?.data?.success === true;
+              if (ok) {
+                try { localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions)); } catch(_){}
+              }
               (this.showToast || alert)(ok ? 'Permissions saved' : 'Failed to save', ok ? 'success' : 'error');
             } catch (e) {
               (this.showToast || alert)('Failed to save permissions', 'error');
