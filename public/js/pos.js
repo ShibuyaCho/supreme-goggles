@@ -1208,6 +1208,59 @@ function cannabisPOS() {
       return titles[this.currentPage] || "Cannabis POS";
     },
 
+    // Roles & Permissions (SPA state and actions)
+    selectedRole: 'admin',
+    rolePermissions: {},
+
+    async loadRolePermissions() {
+      try {
+        const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
+        const s = (res && res.success && (res.data?.settings || res.data)) || {};
+        this.rolePermissions = s.role_permissions || {
+          admin: ['*'],
+          manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+          inventory: ['products:*','metrc:access','metrc:sync','analytics:read'],
+          budtender: ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+          cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+        };
+      } catch (e) {
+        try {
+          const b = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null');
+          if (b && typeof b === 'object') this.rolePermissions = b;
+        } catch(_){}
+      }
+      try { localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions)); } catch(_){}
+    },
+
+    hasPerm(p) {
+      const list = this.rolePermissions[this.selectedRole] || [];
+      if (list.includes('*')) return true;
+      if (list.includes(p)) return true;
+      if (p.includes(':')) { const ns = p.split(':')[0]; if (list.includes(ns + ':*')) return true; }
+      return false;
+    },
+
+    togglePerm(p) {
+      const list = this.rolePermissions[this.selectedRole] || [];
+      const i = list.indexOf(p);
+      if (i >= 0) list.splice(i,1); else list.push(p);
+      this.rolePermissions[this.selectedRole] = list;
+    },
+
+    async saveRolePermissions() {
+      try {
+        const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success:false }));
+        const settings = (res && res.success && (res.data?.settings || res.data)) || {};
+        settings.role_permissions = this.rolePermissions;
+        const r = await (window.posAuth ? posAuth.apiRequest('post', '/settings/pos', settings) : Promise.resolve({ success:false }));
+        const ok = r?.success === true || r?.data?.success === true;
+        if (ok) { try { localStorage.setItem('role_permissions_backup', JSON.stringify(this.rolePermissions)); } catch(_){} }
+        this.showToast(ok ? 'Permissions saved' : 'Failed to save permissions', ok ? 'success' : 'error');
+      } catch (e) {
+        this.showToast('Failed to save permissions', 'error');
+      }
+    },
+
     // Product management
     products: [
       {
