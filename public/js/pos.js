@@ -2297,6 +2297,8 @@ function cannabisPOS() {
           const list = res.data.employees || res.data.data || [];
           this.employees = list.map((e) => ({
             id: e.id || e.employee_id,
+            numericId: e.id ?? null,
+            employeeId: e.employee_id ?? null,
             name: e.full_name
               ? e.full_name
               : [e.first_name, e.last_name].filter(Boolean).join(" "),
@@ -5272,12 +5274,17 @@ function cannabisPOS() {
 
       // Execute action
       try {
-        if (this.pinAction === 'deleteEmployee' && this.employeePendingDelete?.id) {
-          const id = this.employeePendingDelete.id;
-          const res = await posAuth.apiRequest('delete', `/employees/${id}`);
+        if (this.pinAction === 'deleteEmployee' && (this.employeePendingDelete?.id || this.employeePendingDelete?.employeeId || this.employeePendingDelete?.numericId != null)) {
+          const cand = this.employeePendingDelete;
+          const targetId = (cand.numericId != null ? String(cand.numericId) : '') || (cand.employeeId || '') || String(cand.id);
+          const res = await posAuth.apiRequest('delete', `/employees/${encodeURIComponent(targetId)}`);
           if (!res.success) throw new Error(res.message || 'Delete failed');
           // Remove from local list
-          this.employees = (this.employees || []).filter(e => String(e.id) !== String(id));
+          this.employees = (this.employees || []).filter(e => {
+            const nid = e.numericId != null ? String(e.numericId) : '';
+            const eid = e.employeeId || '';
+            return String(e.id) !== targetId && nid !== targetId && eid !== targetId;
+          });
           this.showToast('Employee deactivated', 'success');
         } else if (this.pinAction === 'deleteRoom') {
           this.showToast('Room deleted', 'success');
