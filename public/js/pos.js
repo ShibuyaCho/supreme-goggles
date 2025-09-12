@@ -5232,16 +5232,10 @@ function cannabisPOS() {
     // Employee permissions helper
     canManageEmployees() {
       try {
-        if (
-          window.posAuth?.hasRole &&
-          (posAuth.hasRole("admin") || posAuth.hasRole("manager"))
-        )
-          return true;
-        if (
-          window.posAuth?.hasPermission &&
-          posAuth.hasPermission("employees:manage")
-        )
-          return true;
+        const hasRole = window.posAuth?.hasRole?.bind(window.posAuth);
+        const hasPerm = window.posAuth?.hasPermission?.bind(window.posAuth);
+        if (hasRole?.("admin") || hasRole?.("manager")) return true;
+        if (hasPerm?.("employees:manage")) return true;
       } catch (e) {}
       return false;
     },
@@ -5260,35 +5254,27 @@ function cannabisPOS() {
         this.pinError = "Please enter a valid PIN";
         return;
       }
+
+      // Verify PIN (primary API)
+      let pinOk = false;
       try {
-        const verify = await posAuth.apiRequest("post", "/auth/verify-pin", {
-          pin: this.pinInput,
-        });
-        if (!verify?.success) {
-          // Fallback: accept current user's PIN if they can manage employees
+        const verify = await window.posAuth?.apiRequest?.("post", "/auth/verify-pin", { pin: this.pinInput });
+        pinOk = !!(verify && verify.success);
+      } catch (_) { pinOk = false; }
+
+      // Fallback: accept current user's PIN if they can manage employees
+      if (!pinOk) {
+        try {
           const u = window.posAuth?.getUser?.() || {};
-          const canManage =
-            (window.posAuth?.hasRole &&
-              (posAuth.hasRole("admin") || posAuth.hasRole("manager"))) ||
-            (window.posAuth?.hasPermission &&
-              posAuth.hasPermission("employees:manage"));
+          const canManage = !!(window.posAuth?.hasRole?.("admin") || window.posAuth?.hasRole?.("manager") || window.posAuth?.hasPermission?.("employees:manage"));
           if (!(canManage && String(u?.pin || "") === String(this.pinInput))) {
-            this.pinError = verify?.message || "PIN verification failed";
-            this.showToast(this.pinError, 'error');
+            this.pinError = "PIN verification failed";
+            this.showToast(this.pinError, "error");
             return;
           }
-        }
-      } catch (e) {
-        // Fallback path on network/API error
-        const u = window.posAuth?.getUser?.() || {};
-        const canManage =
-          (window.posAuth?.hasRole &&
-            (posAuth.hasRole("admin") || posAuth.hasRole("manager"))) ||
-          (window.posAuth?.hasPermission &&
-            posAuth.hasPermission("employees:manage"));
-        if (!(canManage && String(u?.pin || "") === String(this.pinInput))) {
-          this.pinError = e?.message || "PIN verification failed";
-          this.showToast(this.pinError, 'error');
+        } catch (_) {
+          this.pinError = "PIN verification failed";
+          this.showToast(this.pinError, "error");
           return;
         }
       }
@@ -5304,15 +5290,27 @@ function cannabisPOS() {
           const cand = this.employeePendingDelete;
           const targetId =
             (cand.numericId != null ? String(cand.numericId) : "") ||
-            cand.employeeId ||
-            "" ||
+            (cand.employeeId || "") ||
             String(cand.id);
-          const res = await posAuth.apiRequest(
+
+          let res = await window.posAuth?.apiRequest?.(
             "delete",
             `/employees/${encodeURIComponent(targetId)}`,
           );
-          if (!res.success && res.status !== 404)
-            throw new Error(res.message || "Delete failed");
+
+          if (!res || res.success === false) {
+            // Treat 404 as idempotent success; otherwise try web API fallback
+            if (res?.status !== 404) {
+              try {
+                const headers = { Accept: "application/json" };
+                const resp = await (window.axios || axios).delete(`/api/employees/${encodeURIComponent(targetId)}`, { headers });
+                if (!(resp && resp.status >= 200 && resp.status < 300)) throw new Error("Delete failed");
+              } catch (e) {
+                throw new Error(res?.message || "Delete failed");
+              }
+            }
+          }
+
           // Remove from local list regardless (idempotent)
           this.employees = (this.employees || []).filter((e) => {
             const nid = e.numericId != null ? String(e.numericId) : "";
@@ -5321,7 +5319,7 @@ function cannabisPOS() {
               String(e.id) !== targetId && nid !== targetId && eid !== targetId
             );
           });
-          try { await this.fetchEmployeesFromApi(); } catch(_) {}
+          try { await this.fetchEmployeesFromApi(); } catch (_) {}
           this.showToast("Employee deactivated", "success");
         } else if (this.pinAction === "deleteRoom") {
           this.showToast("Room deleted", "success");
