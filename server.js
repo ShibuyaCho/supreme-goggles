@@ -592,6 +592,39 @@ app.delete("/api/reports/templates/:id", (req, res) => {
   res.json({ message: "Template deleted" });
 });
 
+// Customers: enroll loyalty
+app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res, next) => {
+  // If POST to /api/customers with full payload, upsert; if /loyalty/enroll, map fields
+  try {
+    const b = req.body || {};
+    const row = b.name && b.email && b.phone ? b : {
+      name: b.name,
+      email: b.email,
+      phone: b.phone,
+      customer_type: b.tier ? "loyalty" : (b.customer_type || "consumer"),
+      loyalty_points: b.starting_points ?? 0,
+    };
+    const r = await supaFetch("customers", { method: "POST", body: [row] });
+    const payload = r.ok ? await r.json() : null;
+    return res.status(201).json({ success: true, customer: Array.isArray(payload) ? payload[0] : payload });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: "Failed to save customer" });
+  }
+});
+
+// Customers: list
+app.get("/api/customers", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const base = `customers?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
+    const r = await supaFetch(base);
+    const payload = r.ok ? await r.json() : [];
+    res.json({ success: true, customers: payload });
+  } catch (e) {
+    res.json({ success: true, customers: [] });
+  }
+});
+
 // POS: process payment -> persist sale to Supabase
 app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
   const user = getAuthUser(req);
