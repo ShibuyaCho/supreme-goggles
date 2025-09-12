@@ -402,7 +402,30 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('settings')->group(function () {
         // Read settings (most users)
         Route::get('/pos', function() {
-            $cached = \Illuminate\Support\Facades\Cache::get('pos_settings');
+            // Try Supabase REST first if configured
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            $cached = null;
+            if ($supabaseUrl && $supabaseKey) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'id' => 'eq.default',
+                        'select' => '*',
+                    ]);
+                    if ($resp->ok()) {
+                        $arr = $resp->json();
+                        $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+                        if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
+                            $cached = $row['settings'];
+                            try { \Illuminate\Support\Facades\Cache::put('pos_settings', $cached, now()->addYears(5)); } catch (\Throwable $e) {}
+                        }
+                    }
+                } catch (\Throwable $e) { /* fall back */ }
+            }
             if (!$cached) {
                 try {
                     $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id','default')->first();
@@ -410,7 +433,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         $decoded = json_decode($row->settings, true);
                         if (json_last_error() === JSON_ERROR_NONE) {
                             $cached = $decoded;
-                            // refresh cache from DB source of truth
                             try { \Illuminate\Support\Facades\Cache::put('pos_settings', $cached, now()->addYears(5)); } catch (\Throwable $e) {}
                         }
                     }
@@ -539,37 +561,44 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/pos', function(\Illuminate\Http\Request $request) {
             try {
                 $settings = $request->all();
-                // Normalize JSON-encoded fields
                 foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','role_permissions'] as $field) {
                     if (isset($settings[$field]) && is_string($settings[$field])) {
                         $decoded = json_decode($settings[$field], true);
                         if (json_last_error() === JSON_ERROR_NONE) $settings[$field] = $decoded;
                     }
                 }
-                // Ensure role_permissions is a map of role => array
                 if (isset($settings['role_permissions']) && is_array($settings['role_permissions'])) {
                     foreach ($settings['role_permissions'] as $role => $perms) {
-                        if (!is_array($perms)) {
-                            $settings['role_permissions'][$role] = (array)$perms;
-                        }
+                        if (!is_array($perms)) $settings['role_permissions'][$role] = (array)$perms;
                     }
                 }
 
-                // First, persist to DB (source of truth)
-                try {
+                $supabaseUrl = env('SUPABASE_URL');
+                $supabaseKey = env('SUPABASE_ANON_KEY');
+                $saved = false;
+                if ($supabaseUrl && $supabaseKey) {
+                    try {
+                        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                            'Prefer' => 'return=representation',
+                        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                            'id' => 'default',
+                            'settings' => $settings,
+                            'updated_at' => now()->toIso8601String(),
+                        ]]);
+                        if ($resp->successful()) { $saved = true; }
+                    } catch (\Throwable $e) { /* fall back to DB */ }
+                }
+
+                if (!$saved) {
                     \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
                         ['id' => 'default'],
                         ['settings' => json_encode($settings), 'updated_at' => now()]
                     );
-                } catch (\Throwable $e) {
-                    // Surface DB errors so the UI doesn't report success when not durable
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Failed to persist settings to database: ' . $e->getMessage()
-                    ], 500);
                 }
 
-                // If DB write succeeded, update cache with a long TTL
                 \Illuminate\Support\Facades\Cache::put('pos_settings', $settings, now()->addYears(5));
 
                 return response()->json(['success' => true, 'settings' => $settings]);
