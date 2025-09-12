@@ -297,13 +297,17 @@
       const res = await (window.posAuth ? posAuth.apiRequest('get','/settings/pos') : (window.axios || axios).get('/api/settings/pos'));
       const data = res?.data?.settings || res?.data || res;
       const settings = data || {};
-      rolePerms = settings.role_permissions || {
+      const apiPerms = settings.role_permissions && typeof settings.role_permissions === 'object' ? settings.role_permissions : null;
+      let backup = null; try { backup = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null'); } catch(_) { backup = null; }
+      const defaults = {
         admin: ['*'],
         manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
         inventory: ['products:*','metrc:access','metrc:sync','analytics:read'],
         budtender: ['pos:*','products:read','customers:read','sales:create','analytics:read'],
         cashier: ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
       };
+      const isDefaults = (obj) => { if (!obj || typeof obj !== 'object') return true; return Object.keys(obj).sort().join(',') === Object.keys(defaults).sort().join(','); };
+      rolePerms = apiPerms && !isDefaults(apiPerms) ? apiPerms : (backup && typeof backup === 'object' ? backup : defaults);
     } catch(e){
       try {
         const backup = JSON.parse(localStorage.getItem('role_permissions_backup') || '{}');
