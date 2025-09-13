@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
 use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Product;
@@ -26,9 +29,136 @@ class SalesController extends Controller
         $sortBy = $request->get('sort_by', 'created_at');
         $sortOrder = $request->get('sort_order', 'desc');
         $selectedTab = $request->get('tab', 'sales');
-        
+
+        $supabaseUrl = env('SUPABASE_URL');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        $useSupabase = !empty($supabaseUrl) && !empty($supabaseKey);
+
+        if ($useSupabase) {
+            // Fetch from Supabase REST and shape data for Blade
+            $params = [
+                'select' => '*',
+                'order' => 'created_at.desc',
+                'limit' => 1000,
+            ];
+            $rows = [];
+            try {
+                $resp = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/sales', $params);
+                if ($resp->successful()) $rows = $resp->json() ?: [];
+            } catch (\Throwable $e) {
+                $rows = [];
+            }
+
+            // Apply filters client-side
+            $rows = collect($rows);
+            if ($searchQuery) {
+                $q = mb_strtolower($searchQuery);
+                $rows = $rows->filter(function($r) use ($q) {
+                    $sn = mb_strtolower((string)($r['sale_number'] ?? $r['id'] ?? ''));
+                    $cn = mb_strtolower((string)($r['customer']['full_name'] ?? $r['customer']['name'] ?? ''));
+                    return str_contains($sn, $q) || ($cn && str_contains($cn, $q));
+                });
+            }
+            if ($filterStatus !== 'all') {
+                $rows = $rows->where('status', $filterStatus);
+            }
+            if ($filterPayment !== 'all') {
+                $rows = $rows->where('payment_method', $filterPayment);
+            }
+            if ($filterEmployee !== 'all') {
+                $rows = $rows->where('employee_id', $filterEmployee);
+            }
+            if ($dateFrom) {
+                $rows = $rows->filter(fn($r) => substr((string)($r['created_at'] ?? ''),0,10) >= $dateFrom);
+            }
+            if ($dateTo) {
+                $rows = $rows->filter(fn($r) => substr((string)($r['created_at'] ?? ''),0,10) <= $dateTo);
+            }
+
+            // Sorting
+            $rows = $rows->sortBy([
+                [$sortBy, strtolower($sortOrder) === 'desc' ? 'desc' : 'asc'],
+            ]);
+
+            // Map to objects expected by Blade
+            $mapped = $rows->map(function($r){
+                $cart = is_array($r['cart'] ?? null) ? $r['cart'] : [];
+                $itemCount = collect($cart)->sum(function($i){ return (int)($i['quantity'] ?? 1); });
+                $firstName = $cart && isset($cart[0]['name']) ? $cart[0]['name'] : null;
+                $customer = $r['customer'] ?? null;
+                $customerObj = is_array($customer) ? (object) [
+                    'full_name' => $customer['full_name'] ?? ($customer['name'] ?? 'Walk-in Customer'),
+                    'type' => $customer['type'] ?? ($customer['customer_type'] ?? 'recreational'),
+                ] : null;
+                $employeeObj = (object) [ 'full_name' => 'Unknown' ];
+                $saleItems = collect($cart)->map(function($i){
+                    return (object) [
+                        'product' => (object) ['name' => $i['name'] ?? 'Product'],
+                        'quantity' => (int)($i['quantity'] ?? 1),
+                        'unit_price' => (float)($i['price'] ?? 0),
+                        'total_price' => (float)((($i['price'] ?? 0) * ($i['quantity'] ?? 1))),
+                    ];
+                });
+                return (object) [
+                    'id' => $r['id'] ?? null,
+                    'sale_number' => $r['sale_number'] ?? ('S-' . ($r['id'] ?? '')),
+                    'created_at' => Carbon::parse($r['created_at'] ?? Carbon::now()),
+                    'customer' => $customerObj,
+                    'employee' => $employeeObj,
+                    'till_number' => $r['till_number'] ?? null,
+                    'item_count' => $itemCount,
+                    'saleItems' => $saleItems,
+                    'subtotal' => (float)($r['subtotal'] ?? 0),
+                    'tax_amount' => (float)($r['tax'] ?? 0),
+                    'discount_amount' => (float)($r['discount_amount'] ?? 0),
+                    'total_amount' => (float)($r['total'] ?? 0),
+                    'payment_method' => $r['payment_method'] ?? 'cash',
+                    'payment_reference' => $r['payment_reference'] ?? ($r['card_last_four'] ?? null),
+                    'status' => $r['status'] ?? 'completed',
+                ];
+            })->values();
+
+            // Pagination
+            $page = max(1, (int)$request->get('page', 1));
+            $perPage = 20;
+            $total = $mapped->count();
+            $items = $mapped->slice(($page-1)*$perPage, $perPage)->values();
+            $sales = new LengthAwarePaginator($items, $total, $perPage, $page, [
+                'path' => url()->current(),
+                'query' => $request->query(),
+            ]);
+
+            // Filter options
+            $employees = collect([]); // Unknown without relational DB
+            $paymentMethods = $mapped->pluck('payment_method')->unique();
+
+            // Analytics
+            $analytics = $this->getSalesAnalyticsFromArray($mapped, $request);
+
+            return view('sales.index', compact(
+                'sales',
+                'searchQuery',
+                'filterStatus',
+                'filterPayment',
+                'filterEmployee',
+                'dateFrom',
+                'dateTo',
+                'sortBy',
+                'sortOrder',
+                'selectedTab',
+                'employees',
+                'paymentMethods',
+                'analytics'
+            ));
+        }
+
+        // Default: Eloquent (MySQL)
         $query = Sale::with(['customer', 'employee', 'saleItems.product']);
-        
+
         // Apply search filter
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
@@ -44,22 +174,22 @@ class SalesController extends Controller
                   });
             });
         }
-        
+
         // Apply status filter
         if ($filterStatus !== 'all') {
             $query->where('status', $filterStatus);
         }
-        
+
         // Apply payment method filter
         if ($filterPayment !== 'all') {
             $query->where('payment_method', $filterPayment);
         }
-        
+
         // Apply employee filter
         if ($filterEmployee !== 'all') {
             $query->where('employee_id', $filterEmployee);
         }
-        
+
         // Apply date filters
         if ($dateFrom) {
             $query->whereDate('created_at', '>=', $dateFrom);
@@ -67,19 +197,19 @@ class SalesController extends Controller
         if ($dateTo) {
             $query->whereDate('created_at', '<=', $dateTo);
         }
-        
+
         // Apply sorting
         $query->orderBy($sortBy, $sortOrder);
-        
+
         $sales = $query->paginate(20);
-        
+
         // Get filter options
         $employees = Employee::all();
         $paymentMethods = Sale::select('payment_method')->distinct()->pluck('payment_method');
-        
+
         // Get analytics data
         $analytics = $this->getSalesAnalytics($request);
-        
+
         return view('sales.index', compact(
             'sales',
             'searchQuery',
@@ -511,6 +641,87 @@ class SalesController extends Controller
         $dateTo = $request->get('date_to');
         $limit = (int) $request->get('limit', 200);
 
+        $supabaseUrl = env('SUPABASE_URL');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        $useSupabase = !empty($supabaseUrl) && !empty($supabaseKey);
+
+        if ($useSupabase) {
+            // Fetch from Supabase REST and apply filters in PHP
+            $params = [
+                'select' => '*',
+                'order' => 'created_at.desc',
+                'limit' => max(1, min(1000, $limit)),
+            ];
+            $rows = [];
+            try {
+                $resp = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/sales', $params);
+                if ($resp->successful()) $rows = $resp->json() ?: [];
+            } catch (\Throwable $e) { $rows = []; }
+
+            $rows = collect($rows);
+            if ($searchQuery) {
+                $q = mb_strtolower($searchQuery);
+                $rows = $rows->filter(function($r) use ($q) {
+                    $sn = mb_strtolower((string)($r['sale_number'] ?? $r['id'] ?? ''));
+                    $cn = mb_strlower((string)($r['customer']['full_name'] ?? $r['customer']['name'] ?? ''));
+                    return str_contains($sn, $q) || ($cn && str_contains($cn, $q));
+                });
+            }
+            if ($status && $status !== 'all') {
+                $rows = $rows->where('status', $status);
+            }
+            if ($payment && $payment !== 'all') {
+                $rows = $rows->where('payment_method', $payment);
+            }
+            if ($employee && $employee !== 'all') {
+                $rows = $rows->where('employee_id', $employee);
+            }
+            if ($dateFrom) {
+                $rows = $rows->filter(fn($r) => substr((string)($r['created_at'] ?? ''),0,10) >= $dateFrom);
+            }
+            if ($dateTo) {
+                $rows = $rows->filter(fn($r) => substr((string)($r['created_at'] ?? ''),0,10) <= $dateTo);
+            }
+
+            // Normalize for SPA mapper expectations
+            $normalized = $rows->map(function($r){
+                $cart = is_array($r['cart'] ?? null) ? $r['cart'] : [];
+                $itemCount = collect($cart)->sum(function($i){ return (int)($i['quantity'] ?? 1); });
+                $saleItems = collect($cart)->map(function($i){
+                    return [
+                        'product_id' => null,
+                        'product_name' => $i['name'] ?? 'Product',
+                        'quantity' => (int)($i['quantity'] ?? 1),
+                        'unit_price' => (float)($i['price'] ?? 0),
+                        'total_price' => (float)((($i['price'] ?? 0) * ($i['quantity'] ?? 1))),
+                    ];
+                })->values()->all();
+                return [
+                    'id' => $r['id'] ?? null,
+                    'sale_number' => $r['sale_number'] ?? ('S-' . ($r['id'] ?? '')),
+                    'created_at' => $r['created_at'] ?? now()->toIso8601String(),
+                    'customer' => $r['customer'] ?? null,
+                    'employee' => null,
+                    'item_count' => $itemCount,
+                    'sale_items' => $saleItems,
+                    'subtotal' => (float)($r['subtotal'] ?? 0),
+                    'tax_amount' => (float)($r['tax'] ?? 0),
+                    'discount_amount' => (float)($r['discount_amount'] ?? 0),
+                    'total_amount' => (float)($r['total'] ?? 0),
+                    'payment_method' => $r['payment_method'] ?? 'cash',
+                    'payment_reference' => $r['payment_reference'] ?? ($r['card_last_four'] ?? null),
+                    'status' => $r['status'] ?? 'completed',
+                ];
+            })->values()->all();
+
+            return response()->json($normalized);
+        }
+
+        // Default: Eloquent
         $query = Sale::with(['customer', 'employee', 'saleItems.product']);
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
@@ -562,12 +773,13 @@ class SalesController extends Controller
     
     private function getSalesAnalytics($request)
     {
+        // Default Eloquent analytics
         $dateFrom = $request->get('date_from', Carbon::today()->format('Y-m-d'));
         $dateTo = $request->get('date_to', Carbon::today()->format('Y-m-d'));
-        
+
         $sales = Sale::whereBetween('created_at', [$dateFrom, $dateTo])
             ->where('status', 'completed');
-        
+
         return [
             'totalSales' => (clone $sales)->sum('total_amount'),
             'totalTransactions' => (clone $sales)->count(),
@@ -580,6 +792,31 @@ class SalesController extends Controller
                 'credit' => (clone $sales)->where('payment_method', 'credit')->sum('total_amount'),
             ]
         ];
+    }
+
+    private function getSalesAnalyticsFromArray(Collection $mapped, Request $request)
+    {
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $rows = $mapped;
+        if ($dateFrom) {
+            $rows = $rows->filter(fn($r) => $r->created_at->format('Y-m-d') >= $dateFrom);
+        }
+        if ($dateTo) {
+            $rows = $rows->filter(fn($r) => $r->created_at->format('Y-m-d') <= $dateTo);
+        }
+        $completed = $rows->filter(fn($r) => ($r->status ?? 'completed') === 'completed');
+        $totalSales = $completed->sum(fn($r) => (float)($r->total_amount ?? 0));
+        $totalTransactions = $completed->count();
+        $averageOrderValue = $totalTransactions > 0 ? $totalSales / $totalTransactions : 0;
+        $totalTax = $completed->sum(fn($r) => (float)($r->tax_amount ?? 0));
+        $totalItems = $completed->sum(fn($r) => (int)($r->item_count ?? 0));
+        $paymentBreakdown = [
+            'cash' => $completed->filter(fn($r) => ($r->payment_method ?? '') === 'cash')->sum(fn($r) => (float)($r->total_amount ?? 0)),
+            'debit' => $completed->filter(fn($r) => ($r->payment_method ?? '') === 'debit')->sum(fn($r) => (float)($r->total_amount ?? 0)),
+            'credit' => $completed->filter(fn($r) => ($r->payment_method ?? '') === 'credit')->sum(fn($r) => (float)($r->total_amount ?? 0)),
+        ];
+        return compact('totalSales','totalTransactions','averageOrderValue','totalTax','totalItems','paymentBreakdown');
     }
     
     private function generateDailyReportData($sales, $date)
