@@ -1275,18 +1275,21 @@ function cannabisPOS() {
       let list = null;
       if (forceNetwork) {
         try {
-          const res = await posAuth.apiRequest("get", "/sales/recent", {
-            status: "completed",
-            date_from: start,
-            date_to: end,
-            sort_by: "created_at",
-            sort_order: "desc",
+          const { data } = await (window.axios || axios).get("/sales/recent", {
+            params: {
+              status: "completed",
+              date_from: start,
+              date_to: end,
+              sort_by: "created_at",
+              sort_order: "desc",
+              limit: 500,
+            },
+            headers: { Accept: "application/json" },
           });
-          if (res.success && res.data && res.data.data) {
-            const records = Array.isArray(res.data.data) ? res.data.data : [];
-            list = records.map((s) => this.mapSaleToSpa(s));
-          } else if (res.success && Array.isArray(res.data)) {
-            list = res.data.map((s) => this.mapSaleToSpa(s));
+          if (Array.isArray(data)) {
+            list = data.map((s) => this.mapSaleToSpa(s));
+          } else if (data && Array.isArray(data.data)) {
+            list = data.data.map((s) => this.mapSaleToSpa(s));
           }
         } catch (_) {}
       }
