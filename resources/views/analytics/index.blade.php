@@ -335,25 +335,31 @@
                     <p class="text-gray-600">End of Day Report - {{ now()->format('F j, Y') }}</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Today's Sales -->
                     <div class="text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Today's Sales</h3>
-                        <p class="text-3xl font-bold text-green-600">${{ number_format($endOfDayData['totalSales'], 2) }}</p>
-                        <p class="text-sm text-gray-600">{{ $endOfDayData['customerCount'] }} customers</p>
+                        <p id="eod-total-sales" class="text-3xl font-bold text-green-600">${{ number_format($endOfDayData['totalSales'], 2) }}</p>
+                        <p class="text-sm text-gray-600"><span id="eod-customer-count">{{ $endOfDayData['customerCount'] }}</span> customers</p>
                     </div>
 
                     <!-- Tax Collected -->
                     <div class="text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Tax Collected</h3>
-                        <p class="text-3xl font-bold text-blue-600">${{ number_format($endOfDayData['totalTax'], 2) }}</p>
+                        <p id="eod-total-tax" class="text-3xl font-bold text-blue-600">${{ number_format($endOfDayData['totalTax'], 2) }}</p>
+                    </div>
+
+                    <!-- Total Discounts -->
+                    <div class="text-center">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Total Discounts</h3>
+                        <p id="eod-total-discounts" class="text-3xl font-bold text-red-600">$0.00</p>
                     </div>
 
                     <!-- Monthly Progress -->
                     <div class="text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Monthly Sales</h3>
-                        <p class="text-3xl font-bold text-purple-600">${{ number_format($endOfDayData['monthlySalesTotal'], 2) }}</p>
-                        <p class="text-sm text-gray-600">Day {{ $endOfDayData['dayOfMonth'] }} of {{ $endOfDayData['daysInMonth'] }}</p>
+                        <p id="eod-monthly-total" class="text-3xl font-bold text-purple-600">${{ number_format($endOfDayData['monthlySalesTotal'], 2) }}</p>
+                        <p class="text-sm text-gray-600">Day <span id="eod-day">{{ $endOfDayData['dayOfMonth'] }}</span> of <span id="eod-days">{{ $endOfDayData['daysInMonth'] }}</span></p>
                     </div>
                 </div>
 
@@ -363,15 +369,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <h4 class="text-sm font-medium text-gray-700">Cash</h4>
-                            <p class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['cashSales'], 2) }}</p>
+                            <p id="eod-cash" class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['cashSales'], 2) }}</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <h4 class="text-sm font-medium text-gray-700">Debit</h4>
-                            <p class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['debitSales'], 2) }}</p>
+                            <p id="eod-debit" class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['debitSales'], 2) }}</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <h4 class="text-sm font-medium text-gray-700">Credit</h4>
-                            <p class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['creditSales'], 2) }}</p>
+                            <p id="eod-credit" class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['creditSales'], 2) }}</p>
                         </div>
                     </div>
                 </div>
