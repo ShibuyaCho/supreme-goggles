@@ -758,6 +758,8 @@ function cannabisPOS() {
       } finally {
         // Load persisted drawers
         try { const raw = localStorage.getItem('pos_drawers'); if (raw) this.cashDrawers = JSON.parse(raw); } catch(_){}
+        // Load persisted rooms
+        try { const rawR = localStorage.getItem('pos_rooms') || localStorage.getItem('rd-rooms'); if (rawR) this.facilityRooms = JSON.parse(rawR); } catch(_){}
         // Merge external activity log if present
         try { const rawLog = localStorage.getItem('rd-activity-log'); if (rawLog) {
           const arr = JSON.parse(rawLog);
