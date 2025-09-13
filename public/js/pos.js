@@ -813,6 +813,14 @@ function cannabisPOS() {
             }
           } catch (_) {}
         }
+        // Real-time append when other modules complete a sale
+        try {
+          document.addEventListener("pos-sale-completed", async (e) => {
+            const sid = e?.detail?.sale_id || e?.detail?.id;
+            if (sid) await this.appendSaleById(sid);
+            else await this.refreshSales(true);
+          });
+        } catch (_) {}
       }
     },
 
