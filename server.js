@@ -1614,6 +1614,66 @@ app.get("/api/analytics/end-of-day", async (_req, res) => {
   }
 });
 
+// Analytics: ASPD (Average Sales Per Day) using Supabase sales.cart
+app.get("/api/analytics/aspd", async (req, res) => {
+  try {
+    const tf = String(req.query?.timeframe || "week");
+    const today = new Date();
+    let start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
+    let end = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+    if (tf === "today") {
+      // already set
+    } else if (tf === "month") {
+      start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0));
+      end = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1, 0, 0, 0));
+    } else if (tf === "custom") {
+      const s = req.query?.start_date ? new Date(String(req.query.start_date)) : start;
+      const e = req.query?.end_date ? new Date(String(req.query.end_date)) : new Date(start.getTime());
+      start = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0));
+      end = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate() + 1, 0, 0, 0));
+    } else {
+      // week (default): last 7 days inclusive
+      const d = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
+      start = new Date(d.getTime() - 6 * 24 * 60 * 60 * 1000);
+      end = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+    }
+    const startIso = start.toISOString();
+    const endIso = end.toISOString();
+    const daysInRange = Math.max(1, Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
+
+    const r = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startIso},created_at.lt.${endIso})`, limit: "1000" } });
+    const rows = r.ok ? await r.json() : [];
+    const list = Array.isArray(rows) ? rows : [];
+
+    const map = new Map(); // key: product name -> { totalSold, totalRevenue }
+    for (const s of list) {
+      const cart = Array.isArray(s.cart) ? s.cart : [];
+      for (const it of cart) {
+        const name = (it?.name || it?.product_name || "Unknown").toString();
+        const qty = Number(it?.quantity || 0);
+        const rev = Number(it?.price || 0) * qty;
+        const cur = map.get(name) || { totalSold: 0, totalRevenue: 0 };
+        cur.totalSold += qty;
+        cur.totalRevenue += rev;
+        map.set(name, cur);
+      }
+    }
+
+    const results = Array.from(map.entries()).map(([name, v]) => ({
+      name,
+      category: "—",
+      totalSold: v.totalSold,
+      totalRevenue: v.totalRevenue,
+      daysInRange,
+      aspd: v.totalSold / daysInRange,
+    })).sort((a, b) => b.aspd - a.aspd);
+
+    res.json({ daysInRange, items: results });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to compute ASPD" });
+  }
+});
+
 // Optional SPA fallback (serve index.html for any non-API route):
 app.get(/^(?!\/api(?:\/|$)).*$/, (_req, res) => {
   const indexPath = path.join(__dirname, "index.html");
