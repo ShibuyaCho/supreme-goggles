@@ -821,6 +821,15 @@ function cannabisPOS() {
             else await this.refreshSales(true);
           });
         } catch (_) {}
+        // Cross-tab live updates via localStorage broadcast
+        try {
+          window.addEventListener('storage', (e) => {
+            if (e && e.key === 'pos_last_sale_id' && e.newValue) {
+              const [sid] = String(e.newValue).split(':');
+              if (sid) this.appendSaleById(sid);
+            }
+          });
+        } catch (_) {}
       }
     },
 
@@ -1224,6 +1233,15 @@ function cannabisPOS() {
         const result = await posAuth.processPayment(paymentData);
         if (result.success) {
           this.showToast("Payment processed successfully", "success");
+          // Live update the sales list and End of Day stats
+          try {
+            const sid = result?.data?.sale_id || result?.sale_id;
+            if (sid) {
+              await this.appendSaleById(sid);
+              try { document.dispatchEvent(new CustomEvent('pos-sale-completed', { detail: { sale_id: sid } })); } catch (_) {}
+              try { localStorage.setItem('pos_last_sale_id', `${sid}:${Date.now()}`); } catch (_) {}
+            }
+          } catch (_) {}
           this.clearCart();
           return result.data;
         } else {
@@ -1557,8 +1575,11 @@ function cannabisPOS() {
     // Page navigation
     setCurrentPage(page) {
       this.currentPage = page;
+      // Manage live polling timer for sales page
+      try { if (this._salesLiveTimer) { clearInterval(this._salesLiveTimer); this._salesLiveTimer = null; } } catch (_) {}
       if (page === "sales") {
         try { this.refreshSales(true); } catch (_) {}
+        try { this._salesLiveTimer = setInterval(() => this.refreshSales(true), 8000); } catch (_) {}
       }
       if (page === "employees") {
         if ((this.employees || []).length === 0) {
