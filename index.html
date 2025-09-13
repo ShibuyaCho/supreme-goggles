@@ -10524,11 +10524,14 @@
                     <div class="p-6">
                       <template x-if="loading"><div class="text-sm text-gray-500">Loading...</div></template>
                       <template x-if="!loading && items.length === 0"><div class="text-sm text-gray-500">No data available</div></template>
-                      <div class="overflow-x-auto" x-show="!loading && items.length">
+
+                      <!-- Products Table -->
+                      <div class="overflow-x-auto mb-8" x-show="!loading && items.length">
                         <table class="min-w-full">
                           <thead class="bg-gray-50">
                             <tr>
                               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
                               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sold</th>
                               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
                               <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ASPD</th>
@@ -10536,9 +10539,10 @@
                             </tr>
                           </thead>
                           <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="row in items" :key="row.name">
+                            <template x-for="row in items" :key="row.name + '::' + row.category">
                               <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="row.name"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700" x-text="row.category || '—'"></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900" x-text="Number(row.totalSold||0).toFixed(2)"></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900" x-text="days"></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900" x-text="Number(row.aspd||0).toFixed(2)"></td>
@@ -10554,6 +10558,57 @@
                             </template>
                           </tbody>
                         </table>
+                      </div>
+
+                      <!-- Category Breakdown with drill-down -->
+                      <div class="space-y-2" x-show="!loading && categories && categories.length">
+                        <h4 class="text-base font-semibold text-gray-900 mb-2">Category Breakdown</h4>
+                        <template x-for="cat in categories" :key="cat.category">
+                          <div class="border rounded-lg overflow-hidden">
+                            <button @click="toggleCategory(cat.category)" class="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100">
+                              <div class="flex items-center gap-3">
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" :class="expanded.includes(cat.category) ? 'rotate-90' : ''"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                                <span class="text-sm font-medium text-gray-900" x-text="cat.category || '—'"></span>
+                                <span class="text-xs text-gray-500" x-text="'(' + (cat.items?.length || 0) + ' products)' "></span>
+                              </div>
+                              <div class="flex items-center gap-4">
+                                <span class="text-sm text-gray-700" x-text="'Sold: ' + Number(cat.totalSold||0).toFixed(2)"></span>
+                                <span class="text-sm text-gray-700" x-text="'ASPD: ' + Number(cat.aspd||0).toFixed(2)"></span>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="cat.trend==='up' ? 'bg-green-100 text-green-800' : (cat.trend==='down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')">
+                                  <span x-text="cat.trend.charAt(0).toUpperCase()+cat.trend.slice(1)"></span>
+                                </span>
+                              </div>
+                            </button>
+                            <div x-show="expanded.includes(cat.category)" class="px-4 pb-4">
+                              <div class="overflow-x-auto mt-3">
+                                <table class="min-w-full">
+                                  <thead class="bg-gray-50">
+                                    <tr>
+                                      <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sold</th>
+                                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ASPD</th>
+                                      <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody class="bg-white divide-y divide-gray-200">
+                                    <template x-for="row in (cat.items || items.filter(i => i.category === cat.category))" :key="row.name + '::' + row.category">
+                                      <tr class="hover:bg-gray-50">
+                                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900" x-text="row.name"></td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-right text-sm text-gray-900" x-text="Number(row.totalSold||0).toFixed(2)"></td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-right text-sm font-semibold text-gray-900" x-text="Number(row.aspd||0).toFixed(2)"></td>
+                                        <td class="px-4 py-2 whitespace-nowrap text-right text-sm">
+                                          <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium" :class="row.trend==='up' ? 'bg-green-100 text-green-800' : (row.trend==='down' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800')">
+                                            <span x-text="row.trend.charAt(0).toUpperCase()+row.trend.slice(1)"></span>
+                                          </span>
+                                        </td>
+                                      </tr>
+                                    </template>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        </template>
                       </div>
                     </div>
                   </div>
@@ -20725,9 +20780,15 @@
       function aspdPage() {
         return {
           items: [],
+          categories: [],
+          expanded: [],
           days: 0,
           loading: true,
           async init() { await this.load(); },
+          toggleCategory(cat) {
+            const i = this.expanded.indexOf(cat);
+            if (i >= 0) this.expanded.splice(i, 1); else this.expanded.push(cat);
+          },
           async load() {
             this.loading = true;
             try {
@@ -20735,8 +20796,14 @@
               const tf = tfSel ? tfSel.value : 'month';
               const r = await fetch(`/api/analytics/aspd?timeframe=${encodeURIComponent(tf)}`, { headers: { Accept: 'application/json' } });
               const d = r.ok ? await r.json() : null;
-              if (d && Array.isArray(d.items)) { this.items = d.items; this.days = d.daysInRange || 0; } else { this.items = []; this.days = 0; }
-            } catch (_) { this.items = []; this.days = 0; }
+              if (d) {
+                this.items = Array.isArray(d.items) ? d.items : [];
+                this.categories = Array.isArray(d.categories) ? d.categories : [];
+                this.days = Number(d.daysInRange || 0);
+              } else {
+                this.items = []; this.categories = []; this.days = 0;
+              }
+            } catch (_) { this.items = []; this.categories = []; this.days = 0; }
             finally { this.loading = false; }
           }
         }
