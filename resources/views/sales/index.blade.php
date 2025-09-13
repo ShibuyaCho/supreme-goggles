@@ -451,6 +451,26 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('reports-menu').classList.add('hidden');
         }
     });
+    // Live updates: reload on new sale and poll for changes
+    (function(){
+      function topRowId(){ const r = document.querySelector('tbody tr[data-sale-id]'); return r ? r.getAttribute('data-sale-id') : null; }
+      function startPoll(){
+        try { if (window.__salesPollTimer) clearInterval(window.__salesPollTimer); } catch(_) {}
+        window.__salesPollTimer = setInterval(async () => {
+          try {
+            const res = await (window.axios || axios).get('/sales/recent-json', { params: { limit: 1 } });
+            const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
+            const newestId = list.length ? String(list[0].id) : null;
+            const currentTop = topRowId();
+            if (newestId && currentTop && newestId !== currentTop) window.location.reload();
+          } catch(_) {}
+        }, 8000);
+      }
+      try { document.addEventListener('pos-sale-completed', () => window.location.reload()); } catch(_) {}
+      try { window.addEventListener('storage', (e) => { if (e && e.key === 'pos_last_sale_id') window.location.reload(); }); } catch(_) {}
+      startPoll();
+    })();
+
     // Push Sales to METRC
     const pushBtn = document.getElementById('push-metrc');
     async function checkMetrcReady(){
