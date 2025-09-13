@@ -1240,8 +1240,6 @@ function cannabisPOS() {
     // SALES: Load, filter, stats, actions
     async refreshSales(forceNetwork = true) {
       try { this.showToast && this.showToast('Refreshing sales…', 'info'); } catch(_) {}
-      // Determine date window from filter; default to last 7 days to keep it light
-      const now = new Date();
       const toISO = (d) => d.toISOString().slice(0, 10);
       let start = this.salesFilter.startDate;
       let end = this.salesFilter.endDate;
@@ -1262,49 +1260,43 @@ function cannabisPOS() {
           d.setDate(d.getDate() - 1);
           start = end = toISO(d);
         } else if (dr === "custom") {
-          // leave as provided
+          // keep provided custom range
         } else {
-          // today or default: allow backend to choose sensible default (e.g., last 7 days)
           start = ""; end = "";
         }
       }
 
-      // Try network first
       let list = null;
+      const params = {
+        status: "completed",
+        sort_by: "created_at",
+        sort_order: "desc",
+        limit: 500,
+      };
+      if (start && end) { params.date_from = start; params.date_to = end; }
+
       if (forceNetwork) {
-        try {
-          const params = {
-            status: "completed",
-            sort_by: "created_at",
-            sort_order: "desc",
-            limit: 500,
-          };
-          if (start && end) { params.date_from = start; params.date_to = end; }
-          // Attempt primary API (web.php /api group)
-          const primary = await (window.axios || axios).get("/api/sales/recent", { params, headers: { Accept: "application/json" } });
-          let data = primary?.data;
-          if (!Array.isArray(data) && data && Array.isArray(data.data)) data = data.data;
-          if (Array.isArray(data) && data.length) {
-            list = data.map((s) => this.mapSaleToSpa(s));
-          } else {
-            // Fallback 1: same endpoint without filters
-            const fb1 = await (window.axios || axios).get("/api/sales/recent", { headers: { Accept: "application/json" } });
-            let d1 = fb1?.data; if (!Array.isArray(d1) && d1 && Array.isArray(d1.data)) d1 = d1.data;
-            if (Array.isArray(d1) && d1.length) {
-              list = d1.map((s) => this.mapSaleToSpa(s));
-            } else {
-              // Fallback 2: web route without /api prefix
-              const fb2 = await (window.axios || axios).get("/sales/recent", { params, headers: { Accept: "application/json" } });
-              let d2 = fb2?.data; if (!Array.isArray(d2) && d2 && Array.isArray(d2.data)) d2 = d2.data;
-              if (Array.isArray(d2) && d2.length) list = d2.map((s) => this.mapSaleToSpa(s));
+        const endpoints = [
+          "/sales/recent-json",
+          "/api/sales/recent",
+          "/sales/recent",
+        ];
+        for (const url of endpoints) {
+          try {
+            const res = await (window.axios || axios).get(url, { params, headers: { Accept: "application/json" } });
+            let data = res?.data;
+            if (!Array.isArray(data) && data && Array.isArray(data.data)) data = data.data;
+            if (Array.isArray(data)) {
+              const mapped = data.map((s) => this.mapSaleToSpa(s));
+              if (mapped.length) { list = mapped; break; }
+              else { list = []; continue; }
             }
+          } catch (e) {
+            continue;
           }
-        } catch (e) {
-          console.warn('Sales refresh failed, will use cache if present', e?.response?.data || e);
         }
       }
 
-      // Fallback to cache if needed
       if (!Array.isArray(list)) {
         try {
           const cache = JSON.parse(localStorage.getItem("pos_sales_cache_v1") || "{}");
@@ -1535,19 +1527,23 @@ function cannabisPOS() {
     },
 
     async appendSaleById(id) {
-      try {
-        const { data: s } = await (window.axios || axios).get(`/api/sales/${id}`, { headers: { Accept: "application/json" } });
-        if (!s) return;
-        const mapped = this.mapSaleToSpa(s);
-        this.sales = [mapped, ...this.sales.filter((x) => (x.numericId || x.id) !== (mapped.numericId || mapped.id))];
-        this.filterSales();
+      const endpoints = [ `/sales/json/${id}`, `/api/sales/${id}` ];
+      for (const url of endpoints) {
         try {
-          localStorage.setItem(
-            "pos_sales_cache_v1",
-            JSON.stringify({ ts: Date.now(), list: this.sales }),
-          );
+          const { data: s } = await (window.axios || axios).get(url, { headers: { Accept: "application/json" } });
+          if (!s) continue;
+          const mapped = this.mapSaleToSpa(s);
+          this.sales = [mapped, ...this.sales.filter((x) => (x.numericId || x.id) !== (mapped.numericId || mapped.id))];
+          this.filterSales();
+          try {
+            localStorage.setItem(
+              "pos_sales_cache_v1",
+              JSON.stringify({ ts: Date.now(), list: this.sales }),
+            );
+          } catch (_) {}
+          return;
         } catch (_) {}
-      } catch (_) {}
+      }
     },
 
     getCurrentEmployee() {
