@@ -5293,7 +5293,7 @@ function cannabisPOS() {
       };
       this.activityLog.unshift(entry);
       try {
-        const key = "pos_activity_log";
+        const key = "rd-activity-log";
         const prev = JSON.parse(localStorage.getItem(key) || "[]");
         prev.push(entry);
         localStorage.setItem(key, JSON.stringify(prev));
