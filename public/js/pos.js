@@ -1267,7 +1267,7 @@ function cannabisPOS() {
       let list = null;
       if (forceNetwork) {
         try {
-          const res = await posAuth.apiRequest("get", "/sales", {
+          const res = await posAuth.apiRequest("get", "/sales/recent", {
             status: "completed",
             date_from: start,
             date_to: end,
