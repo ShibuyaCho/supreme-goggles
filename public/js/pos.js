@@ -1667,6 +1667,7 @@ function cannabisPOS() {
         sales: "Sales",
         "order-queue": "Order Queue",
         "inventory-evaluation": "Inventory Evaluation",
+        aspd: "ASPD",
         analytics: "Analytics",
         reports: "Reports",
         deals: "Deals & Specials",
