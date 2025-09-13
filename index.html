@@ -6103,8 +6103,8 @@
                     x-text="getCurrentPageTitle()"
                   ></h2>
                 </div>
-                <!-- Print and Export Options -->
-                <div class="flex items-center gap-2">
+                <!-- Print and Export Options (hide on Sales to avoid redundancy) -->
+                <div class="flex items-center gap-2" x-show="currentPage !== 'sales'">
                   <button
                     @click="printPage()"
                     class="bg-gray-600 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center gap-2 text-sm"
@@ -8779,126 +8779,7 @@
                     </div>
                   </div>
 
-                  <!-- Sales Search and Filters -->
-                  <div
-                    class="bg-white border border-gray-200 rounded-lg p-6 mb-6"
-                  >
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                      Search & Filter Sales
-                    </h3>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      <div>
-                        <label
-                          class="block text-sm font-medium text-gray-700 mb-2"
-                          >Date Range</label
-                        >
-                        <select
-                          id="sales-date-range"
-                          name="sales-date-range"
-                          x-model="salesFilter.dateRange"
-                          @change="filterSales()"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          aria-label="Filter sales by date range"
-                        >
-                          <option value="today">Today</option>
-                          <option value="yesterday">Yesterday</option>
-                          <option value="week">This Week</option>
-                          <option value="month">This Month</option>
-                          <option value="custom">Custom Range</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label
-                          class="block text-sm font-medium text-gray-700 mb-2"
-                          >Customer</label
-                        >
-                        <input
-                          id="sales-customer-filter"
-                          name="sales-customer-filter"
-                          type="text"
-                          x-model="salesFilter.customer"
-                          @input="filterSales()"
-                          placeholder="Search by customer name"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          aria-label="Filter sales by customer name"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          class="block text-sm font-medium text-gray-700 mb-2"
-                          >Amount Range</label
-                        >
-                        <select
-                          id="sales-amount-range"
-                          name="sales-amount-range"
-                          x-model="salesFilter.amountRange"
-                          @change="filterSales()"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          aria-label="Filter sales by amount range"
-                        >
-                          <option value="">All Amounts</option>
-                          <option value="0-25">$0 - $25</option>
-                          <option value="25-50">$25 - $50</option>
-                          <option value="50-100">$50 - $100</option>
-                          <option value="100+">$100+</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label
-                          class="block text-sm font-medium text-gray-700 mb-2"
-                          >Payment Method</label
-                        >
-                        <select
-                          id="sales-payment-method"
-                          name="sales-payment-method"
-                          x-model="salesFilter.paymentMethod"
-                          @change="filterSales()"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          aria-label="Filter sales by payment method"
-                        >
-                          <option value="">All Methods</option>
-                          <option value="cash">Cash</option>
-                          <option value="debit">Debit</option>
-                          <option value="credit">Credit</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div
-                      x-show="salesFilter.dateRange === 'custom'"
-                      class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"
-                    >
-                      <div>
-                        <label
-                          class="block text-sm font-medium text-gray-700 mb-2"
-                          >Start Date</label
-                        >
-                        <input
-                          id="sales-start-date"
-                          name="sales-start-date"
-                          type="date"
-                          x-model="salesFilter.startDate"
-                          @change="filterSales()"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          aria-label="Sales filter start date"
-                        />
-                      </div>
-                      <div>
-                        <label
-                          class="block text-sm font-medium text-gray-700 mb-2"
-                          >End Date</label
-                        >
-                        <input
-                          id="sales-end-date"
-                          name="sales-end-date"
-                          type="date"
-                          x-model="salesFilter.endDate"
-                          @change="filterSales()"
-                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
-                          aria-label="Sales filter end date"
-                        />
-                      </div>
-                    </div>
-                  </div>
+                  <!-- Sales Search and Filters (moved below End of Day, above Sales Table) -->
 
                   <!-- Sales Statistics -->
                   <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
@@ -9311,6 +9192,56 @@
                         >
                           ✓ Report Generated
                         </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Sales Search and Filters (moved here) -->
+                  <div class="bg-white border border-gray-200 rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Search & Filter Sales</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <select id="sales-date-range" name="sales-date-range" x-model="salesFilter.dateRange" @change="filterSales()" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Filter sales by date range">
+                          <option value="today">Today</option>
+                          <option value="yesterday">Yesterday</option>
+                          <option value="week">This Week</option>
+                          <option value="month">This Month</option>
+                          <option value="custom">Custom Range</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Customer</label>
+                        <input id="sales-customer-filter" name="sales-customer-filter" type="text" x-model="salesFilter.customer" @input="filterSales()" placeholder="Search by customer name" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Filter sales by customer name" />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Amount Range</label>
+                        <select id="sales-amount-range" name="sales-amount-range" x-model="salesFilter.amountRange" @change="filterSales()" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Filter sales by amount range">
+                          <option value="">All Amounts</option>
+                          <option value="0-25">$0 - $25</option>
+                          <option value="25-50">$25 - $50</option>
+                          <option value="50-100">$50 - $100</option>
+                          <option value="100+">$100+</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                        <select id="sales-payment-method" name="sales-payment-method" x-model="salesFilter.paymentMethod" @change="filterSales()" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Filter sales by payment method">
+                          <option value="">All Methods</option>
+                          <option value="cash">Cash</option>
+                          <option value="debit">Debit</option>
+                          <option value="credit">Credit</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div x-show="salesFilter.dateRange === 'custom'" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+                        <input id="sales-start-date" name="sales-start-date" type="date" x-model="salesFilter.startDate" @change="filterSales()" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Sales filter start date" />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                        <input id="sales-end-date" name="sales-end-date" type="date" x-model="salesFilter.endDate" @change="filterSales()" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Sales filter end date" />
                       </div>
                     </div>
                   </div>
