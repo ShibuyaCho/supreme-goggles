@@ -582,8 +582,10 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
     function addActivity(title, details=''){
-      activityLog.push({ at: new Date().toISOString(), by: currentUserName(), title, details });
+      const entry = { at: new Date().toISOString(), by: currentUserName(), title, details };
+      activityLog.push(entry);
       saveActivity();
+      try { const k='pos_activity_log'; const prev=JSON.parse(localStorage.getItem(k)||'[]'); prev.push(entry); localStorage.setItem(k, JSON.stringify(prev)); } catch(_) {}
       renderActivity();
     }
     document.getElementById('rd-clear-log')?.addEventListener('click', ()=>{ activityLog = []; saveActivity(); renderActivity(); });
@@ -617,12 +619,13 @@ document.addEventListener('DOMContentLoaded', function() {
       serverRooms.forEach(sr => { const nr = normalizeRoom(sr); if (!byName.has((nr.name||'').toLowerCase())) { localRooms.push(nr); byName.add((nr.name||'').toLowerCase()); } });
       saveRooms(localRooms);
     }
-    const roomsGrid = document.getElementById('rooms-grid');
+    let roomsGrid = document.getElementById('rooms-grid');
+    function ensureRoomsGrid(){ if (!roomsGrid) roomsGrid = document.getElementById('rooms-grid'); return !!roomsGrid; }
     function findRoomCardByName(n){
-      try { return Array.from(roomsGrid.querySelectorAll('.room-card')).find(c => (c.querySelector('h3')?.textContent||'').trim().toLowerCase() === String(n||'').trim().toLowerCase()); } catch(_) { return null; }
+      try { return Array.from((roomsGrid||document).querySelectorAll('.room-card')).find(c => (c.querySelector('h3')?.textContent||'').trim().toLowerCase() === String(n||'').trim().toLowerCase()); } catch(_) { return null; }
     }
     function appendRoomCard(r){
-      if (!roomsGrid || !r || findRoomCardByName(r.name)) return;
+      if (!ensureRoomsGrid() || !r || findRoomCardByName(r.name)) return;
       const usagePercent = 0;
       const html = `
         <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="${r.type}">
@@ -652,8 +655,12 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>`;
       const wrap = document.createElement('div'); wrap.innerHTML = html.trim(); wrap.querySelector('h3').textContent = r.name; roomsGrid.prepend(wrap.firstElementChild);
     }
-    // Render any local rooms not already present
-    (Array.isArray(localRooms)?localRooms:[]).forEach(appendRoomCard);
+    // Render any local rooms not already present (with retries)
+    function renderLocalRooms(){ try { (Array.isArray(localRooms)?localRooms:[]).forEach(appendRoomCard); } catch(_) {} }
+    renderLocalRooms();
+    setTimeout(renderLocalRooms, 50);
+    setTimeout(renderLocalRooms, 300);
+    window.addEventListener('load', renderLocalRooms);
     window.addEventListener('beforeunload', ()=>{ try { saveRooms(localRooms); } catch(_) {} });
 
     categoryTabs.forEach(tab => {
@@ -819,6 +826,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try { localRooms.push(localRoom); saveRooms(localRooms); } catch(_) {}
         appendRoomCard(localRoom);
         addActivity('Room created', `${name} (${type})`);
+        try { const k='rd-activity-log'; const prev=JSON.parse(localStorage.getItem(k)||'[]'); prev.push({ at:new Date().toISOString(), by: currentUserName(), title:'Room created', details:`${name} (${type})` }); localStorage.setItem(k, JSON.stringify(prev)); } catch(_) {}
         closeAddRoomModal();
         // Try server in background; on success, update local record
         try {
