@@ -5176,18 +5176,22 @@ function cannabisPOS() {
       }
 
       const newRoom = {
-        id: Math.max(...(this.facilityRooms || []).map((r) => r.id), 0) + 1,
+        id: Math.max(...(this.facilityRooms || []).map((r) => Number(r?.id) || 0), 0) + 1,
         name: this.roomForm.name,
+        type: this.roomForm.type || "storage",
         forSale: this.roomForm.forSale === "true",
-        maxCapacity: this.roomForm.maxCapacity,
+        maxCapacity: Number(this.roomForm.maxCapacity) || 0,
+        currentCapacity: 0,
         status: this.roomForm.status,
-        temperature: this.roomForm.temperature,
-        humidity: this.roomForm.humidity,
+        temperature: Number(this.roomForm.temperature) || 68,
+        humidity: Number(this.roomForm.humidity) || 50,
         createdAt: new Date().toISOString(),
       };
 
-      this.facilityRooms = this.facilityRooms || [];
+      this.facilityRooms = Array.isArray(this.facilityRooms) ? this.facilityRooms : [];
       this.facilityRooms.push(newRoom);
+      try { localStorage.setItem('pos_rooms', JSON.stringify(this.facilityRooms)); } catch (_) {}
+      try { this.logActivity && this.logActivity('room','created', newRoom.name, `${newRoom.type} · Cap ${newRoom.maxCapacity}`); } catch(_) {}
       this.showToast(`Room "${newRoom.name}" created successfully`, "success");
       this.closeAddRoomModal();
     },
@@ -5202,17 +5206,20 @@ function cannabisPOS() {
         (r) => r.id === this.selectedRoom.id,
       );
       if (roomIndex !== -1) {
+        const prev = this.facilityRooms[roomIndex];
         this.facilityRooms[roomIndex] = {
-          ...this.facilityRooms[roomIndex],
+          ...prev,
           name: this.roomForm.name,
+          type: this.roomForm.type || prev.type || "storage",
           forSale: this.roomForm.forSale === "true",
-          maxCapacity: this.roomForm.maxCapacity,
+          maxCapacity: Number(this.roomForm.maxCapacity) || Number(prev.maxCapacity) || 0,
           status: this.roomForm.status,
-          temperature: this.roomForm.temperature,
-          humidity: this.roomForm.humidity,
+          temperature: Number(this.roomForm.temperature) || Number(prev.temperature) || 68,
+          humidity: Number(this.roomForm.humidity) || Number(prev.humidity) || 50,
           updatedAt: new Date().toISOString(),
         };
-
+        try { localStorage.setItem('pos_rooms', JSON.stringify(this.facilityRooms)); } catch (_) {}
+        try { this.logActivity && this.logActivity('room','updated', this.roomForm.name, `${prev.name} → ${this.roomForm.name}`); } catch(_) {}
         this.showToast(
           `Room "${this.roomForm.name}" updated successfully`,
           "success",
@@ -5232,6 +5239,15 @@ function cannabisPOS() {
         humidity: room.humidity || 50,
       };
       this.showAddRoomModal = true;
+    },
+
+    deleteRoomWithPin(room) {
+      if (!room) return;
+      if (!confirm(`Delete room "${room.name}"?`)) return;
+      this.facilityRooms = (this.facilityRooms || []).filter(r => String(r.id) !== String(room.id));
+      try { localStorage.setItem('pos_rooms', JSON.stringify(this.facilityRooms)); } catch (_) {}
+      try { this.logActivity && this.logActivity('room','deleted', room.name); } catch(_) {}
+      this.showToast('Room deleted', 'success');
     },
 
     // Drawer Management Functions
