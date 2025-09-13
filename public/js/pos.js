@@ -3999,6 +3999,7 @@ function cannabisPOS() {
         name: it.displayName || it.name,
         price: Number(it.price || 0),
         quantity: Number(it.quantity || 1),
+        category: it.category || (it.product ? it.product.category : undefined),
       }));
       const payload = {
         method: "debit",
@@ -4046,6 +4047,7 @@ function cannabisPOS() {
         name: it.displayName || it.name,
         price: Number(it.price || 0),
         quantity: Number(it.quantity || 1),
+        category: it.category || (it.product ? it.product.category : undefined),
       }));
       const payload = {
         method: "cash",
