@@ -256,7 +256,8 @@ class AnalyticsController extends Controller
                     'unitsSold' => $item->totalSold,
                     'totalRevenue' => $item->totalRevenue,
                     'daysInRange' => $daysInRange,
-                    'aspd' => $aspd
+                    'aspd' => $aspd,
+                    'trend' => 'stagnant',
                 ];
             })
             ->sortByDesc('aspd')
@@ -265,6 +266,45 @@ class AnalyticsController extends Controller
         return $aspdData;
     }
     
+    public function getASPDAnalytics(Request $request)
+    {
+        $timeframe = $request->get('timeframe', 'week');
+        $dateRange = $this->getDateRange($timeframe, $request);
+        $items = $this->getASPDData($dateRange);
+        $daysInRange = $dateRange['start']->diffInDays($dateRange['end']) + 1;
+
+        $categories = collect($items)
+            ->groupBy('category')
+            ->map(function ($rows, $category) use ($daysInRange) {
+                $totalSold = $rows->sum('totalSold');
+                $totalRevenue = $rows->sum('totalRevenue');
+                $aspd = $daysInRange > 0 ? ($totalSold / $daysInRange) : 0;
+                return [
+                    'category' => $category,
+                    'totalSold' => $totalSold,
+                    'totalRevenue' => $totalRevenue,
+                    'daysInRange' => $daysInRange,
+                    'aspd' => $aspd,
+                    'trend' => 'stagnant',
+                    'items' => $rows->values()->all(),
+                ];
+            })
+            ->values()
+            ->sortByDesc('aspd')
+            ->values();
+
+        return response()->json([
+            'daysInRange' => $daysInRange,
+            'items' => $items,
+            'categories' => $categories,
+        ]);
+    }
+
+    public function getASPDAnalyticsOpen(Request $request)
+    {
+        return $this->getASPDAnalytics($request);
+    }
+
     private function getEndOfDayData()
     {
         $today = Carbon::today();
