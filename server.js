@@ -1235,24 +1235,34 @@ app.post("/api/activity", async (req, res) => {
 app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
   const user = getAuthUser(req);
   const body = req.body || {};
+  // Normalize incoming payload
+  const items = Array.isArray(body.cart) && body.cart.length
+    ? body.cart
+    : (Array.isArray(body.items) ? body.items.map((i) => ({
+        id: i?.id ?? null,
+        name: i?.name ?? undefined,
+        price: Number(i?.price ?? 0),
+        quantity: Number(i?.quantity ?? 1),
+      })) : []);
+  const computedSubtotal = items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 1), 0);
+  const subtotal = body.subtotal != null ? Number(body.subtotal) : (items.length ? computedSubtotal : null);
+  const tax = body.taxAmount != null ? Number(body.taxAmount) : (body.tax != null ? Number(body.tax) : 0);
+  const total = body.total != null ? Number(body.total) : (subtotal != null ? Number(subtotal) + Number(tax || 0) : null);
+  const payment_reference = body.card_details?.last_four || body.lastFour || body.payment_reference || null;
+
   const row = {
     user_id: user ? String(user.id) : null,
     employee_id: body.employeePin ? String(body.employeePin) : null,
     payment_method:
       body.method ||
       (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown"),
-    subtotal:
-      body.subtotal ??
-      body.cart?.reduce?.(
-        (s, i) => s + (i?.price || 0) * (i?.quantity || 1),
-        0,
-      ) ??
-      null,
-    tax: body.taxAmount ?? null,
-    total: body.total ?? null,
+    subtotal,
+    tax,
+    total,
     status: "completed",
     customer: body.customer || null,
-    cart: body.cart || null,
+    cart: items,
+    payment_reference,
     meta: { source: "dev", timestamp: new Date().toISOString() },
   };
   try {
