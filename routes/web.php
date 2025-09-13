@@ -355,6 +355,7 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('/products/search', [ProductsController::class, 'apiSearch'])->name('products.search');
     Route::get('/customers/search', [CustomersController::class, 'apiSearch'])->name('customers.search');
     Route::get('/sales/recent', [SalesController::class, 'recentSales'])->name('sales.recent');
+    Route::get('/sales/{sale}', [SalesController::class, 'apiShow'])->name('sales.show.json');
     Route::get('/analytics/quick-stats', [AnalyticsController::class, 'quickStats'])->name('analytics.quick-stats');
     Route::post('/cart/validate', [POSController::class, 'validateCart'])->name('cart.validate');
     Route::get('/metrc/product/{tag}', [POSController::class, 'getMetrcProduct'])->name('metrc.product');
