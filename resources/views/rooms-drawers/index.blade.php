@@ -612,6 +612,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    if (false) {
     // Cash Drawers state and helpers
     const drawersEl = document.getElementById('rd-drawers');
     const countModal = document.getElementById('rd-count-modal');
