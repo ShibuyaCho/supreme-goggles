@@ -238,6 +238,9 @@ export default function RoomsDrawers() {
     return mockRooms;
   });
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
+  useEffect(() => {
+    try { localStorage.setItem(DEMO_ROOMS_KEY, JSON.stringify(rooms)); } catch(_) {}
+  }, [rooms]);
   const [selectedDrawer, setSelectedDrawer] = useState<Drawer | null>(null);
   const [showRoomDialog, setShowRoomDialog] = useState(false);
   const [showDrawerDialog, setShowDrawerDialog] = useState(false);
