@@ -525,6 +525,8 @@ function cannabisPOS() {
     metrcPushSettings: { startDate: "", endDate: "" },
     metrcPushInProgress: false,
     lastMetrcPush: "",
+    metrcPushSuccess: null,
+    metrcPushResult: "",
 
     // METRC Integration Settings
     metrcSettings: {
@@ -1569,7 +1571,13 @@ function cannabisPOS() {
           }
         }
         this.lastMetrcPush = new Date().toLocaleString();
+        this.metrcPushSuccess = pushed > 0;
+        this.metrcPushResult = pushed > 0 ? `Successfully pushed ${pushed} sale(s) to METRC` : "No eligible sales found for selected range";
         this.showToast(`Pushed ${pushed} sale(s) to METRC`, pushed ? "success" : "info");
+      } catch (err) {
+        this.metrcPushSuccess = false;
+        this.metrcPushResult = err?.response?.data?.message || "Failed to push to METRC";
+        this.showToast(this.metrcPushResult, "error");
       } finally {
         this.metrcPushInProgress = false;
       }
