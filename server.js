@@ -1274,8 +1274,14 @@ async function handleProcessPayment(req, res) {
   };
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
-    const payload = r.ok ? await r.json() : null;
-    __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: r.ok };
+    if (!r.ok) {
+      let errDetail = null;
+      try { errDetail = await r.json(); } catch (_) { try { errDetail = await r.text(); } catch (_) {} }
+      __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: false, status: r.status, error: errDetail };
+      return res.status(500).json({ success: false, error: errDetail || "Failed to record sale" });
+    }
+    const payload = await r.json();
+    __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: true };
     return res.status(200).json({ success: true, sale: Array.isArray(payload) ? payload[0] : payload });
   } catch (e) {
     __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: false, error: String(e?.message || e) };
