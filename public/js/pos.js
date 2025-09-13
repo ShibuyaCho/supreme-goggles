@@ -3978,49 +3978,45 @@ function cannabisPOS() {
       this.debitPayment.changeDue = amount - this.total;
     },
 
-    completeDebitPayment() {
+    async completeDebitPayment() {
       // Validate required fields
       if (!this.debitPayment.lastFour) {
         this.showToast("Last 4 digits of card are required", "error");
         return;
       }
-
       if (!this.debitPayment.employeePin) {
         this.showToast("Employee PIN is required", "error");
         return;
       }
-
       if (this.debitPayment.changeDue < 0) {
         this.showToast("Insufficient payment amount", "error");
         return;
       }
 
-      // Process debit payment
-      const paymentData = {
+      const items = (this.cart || []).map((it) => ({
+        id: it.id,
+        name: it.displayName || it.name,
+        price: Number(it.price || 0),
+        quantity: Number(it.quantity || 1),
+      }));
+      const payload = {
         method: "debit",
-        amount: this.debitPayment.amount,
-        changeDue: this.debitPayment.changeDue,
-        lastFour: this.debitPayment.lastFour,
-        employeePin: this.debitPayment.employeePin,
-        cart: this.cart,
-        customer: this.selectedCustomer,
         total: this.total,
         subtotal: this.subtotal,
         taxAmount: this.taxAmount,
-        timestamp: new Date().toISOString(),
+        items,
+        employeePin: this.debitPayment.employeePin,
+        card_details: { last_four: String(this.debitPayment.lastFour || ""), type: "debit" },
+        customer: this.selectedCustomer ? { name: this.selectedCustomer.name || "Walk-in Customer" } : null,
       };
 
-      // Persist sale locally
       try {
-        const uid = posAuth?.getUser()?.id || "anon";
-        const key = `cannabisPOS-sales-${uid}`;
-        const list = JSON.parse(localStorage.getItem(key) || "[]");
-        list.push(paymentData);
-        localStorage.setItem(key, JSON.stringify(list));
-      } catch (_) {}
-
-      // Simulate payment processing
-      this.showToast("Debit payment processed successfully", "success");
+        await (window.axios || axios).post("/api/pos/process-payment-open", payload, { headers: { Accept: "application/json" } });
+        this.showToast("Debit payment processed successfully", "success");
+      } catch (e) {
+        this.showToast("Failed to persist sale", "error");
+        return;
+      }
 
       // Clear cart and reset state
       this.cart = [];
@@ -4029,60 +4025,44 @@ function cannabisPOS() {
       this.calculateTotals();
 
       // Reset debit payment form
-      this.debitPayment = {
-        amount: 0,
-        changeDue: 0,
-        lastFour: "",
-        employeePin: "",
-      };
-
+      this.debitPayment = { amount: 0, changeDue: 0, lastFour: "", employeePin: "" };
       this.showDebitModal = false;
-
-      // In a real application, this would:
-      // 1. Process payment through payment gateway
-      // 2. Print receipt
-      // 3. Update inventory
-      // 4. Log transaction
-      console.log("Debit payment completed:", paymentData);
     },
 
-    completeCashPayment() {
+    async completeCashPayment() {
       // Validate required fields
       if (!this.cashPayment.employeePin) {
         this.showToast("Employee PIN is required", "error");
         return;
       }
-
       if (this.cashPayment.changeDue < 0) {
         this.showToast("Insufficient cash amount", "error");
         return;
       }
 
-      // Process cash payment
-      const paymentData = {
+      const items = (this.cart || []).map((it) => ({
+        id: it.id,
+        name: it.displayName || it.name,
+        price: Number(it.price || 0),
+        quantity: Number(it.quantity || 1),
+      }));
+      const payload = {
         method: "cash",
-        amountGiven: this.cashPayment.amountGiven,
-        changeDue: this.cashPayment.changeDue,
-        employeePin: this.cashPayment.employeePin,
-        cart: this.cart,
-        customer: this.selectedCustomer,
         total: this.total,
         subtotal: this.subtotal,
         taxAmount: this.taxAmount,
-        timestamp: new Date().toISOString(),
+        items,
+        employeePin: this.cashPayment.employeePin,
+        customer: this.selectedCustomer ? { name: this.selectedCustomer.name || "Walk-in Customer" } : null,
       };
 
-      // Persist sale locally
       try {
-        const uid = posAuth?.getUser()?.id || "anon";
-        const key = `cannabisPOS-sales-${uid}`;
-        const list = JSON.parse(localStorage.getItem(key) || "[]");
-        list.push(paymentData);
-        localStorage.setItem(key, JSON.stringify(list));
-      } catch (_) {}
-
-      // Simulate payment processing
-      this.showToast("Cash payment processed successfully", "success");
+        await (window.axios || axios).post("/api/pos/process-payment-open", payload, { headers: { Accept: "application/json" } });
+        this.showToast("Cash payment processed successfully", "success");
+      } catch (e) {
+        this.showToast("Failed to persist sale", "error");
+        return;
+      }
 
       // Clear cart and reset state
       this.cart = [];
@@ -4090,21 +4070,8 @@ function cannabisPOS() {
       this.ageVerified = false;
       this.calculateTotals();
 
-      // Reset cash payment form
-      this.cashPayment = {
-        amountGiven: 0,
-        changeDue: 0,
-        employeePin: "",
-      };
-
+      this.cashPayment = { amountGiven: 0, changeDue: 0, employeePin: "" };
       this.showCashModal = false;
-
-      // In a real application, this would:
-      // 1. Open cash drawer
-      // 2. Print receipt
-      // 3. Update inventory
-      // 4. Log transaction
-      console.log("Cash payment completed:", paymentData);
     },
 
     // Product card button functions
