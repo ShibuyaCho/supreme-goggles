@@ -393,25 +393,25 @@ class SalesController extends Controller
     {
         // Apply same filters as index
         $query = Sale::with(['customer', 'employee']);
-        
+
         // ... apply filters similar to index method
-        
+
         $sales = $query->get();
-        
+
         $filename = 'sales_export_' . now()->format('Y-m-d') . '.csv';
         $headers = [
             'Content-Type' => 'text/csv',
             'Content-Disposition' => "attachment; filename=\"{$filename}\"",
         ];
-        
+
         $callback = function() use ($sales) {
             $file = fopen('php://output', 'w');
-            
+
             fputcsv($file, [
                 'Sale Number', 'Date', 'Customer', 'Employee', 'Items', 'Subtotal',
                 'Tax', 'Total', 'Payment Method', 'Status'
             ]);
-            
+
             foreach ($sales as $sale) {
                 fputcsv($file, [
                     $sale->sale_number,
@@ -426,13 +426,61 @@ class SalesController extends Controller
                     $sale->status
                 ]);
             }
-            
+
             fclose($file);
         };
-        
+
         return response()->stream($callback, 200, $headers);
     }
-    
+
+    // JSON: Recent/filtered sales for SPA "Sales Transactions"
+    public function recentSales(Request $request)
+    {
+        $searchQuery = $request->get('search', '');
+        $status = $request->get('status', 'completed');
+        $payment = $request->get('payment_method', null);
+        $employee = $request->get('employee', null);
+        $dateFrom = $request->get('date_from');
+        $dateTo = $request->get('date_to');
+        $limit = (int) $request->get('limit', 200);
+
+        $query = Sale::with(['customer', 'employee', 'saleItems.product']);
+        if ($searchQuery) {
+            $query->where(function($q) use ($searchQuery) {
+                $q->where('sale_number', 'like', "%{$searchQuery}%")
+                  ->orWhereHas('customer', function($cq) use ($searchQuery) {
+                      $cq->where('first_name', 'like', "%{$searchQuery}%")
+                         ->orWhere('last_name', 'like', "%{$searchQuery}%")
+                         ->orWhere('email', 'like', "%{$searchQuery}%");
+                  })
+                  ->orWhereHas('employee', function($eq) use ($searchQuery) {
+                      $eq->where('first_name', 'like', "%{$searchQuery}%")
+                         ->orWhere('last_name', 'like', "%{$searchQuery}%");
+                  });
+            });
+        }
+        if ($status && $status !== 'all') {
+            $query->where('status', $status);
+        }
+        if ($payment && $payment !== 'all') {
+            $query->where('payment_method', $payment);
+        }
+        if ($employee && $employee !== 'all') {
+            $query->where('employee_id', $employee);
+        }
+        if ($dateFrom) {
+            $query->whereDate('created_at', '>=', $dateFrom);
+        }
+        if ($dateTo) {
+            $query->whereDate('created_at', '<=', $dateTo);
+        }
+
+        $query->orderBy('created_at', 'desc');
+        $sales = $query->limit(max(1, min(1000, $limit)))->get();
+
+        return response()->json($sales);
+    }
+
     private function verifyEmployeePin($pin)
     {
         // Implement PIN verification logic
