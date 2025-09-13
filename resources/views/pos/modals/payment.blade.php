@@ -314,9 +314,25 @@ async function processPayment() {
         paymentData.items = (paymentOrderData.items || []).map(it => ({ id: it.id, quantity: it.quantity, price: it.price, discount: it.discount || 0 }));
         paymentData.customer_id = paymentOrderData.customer && paymentOrderData.customer.id ? paymentOrderData.customer.id : null;
 
-        // Process payment via API with axios (auth header already set by posAuth)
-        const { data: result } = await (window.axios || axios).post('/api/pos/process-payment', paymentData, { headers: { 'Accept': 'application/json' } });
-        
+        // Try API first (auth required)
+        let result;
+        try {
+            ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment', paymentData, { headers: { 'Accept': 'application/json' } }));
+        } catch (apiErr) {
+            // Fallback to web endpoint with PIN prompt
+            const pin = prompt('Enter employee PIN to confirm payment');
+            if (!pin) throw apiErr;
+            const webPayload = {
+                payment_method: paymentData.method === 'card' ? (paymentData.card_details?.type?.toLowerCase() === 'debit' ? 'debit' : 'credit') : paymentData.method,
+                payment_amount: paymentData.total,
+                debit_last_four: paymentData.card_details?.last_four || undefined,
+                employee_pin: pin,
+                notes: 'Processed via web fallback',
+            };
+            const webRes = await (window.axios || axios).post('/pos/process-payment', webPayload, { headers: { 'Accept': 'application/json' } });
+            result = webRes.data;
+        }
+
         // Success
         window.POS?.showToast('Payment processed successfully!', 'success');
 
@@ -332,6 +348,7 @@ async function processPayment() {
             };
             document.dispatchEvent(new CustomEvent('pos-sale-completed', { detail }));
             try { localStorage.setItem('pos_last_sale_event', JSON.stringify({ ...detail, ts: Date.now() })); } catch(_) {}
+            try { localStorage.setItem('pos_last_sale_id', `${detail.sale_id}:${Date.now()}`); } catch(_) {}
         } catch (_) {}
 
         // Clear the current order
