@@ -1286,7 +1286,33 @@ app.get("/api/sales/recent", async (req, res) => {
       query: { select: "*", order: "created_at.desc", limit: String(limit) },
     });
     const rows = r.ok ? await r.json() : [];
-    res.json(Array.isArray(rows) ? rows : []);
+    const mapped = (Array.isArray(rows) ? rows : []).map((s) => {
+      const cart = Array.isArray(s.cart) ? s.cart : [];
+      const itemCount = cart.reduce((a, i) => a + Number(i?.quantity || 0), 0);
+      return {
+        id: s.id,
+        sale_number: s.sale_number || String(s.id),
+        created_at: s.created_at,
+        customer: s.customer || null,
+        employee: null,
+        item_count: itemCount,
+        sale_items: cart.map((i) => ({
+          product_id: null,
+          product_name: i?.name || "Product",
+          quantity: Number(i?.quantity || 1),
+          unit_price: Number(i?.price || 0),
+          total_price: Number(i?.price || 0) * Number(i?.quantity || 1),
+        })),
+        subtotal: Number(s.subtotal || 0),
+        tax_amount: Number(s.tax || 0),
+        discount_amount: Number(s.discount_amount || 0),
+        total_amount: Number(s.total || 0),
+        payment_method: s.payment_method || "cash",
+        payment_reference: s.payment_reference || s.card_last_four || null,
+        status: s.status || "completed",
+      };
+    });
+    res.json(mapped);
   } catch (e) {
     res.json([]);
   }
@@ -1301,11 +1327,114 @@ app.get("/api/sales/:id", async (req, res) => {
       query: { select: "*" },
     });
     const rows = r.ok ? await r.json() : [];
-    const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
-    if (!row) return res.status(404).json({ error: "Not found" });
-    res.json(row);
+    const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    if (!s) return res.status(404).json({ error: "Not found" });
+    const cart = Array.isArray(s.cart) ? s.cart : [];
+    const itemCount = cart.reduce((a, i) => a + Number(i?.quantity || 0), 0);
+    const mapped = {
+      id: s.id,
+      sale_number: s.sale_number || String(s.id),
+      created_at: s.created_at,
+      customer: s.customer || null,
+      employee: null,
+      item_count: itemCount,
+      sale_items: cart.map((i) => ({
+        product_id: null,
+        product_name: i?.name || "Product",
+        quantity: Number(i?.quantity || 1),
+        unit_price: Number(i?.price || 0),
+        total_price: Number(i?.price || 0) * Number(i?.quantity || 1),
+      })),
+      subtotal: Number(s.subtotal || 0),
+      tax_amount: Number(s.tax || 0),
+      discount_amount: Number(s.discount_amount || 0),
+      total_amount: Number(s.total || 0),
+      payment_method: s.payment_method || "cash",
+      payment_reference: s.payment_reference || s.card_last_four || null,
+      status: s.status || "completed",
+    };
+    res.json(mapped);
   } catch (e) {
     res.status(500).json({ error: "Failed" });
+  }
+});
+
+// Sales: minimal view page (HTML)
+app.get("/sales/:id", async (req, res) => {
+  const id = String(req.params.id || "");
+  const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "GET", query: { select: "*" } });
+  const rows = r.ok ? await r.json() : [];
+  const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!s) return res.status(404).type("text").send("Sale not found");
+  const cart = Array.isArray(s.cart) ? s.cart : [];
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Sale ${id}</title><style>body{font-family:system-ui,Arial;padding:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}</style></head><body>
+    <h1>Sale ${id}</h1>
+    <p><strong>Date:</strong> ${s.created_at}</p>
+    <p><strong>Payment:</strong> ${s.payment_method || "cash"}</p>
+    <p><strong>Status:</strong> ${s.status || "completed"}</p>
+    <table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>
+      ${cart.map(i => `<tr><td>${i.name||"Item"}</td><td>${i.quantity||1}</td><td>$${Number(i.price||0).toFixed(2)}</td><td>$${(Number(i.price||0)*Number(i.quantity||1)).toFixed(2)}</td></tr>`).join("")}
+    </tbody></table>
+    <h3>Totals</h3>
+    <p>Subtotal: $${Number(s.subtotal||0).toFixed(2)} | Tax: $${Number(s.tax||0).toFixed(2)} | Total: $${Number(s.total||0).toFixed(2)}</p>
+  </body></html>`;
+  res.type("html").send(html);
+});
+
+// Sales: receipt (HTML fallback)
+app.get("/sales/:id/receipt", async (req, res) => {
+  const id = String(req.params.id || "");
+  const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "GET", query: { select: "*" } });
+  const rows = r.ok ? await r.json() : [];
+  const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!s) return res.status(404).type("text").send("Receipt not found");
+  const cart = Array.isArray(s.cart) ? s.cart : [];
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Receipt ${id}</title><style>body{font-family:monospace;padding:16px}</style></head><body>
+    <h2>Receipt #${s.sale_number || id}</h2>
+    ${cart.map(i => `${i.quantity||1} x ${i.name||"Item"} @ $${Number(i.price||0).toFixed(2)} = $${(Number(i.price||0)*Number(i.quantity||1)).toFixed(2)}`).join("<br/>")}
+    <hr/>Subtotal: $${Number(s.subtotal||0).toFixed(2)} | Tax: $${Number(s.tax||0).toFixed(2)} | Total: $${Number(s.total||0).toFixed(2)}
+  </body></html>`;
+  res.type("html").send(html);
+});
+
+// Sales: void
+app.post("/sales/:id/void", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: { status: "voided" } });
+    if (!r.ok) return res.status(500).json({ error: "Failed to void" });
+    res.json({ message: "Sale voided", id });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to void" });
+  }
+});
+
+// Sales: refund (creates a negative sale)
+app.post("/sales/:id/refund", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "GET", query: { select: "*" } });
+    const rows = r.ok ? await r.json() : [];
+    const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    if (!s) return res.status(404).json({ error: "Sale not found" });
+    const amount = req.body?.refund_amount != null ? Number(req.body.refund_amount) : Number(s.total || 0);
+    const refund = {
+      user_id: s.user_id || null,
+      employee_id: s.employee_id || null,
+      payment_method: s.payment_method || "cash",
+      subtotal: -Math.abs(Number(s.subtotal || amount)),
+      tax: -Math.abs(Number(s.tax || 0)),
+      total: -Math.abs(amount),
+      status: "completed",
+      customer: s.customer || null,
+      cart: Array.isArray(s.cart) ? s.cart : [],
+      meta: { source: "refund", original_id: s.id, ts: new Date().toISOString() },
+    };
+    const r2 = await supaFetch("sales", { method: "POST", body: [refund] });
+    if (!r2.ok) return res.status(500).json({ error: "Failed to create refund" });
+    res.json({ message: "Refund created" });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to refund" });
   }
 });
 
