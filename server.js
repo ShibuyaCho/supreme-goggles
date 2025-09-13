@@ -1299,6 +1299,48 @@ app.get("/api/sales/:id", async (req, res) => {
   }
 });
 
+// Diagnostics: Supabase configuration and minimal connectivity
+app.get("/api/diag/supabase", async (_req, res) => {
+  try {
+    const configured = !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
+    let ok = false, found = false;
+    if (configured) {
+      const r = await supaFetch("sales", { method: "GET", query: { select: "id", limit: "1" } });
+      ok = !!r && r.ok;
+      if (ok) {
+        const rows = await r.json();
+        found = Array.isArray(rows) && rows.length > 0;
+      }
+    }
+    res.json({ configured, ok, found });
+  } catch (e) {
+    res.status(500).json({ configured: !!SUPABASE_URL && !!SUPABASE_ANON_KEY, ok: false, error: String(e?.message || e) });
+  }
+});
+
+// Diagnostics: create a minimal sale directly in Supabase
+app.post("/api/sales/diag/create", async (_req, res) => {
+  try {
+    const row = {
+      user_id: null,
+      employee_id: null,
+      payment_method: "cash",
+      subtotal: 10.0,
+      tax: 0.0,
+      total: 10.0,
+      status: "completed",
+      customer: { name: "Walk-in Customer" },
+      cart: [ { name: "Test Item", price: 10.0, quantity: 1 } ],
+      meta: { source: "diag", ts: new Date().toISOString() },
+    };
+    const r = await supaFetch("sales", { method: "POST", body: [row] });
+    const payload = r.ok ? await r.json() : null;
+    res.status(r.ok ? 201 : 500).json({ success: r.ok, sale: Array.isArray(payload) ? payload[0] : payload });
+  } catch (e) {
+    res.status(500).json({ success: false, error: String(e?.message || e) });
+  }
+});
+
 // Optional SPA fallback (serve index.html for any non-API route):
 app.get(/^(?!\/api(?:\/|$)).*$/, (_req, res) => {
   const indexPath = path.join(__dirname, "index.html");
