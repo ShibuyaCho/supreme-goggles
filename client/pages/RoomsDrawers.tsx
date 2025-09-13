@@ -217,6 +217,22 @@ const availableEmployees = [
 ];
 
 export default function RoomsDrawers() {
+  const ACTIVITY_KEY = 'rd-activity-log';
+  const DEMO_ROOMS_KEY = 'demo_rooms';
+  const currentUserName = () => {
+    try {
+      const u = JSON.parse(localStorage.getItem('pos_user') || localStorage.getItem('user_data') || 'null');
+      return (u && (u.name || u.email)) || 'User';
+    } catch (_) { return 'User'; }
+  };
+  const logActivity = (title: string, details?: string) => {
+    try {
+      const prev = JSON.parse(localStorage.getItem(ACTIVITY_KEY) || '[]');
+      const entry = { at: new Date().toISOString(), by: currentUserName(), title, details: details || '' };
+      prev.push(entry);
+      localStorage.setItem(ACTIVITY_KEY, JSON.stringify(prev));
+    } catch (_) {}
+  };
   const [rooms, setRooms] = useState<Room[]>(mockRooms);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedDrawer, setSelectedDrawer] = useState<Drawer | null>(null);
