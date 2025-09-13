@@ -854,6 +854,12 @@ function cannabisPOS() {
               const [sid] = String(e.newValue).split(':');
               if (sid) this.appendSaleById(sid);
             }
+            if (e && e.key === 'pos_last_sale_event' && e.newValue) {
+              try {
+                const payload = JSON.parse(e.newValue);
+                document.dispatchEvent(new CustomEvent('pos-sale-completed', { detail: payload }));
+              } catch(_) {}
+            }
           });
         } catch (_) {}
       }
@@ -3257,7 +3263,7 @@ function cannabisPOS() {
 
       const sizes = {
         small: '2" �� 1"',
-        medium: '3" × 2"',
+        medium: '3" �� 2"',
         large: '4" × 3"',
         "extra-large": '6" × 4"',
       };
