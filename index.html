@@ -10897,6 +10897,44 @@
                     </div>
                   </div>
 
+                  <!-- ASPD (Average Sales Per Day) -->
+                  <div class="bg-white border border-gray-200 rounded-lg">
+                    <div class="p-6 border-b border-gray-200">
+                      <h3 class="text-lg font-semibold text-gray-900">Average Sales Per Day (ASPD)</h3>
+                      <p class="text-sm text-gray-600 mt-1">Top items by average daily units sold for the selected period</p>
+                    </div>
+                    <div class="p-6" x-data="{ items: [], days: 0, loading: true }" x-init="(async () => { try { const r = await fetch('/api/analytics/aspd', { headers: { Accept: 'application/json' } }); const d = r.ok ? await r.json() : null; if (d && Array.isArray(d.items)) { items = d.items.slice(0, 10); days = d.daysInRange || 0; } } catch(_){} finally { loading = false; } })()">
+                      <template x-if="loading">
+                        <div class="text-sm text-gray-500">Loading ASPD...</div>
+                      </template>
+                      <template x-if="!loading && items.length === 0">
+                        <div class="text-sm text-gray-500">No data available</div>
+                      </template>
+                      <div class="overflow-x-auto" x-show="!loading && items.length">
+                        <table class="min-w-full">
+                          <thead class="bg-gray-50">
+                            <tr>
+                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sold</th>
+                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
+                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">ASPD</th>
+                            </tr>
+                          </thead>
+                          <tbody class="bg-white divide-y divide-gray-200">
+                            <template x-for="row in items" :key="row.name">
+                              <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900" x-text="row.name"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900" x-text="Number(row.totalSold||0).toFixed(2)"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm text-gray-900" x-text="days"></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-semibold text-gray-900" x-text="Number(row.aspd||0).toFixed(2)"></td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+
                   <!-- Discount Analysis -->
                   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Most Used Discounts -->
@@ -14452,7 +14490,7 @@
                                       data-export-format="pdf"
                                       class="btn-export btn-pdf text-xs px-2 py-1"
                                     >
-                                      📄
+                                      ���
                                     </button>
                                     <button
                                       :data-export-report="report.type"
