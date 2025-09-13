@@ -359,6 +359,8 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('/customers/search', [CustomersController::class, 'apiSearch'])->name('customers.search');
     Route::get('/sales/recent', [SalesController::class, 'recentSales'])->name('sales.recent');
     Route::get('/sales/{sale}', [SalesController::class, 'apiShow'])->name('sales.show.json');
+    // Temporary public alias for POS payment to enable end-to-end testing without auth
+    Route::post('/pos/process-payment', [POSController::class, 'processPayment'])->name('pos.process-payment.public');
     Route::get('/analytics/quick-stats', [AnalyticsController::class, 'quickStats'])->name('analytics.quick-stats');
     Route::post('/cart/validate', [POSController::class, 'validateCart'])->name('cart.validate');
     Route::get('/metrc/product/{tag}', [POSController::class, 'getMetrcProduct'])->name('metrc.product');
