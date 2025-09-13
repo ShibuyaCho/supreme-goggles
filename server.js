@@ -1303,19 +1303,41 @@ app.get("/api/sales/:id", async (req, res) => {
 app.get("/api/diag/supabase", async (_req, res) => {
   try {
     const configured = !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
-    let ok = false, found = false;
+    let ok = false, count = 0;
     if (configured) {
-      const r = await supaFetch("sales", { method: "GET", query: { select: "id", limit: "1" } });
+      const r = await supaFetch("sales", { method: "GET", query: { select: "id", limit: "1000" } });
       ok = !!r && r.ok;
       if (ok) {
         const rows = await r.json();
-        found = Array.isArray(rows) && rows.length > 0;
+        count = Array.isArray(rows) ? rows.length : 0;
       }
     }
-    res.json({ configured, ok, found });
+    res.json({ configured, ok, count });
   } catch (e) {
     res.status(500).json({ configured: !!SUPABASE_URL && !!SUPABASE_ANON_KEY, ok: false, error: String(e?.message || e) });
   }
+});
+
+// Simple HTML diagnostics page
+app.get("/diag", async (_req, res) => {
+  const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><title>Diagnostics</title>
+  <style>body{font-family:system-ui,Arial,sans-serif;padding:24px;max-width:900px;margin:0 auto}button{background:#16a34a;color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}button.secondary{background:#2563eb}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}</style></head>
+  <body>
+    <h1>Diagnostics</h1>
+    <p>Supabase URL: <code>${SUPABASE_URL || '(not set)'}</code></p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
+      <button id="check">Check Supabase</button>
+      <button id="create" class="secondary">Create Test Sale</button>
+    </div>
+    <h3>Result</h3>
+    <pre id="out">(no output yet)</pre>
+    <script>
+      async function run(path, opts){ const r = await fetch(path, opts||{}); const t = await r.text(); try{ return JSON.stringify(JSON.parse(t), null, 2); } catch{ return t; } }
+      document.getElementById('check').onclick = async () => { document.getElementById('out').textContent = await run('/api/diag/supabase'); };
+      document.getElementById('create').onclick = async () => { document.getElementById('out').textContent = await run('/api/sales/diag/create', { method:'POST' }); };
+    </script>
+  </body></html>`;
+  res.type("html").send(html);
 });
 
 // Diagnostics: create a minimal sale directly in Supabase
