@@ -812,6 +812,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const max_capacity = parseInt(document.getElementById('room-capacity').value || '0', 10) || null;
         const description = (document.getElementById('room-description').value || '').trim();
         if (!name) { toast('Room name is required', 'error'); return; }
+        // LOCAL-FIRST: persist and render immediately
+        const tempId = `local-${Date.now()}`;
+        const localRoom = { id: tempId, name, type, max_capacity: max_capacity||0, room_id: null };
+        try { localRooms.push(localRoom); saveRooms(localRooms); } catch(_) {}
+        appendRoomCard(localRoom);
+        addActivity('Room created', `${name} (${type})`);
+        closeAddRoomModal();
+        // Try server in background; on success, update local record
         try {
             const res = await fetch('/rooms', {
                 method: 'POST',
@@ -821,59 +829,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 body: JSON.stringify({ name, type, max_capacity, description, is_active: true })
             });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message || 'Failed to create room');
-            toast('Room created successfully', 'success');
-            // Optimistically add the new room card to the grid without reload
-            const grid = document.getElementById('rooms-grid');
-            if (grid && data.room) { addActivity('Room created', `${data.room.name} (${data.room.type})`);
-                // persist locally as well
-                try { const nr = { id: data.room.id, name: data.room.name, type: data.room.type, max_capacity: data.room.max_capacity ?? 0, room_id: data.room.room_id || null }; const names = new Set((localRooms||[]).map(r=> (r.name||'').toLowerCase())); if (!names.has((nr.name||'').toLowerCase())) { localRooms.push(nr); saveRooms(localRooms); } } catch(_) {}
-                addActivity('Room created', `${data.room.name} (${data.room.type})`);
-                const usagePercent = 0;
-                const roomHtml = `
-                <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="${data.room.type}">
-                  <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center">
-                      <div class="flex h-10 w-10 items-center justify-center rounded-lg ${data.room.type==='processing'?'bg-blue-100':data.room.type==='storage'?'bg-yellow-100':data.room.type==='production'?'bg-purple-100':'bg-orange-100'}"></div>
-                      <div class="ml-3">
-                        <h3 class="text-lg font-medium text-gray-900"></h3>
-                        <p class="text-sm text-gray-500">${data.room.type.charAt(0).toUpperCase()+data.room.type.slice(1)} Room</p>
-                      </div>
-                    </div>
-                    <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Compliant</span>
-                  </div>
-                  <div class="space-y-3 mb-4">
-                    <div class="flex justify-between text-sm"><span class="text-gray-500">METRC ID:</span><span class="font-medium font-mono">${data.room.room_id || '-'}</span></div>
-                    <div class="flex justify-between text-sm"><span class="text-gray-500">Capacity:</span><span class="font-medium">0/${data.room.max_capacity ?? 0} items</span></div>
-                  </div>
-                  <div class="mb-4">
-                    <div class="flex justify-between text-sm mb-1"><span class="text-gray-500">Capacity Usage</span><span class="font-medium">${usagePercent}%</span></div>
-                    <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-green-500 h-2 rounded-full" style="width:${usagePercent}%"></div></div>
-                  </div>
-                  <div class="flex space-x-2">
-                    <button class="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700">View Details</button>
-                    <button class="flex-1 border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-50">Transfer</button>
-                    <button class="px-3 py-2 border border-green-300 text-green-700 rounded-md text-sm hover:bg-green-50" onclick="openAddDrawerModal(${data.room.id}, ${JSON.stringify(data.room.name)})">+ Drawer</button>
-                  </div>
-                </div>`;
-                const wrapper = document.createElement('div');
-                wrapper.innerHTML = roomHtml.trim();
-                wrapper.querySelector('h3').textContent = data.room.name;
-                grid.prepend(wrapper.firstElementChild);
+            let data = null;
+            try { data = await res.json(); } catch(_) { data = null; }
+            if (res.ok && data && data.room) {
+                // Replace temp entry with server entry
+                try {
+                  const idx = localRooms.findIndex(r => r.id === tempId || (r.name||'').toLowerCase() === (name||'').toLowerCase());
+                  const nr = { id: data.room.id, name: data.room.name, type: data.room.type, max_capacity: data.room.max_capacity ?? 0, room_id: data.room.room_id || null };
+                  if (idx >= 0) localRooms[idx] = nr; else localRooms.push(nr);
+                  saveRooms(localRooms);
+                } catch(_) {}
+                toast('Room created successfully', 'success');
             } else {
-                // Fallback: fully local room create to guarantee persistence
-                const localRoom = { id: `local-${Date.now()}`, name, type, max_capacity: max_capacity||0, room_id: null };
-                appendRoomCard(localRoom);
-                try { localRooms.push(localRoom); saveRooms(localRooms); } catch(_) {}
-                addActivity('Room created', `${name} (${type})`);
-                // Also log to global POS for visibility elsewhere (merge happens on init)
-                try { const prev = JSON.parse(localStorage.getItem('rd-activity-log')||'[]'); prev.push({ at: new Date().toISOString(), by: (window.posAuth?.getUser?.()?.name)||'User', title: 'Room created', details: `${name} (${type})` }); localStorage.setItem('rd-activity-log', JSON.stringify(prev)); } catch(_) {}
+                // Keep local entry; surface warning
+                toast('Saved locally (server unavailable)', 'warning');
             }
-            closeAddRoomModal();
-        } catch (e) {
-            console.error(e);
-            toast('Error creating room', 'error');
+        } catch(e) {
+            // Keep local entry; surface warning
+            toast('Saved locally (offline)', 'warning');
         }
     });
 
