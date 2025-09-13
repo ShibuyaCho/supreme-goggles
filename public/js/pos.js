@@ -1520,8 +1520,7 @@ function cannabisPOS() {
 
     async appendSaleById(id) {
       try {
-        const res = await posAuth.apiRequest("get", `/sales/${id}`);
-        const s = res?.data || null;
+        const { data: s } = await (window.axios || axios).get(`/api/sales/${id}`, { headers: { Accept: "application/json" } });
         if (!s) return;
         const mapped = this.mapSaleToSpa(s);
         this.sales = [mapped, ...this.sales.filter((x) => (x.numericId || x.id) !== (mapped.numericId || mapped.id))];
