@@ -810,7 +810,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const drawersEl = document.getElementById('rd-drawers');
     const countModal = document.getElementById('rd-count-modal');
     let activeDrawerId = null;
-    const cashDrawers = [ { id: 1, name: 'Till #1', status: 'active', assignedTo: 'Cody', startingAmount: 220.00, currentAmount: 220.00, openedAt: null } ];
+    const DRAWERS_KEY = 'pos_drawers';
+    function loadDrawers(){ try { const raw = localStorage.getItem(DRAWERS_KEY); if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) return arr; } } catch(_) {} return []; }
+    function saveDrawers(){ try { localStorage.setItem(DRAWERS_KEY, JSON.stringify(cashDrawers)); } catch(_) {} }
+    let cashDrawers = loadDrawers();
+    if (!Array.isArray(cashDrawers) || cashDrawers.length === 0) { cashDrawers = [ { id: 1, name: 'Till #1', status: 'open', assignedEmployee: 'Cody', startingAmount: 220.00, currentAmount: 220.00, openedAt: null } ]; saveDrawers(); }
     function renderDrawers(){
       if (!drawersEl) return;
       drawersEl.innerHTML = '';
