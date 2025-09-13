@@ -910,30 +910,37 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     window.viewRoomDetails = function(roomId) {
+        addActivity('Room viewed', `Room ${roomId}`);
         alert(`View details for room ${roomId} - would show detailed room information`);
     };
 
     window.transferToRoom = function(roomId) {
+        addActivity('Transfer initiated', `Target room ${roomId}`);
         alert(`Transfer to room ${roomId} - would open transfer modal`);
     };
 
     window.editRoom = function(roomId) {
+        addActivity('Room edit opened', `Room ${roomId}`);
         alert(`Edit room ${roomId} - would open edit modal`);
     };
 
     window.generateReport = function() {
+        addActivity('Report generated', 'Rooms & Drawers report');
         alert('Generate Report - would create comprehensive room compliance report');
     };
 
     window.bulkTransfer = function() {
+        addActivity('Bulk transfer opened');
         alert('Bulk Transfer - would open bulk transfer modal');
     };
 
     window.complianceReport = function() {
+        addActivity('Compliance report generated');
         alert('Compliance Report - would generate METRC compliance report');
     };
 
     window.environmentalControls = function() {
+        addActivity('Environmental controls opened');
         alert('Environmental Controls - would open environmental monitoring dashboard');
     };
 });
