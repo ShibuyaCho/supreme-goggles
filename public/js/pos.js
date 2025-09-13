@@ -1538,6 +1538,9 @@ function cannabisPOS() {
     // Page navigation
     setCurrentPage(page) {
       this.currentPage = page;
+      if (page === "sales") {
+        try { this.refreshSales(true); } catch (_) {}
+      }
       if (page === "employees") {
         if ((this.employees || []).length === 0) {
           if (
