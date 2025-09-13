@@ -510,6 +510,22 @@ function cannabisPOS() {
     cashDrawers: [],
     activityLog: [],
 
+    // Sales tracking state (SPA Sales page)
+    sales: [],
+    filteredSales: [],
+    salesFilter: {
+      dateRange: "today", // today | yesterday | week | month | custom
+      startDate: "",
+      endDate: "",
+      customer: "",
+      amountRange: "", // "0-25", "25-50", "50-100", "100+"
+      paymentMethod: "", // cash|debit|credit
+    },
+    endOfDayReportGenerated: false,
+    metrcPushSettings: { startDate: "", endDate: "" },
+    metrcPushInProgress: false,
+    lastMetrcPush: "",
+
     // METRC Integration Settings
     metrcSettings: {
       apiKey: "",
@@ -785,6 +801,18 @@ function cannabisPOS() {
             this.activityLog = [...mapped, ...(this.activityLog || [])];
           }
         } catch (_) {}
+        // Preload sales with extreme persistence cache fallback
+        try {
+          await this.refreshSales(false);
+        } catch (_) {
+          try {
+            const cache = JSON.parse(localStorage.getItem("pos_sales_cache_v1") || "{}");
+            if (Array.isArray(cache.list)) {
+              this.sales = cache.list;
+              this.filterSales();
+            }
+          } catch (_) {}
+        }
       }
     },
 
@@ -1198,6 +1226,312 @@ function cannabisPOS() {
         console.error("Payment processing failed:", error);
         this.showToast("Payment processing failed", "error");
         return null;
+      }
+    },
+
+    // SALES: Load, filter, stats, actions
+    async refreshSales(forceNetwork = true) {
+      // Determine date window from filter; default to last 7 days to keep it light
+      const now = new Date();
+      const toISO = (d) => d.toISOString().slice(0, 10);
+      let start = this.salesFilter.startDate;
+      let end = this.salesFilter.endDate;
+      if (!start || !end || this.salesFilter.dateRange !== "custom") {
+        const dr = this.salesFilter.dateRange || "today";
+        const d = new Date();
+        if (dr === "today") {
+          start = end = toISO(d);
+        } else if (dr === "yesterday") {
+          d.setDate(d.getDate() - 1);
+          start = end = toISO(d);
+        } else if (dr === "week") {
+          const first = new Date(d);
+          first.setDate(d.getDate() - 6);
+          start = toISO(first);
+          end = toISO(d);
+        } else if (dr === "month") {
+          const first = new Date(d.getFullYear(), d.getMonth(), 1);
+          const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+          start = toISO(first);
+          end = toISO(last);
+        } else {
+          // fallback to last 7 days
+          const first = new Date(d);
+          first.setDate(d.getDate() - 6);
+          start = toISO(first);
+          end = toISO(d);
+        }
+      }
+
+      // Try network first
+      let list = null;
+      if (forceNetwork) {
+        try {
+          const res = await posAuth.apiRequest("get", "/sales", {
+            status: "completed",
+            date_from: start,
+            date_to: end,
+            sort_by: "created_at",
+            sort_order: "desc",
+          });
+          if (res.success && res.data && res.data.data) {
+            const records = Array.isArray(res.data.data) ? res.data.data : [];
+            list = records.map((s) => this.mapSaleToSpa(s));
+          } else if (res.success && Array.isArray(res.data)) {
+            list = res.data.map((s) => this.mapSaleToSpa(s));
+          }
+        } catch (_) {}
+      }
+
+      // Fallback to cache if needed
+      if (!Array.isArray(list)) {
+        try {
+          const cache = JSON.parse(localStorage.getItem("pos_sales_cache_v1") || "{}");
+          if (Array.isArray(cache.list)) list = cache.list;
+        } catch (_) { list = []; }
+      }
+
+      this.sales = Array.isArray(list) ? list : [];
+      this.filterSales();
+      try {
+        localStorage.setItem(
+          "pos_sales_cache_v1",
+          JSON.stringify({ ts: Date.now(), list: this.sales }),
+        );
+      } catch (_) {}
+    },
+
+    mapSaleToSpa(s) {
+      const itemCount = Number(s.item_count != null ? s.item_count : (Array.isArray(s.sale_items) ? s.sale_items.reduce((a, b) => a + Number(b.quantity || 0), 0) : 0));
+      const discountAmt = Number(s.discount_amount || 0);
+      const discounts = discountAmt > 0 ? [{ id: `order-${s.id}`, type: "Order", amount: discountAmt }] : [];
+      const paymentRef = s.payment_reference || s.card_last_four || null;
+      return {
+        id: s.sale_number || String(s.id),
+        numericId: s.id,
+        date: s.created_at,
+        customer: (s.customer && (s.customer.full_name || s.customer.name)) || (s.customer_info && (s.customer_info.name || s.customer_info.email)) || "Walk-in Customer",
+        isMedical: String(s.customer_type || "").toLowerCase() === "medical",
+        itemCount,
+        total: Number(s.total_amount || 0),
+        discounts,
+        paymentMethod: String(s.payment_method || "cash").toLowerCase(),
+        paymentReference: paymentRef ? String(paymentRef).slice(-4) : null,
+        employee: (s.employee && (s.employee.full_name || s.employee.name)) || "Unknown",
+        isVoided: String(s.status || "").toLowerCase() === "voided",
+        status: String(s.status || "completed").toLowerCase(),
+      };
+    },
+
+    filterSales() {
+      const q = (this.salesFilter.customer || "").trim().toLowerCase();
+      const pay = (this.salesFilter.paymentMethod || "").toLowerCase();
+      const range = this.salesFilter.amountRange;
+      let min = -Infinity, max = Infinity;
+      if (range === "0-25") { min = 0; max = 25; }
+      else if (range === "25-50") { min = 25; max = 50; }
+      else if (range === "50-100") { min = 50; max = 100; }
+      else if (range === "100+") { min = 100; max = Infinity; }
+
+      this.filteredSales = (this.sales || []).filter((s) => {
+        const nameOk = !q || (s.customer || "").toLowerCase().includes(q);
+        const payOk = !pay || s.paymentMethod === pay;
+        const amtOk = s.total >= min && s.total <= max;
+        return nameOk && payOk && amtOk;
+      });
+    },
+
+    getFilteredSalesStats() {
+      const list = this.filteredSales || [];
+      const totalRevenue = list.reduce((sum, s) => sum + Number(s.total || 0), 0);
+      const totalSales = list.length;
+      const avgSale = totalSales > 0 ? totalRevenue / totalSales : 0;
+      const uniqueCustomers = new Set(list.map((s) => s.customer || "")).size;
+      return { totalRevenue, totalSales, avgSale, uniqueCustomers };
+    },
+
+    getEndOfDayStats() {
+      const list = this.filteredSales || [];
+      const totalDiscounts = list.reduce(
+        (sum, s) => sum + (Array.isArray(s.discounts) ? s.discounts.reduce((a, d) => a + Number(d.amount || 0), 0) : 0),
+        0,
+      );
+      const revenue = list.reduce((sum, s) => sum + Number(s.total || 0), 0);
+      const cashSales = list.filter((s) => s.paymentMethod === "cash").reduce((a, b) => a + Number(b.total || 0), 0);
+      const debitSales = list.filter((s) => s.paymentMethod === "debit").reduce((a, b) => a + Number(b.total || 0), 0);
+      const creditSales = list.filter((s) => s.paymentMethod === "credit").reduce((a, b) => a + Number(b.total || 0), 0);
+      const customerCount = new Set(list.map((s) => s.customer || "")).size;
+      const totalSales = list.length;
+      return {
+        totalSales,
+        totalRevenue: revenue,
+        cashSales,
+        debitSales,
+        creditSales,
+        customerCount,
+        averageSale: totalSales > 0 ? revenue / totalSales : 0,
+        totalDiscounts,
+        tillBreakdown: { opening: 0 },
+        paceReport: { currentMonthSales: revenue, dailyAverage: totalSales > 0 ? revenue / Math.max(1, totalSales) : 0, monthProjection: revenue },
+        customerPaceReport: { currentMonthCustomers: customerCount, dailyAverage: totalSales > 0 ? customerCount / Math.max(1, totalSales) : 0, monthProjection: customerCount },
+      };
+    },
+
+    printEndOfDayReport() {
+      const dr = this.salesFilter.dateRange || "today";
+      const toISO = (d) => d.toISOString().slice(0, 10);
+      const now = new Date();
+      let url = "/sales/report/daily";
+      if (dr === "today") {
+        url = `/sales/report/daily?date=${toISO(now)}&format=pdf`;
+      } else if (dr === "yesterday") {
+        const d = new Date(); d.setDate(d.getDate() - 1);
+        url = `/sales/report/daily?date=${toISO(d)}&format=pdf`;
+      } else if (dr === "week" || dr === "custom") {
+        let start = this.salesFilter.startDate, end = this.salesFilter.endDate;
+        if (dr === "week") {
+          const d = new Date(); const first = new Date(d); first.setDate(d.getDate() - 6);
+          start = toISO(first); end = toISO(d);
+        }
+        url = `/sales/report/weekly?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}&format=pdf`;
+      } else if (dr === "month") {
+        const d = new Date();
+        url = `/sales/report/monthly?month=${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}&format=pdf`;
+      }
+      window.open(url, "_blank");
+      this.endOfDayReportGenerated = true;
+    },
+
+    generateEndOfDayReport() {
+      // For now, same as print - downloads the PDF via server
+      this.printEndOfDayReport();
+    },
+
+    viewSaleDetails(sale) {
+      const id = sale?.numericId || sale?.id || null;
+      if (!id) return;
+      window.open(`/sales/${id}`, "_blank");
+    },
+
+    reprintReceipt(sale) {
+      const id = sale?.numericId || sale?.id || null;
+      if (!id) return;
+      window.open(`/sales/${id}/receipt?reprint=1`, "_blank");
+    },
+
+    async voidSale(sale) {
+      const id = sale?.numericId || sale?.id || null;
+      if (!id) return;
+      const reason = prompt("Reason for voiding this sale?");
+      if (!reason) return;
+      const pin = prompt("Enter employee PIN to confirm:");
+      if (!pin) return;
+      try {
+        const res = await axios.post(`/sales/${id}/void`, { reason, employee_pin: pin });
+        this.showToast("Sale voided", "success");
+        await this.refreshSales(true);
+      } catch (e) {
+        const msg = e?.response?.data?.error || "Failed to void sale";
+        this.showToast(msg, "error");
+      }
+    },
+
+    async refundSale(sale) {
+      const id = sale?.numericId || sale?.id || null;
+      if (!id) return;
+      const type = confirm("OK = Full refund, Cancel = Partial refund") ? "full" : "partial";
+      let payload = { refund_type: type, reason: "Customer request", employee_pin: prompt("Enter employee PIN:") || "" };
+      if (type === "partial") {
+        const amtStr = prompt("Enter refund amount (e.g., 10.00):", "0.00");
+        const amt = parseFloat(amtStr || "0");
+        if (!(amt > 0)) return;
+        payload.refund_amount = amt;
+        payload.items = [];
+      }
+      try {
+        await axios.post(`/sales/${id}/refund`, payload);
+        this.showToast("Refund processed", "success");
+        await this.refreshSales(true);
+      } catch (e) {
+        const msg = e?.response?.data?.error || "Failed to process refund";
+        this.showToast(msg, "error");
+      }
+    },
+
+    getSalesCountForPeriod() {
+      const s = this.metrcPushSettings.startDate;
+      const e = this.metrcPushSettings.endDate;
+      if (!s || !e) return 0;
+      const start = new Date(s).getTime();
+      const end = new Date(e).getTime();
+      return (this.sales || []).filter((x) => {
+        const t = new Date(x.date).getTime();
+        return t >= start && t <= end;
+      }).length;
+    },
+
+    async pushToMetrc() {
+      if (!this.metrcPushSettings.startDate || !this.metrcPushSettings.endDate) return;
+      if (this.metrcPushInProgress) return;
+      this.metrcPushInProgress = true;
+      try {
+        const start = new Date(this.metrcPushSettings.startDate).getTime();
+        const end = new Date(this.metrcPushSettings.endDate).getTime();
+        const list = (this.sales || []).filter((x) => {
+          const t = new Date(x.date).getTime();
+          return t >= start && t <= end && String(x.status) === "completed";
+        });
+        let pushed = 0;
+        for (const s of list) {
+          const id = s.numericId || s.id;
+          if (!id) continue;
+          try {
+            const res = await axios.post(`/api/metrc/sales/receipts/from-sale/${id}`, {});
+            if (res?.status >= 200 && res?.status < 300) pushed++;
+          } catch (e) {
+            // ignore individual failures for batch
+          }
+        }
+        this.lastMetrcPush = new Date().toLocaleString();
+        this.showToast(`Pushed ${pushed} sale(s) to METRC`, pushed ? "success" : "info");
+      } finally {
+        this.metrcPushInProgress = false;
+      }
+    },
+
+    async validateMetrcConnection() {
+      try {
+        const res = await (window.axios || axios).get("/api/settings/metrc");
+        const enabled = !!res?.data?.enabled;
+        const hasKey = !!res?.data?.user_api_key;
+        this.showToast(enabled && hasKey ? "METRC ready" : "METRC not configured", enabled && hasKey ? "success" : "info");
+      } catch (_) {
+        this.showToast("METRC not configured", "info");
+      }
+    },
+
+    async appendSaleById(id) {
+      try {
+        const res = await posAuth.apiRequest("get", `/sales/${id}`);
+        const s = res?.data || null;
+        if (!s) return;
+        const mapped = this.mapSaleToSpa(s);
+        this.sales = [mapped, ...this.sales.filter((x) => (x.numericId || x.id) !== (mapped.numericId || mapped.id))];
+        this.filterSales();
+        try {
+          localStorage.setItem(
+            "pos_sales_cache_v1",
+            JSON.stringify({ ts: Date.now(), list: this.sales }),
+          );
+        } catch (_) {}
+      } catch (_) {}
+    },
+
+    getCurrentEmployee() {
+      try {
+        return this.currentUser?.name || this.currentUser?.employee?.name || "Employee";
+      } catch (_) {
+        return "Employee";
       }
     },
 
