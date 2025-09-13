@@ -1250,6 +1250,7 @@ app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
       null,
     tax: body.taxAmount ?? null,
     total: body.total ?? null,
+    status: "completed",
     customer: body.customer || null,
     cart: body.cart || null,
     meta: { source: "dev", timestamp: new Date().toISOString() },
@@ -1263,6 +1264,38 @@ app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
     });
   } catch (e) {
     return res.status(200).json({ success: true, message: "Recorded locally" });
+  }
+});
+
+// Sales: recent list (for UI grids)
+app.get("/api/sales/recent", async (req, res) => {
+  try {
+    const limit = Math.max(1, Math.min(1000, parseInt(String(req.query?.limit || "200"), 10) || 200));
+    const r = await supaFetch("sales", {
+      method: "GET",
+      query: { select: "*", order: "created_at.desc", limit: String(limit) },
+    });
+    const rows = r.ok ? await r.json() : [];
+    res.json(Array.isArray(rows) ? rows : []);
+  } catch (e) {
+    res.json([]);
+  }
+});
+
+// Sales: get single by id
+app.get("/api/sales/:id", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, {
+      method: "GET",
+      query: { select: "*" },
+    });
+    const rows = r.ok ? await r.json() : [];
+    const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    if (!row) return res.status(404).json({ error: "Not found" });
+    res.json(row);
+  } catch (e) {
+    res.status(500).json({ error: "Failed" });
   }
 });
 
