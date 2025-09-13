@@ -1641,6 +1641,7 @@ app.get("/api/analytics/aspd", async (req, res) => {
     const endIso = end.toISOString();
     const daysInRange = Math.max(1, Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
 
+    // Current window data (for table)
     const r = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startIso},created_at.lt.${endIso})`, limit: "1000" } });
     const rows = r.ok ? await r.json() : [];
     const list = Array.isArray(rows) ? rows : [];
@@ -1659,14 +1660,55 @@ app.get("/api/analytics/aspd", async (req, res) => {
       }
     }
 
-    const results = Array.from(map.entries()).map(([name, v]) => ({
-      name,
-      category: "—",
-      totalSold: v.totalSold,
-      totalRevenue: v.totalRevenue,
-      daysInRange,
-      aspd: v.totalSold / daysInRange,
-    })).sort((a, b) => b.aspd - a.aspd);
+    // Trend calculation: compare last 30 days vs previous 30 days
+    const endC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+    const startC = new Date(endC.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const startP = new Date(startC.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const endP = new Date(startC.getTime());
+    const cR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startC.toISOString()},created_at.lt.${endC.toISOString()})`, limit: "2000" } });
+    const pR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startP.toISOString()},created_at.lt.${endP.toISOString()})`, limit: "2000" } });
+    const curRows = cR.ok ? await cR.json() : [];
+    const prevRows = pR.ok ? await pR.json() : [];
+    const curMap = new Map();
+    const prevMap = new Map();
+    const addTo = (m, rows) => {
+      for (const s of Array.isArray(rows) ? rows : []) {
+        const cart = Array.isArray(s.cart) ? s.cart : [];
+        for (const it of cart) {
+          const name = (it?.name || it?.product_name || "Unknown").toString();
+          const qty = Number(it?.quantity || 0);
+          m.set(name, (m.get(name) || 0) + qty);
+        }
+      }
+    };
+    addTo(curMap, curRows);
+    addTo(prevMap, prevRows);
+
+    const EPS = 0.01; // day^-1 units; treat below threshold as stagnant
+    const results = Array.from(map.entries()).map(([name, v]) => {
+      const aspd = v.totalSold / daysInRange;
+      const curAspd30 = (curMap.get(name) || 0) / 30;
+      const prevAspd30 = (prevMap.get(name) || 0) / 30;
+      let trend = "stagnant";
+      if (prevMap.get(name) > 0) {
+        if (curAspd30 - prevAspd30 > EPS) trend = "up";
+        else if (prevAspd30 - curAspd30 > EPS) trend = "down";
+        else trend = "stagnant";
+      } else {
+        trend = "stagnant";
+      }
+      return {
+        name,
+        category: "—",
+        totalSold: v.totalSold,
+        totalRevenue: v.totalRevenue,
+        daysInRange,
+        aspd,
+        cur30Aspd: curAspd30,
+        prev30Aspd: prevAspd30,
+        trend,
+      };
+    }).sort((a, b) => b.aspd - a.aspd);
 
     res.json({ daysInRange, items: results });
   } catch (e) {
