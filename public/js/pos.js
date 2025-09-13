@@ -1257,7 +1257,13 @@ function cannabisPOS() {
 
     // SALES: Load, filter, stats, actions
     async refreshSales(forceNetwork = true) {
-      try { this.showToast && this.showToast('Refreshing sales…', 'info'); } catch(_) {}
+      try {
+        const nowTs = Date.now();
+        if (!this._lastSalesToastAt || (nowTs - this._lastSalesToastAt) > 30000) {
+          this.showToast && this.showToast('Refreshing sales…', 'info');
+          this._lastSalesToastAt = nowTs;
+        }
+      } catch(_) {}
       const toISO = (d) => d.toISOString().slice(0, 10);
       let start = this.salesFilter.startDate;
       let end = this.salesFilter.endDate;
@@ -1331,7 +1337,11 @@ function cannabisPOS() {
         );
       } catch (_) {}
       try {
-        this.showToast && this.showToast(`${this.sales.length} sale(s) loaded`, this.sales.length ? 'success' : 'info');
+        const nowTs2 = Date.now();
+        if (!this._lastSalesCountToastAt || (nowTs2 - this._lastSalesCountToastAt) > 30000) {
+          this.showToast && this.showToast(`${this.sales.length} sale(s) loaded`, this.sales.length ? 'success' : 'info');
+          this._lastSalesCountToastAt = nowTs2;
+        }
       } catch(_) {}
     },
 
