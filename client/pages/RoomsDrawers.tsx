@@ -491,6 +491,7 @@ Variance: $${(countedAmount - (drawer?.expectedValue || 0)).toFixed(2)}`);
     };
 
     setRooms(prev => [...prev, newRoom]);
+    logActivity('Room created', `${newRoom.name} (${newRoom.type})`);
     setShowRoomDialog(false);
     setNewRoomForm({
       name: "",
@@ -526,9 +527,11 @@ Variance: $${(countedAmount - (drawer?.expectedValue || 0)).toFixed(2)}`);
       securityLevel: editRoomForm.securityLevel as Room['securityLevel']
     };
 
+    const prevName = roomToEdit.name;
     setRooms(prev => prev.map(room =>
       room.id === roomToEdit.id ? updatedRoom : room
     ));
+    logActivity('Room updated', `${prevName} -> ${updatedRoom.name} (${updatedRoom.type})`);
     setShowEditRoomDialog(false);
     setRoomToEdit(null);
     setEditRoomForm({
@@ -542,7 +545,9 @@ Variance: $${(countedAmount - (drawer?.expectedValue || 0)).toFixed(2)}`);
 
   const deleteRoom = (roomId: string) => {
     if (confirm("Are you sure you want to delete this room? This will also delete all drawers in this room.")) {
+      const r = rooms.find(r => r.id === roomId);
       setRooms(prev => prev.filter(room => room.id !== roomId));
+      logActivity('Room deleted', r ? r.name : String(roomId));
     }
   };
 
