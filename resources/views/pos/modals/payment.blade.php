@@ -320,9 +320,18 @@ async function processPayment() {
         // Success
         window.POS?.showToast('Payment processed successfully!', 'success');
 
-        // Broadcast for SPA sales table
+        // Broadcast for SPA sales table with rich details + cross-tab storage signal
         try {
-            document.dispatchEvent(new CustomEvent('pos-sale-completed', { detail: { sale_id: result.sale_id } }));
+            const detail = {
+                sale_id: result.sale_id,
+                sale_number: result.sale_number,
+                total: paymentData.total,
+                paymentMethod: paymentData.method === 'card' ? (paymentData.card_details?.type?.toLowerCase() === 'debit' ? 'debit' : 'credit') : paymentData.method,
+                paymentReference: paymentData.card_details?.last_four || null,
+                itemCount: Array.isArray(paymentData.items) ? paymentData.items.reduce((a,b)=>a + Number(b.quantity||0), 0) : 0,
+            };
+            document.dispatchEvent(new CustomEvent('pos-sale-completed', { detail }));
+            try { localStorage.setItem('pos_last_sale_event', JSON.stringify({ ...detail, ts: Date.now() })); } catch(_) {}
         } catch (_) {}
 
         // Clear the current order
