@@ -132,6 +132,7 @@ Route::prefix('sales')->name('sales.')->group(function () {
     // SPA-friendly JSON endpoints (avoid collision with routes/api.php /api/sales/{sale})
     Route::get('/recent-json', [SalesController::class, 'recentSales'])->name('recent-json');
     Route::get('/diag/count', [SalesController::class, 'diagCount'])->name('diag-count');
+    Route::post('/diag/create', [SalesController::class, 'diagCreate'])->name('diag-create');
     Route::get('/json/{sale}', [SalesController::class, 'apiShow'])->name('json-show');
     Route::get('/{sale}', [SalesController::class, 'show'])->name('show');
     Route::get('/{sale}/receipt', [SalesController::class, 'receipt'])->name('receipt');
