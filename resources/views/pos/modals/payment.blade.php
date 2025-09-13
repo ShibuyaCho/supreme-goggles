@@ -327,6 +327,8 @@ async function processPayment() {
                 payment_amount: paymentData.total,
                 debit_last_four: paymentData.card_details?.last_four || undefined,
                 employee_pin: pin,
+                items: paymentData.items,
+                customer_id: paymentOrderData.customer && paymentOrderData.customer.id ? paymentOrderData.customer.id : null,
                 notes: 'Processed via web fallback',
             };
             const webRes = await (window.axios || axios).post('/pos/process-payment', webPayload, { headers: { 'Accept': 'application/json' } });
