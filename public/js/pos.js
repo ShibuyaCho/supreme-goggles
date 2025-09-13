@@ -817,8 +817,34 @@ function cannabisPOS() {
         try {
           document.addEventListener("pos-sale-completed", async (e) => {
             const sid = e?.detail?.sale_id || e?.detail?.id;
-            if (sid) await this.appendSaleById(sid);
-            else await this.refreshSales(true);
+            if (sid) {
+              try {
+                await this.appendSaleById(sid);
+              } catch (err) {
+                // Optimistic fallback if API fetch fails
+                const now = new Date().toISOString();
+                const optimistic = {
+                  id: e?.detail?.sale_number || String(sid),
+                  numericId: Number(sid) || sid,
+                  date: now,
+                  customer: e?.detail?.customer || "Walk-in Customer",
+                  isMedical: !!e?.detail?.isMedical,
+                  itemCount: Number(e?.detail?.itemCount || 0),
+                  total: Number(e?.detail?.total || 0),
+                  discounts: [],
+                  paymentMethod: String(e?.detail?.paymentMethod || "cash").toLowerCase(),
+                  paymentReference: e?.detail?.paymentReference || null,
+                  employee: this.getCurrentEmployee(),
+                  isVoided: false,
+                  status: "completed",
+                };
+                this.sales = [optimistic, ...this.sales.filter((x) => (x.numericId || x.id) !== (optimistic.numericId || optimistic.id))];
+                this.filterSales();
+                try { localStorage.setItem("pos_sales_cache_v1", JSON.stringify({ ts: Date.now(), list: this.sales })); } catch(_) {}
+              }
+            } else {
+              await this.refreshSales(true);
+            }
           });
         } catch (_) {}
         // Cross-tab live updates via localStorage broadcast
