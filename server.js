@@ -1642,21 +1642,29 @@ app.get("/api/analytics/aspd", async (req, res) => {
     const daysInRange = Math.max(1, Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
 
     // Current window data (for table)
-    const r = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startIso},created_at.lt.${endIso})`, limit: "1000" } });
+    const r = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startIso},created_at.lt.${endIso})`, limit: "2000" } });
     const rows = r.ok ? await r.json() : [];
     const list = Array.isArray(rows) ? rows : [];
 
-    const map = new Map(); // key: product name -> { totalSold, totalRevenue }
+    // Aggregate by product (with category) and by category
+    const prodMap = new Map(); // key: name||category -> { name, category, totalSold, totalRevenue }
+    const catMap = new Map(); // key: category -> { category, totalSold, totalRevenue }
     for (const s of list) {
       const cart = Array.isArray(s.cart) ? s.cart : [];
       for (const it of cart) {
         const name = (it?.name || it?.product_name || "Unknown").toString();
+        const category = (it?.category || it?.product_category || it?.product?.category || "—").toString();
         const qty = Number(it?.quantity || 0);
         const rev = Number(it?.price || 0) * qty;
-        const cur = map.get(name) || { totalSold: 0, totalRevenue: 0 };
+        const key = `${name}||${category}`;
+        const cur = prodMap.get(key) || { name, category, totalSold: 0, totalRevenue: 0 };
         cur.totalSold += qty;
         cur.totalRevenue += rev;
-        map.set(name, cur);
+        prodMap.set(key, cur);
+        const ccur = catMap.get(category) || { category, totalSold: 0, totalRevenue: 0 };
+        ccur.totalSold += qty;
+        ccur.totalRevenue += rev;
+        catMap.set(category, ccur);
       }
     }
 
@@ -1665,41 +1673,47 @@ app.get("/api/analytics/aspd", async (req, res) => {
     const startC = new Date(endC.getTime() - 30 * 24 * 60 * 60 * 1000);
     const startP = new Date(startC.getTime() - 30 * 24 * 60 * 60 * 1000);
     const endP = new Date(startC.getTime());
-    const cR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startC.toISOString()},created_at.lt.${endC.toISOString()})`, limit: "2000" } });
-    const pR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startP.toISOString()},created_at.lt.${endP.toISOString()})`, limit: "2000" } });
+    const cR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startC.toISOString()},created_at.lt.${endC.toISOString()})`, limit: "3000" } });
+    const pR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startP.toISOString()},created_at.lt.${endP.toISOString()})`, limit: "3000" } });
     const curRows = cR.ok ? await cR.json() : [];
     const prevRows = pR.ok ? await pR.json() : [];
-    const curMap = new Map();
-    const prevMap = new Map();
-    const addTo = (m, rows) => {
+
+    const curProdMap = new Map(); // key: name||category -> qty
+    const prevProdMap = new Map();
+    const curCatQty = new Map(); // key: category -> qty
+    const prevCatQty = new Map();
+    const addTo = (pm, cm, rows) => {
       for (const s of Array.isArray(rows) ? rows : []) {
         const cart = Array.isArray(s.cart) ? s.cart : [];
         for (const it of cart) {
           const name = (it?.name || it?.product_name || "Unknown").toString();
+          const category = (it?.category || it?.product_category || it?.product?.category || "—").toString();
           const qty = Number(it?.quantity || 0);
-          m.set(name, (m.get(name) || 0) + qty);
+          const key = `${name}||${category}`;
+          pm.set(key, (pm.get(key) || 0) + qty);
+          cm.set(category, (cm.get(category) || 0) + qty);
         }
       }
     };
-    addTo(curMap, curRows);
-    addTo(prevMap, prevRows);
+    addTo(curProdMap, curCatQty, curRows);
+    addTo(prevProdMap, prevCatQty, prevRows);
 
     const EPS = 0.01; // day^-1 units; treat below threshold as stagnant
-    const results = Array.from(map.entries()).map(([name, v]) => {
+
+    // Build product results with trends
+    const items = Array.from(prodMap.values()).map((v) => {
+      const key = `${v.name}||${v.category}`;
       const aspd = v.totalSold / daysInRange;
-      const curAspd30 = (curMap.get(name) || 0) / 30;
-      const prevAspd30 = (prevMap.get(name) || 0) / 30;
+      const curAspd30 = (curProdMap.get(key) || 0) / 30;
+      const prevAspd30 = (prevProdMap.get(key) || 0) / 30;
       let trend = "stagnant";
-      if (prevMap.get(name) > 0) {
+      if ((prevProdMap.get(key) || 0) > 0) {
         if (curAspd30 - prevAspd30 > EPS) trend = "up";
         else if (prevAspd30 - curAspd30 > EPS) trend = "down";
-        else trend = "stagnant";
-      } else {
-        trend = "stagnant";
       }
       return {
-        name,
-        category: "—",
+        name: v.name,
+        category: v.category,
         totalSold: v.totalSold,
         totalRevenue: v.totalRevenue,
         daysInRange,
@@ -1710,7 +1724,30 @@ app.get("/api/analytics/aspd", async (req, res) => {
       };
     }).sort((a, b) => b.aspd - a.aspd);
 
-    res.json({ daysInRange, items: results });
+    // Build category aggregates with trends and embed products
+    const categories = Array.from(catMap.values()).map((c) => {
+      const aspd = c.totalSold / daysInRange;
+      const curAspd30 = (curCatQty.get(c.category) || 0) / 30;
+      const prevAspd30 = (prevCatQty.get(c.category) || 0) / 30;
+      let trend = "stagnant";
+      if ((prevCatQty.get(c.category) || 0) > 0) {
+        if (curAspd30 - prevAspd30 > EPS) trend = "up";
+        else if (prevAspd30 - curAspd30 > EPS) trend = "down";
+      }
+      return {
+        category: c.category,
+        totalSold: c.totalSold,
+        totalRevenue: c.totalRevenue,
+        daysInRange,
+        aspd,
+        cur30Aspd: curAspd30,
+        prev30Aspd: prevAspd30,
+        trend,
+        items: items.filter((it) => it.category === c.category),
+      };
+    }).sort((a, b) => b.aspd - a.aspd);
+
+    res.json({ daysInRange, items, categories });
   } catch (e) {
     res.status(500).json({ error: "Failed to compute ASPD" });
   }
