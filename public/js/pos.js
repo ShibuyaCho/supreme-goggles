@@ -1275,7 +1275,7 @@ function cannabisPOS() {
       let list = null;
       if (forceNetwork) {
         try {
-          const { data } = await (window.axios || axios).get("/sales/recent", {
+          const { data } = await (window.axios || axios).get("/api/sales/recent", {
             params: {
               status: "completed",
               date_from: start,
