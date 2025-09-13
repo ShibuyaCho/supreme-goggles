@@ -667,7 +667,7 @@ class SalesController extends Controller
                 $q = mb_strtolower($searchQuery);
                 $rows = $rows->filter(function($r) use ($q) {
                     $sn = mb_strtolower((string)($r['sale_number'] ?? $r['id'] ?? ''));
-                    $cn = mb_strlower((string)($r['customer']['full_name'] ?? $r['customer']['name'] ?? ''));
+                    $cn = mb_strtolower((string)($r['customer']['full_name'] ?? $r['customer']['name'] ?? ''));
                     return str_contains($sn, $q) || ($cn && str_contains($cn, $q));
                 });
             }
