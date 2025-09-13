@@ -405,11 +405,17 @@ class POSController extends Controller
             $customer = Customer::where('phone', $customerInfo['phone'])->first();
         }
 
+        // Resolve employee id (works with or without user session)
+        $employeeId = optional(Auth::user()?->employee)->id;
+        if (!$employeeId) {
+            $employeeId = \App\Models\Employee::query()->value('id');
+        }
+
         // Create sale
         $sale = Sale::create([
             'sale_number' => Sale::generateSaleNumber(),
             'customer_id' => $customer?->id,
-            'employee_id' => Auth::id(),
+            'employee_id' => $employeeId,
             'customer_type' => Session::get('customer_type', 'recreational'),
             'customer_info' => $customerInfo,
             'subtotal' => $cartTotals['subtotal'],
@@ -417,7 +423,7 @@ class POSController extends Controller
             'discount_amount' => $cartTotals['discount'],
             'total_amount' => $cartTotals['total'],
             'payment_method' => $request->payment_method,
-            'payment_reference' => $request->debit_last_four ?? null,
+            'payment_reference' => $request->debit_last_four ?? $request->payment_reference ?? null,
             'cart_items' => $cart,
             'applied_deals' => [], // TODO: implement deal tracking
             'tax_rate' => config('pos.tax_rate', 0.20),
@@ -425,7 +431,7 @@ class POSController extends Controller
         ]);
 
         // Complete the sale
-        $sale->complete($request->payment_method, $request->payment_reference);
+        $sale->complete($request->payment_method, $request->debit_last_four ?? $request->payment_reference);
 
         // Clear session
         $this->cartService->clearCart();
