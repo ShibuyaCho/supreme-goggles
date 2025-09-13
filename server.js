@@ -1231,8 +1231,8 @@ app.post("/api/activity", async (req, res) => {
   }
 });
 
-// POS: process payment -> persist sale to Supabase
-app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
+// Payment handler (shared)
+async function handleProcessPayment(req, res) {
   const user = getAuthUser(req);
   const body = req.body || {};
   // Normalize incoming payload
@@ -1250,9 +1250,13 @@ app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
   const total = body.total != null ? Number(body.total) : (subtotal != null ? Number(subtotal) + Number(tax || 0) : null);
   const payment_reference = body.card_details?.last_four || body.lastFour || body.payment_reference || null;
 
+  const employee_id = body.employeePin
+    ? String(body.employeePin)
+    : (user?.employee_id || user?.employee?.employee_id || null);
+
   const row = {
     user_id: user ? String(user.id) : null,
-    employee_id: body.employeePin ? String(body.employeePin) : null,
+    employee_id,
     payment_method:
       body.method ||
       (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown"),
@@ -1260,22 +1264,22 @@ app.post(["/api/pos/process-payment", "/api/sales"], async (req, res) => {
     tax,
     total,
     status: "completed",
-    customer: body.customer || null,
+    customer: body.customer || (body.customer_id ? { id: body.customer_id } : null),
     cart: items,
     payment_reference,
-    meta: { source: "dev", timestamp: new Date().toISOString() },
+    meta: { source: "pos", timestamp: new Date().toISOString() },
   };
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    return res.status(200).json({
-      success: true,
-      sale: Array.isArray(payload) ? payload[0] : payload,
-    });
+    return res.status(200).json({ success: true, sale: Array.isArray(payload) ? payload[0] : payload });
   } catch (e) {
-    return res.status(200).json({ success: true, message: "Recorded locally" });
+    return res.status(500).json({ success: false, error: "Failed to record sale" });
   }
-});
+}
+
+// POS: process payment -> persist sale to Supabase (aliases)
+app.post(["/api/pos/process-payment", "/api/pos/process-payment-open", "/api/sales"], handleProcessPayment);
 
 // Sales: recent list (for UI grids)
 app.get("/api/sales/recent", async (req, res) => {
