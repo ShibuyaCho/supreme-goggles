@@ -715,6 +715,7 @@ document.addEventListener('DOMContentLoaded', function() {
       renderDrawers();
     });
     renderDrawers();
+    }
 
     // Add Room Modal controls
     const addRoomModal = document.getElementById('add-room-modal');
