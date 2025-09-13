@@ -654,6 +654,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Render any local rooms not already present
     (Array.isArray(localRooms)?localRooms:[]).forEach(appendRoomCard);
+    window.addEventListener('beforeunload', ()=>{ try { saveRooms(localRooms); } catch(_) {} });
 
     categoryTabs.forEach(tab => {
         tab.addEventListener('click', function() {
