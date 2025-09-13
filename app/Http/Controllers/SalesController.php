@@ -451,8 +451,53 @@ class SalesController extends Controller
         return response()->json([
             'count' => \App\Models\Sale::count(),
             'completed' => \App\Models\Sale::where('status','completed')->count(),
-            'last' => \App\Models\Sale::orderBy('id','desc')->first(),
+            'last' => \App\Models\Sale::with(['saleItems'])->orderBy('id','desc')->first(),
         ]);
+    }
+
+    // TEMP: create a fake sale for diagnostics
+    public function diagCreate()
+    {
+        $employeeId = \App\Models\Employee::query()->value('id') ?? \App\Models\Employee::create([
+            'employee_id' => 'POS-' . now()->format('YmdHis'),
+            'first_name' => 'POS',
+            'last_name' => 'User',
+            'email' => 'pos@example.com',
+            'pin' => bcrypt('0000'),
+            'password' => bcrypt(str()->random(12)),
+            'role' => 'cashier',
+            'is_active' => true,
+        ])->id;
+
+        $sale = \App\Models\Sale::create([
+            'sale_number' => \App\Models\Sale::generateSaleNumber(),
+            'customer_id' => null,
+            'employee_id' => $employeeId,
+            'customer_type' => 'recreational',
+            'customer_info' => null,
+            'subtotal' => 10.00,
+            'tax_amount' => 2.00,
+            'discount_amount' => 0,
+            'total_amount' => 12.00,
+            'payment_method' => 'cash',
+            'payment_reference' => null,
+            'status' => 'completed',
+            'cart_items' => [ ['id'=>1,'name'=>'Test Item','price'=>10,'quantity'=>1] ],
+            'applied_deals' => [],
+            'tax_rate' => 0.20,
+            'notes' => 'diagCreate',
+        ]);
+        \App\Models\SaleItem::create([
+            'sale_id' => $sale->id,
+            'product_id' => null,
+            'product_name' => 'Test Item',
+            'product_category' => 'Diagnostics',
+            'quantity' => 1,
+            'unit_price' => 10.00,
+            'total_price' => 10.00,
+            'discount_amount' => 0,
+        ]);
+        return response()->json(['ok'=>true,'sale'=>$sale->load('saleItems')]);
     }
 
     // JSON: Recent/filtered sales for SPA "Sales Transactions"
