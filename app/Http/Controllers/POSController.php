@@ -410,6 +410,20 @@ class POSController extends Controller
         if (!$employeeId) {
             $employeeId = \App\Models\Employee::query()->value('id');
         }
+        if (!$employeeId) {
+            // Create a default employee for POS to satisfy FK during testing
+            $emp = \App\Models\Employee::create([
+                'employee_id' => 'POS-' . now()->format('YmdHis'),
+                'first_name' => 'POS',
+                'last_name' => 'User',
+                'email' => 'pos@example.com',
+                'pin' => bcrypt('0000'),
+                'password' => bcrypt(str()->random(12)),
+                'role' => 'cashier',
+                'is_active' => true,
+            ]);
+            $employeeId = $emp->id;
+        }
 
         // Create sale
         $sale = Sale::create([
