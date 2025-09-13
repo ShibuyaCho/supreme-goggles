@@ -1239,6 +1239,7 @@ function cannabisPOS() {
 
     // SALES: Load, filter, stats, actions
     async refreshSales(forceNetwork = true) {
+      try { this.showToast && this.showToast('Refreshing sales…', 'info'); } catch(_) {}
       // Determine date window from filter; default to last 7 days to keep it light
       const now = new Date();
       const toISO = (d) => d.toISOString().slice(0, 10);
@@ -1279,16 +1280,28 @@ function cannabisPOS() {
             limit: 500,
           };
           if (start && end) { params.date_from = start; params.date_to = end; }
-          const { data } = await (window.axios || axios).get("/api/sales/recent", {
-            params,
-            headers: { Accept: "application/json" },
-          });
-          if (Array.isArray(data)) {
+          // Attempt primary API (web.php /api group)
+          const primary = await (window.axios || axios).get("/api/sales/recent", { params, headers: { Accept: "application/json" } });
+          let data = primary?.data;
+          if (!Array.isArray(data) && data && Array.isArray(data.data)) data = data.data;
+          if (Array.isArray(data) && data.length) {
             list = data.map((s) => this.mapSaleToSpa(s));
-          } else if (data && Array.isArray(data.data)) {
-            list = data.data.map((s) => this.mapSaleToSpa(s));
+          } else {
+            // Fallback 1: same endpoint without filters
+            const fb1 = await (window.axios || axios).get("/api/sales/recent", { headers: { Accept: "application/json" } });
+            let d1 = fb1?.data; if (!Array.isArray(d1) && d1 && Array.isArray(d1.data)) d1 = d1.data;
+            if (Array.isArray(d1) && d1.length) {
+              list = d1.map((s) => this.mapSaleToSpa(s));
+            } else {
+              // Fallback 2: web route without /api prefix
+              const fb2 = await (window.axios || axios).get("/sales/recent", { params, headers: { Accept: "application/json" } });
+              let d2 = fb2?.data; if (!Array.isArray(d2) && d2 && Array.isArray(d2.data)) d2 = d2.data;
+              if (Array.isArray(d2) && d2.length) list = d2.map((s) => this.mapSaleToSpa(s));
+            }
           }
-        } catch (_) {}
+        } catch (e) {
+          console.warn('Sales refresh failed, will use cache if present', e?.response?.data || e);
+        }
       }
 
       // Fallback to cache if needed
@@ -1307,6 +1320,9 @@ function cannabisPOS() {
           JSON.stringify({ ts: Date.now(), list: this.sales }),
         );
       } catch (_) {}
+      try {
+        this.showToast && this.showToast(`${this.sales.length} sale(s) loaded`, this.sales.length ? 'success' : 'info');
+      } catch(_) {}
     },
 
     mapSaleToSpa(s) {
