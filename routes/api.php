@@ -55,6 +55,9 @@ Route::prefix('auth')->group(function () {
     Route::post('/self-register', [AuthController::class, 'selfRegister']);
 });
 
+// TEMP: Open POS payment endpoint for end-to-end testing (no auth, no CSRF under API middleware)
+Route::post('/pos/process-payment-open', [\App\Http\Controllers\POSController::class, 'processPayment']);
+
 // Compatibility aliases (support clients using /api/* without /auth prefix)
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/pin-login', [AuthController::class, 'pinLogin']);
