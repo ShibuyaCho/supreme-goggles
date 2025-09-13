@@ -319,15 +319,20 @@ async function processPayment() {
         
         // Success
         window.POS?.showToast('Payment processed successfully!', 'success');
-        
+
+        // Broadcast for SPA sales table
+        try {
+            document.dispatchEvent(new CustomEvent('pos-sale-completed', { detail: { sale_id: result.sale_id } }));
+        } catch (_) {}
+
         // Clear the current order
         if (window.POS?.clearOrder) {
             window.POS.clearOrder();
         }
-        
+
         closeDialogPaymentmodal();
         resetPaymentModal();
-        
+
         // Print receipt if requested
         if (paymentData.receipt_options.print && result.receipt_url) {
             window.open(result.receipt_url, '_blank');
