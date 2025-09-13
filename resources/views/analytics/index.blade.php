@@ -414,6 +414,27 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
         }
     });
+    // Try to hydrate End of Day from Supabase-backed API
+    try {
+        fetch('/api/analytics/end-of-day', { headers: { 'Accept': 'application/json' }})
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return;
+                const fmt = (n) => `$${Number(n || 0).toFixed(2)}`;
+                const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+                setText('eod-total-sales', fmt(data.totalSales));
+                setText('eod-customer-count', String(data.customerCount));
+                setText('eod-total-tax', fmt(data.totalTax));
+                setText('eod-total-discounts', fmt(data.totalDiscounts));
+                setText('eod-monthly-total', fmt(data.monthlySalesTotal));
+                setText('eod-day', String(data.dayOfMonth));
+                setText('eod-days', String(data.daysInMonth));
+                setText('eod-cash', fmt(data.cashSales));
+                setText('eod-debit', fmt(data.debitSales));
+                setText('eod-credit', fmt(data.creditSales));
+            })
+            .catch(() => {});
+    } catch(_) {}
 });
 
 function switchTab(tabName) {
