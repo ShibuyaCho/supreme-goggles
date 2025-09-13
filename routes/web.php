@@ -129,6 +129,9 @@ Route::prefix('customers')->name('customers.')->group(function () {
 // Sales Management Routes
 Route::prefix('sales')->name('sales.')->group(function () {
     Route::get('/', [SalesController::class, 'index'])->name('index');
+    // SPA-friendly JSON endpoints (avoid collision with routes/api.php /api/sales/{sale})
+    Route::get('/recent-json', [SalesController::class, 'recentSales'])->name('recent-json');
+    Route::get('/json/{sale}', [SalesController::class, 'apiShow'])->name('json-show');
     Route::get('/{sale}', [SalesController::class, 'show'])->name('show');
     Route::get('/{sale}/receipt', [SalesController::class, 'receipt'])->name('receipt');
     Route::post('/{sale}/void', [SalesController::class, 'void'])->name('void');
