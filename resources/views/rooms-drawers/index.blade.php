@@ -591,9 +591,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Extreme persistence for Rooms (merge server + localStorage and render)
     const serverRooms = @json($rooms ?? []);
-    const ROOMS_KEY = 'rd-rooms';
-    function loadRooms(){ try { return JSON.parse(localStorage.getItem(ROOMS_KEY) || '[]'); } catch(_) { return []; } }
-    function saveRooms(list){ try { localStorage.setItem(ROOMS_KEY, JSON.stringify(list)); } catch(_) {} }
+    const ROOMS_KEYS = ['pos_rooms','rd-rooms'];
+    function loadRooms(){
+      for (const k of ROOMS_KEYS) {
+        try { const raw = localStorage.getItem(k); if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) return arr; } } catch(_) {}
+      }
+      return [];
+    }
+    function saveRooms(list){
+      for (const k of ROOMS_KEYS) { try { localStorage.setItem(k, JSON.stringify(list)); } catch(_) {} }
+    }
     function normalizeRoom(r){
       return {
         id: r.id ?? null,
@@ -822,6 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (grid && data.room) { addActivity('Room created', `${data.room.name} (${data.room.type})`);
                 // persist locally as well
                 try { const nr = { id: data.room.id, name: data.room.name, type: data.room.type, max_capacity: data.room.max_capacity ?? 0, room_id: data.room.room_id || null }; const names = new Set((localRooms||[]).map(r=> (r.name||'').toLowerCase())); if (!names.has((nr.name||'').toLowerCase())) { localRooms.push(nr); saveRooms(localRooms); } } catch(_) {}
+                addActivity('Room created', `${data.room.name} (${data.room.type})`);
                 const usagePercent = 0;
                 const roomHtml = `
                 <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="${data.room.type}">
@@ -859,6 +867,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 appendRoomCard(localRoom);
                 try { localRooms.push(localRoom); saveRooms(localRooms); } catch(_) {}
                 addActivity('Room created', `${name} (${type})`);
+                // Also log to global POS for visibility elsewhere (merge happens on init)
+                try { const prev = JSON.parse(localStorage.getItem('rd-activity-log')||'[]'); prev.push({ at: new Date().toISOString(), by: (window.posAuth?.getUser?.()?.name)||'User', title: 'Room created', details: `${name} (${type})` }); localStorage.setItem('rd-activity-log', JSON.stringify(prev)); } catch(_) {}
             }
             closeAddRoomModal();
         } catch (e) {
