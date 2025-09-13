@@ -757,15 +757,34 @@ function cannabisPOS() {
         this.total = this.total || 0;
       } finally {
         // Load persisted drawers
-        try { const raw = localStorage.getItem('pos_drawers'); if (raw) this.cashDrawers = JSON.parse(raw); } catch(_){}
+        try {
+          const raw = localStorage.getItem("pos_drawers");
+          if (raw) this.cashDrawers = JSON.parse(raw);
+        } catch (_) {}
         // Load persisted rooms
-        try { const rawR = localStorage.getItem('pos_rooms') || localStorage.getItem('rd-rooms'); if (rawR) this.facilityRooms = JSON.parse(rawR); } catch(_){}
+        try {
+          const rawR =
+            localStorage.getItem("pos_rooms") ||
+            localStorage.getItem("rd-rooms");
+          if (rawR) this.facilityRooms = JSON.parse(rawR);
+        } catch (_) {}
         // Merge external activity log if present
-        try { const rawLog = localStorage.getItem('rd-activity-log'); if (rawLog) {
-          const arr = JSON.parse(rawLog);
-          const mapped = (Array.isArray(arr)?arr:[]).map(x=>({ id: (Date.now()+Math.random()).toString(36), timestamp: new Date(x.at||Date.now()).toLocaleString(), action: x.title, type: x.title?.toLowerCase().includes('room')?'room':'drawer', location: x.details||'', employee: x.by|| (this.currentUser?.name||'User'), details: x.title }));
-          this.activityLog = [...mapped, ...(this.activityLog||[])];
-        } } catch(_){}
+        try {
+          const rawLog = localStorage.getItem("rd-activity-log");
+          if (rawLog) {
+            const arr = JSON.parse(rawLog);
+            const mapped = (Array.isArray(arr) ? arr : []).map((x) => ({
+              id: (Date.now() + Math.random()).toString(36),
+              timestamp: new Date(x.at || Date.now()).toLocaleString(),
+              action: x.title,
+              type: x.title?.toLowerCase().includes("room") ? "room" : "drawer",
+              location: x.details || "",
+              employee: x.by || this.currentUser?.name || "User",
+              details: x.title,
+            }));
+            this.activityLog = [...mapped, ...(this.activityLog || [])];
+          }
+        } catch (_) {}
       }
     },
 
@@ -933,7 +952,8 @@ function cannabisPOS() {
     },
 
     ensureMyEmployeeListed(userOverride) {
-      const u = userOverride || this.currentUser || window.posAuth?.getUser?.() || {};
+      const u =
+        userOverride || this.currentUser || window.posAuth?.getUser?.() || {};
       const emp = u.employee || null;
       const idCandidates = [emp?.id, emp?.employee_id, u.employee_id, u.id]
         .map((v) => (v != null ? String(v) : ""))
@@ -2327,7 +2347,11 @@ function cannabisPOS() {
       if (!Array.isArray(list) || list.length === 0) {
         try {
           const res = await posAuth.apiRequest("get", "/employees"); // /api/employees
-          if (res.success && res.data && (res.data.employees || res.data.data)) {
+          if (
+            res.success &&
+            res.data &&
+            (res.data.employees || res.data.data)
+          ) {
             list = res.data.employees || res.data.data || [];
           }
         } catch (err) {
@@ -2346,7 +2370,8 @@ function cannabisPOS() {
         phone: e.phone || "",
         role: (e.role || e.position || "budtender").toLowerCase(),
         status:
-          e.is_active === false || String(e.status || "").toLowerCase() === "inactive"
+          e.is_active === false ||
+          String(e.status || "").toLowerCase() === "inactive"
             ? "inactive"
             : "active",
         hireDate: e.hire_date ? String(e.hire_date).slice(0, 10) : "",
@@ -2355,7 +2380,9 @@ function cannabisPOS() {
         workerPermit: e.worker_permit || e.workerPermit || "",
         metrcApiKey: e.metrc_api_key || e.metrcApiKey || "",
       }));
-      try { this.ensureMyEmployeeListed(window.posAuth?.getUser?.()); } catch (_) {}
+      try {
+        this.ensureMyEmployeeListed(window.posAuth?.getUser?.());
+      } catch (_) {}
     },
 
     loadEmployees() {
@@ -3894,7 +3921,11 @@ function cannabisPOS() {
         };
         const department = deptMap[role] || "sales";
         const hourly_rate = parseFloat(this.employeeForm.payRate || 0) || 0;
-        const hire_date = this.employeeForm.hireDate || this.selectedEmployee?.hireDate || this.selectedEmployee?.hire_date || "";
+        const hire_date =
+          this.employeeForm.hireDate ||
+          this.selectedEmployee?.hireDate ||
+          this.selectedEmployee?.hire_date ||
+          "";
         const payload = {
           first_name,
           last_name,
@@ -3930,7 +3961,11 @@ function cannabisPOS() {
             phone: payload.phone,
             role,
             payRate: hourly_rate,
-            hireDate: hire_date || this.employees[idx].hireDate || this.employees[idx].hire_date || "",
+            hireDate:
+              hire_date ||
+              this.employees[idx].hireDate ||
+              this.employees[idx].hire_date ||
+              "",
             status: payload.status,
             workerPermit: payload.worker_permit,
             metrcApiKey: payload.metrc_api_key,
@@ -5176,7 +5211,11 @@ function cannabisPOS() {
       }
 
       const newRoom = {
-        id: Math.max(...(this.facilityRooms || []).map((r) => Number(r?.id) || 0), 0) + 1,
+        id:
+          Math.max(
+            ...(this.facilityRooms || []).map((r) => Number(r?.id) || 0),
+            0,
+          ) + 1,
         name: this.roomForm.name,
         type: this.roomForm.type || "storage",
         forSale: this.roomForm.forSale === "true",
@@ -5188,10 +5227,22 @@ function cannabisPOS() {
         createdAt: new Date().toISOString(),
       };
 
-      this.facilityRooms = Array.isArray(this.facilityRooms) ? this.facilityRooms : [];
+      this.facilityRooms = Array.isArray(this.facilityRooms)
+        ? this.facilityRooms
+        : [];
       this.facilityRooms.push(newRoom);
-      try { localStorage.setItem('pos_rooms', JSON.stringify(this.facilityRooms)); } catch (_) {}
-      try { this.logActivity && this.logActivity('room','created', newRoom.name, `${newRoom.type} · Cap ${newRoom.maxCapacity}`); } catch(_) {}
+      try {
+        localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
+      } catch (_) {}
+      try {
+        this.logActivity &&
+          this.logActivity(
+            "room",
+            "created",
+            newRoom.name,
+            `${newRoom.type} · Cap ${newRoom.maxCapacity}`,
+          );
+      } catch (_) {}
       this.showToast(`Room "${newRoom.name}" created successfully`, "success");
       this.closeAddRoomModal();
     },
@@ -5212,14 +5263,27 @@ function cannabisPOS() {
           name: this.roomForm.name,
           type: this.roomForm.type || prev.type || "storage",
           forSale: this.roomForm.forSale === "true",
-          maxCapacity: Number(this.roomForm.maxCapacity) || Number(prev.maxCapacity) || 0,
+          maxCapacity:
+            Number(this.roomForm.maxCapacity) || Number(prev.maxCapacity) || 0,
           status: this.roomForm.status,
-          temperature: Number(this.roomForm.temperature) || Number(prev.temperature) || 68,
-          humidity: Number(this.roomForm.humidity) || Number(prev.humidity) || 50,
+          temperature:
+            Number(this.roomForm.temperature) || Number(prev.temperature) || 68,
+          humidity:
+            Number(this.roomForm.humidity) || Number(prev.humidity) || 50,
           updatedAt: new Date().toISOString(),
         };
-        try { localStorage.setItem('pos_rooms', JSON.stringify(this.facilityRooms)); } catch (_) {}
-        try { this.logActivity && this.logActivity('room','updated', this.roomForm.name, `${prev.name} → ${this.roomForm.name}`); } catch(_) {}
+        try {
+          localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
+        } catch (_) {}
+        try {
+          this.logActivity &&
+            this.logActivity(
+              "room",
+              "updated",
+              this.roomForm.name,
+              `${prev.name} → ${this.roomForm.name}`,
+            );
+        } catch (_) {}
         this.showToast(
           `Room "${this.roomForm.name}" updated successfully`,
           "success",
@@ -5244,10 +5308,16 @@ function cannabisPOS() {
     deleteRoomWithPin(room) {
       if (!room) return;
       if (!confirm(`Delete room "${room.name}"?`)) return;
-      this.facilityRooms = (this.facilityRooms || []).filter(r => String(r.id) !== String(room.id));
-      try { localStorage.setItem('pos_rooms', JSON.stringify(this.facilityRooms)); } catch (_) {}
-      try { this.logActivity && this.logActivity('room','deleted', room.name); } catch(_) {}
-      this.showToast('Room deleted', 'success');
+      this.facilityRooms = (this.facilityRooms || []).filter(
+        (r) => String(r.id) !== String(room.id),
+      );
+      try {
+        localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
+      } catch (_) {}
+      try {
+        this.logActivity && this.logActivity("room", "deleted", room.name);
+      } catch (_) {}
+      this.showToast("Room deleted", "success");
     },
 
     // Drawer Management Functions
@@ -5276,7 +5346,11 @@ function cannabisPOS() {
       }
 
       const newDrawer = {
-        id: Math.max(...(this.cashDrawers || []).map((d) => Number(d.id) || 0), 0) + 1,
+        id:
+          Math.max(
+            ...(this.cashDrawers || []).map((d) => Number(d.id) || 0),
+            0,
+          ) + 1,
         name: this.drawerForm.name,
         location: this.drawerForm.location,
         assignedEmployee: this.drawerForm.assignedEmployee,
@@ -5289,8 +5363,18 @@ function cannabisPOS() {
 
       this.cashDrawers = this.cashDrawers || [];
       this.cashDrawers.push(newDrawer);
-      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
-      try { this.logActivity && this.logActivity('drawer','created', newDrawer.name, `Starting $${newDrawer.startingAmount.toFixed(2)}`); } catch(_) {}
+      try {
+        localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
+      } catch (_) {}
+      try {
+        this.logActivity &&
+          this.logActivity(
+            "drawer",
+            "created",
+            newDrawer.name,
+            `Starting $${newDrawer.startingAmount.toFixed(2)}`,
+          );
+      } catch (_) {}
       this.showToast(
         `Cash drawer "${newDrawer.name}" created successfully`,
         "success",
@@ -5323,29 +5407,44 @@ function cannabisPOS() {
       if (!drawer) return;
       drawer.status = "open";
       drawer.openedAt = new Date().toISOString();
-      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      try {
+        localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
+      } catch (_) {}
       this.logActivity("drawer", "opened", drawer.name);
       this.showToast(`${drawer.name} opened`, "success");
     },
     closeDrawer(drawer) {
       if (!drawer) return;
       drawer.status = "closed";
-      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      try {
+        localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
+      } catch (_) {}
       this.logActivity("drawer", "closed", drawer.name);
       this.showToast(`${drawer.name} closed`, "info");
     },
     countDrawer(drawer) {
       try {
         const modal = document.getElementById("rd-count-modal");
-        if (modal) { modal.classList.remove("hidden"); modal.classList.add("flex"); return; }
+        if (modal) {
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          return;
+        }
       } catch (_) {}
-      this.showToast("Counting UI is available on Rooms & Drawers page", "info");
+      this.showToast(
+        "Counting UI is available on Rooms & Drawers page",
+        "info",
+      );
     },
     deleteDrawerWithPin(drawer) {
       if (!drawer) return;
       if (!confirm(`Delete ${drawer.name}?`)) return;
-      this.cashDrawers = (this.cashDrawers || []).filter((d) => String(d.id) !== String(drawer.id));
-      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
+      this.cashDrawers = (this.cashDrawers || []).filter(
+        (d) => String(d.id) !== String(drawer.id),
+      );
+      try {
+        localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
+      } catch (_) {}
       this.logActivity("drawer", "deleted", drawer.name);
       this.showToast("Drawer deleted", "success");
     },
@@ -5354,8 +5453,15 @@ function cannabisPOS() {
       const name = prompt("Assign employee name:");
       if (!name) return;
       drawer.assignedEmployee = name;
-      try { localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers)); } catch(_) {}
-      this.logActivity("drawer", "assigned", drawer.name, `Assigned to ${name}`);
+      try {
+        localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
+      } catch (_) {}
+      this.logActivity(
+        "drawer",
+        "assigned",
+        drawer.name,
+        `Assigned to ${name}`,
+      );
       this.showToast(`Assigned to ${name}`, "success");
     },
 
@@ -5365,11 +5471,13 @@ function cannabisPOS() {
         if (
           window.posAuth?.hasRole &&
           (posAuth.hasRole("admin") || posAuth.hasRole("manager"))
-        ) return true;
+        )
+          return true;
         if (
           window.posAuth?.hasPermission &&
           posAuth.hasPermission("employees:manage")
-        ) return true;
+        )
+          return true;
       } catch (e) {}
       return false;
     },
@@ -5472,7 +5580,9 @@ function cannabisPOS() {
               `/employees/${encodeURIComponent(targetId)}`,
             );
             ok = !!(res && res.success);
-          } catch (_) { ok = false; }
+          } catch (_) {
+            ok = false;
+          }
 
           // 2) Direct API call fallback
           if (!ok) {
@@ -5482,7 +5592,9 @@ function cannabisPOS() {
                 { headers: { Accept: "application/json" } },
               );
               ok = respApi && respApi.status >= 200 && respApi.status < 300;
-            } catch (_) { ok = false; }
+            } catch (_) {
+              ok = false;
+            }
           }
 
           // 3) Web route as last resort (requires web auth + CSRF)
@@ -5498,7 +5610,9 @@ function cannabisPOS() {
                 { headers },
               );
               ok = respWeb && respWeb.status >= 200 && respWeb.status < 300;
-            } catch (_) { ok = false; }
+            } catch (_) {
+              ok = false;
+            }
           }
 
           if (!ok) {
