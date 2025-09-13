@@ -31,10 +31,6 @@
                         <span class="whitespace-nowrap">Push Sales Data to METRC</span>
                     </button>
 
-                    <!-- Export Button -->
-                    <button onclick="exportSales()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                        Export
-                    </button>
                 </div>
             </div>
         </div>
