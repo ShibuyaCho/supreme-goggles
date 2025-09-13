@@ -362,7 +362,21 @@ class POSController extends Controller
         ]);
 
         $cart = $this->cartService->getCart();
-        
+
+        // Temporary: if session cart is empty but items provided, build a transient cart from payload
+        if (empty($cart) && is_array($request->items) && count($request->items) > 0) {
+            $cart = [];
+            foreach ($request->items as $it) {
+                $cart[] = [
+                    'id' => $it['id'],
+                    'name' => \App\Models\Product::find($it['id'])?->name ?? 'Product',
+                    'price' => (float) ($it['price'] ?? 0),
+                    'quantity' => (float) ($it['quantity'] ?? 0),
+                    'discount' => (float) ($it['discount'] ?? 0),
+                ];
+            }
+        }
+
         if (empty($cart)) {
             return response()->json([
                 'success' => false,
@@ -373,8 +387,8 @@ class POSController extends Controller
         $customerInfo = Session::get('customer_info', []);
         $cartTotals = $this->cartService->calculateTotals($cart, $customerInfo);
 
-        // Verify payment amount
-        if ($request->payment_amount < $cartTotals['total']) {
+        // Verify payment amount (only if provided)
+        if ($request->has('payment_amount') && $request->payment_amount < $cartTotals['total']) {
             return response()->json([
                 'success' => false,
                 'message' => 'Insufficient payment amount'
@@ -424,7 +438,8 @@ class POSController extends Controller
             'sale_id' => $sale->id,
             'sale_number' => $sale->sale_number,
             'change' => $change,
-            'message' => 'Payment processed successfully'
+            'message' => 'Payment processed successfully',
+            'receipt_url' => route('sales.receipt', $sale->id)
         ]);
     }
 
