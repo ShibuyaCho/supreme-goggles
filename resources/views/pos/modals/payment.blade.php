@@ -296,12 +296,12 @@ async function processPayment() {
                 sms: document.getElementById('sms-receipt').checked
             }
         };
-        
+
         if (selectedPaymentMethod === 'cash') {
             paymentData.cash_received = parseFloat(document.getElementById('cash-received').value);
             paymentData.change = paymentData.cash_received - orderTotal;
         }
-        
+
         if (selectedPaymentMethod === 'card') {
             paymentData.card_details = {
                 last_four: document.getElementById('card-last-four').value,
@@ -309,26 +309,26 @@ async function processPayment() {
                 transaction_id: document.getElementById('transaction-id').value
             };
         }
-        
+
         // Attach items and customer
-        paymentData.items = (paymentOrderData.items || []).map(it => ({ id: it.id, quantity: it.quantity, price: it.price, discount: it.discount || 0 }));
+        paymentData.items = (paymentOrderData.items || []).map(it => ({ id: it.id, name: it.displayName || it.name, quantity: it.quantity, price: it.price, discount: it.discount || 0 }));
         paymentData.customer_id = paymentOrderData.customer && paymentOrderData.customer.id ? paymentOrderData.customer.id : null;
 
-        // Try API first (auth required)
+        // Always capture PIN to attribute employee and allow open endpoint
+        const pin = prompt('Enter employee PIN to confirm payment');
+        if (pin) paymentData.employeePin = String(pin);
+
+        // Prefer open API (no CSRF/auth) so it always hits our Supabase handler
         let result;
         try {
-            ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment', paymentData, { headers: { 'Accept': 'application/json' } }));
-        } catch (apiErr) {
-            // Use open API endpoint (no CSRF/auth) for testing
+            ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment-open', paymentData, { headers: { 'Accept': 'application/json' } }));
+        } catch (openErr) {
+            // Auth API fallback
             try {
-                ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment-open', {
-                    ...paymentData,
-                    method: paymentData.method,
-                }, { headers: { 'Accept': 'application/json' } }));
-            } catch (openErr) {
-                // Fallback to web endpoint with PIN prompt
-                const pin = prompt('Enter employee PIN to confirm payment');
-                if (!pin) throw openErr;
+                ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment', paymentData, { headers: { 'Accept': 'application/json' } }));
+            } catch (apiErr) {
+                // Web fallback
+                if (!pin) throw apiErr;
                 const webPayload = {
                     payment_method: paymentData.method === 'card' ? (paymentData.card_details?.type?.toLowerCase() === 'debit' ? 'debit' : 'credit') : paymentData.method,
                     payment_amount: paymentData.total,
