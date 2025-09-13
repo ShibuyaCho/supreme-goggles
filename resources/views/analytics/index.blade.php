@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
         }
     });
-    // Try to hydrate End of Day from Supabase-backed API
+    // Hydrate End of Day from Supabase-backed API
     try {
         fetch('/api/analytics/end-of-day', { headers: { 'Accept': 'application/json' }})
             .then(r => r.ok ? r.json() : null)
@@ -432,6 +432,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 setText('eod-cash', fmt(data.cashSales));
                 setText('eod-debit', fmt(data.debitSales));
                 setText('eod-credit', fmt(data.creditSales));
+            })
+            .catch(() => {});
+    } catch(_) {}
+
+    // Hydrate ASPD table
+    try {
+        fetch('/api/analytics/aspd', { headers: { 'Accept': 'application/json' }})
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data || !Array.isArray(data.items)) return;
+                const tb = document.getElementById('aspd-tbody');
+                if (!tb) return;
+                tb.innerHTML = '';
+                data.items.slice(0, 10).forEach((item) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.category || '—'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${Number(item.totalSold || 0).toFixed(2)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.daysInRange}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${Number(item.aspd || 0).toFixed(2)}</td>`;
+                    tb.appendChild(tr);
+                });
             })
             .catch(() => {});
     } catch(_) {}
