@@ -105,7 +105,7 @@ class SalesController extends Controller
             'saleItems.product',
             'voidedByEmployee'
         ])->findOrFail($id);
-        
+
         // Get related transactions (refunds, voids)
         $relatedTransactions = Sale::where('id', '!=', $id)
             ->where(function($query) use ($sale) {
@@ -113,8 +113,20 @@ class SalesController extends Controller
                       ->orWhere('notes', 'like', '%' . $sale->sale_number . '%');
             })
             ->get();
-        
+
         return view('sales.show', compact('sale', 'relatedTransactions'));
+    }
+
+    // API JSON: single sale with relations
+    public function apiShow($id)
+    {
+        $sale = Sale::with([
+            'customer',
+            'employee',
+            'saleItems.product',
+            'voidedByEmployee'
+        ])->findOrFail($id);
+        return response()->json($sale);
     }
     
     public function receipt($id)
