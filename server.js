@@ -1246,6 +1246,15 @@ async function handleProcessPayment(req, res) {
         name: i?.name ?? undefined,
         price: Number(i?.price ?? 0),
         quantity: Number(i?.quantity ?? 1),
+        // preserve any discount info if present
+        discount: i?.discount ?? undefined,
+        discount_amount: i?.discount_amount != null
+          ? Number(i.discount_amount)
+          : (typeof i?.discount === "number"
+              ? Number(i.discount)
+              : (i?.discount && typeof i.discount.amount === "number"
+                  ? Number(i.discount.amount)
+                  : undefined)),
       })) : []);
   const computedSubtotal = items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 1), 0);
   const subtotal = body.subtotal != null ? Number(body.subtotal) : (items.length ? computedSubtotal : null);
@@ -1257,6 +1266,10 @@ async function handleProcessPayment(req, res) {
     ? String(body.employeePin)
     : (user?.employee_id || user?.employee?.employee_id || null);
 
+  // derive discount amount: discount = subtotal - (total - tax)
+  const finalSubtotal = total != null && tax != null ? (Number(total) - Number(tax)) : Number(subtotal || 0);
+  const discount_amount = Math.max(0, Number(subtotal || 0) - Number(finalSubtotal || 0));
+
   const row = {
     user_id: user ? String(user.id) : null,
     employee_id,
@@ -1266,11 +1279,12 @@ async function handleProcessPayment(req, res) {
     subtotal,
     tax,
     total,
+    discount_amount,
     status: "completed",
     customer: body.customer || (body.customer_id ? { id: body.customer_id } : null),
     cart: items,
     payment_reference,
-    meta: { source: "pos", timestamp: new Date().toISOString() },
+    meta: { source: "pos", timestamp: new Date().toISOString(), cart_discount: body?.cartDiscount || null },
   };
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
@@ -1306,15 +1320,32 @@ app.get("/api/sales/recent", async (req, res) => {
       query: { select: "*", order: "created_at.desc", limit: String(limit) },
     });
     const rows = r.ok ? await r.json() : [];
-    const mapped = (Array.isArray(rows) ? rows : []).map((s) => {
+    const arr = Array.isArray(rows) ? rows : [];
+    // Build employee lookup
+    const empIds = Array.from(new Set(arr.map((x) => x.employee_id).filter(Boolean)));
+    let empMap = new Map();
+    if (empIds.length) {
+      try {
+        const q = {
+          select: "employee_id,first_name,last_name",
+        };
+        // in. requires quoted strings for text
+        q["employee_id"] = `in.(${empIds.map((v) => `"${String(v).replaceAll("\"", "\\\"")}"`).join(",")})`;
+        const er = await supaFetch("employees", { method: "GET", query: q });
+        const list = er.ok ? await er.json() : [];
+        empMap = new Map((Array.isArray(list) ? list : []).map((e) => [String(e.employee_id), `${e.first_name || ""} ${e.last_name || ""}`.trim()]));
+      } catch (_) {}
+    }
+    const mapped = arr.map((s) => {
       const cart = Array.isArray(s.cart) ? s.cart : [];
       const itemCount = cart.reduce((a, i) => a + Number(i?.quantity || 0), 0);
+      const empName = empMap.get(String(s.employee_id || "")) || null;
       return {
         id: s.id,
         sale_number: s.sale_number || String(s.id),
         created_at: s.created_at,
         customer: s.customer || null,
-        employee: null,
+        employee: empName ? { name: empName } : null,
         item_count: itemCount,
         sale_items: cart.map((i) => ({
           product_id: null,
@@ -1351,12 +1382,21 @@ app.get("/api/sales/:id", async (req, res) => {
     if (!s) return res.status(404).json({ error: "Not found" });
     const cart = Array.isArray(s.cart) ? s.cart : [];
     const itemCount = cart.reduce((a, i) => a + Number(i?.quantity || 0), 0);
+    let empName = null;
+    try {
+      if (s.employee_id) {
+        const er = await supaFetch(`employees?employee_id=eq.${encodeURIComponent(String(s.employee_id))}&select=first_name,last_name`, { method: "GET" });
+        const el = er.ok ? await er.json() : [];
+        const e = Array.isArray(el) && el[0] ? el[0] : null;
+        if (e) empName = `${e.first_name || ""} ${e.last_name || ""}`.trim();
+      }
+    } catch (_) {}
     const mapped = {
       id: s.id,
       sale_number: s.sale_number || String(s.id),
       created_at: s.created_at,
       customer: s.customer || null,
-      employee: null,
+      employee: empName ? { name: empName } : null,
       item_count: itemCount,
       sale_items: cart.map((i) => ({
         product_id: null,
@@ -1509,6 +1549,7 @@ app.post("/api/sales/diag/create", async (_req, res) => {
       subtotal: 10.0,
       tax: 0.0,
       total: 10.0,
+      discount_amount: 0,
       status: "completed",
       customer: { name: "Walk-in Customer" },
       cart: [ { name: "Test Item", price: 10.0, quantity: 1 } ],
@@ -1519,6 +1560,57 @@ app.post("/api/sales/diag/create", async (_req, res) => {
     res.status(r.ok ? 201 : 500).json({ success: r.ok, sale: Array.isArray(payload) ? payload[0] : payload });
   } catch (e) {
     res.status(500).json({ success: false, error: String(e?.message || e) });
+  }
+});
+
+// Analytics: End of Day (Supabase-backed)
+app.get("/api/analytics/end-of-day", async (_req, res) => {
+  try {
+    const today = new Date();
+    const start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
+    const end = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+    const startIso = start.toISOString();
+    const endIso = end.toISOString();
+
+    // Today's sales
+    const r = await supaFetch("sales", { method: "GET", query: { select: "*", status: "eq.completed", and: `(created_at.gte.${startIso},created_at.lt.${endIso})` } });
+    const rows = r.ok ? await r.json() : [];
+    const list = Array.isArray(rows) ? rows : [];
+
+    const totalSales = list.reduce((a, s) => a + Number(s.total || 0), 0);
+    const totalTax = list.reduce((a, s) => a + Number(s.tax || 0), 0);
+    const totalDiscounts = list.reduce((a, s) => a + Number(s.discount_amount || 0), 0);
+    const customerCountRaw = list.filter((s) => !!(s.customer && (s.customer.id || s.customer.name))).length;
+
+    const cashSales = list.filter((s) => s.payment_method === "cash").reduce((a, s) => a + Number(s.total || 0), 0);
+    const debitSales = list.filter((s) => s.payment_method === "debit").reduce((a, s) => a + Number(s.total || 0), 0);
+    const creditSales = list.filter((s) => s.payment_method === "credit").reduce((a, s) => a + Number(s.total || 0), 0);
+
+    // Monthly totals
+    const mStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0)).toISOString();
+    const mEnd = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1, 0, 0, 0)).toISOString();
+    const mr = await supaFetch("sales", { method: "GET", query: { select: "total", status: "eq.completed", and: `(created_at.gte.${mStart},created_at.lt.${mEnd})` } });
+    const mrows = mr.ok ? await mr.json() : [];
+    const monthlySalesTotal = (Array.isArray(mrows) ? mrows : []).reduce((a, s) => a + Number(s.total || 0), 0);
+
+    // If all customers are generic/walk-in, treat each sale as a distinct customer for pacing consistency
+    const allGeneric = list.every((s) => !s.customer || String(s.customer?.name || "").toLowerCase().includes("walk-in"));
+    const customerCount = allGeneric ? list.length : customerCountRaw;
+
+    res.json({
+      totalSales,
+      totalTax,
+      totalDiscounts,
+      customerCount,
+      cashSales,
+      debitSales,
+      creditSales,
+      monthlySalesTotal,
+      dayOfMonth: today.getUTCDate(),
+      daysInMonth: new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).getUTCDate(),
+    });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to compute end-of-day" });
   }
 });
 
