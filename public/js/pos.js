@@ -1438,8 +1438,11 @@ function cannabisPOS() {
       const cashSales = list.filter((s) => s.paymentMethod === "cash").reduce((a, b) => a + Number(b.total || 0), 0);
       const debitSales = list.filter((s) => s.paymentMethod === "debit").reduce((a, b) => a + Number(b.total || 0), 0);
       const creditSales = list.filter((s) => s.paymentMethod === "credit").reduce((a, b) => a + Number(b.total || 0), 0);
-      const customerCount = new Set(list.map((s) => s.customer || "")).size;
+      let customerCount = new Set(list.map((s) => s.customer || "")).size;
       const totalSales = list.length;
+      // If all customers are generic/walk-in, treat each sale as a distinct customer for pacing
+      const allGeneric = list.every((s) => !s.customer || String(s.customer).toLowerCase().includes("walk-in"));
+      if (allGeneric) customerCount = totalSales;
       return {
         totalSales,
         totalRevenue: revenue,
