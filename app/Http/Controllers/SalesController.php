@@ -445,6 +445,16 @@ class SalesController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
+    // TEMP: quick diagnostics endpoint to verify data exists
+    public function diagCount()
+    {
+        return response()->json([
+            'count' => \App\Models\Sale::count(),
+            'completed' => \App\Models\Sale::where('status','completed')->count(),
+            'last' => \App\Models\Sale::orderBy('id','desc')->first(),
+        ]);
+    }
+
     // JSON: Recent/filtered sales for SPA "Sales Transactions"
     public function recentSales(Request $request)
     {
