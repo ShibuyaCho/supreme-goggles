@@ -1247,12 +1247,7 @@ function cannabisPOS() {
       if (!start || !end || this.salesFilter.dateRange !== "custom") {
         const dr = this.salesFilter.dateRange || "today";
         const d = new Date();
-        if (dr === "today") {
-          start = end = toISO(d);
-        } else if (dr === "yesterday") {
-          d.setDate(d.getDate() - 1);
-          start = end = toISO(d);
-        } else if (dr === "week") {
+        if (dr === "week") {
           const first = new Date(d);
           first.setDate(d.getDate() - 6);
           start = toISO(first);
@@ -1262,12 +1257,14 @@ function cannabisPOS() {
           const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
           start = toISO(first);
           end = toISO(last);
+        } else if (dr === "yesterday") {
+          d.setDate(d.getDate() - 1);
+          start = end = toISO(d);
+        } else if (dr === "custom") {
+          // leave as provided
         } else {
-          // fallback to last 7 days
-          const first = new Date(d);
-          first.setDate(d.getDate() - 6);
-          start = toISO(first);
-          end = toISO(d);
+          // today or default: allow backend to choose sensible default (e.g., last 7 days)
+          start = ""; end = "";
         }
       }
 
@@ -1275,15 +1272,15 @@ function cannabisPOS() {
       let list = null;
       if (forceNetwork) {
         try {
+          const params = {
+            status: "completed",
+            sort_by: "created_at",
+            sort_order: "desc",
+            limit: 500,
+          };
+          if (start && end) { params.date_from = start; params.date_to = end; }
           const { data } = await (window.axios || axios).get("/api/sales/recent", {
-            params: {
-              status: "completed",
-              date_from: start,
-              date_to: end,
-              sort_by: "created_at",
-              sort_order: "desc",
-              limit: 500,
-            },
+            params,
             headers: { Accept: "application/json" },
           });
           if (Array.isArray(data)) {
