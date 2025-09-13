@@ -135,7 +135,7 @@
         </div>
 
         <!-- Rooms Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div id="rooms-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach($rooms ?? $defaultRooms as $room)
             <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="{{ $room['category'] }}">
                 <!-- Room Header -->
@@ -589,6 +589,65 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('rd-clear-log')?.addEventListener('click', ()=>{ activityLog = []; saveActivity(); renderActivity(); });
     renderActivity();
 
+    // Extreme persistence for Rooms (merge server + localStorage and render)
+    const serverRooms = @json($rooms ?? []);
+    const ROOMS_KEY = 'rd-rooms';
+    function loadRooms(){ try { return JSON.parse(localStorage.getItem(ROOMS_KEY) || '[]'); } catch(_) { return []; } }
+    function saveRooms(list){ try { localStorage.setItem(ROOMS_KEY, JSON.stringify(list)); } catch(_) {} }
+    function normalizeRoom(r){
+      return {
+        id: r.id ?? null,
+        name: r.name ?? r.room_name ?? '',
+        type: r.type ?? r.category ?? 'storage',
+        max_capacity: r.max_capacity ?? 0,
+        room_id: r.room_id ?? null,
+      };
+    }
+    let localRooms = Array.isArray(loadRooms()) ? loadRooms() : [];
+    // Merge server rooms into local for resilience
+    if (Array.isArray(serverRooms) && serverRooms.length){
+      const byName = new Set(localRooms.map(r => (r.name||'').toLowerCase()));
+      serverRooms.forEach(sr => { const nr = normalizeRoom(sr); if (!byName.has((nr.name||'').toLowerCase())) { localRooms.push(nr); byName.add((nr.name||'').toLowerCase()); } });
+      saveRooms(localRooms);
+    }
+    const roomsGrid = document.getElementById('rooms-grid');
+    function findRoomCardByName(n){
+      try { return Array.from(roomsGrid.querySelectorAll('.room-card')).find(c => (c.querySelector('h3')?.textContent||'').trim().toLowerCase() === String(n||'').trim().toLowerCase()); } catch(_) { return null; }
+    }
+    function appendRoomCard(r){
+      if (!roomsGrid || !r || findRoomCardByName(r.name)) return;
+      const usagePercent = 0;
+      const html = `
+        <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="${r.type}">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center">
+              <div class="flex h-10 w-10 items-center justify-center rounded-lg ${r.type==='processing'?'bg-blue-100':r.type==='storage'?'bg-yellow-100':r.type==='production'?'bg-purple-100':'bg-orange-100'}"></div>
+              <div class="ml-3">
+                <h3 class="text-lg font-medium text-gray-900"></h3>
+                <p class="text-sm text-gray-500">${r.type.charAt(0).toUpperCase()+r.type.slice(1)} Room</p>
+              </div>
+            </div>
+            <span class="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">Compliant</span>
+          </div>
+          <div class="space-y-3 mb-4">
+            <div class="flex justify-between text-sm"><span class="text-gray-500">METRC ID:</span><span class="font-medium font-mono">${r.room_id || '-'}</span></div>
+            <div class="flex justify-between text-sm"><span class="text-gray-500">Capacity:</span><span class="font-medium">0/${r.max_capacity ?? 0} items</span></div>
+          </div>
+          <div class="mb-4">
+            <div class="flex justify-between text-sm mb-1"><span class="text-gray-500">Capacity Usage</span><span class="font-medium">${usagePercent}%</span></div>
+            <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-green-500 h-2 rounded-full" style="width:${usagePercent}%"></div></div>
+          </div>
+          <div class="flex space-x-2">
+            <button class="flex-1 bg-blue-600 text-white px-3 py-2 rounded-md text-sm hover:bg-blue-700" onclick="viewRoomDetails(${JSON.stringify(r.id || r.name)})">View Details</button>
+            <button class="flex-1 border border-gray-300 text-gray-700 px-3 py-2 rounded-md text-sm hover:bg-gray-50" onclick="transferToRoom(${JSON.stringify(r.id || r.name)})">Transfer</button>
+            <button class="px-3 py-2 border border-green-300 text-green-700 rounded-md text-sm hover:bg-green-50" onclick="openAddDrawerModal(${JSON.stringify(r.id || '')}, ${JSON.stringify(r.name)})">+ Drawer</button>
+          </div>
+        </div>`;
+      const wrap = document.createElement('div'); wrap.innerHTML = html.trim(); wrap.querySelector('h3').textContent = r.name; roomsGrid.prepend(wrap.firstElementChild);
+    }
+    // Render any local rooms not already present
+    (Array.isArray(localRooms)?localRooms:[]).forEach(appendRoomCard);
+
     categoryTabs.forEach(tab => {
         tab.addEventListener('click', function() {
             const category = this.getAttribute('data-category');
@@ -759,8 +818,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (!res.ok) throw new Error(data.message || 'Failed to create room');
             toast('Room created successfully', 'success');
             // Optimistically add the new room card to the grid without reload
-            const grid = document.querySelector('.grid.grid-cols-1');
+            const grid = document.getElementById('rooms-grid');
             if (grid && data.room) { addActivity('Room created', `${data.room.name} (${data.room.type})`);
+                // persist locally as well
+                try { const nr = { id: data.room.id, name: data.room.name, type: data.room.type, max_capacity: data.room.max_capacity ?? 0, room_id: data.room.room_id || null }; const names = new Set((localRooms||[]).map(r=> (r.name||'').toLowerCase())); if (!names.has((nr.name||'').toLowerCase())) { localRooms.push(nr); saveRooms(localRooms); } } catch(_) {}
                 const usagePercent = 0;
                 const roomHtml = `
                 <div class="room-card rounded-lg bg-white p-6 shadow hover:shadow-lg transition-shadow" data-category="${data.room.type}">
@@ -793,7 +854,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 wrapper.querySelector('h3').textContent = data.room.name;
                 grid.prepend(wrapper.firstElementChild);
             } else {
-                window.location.reload();
+                // Fallback: fully local room create to guarantee persistence
+                const localRoom = { id: `local-${Date.now()}`, name, type, max_capacity: max_capacity||0, room_id: null };
+                appendRoomCard(localRoom);
+                try { localRooms.push(localRoom); saveRooms(localRooms); } catch(_) {}
+                addActivity('Room created', `${name} (${type})`);
             }
             closeAddRoomModal();
         } catch (e) {
