@@ -1231,6 +1231,9 @@ app.post("/api/activity", async (req, res) => {
   }
 });
 
+// In-memory diagnostics
+let __lastPayment = null;
+
 // Payment handler (shared)
 async function handleProcessPayment(req, res) {
   const user = getAuthUser(req);
@@ -1272,14 +1275,21 @@ async function handleProcessPayment(req, res) {
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
+    __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: r.ok };
     return res.status(200).json({ success: true, sale: Array.isArray(payload) ? payload[0] : payload });
   } catch (e) {
+    __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: false, error: String(e?.message || e) };
     return res.status(500).json({ success: false, error: "Failed to record sale" });
   }
 }
 
 // POS: process payment -> persist sale to Supabase (aliases)
 app.post(["/api/pos/process-payment", "/api/pos/process-payment-open", "/api/sales"], handleProcessPayment);
+
+// Diagnostics: last payment payload
+app.get("/api/diag/last-payment", (_req, res) => {
+  res.json(__lastPayment || { message: "no payment captured yet" });
+});
 
 // Sales: recent list (for UI grids)
 app.get("/api/sales/recent", async (req, res) => {
