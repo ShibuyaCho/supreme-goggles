@@ -20722,6 +20722,42 @@
       });
     </script>
     <script>
+      function aspdPage() {
+        return {
+          items: [],
+          days: 0,
+          loading: true,
+          async init() { await this.load(); },
+          async load() {
+            this.loading = true;
+            try {
+              const tfSel = document.querySelector('select[x-model="aspdTimeframe"]');
+              const tf = tfSel ? tfSel.value : 'month';
+              const r = await fetch(`/api/analytics/aspd?timeframe=${encodeURIComponent(tf)}`, { headers: { Accept: 'application/json' } });
+              const d = r.ok ? await r.json() : null;
+              if (d && Array.isArray(d.items)) { this.items = d.items; this.days = d.daysInRange || 0; } else { this.items = []; this.days = 0; }
+            } catch (_) { this.items = []; this.days = 0; }
+            finally { this.loading = false; }
+          }
+        }
+      }
+      window.loadAspd = async function() {
+        try {
+          const comp = document.querySelector('[x-data^="aspdPage()"]');
+          if (comp && comp.__x) await comp.__x.$data.load();
+        } catch(_) {}
+      };
+      window.exportAspd = function() {
+        try {
+          const rows = Array.from(document.querySelectorAll('[x-data^="aspdPage()"] tbody tr'));
+          const header = ['Product','TotalSold','Days','ASPD','Trend'];
+          const out = [header.join(',')].concat(rows.map(tr => Array.from(tr.children).map(td => td.innerText.replace(/,/g,'')).slice(0,5).join(','))).join('\n');
+          const blob = new Blob([out], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'aspd.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 2000);
+        } catch(_) {}
+      };
+    </script>
+    <script>
       (function () {
         document.addEventListener("DOMContentLoaded", function () {
           var menu = document.getElementById("nav-dropdown-menu");
