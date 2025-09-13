@@ -20823,6 +20823,18 @@
           const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'aspd.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 2000);
         } catch(_) {}
       };
+      (function setupAspdAutoRefresh(){
+        try {
+          if (window.__aspdInterval) clearInterval(window.__aspdInterval);
+          const tick = async () => {
+            if (document.hidden) return;
+            if (typeof window.loadAspd === 'function') await window.loadAspd();
+          };
+          window.__aspdInterval = setInterval(tick, 15000);
+          document.addEventListener('visibilitychange', () => { /* no-op, tick checks hidden */ });
+          window.addEventListener('beforeunload', () => { if (window.__aspdInterval) clearInterval(window.__aspdInterval); });
+        } catch(_) {}
+      })();
     </script>
     <script>
       (function () {
