@@ -233,7 +233,10 @@ export default function RoomsDrawers() {
       localStorage.setItem(ACTIVITY_KEY, JSON.stringify(prev));
     } catch (_) {}
   };
-  const [rooms, setRooms] = useState<Room[]>(mockRooms);
+  const [rooms, setRooms] = useState<Room[]>(() => {
+    try { const raw = localStorage.getItem(DEMO_ROOMS_KEY); if (raw) { const arr = JSON.parse(raw); if (Array.isArray(arr)) return arr; } } catch(_) {}
+    return mockRooms;
+  });
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [selectedDrawer, setSelectedDrawer] = useState<Drawer | null>(null);
   const [showRoomDialog, setShowRoomDialog] = useState(false);
