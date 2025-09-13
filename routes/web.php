@@ -364,6 +364,8 @@ Route::prefix('api')->name('api.')->group(function () {
     // Temporary public alias for POS payment to enable end-to-end testing without auth
     Route::post('/pos/process-payment', [POSController::class, 'processPayment'])->name('pos.process-payment.public');
     Route::get('/analytics/quick-stats', [AnalyticsController::class, 'quickStats'])->name('analytics.quick-stats');
+    // Temporary public alias for ASPD analytics (no auth) for live dashboard
+    Route::get('/analytics/aspd-open', [AnalyticsController::class, 'getASPDAnalyticsOpen'])->name('analytics.aspd-open');
     Route::post('/cart/validate', [POSController::class, 'validateCart'])->name('cart.validate');
     Route::get('/metrc/product/{tag}', [POSController::class, 'getMetrcProduct'])->name('metrc.product');
 });
