@@ -255,39 +255,42 @@ class AnalyticsController extends Controller
         if ($this->supabaseEnabled()) {
             try {
                 $rows = $this->supaSalesInRange($dateRange);
-                $byId = [];
-                $byCat = [];
-                $prodIds = [];
-                foreach ($rows as $r) {
-                    $cart = isset($r['cart']) && is_array($r['cart']) ? $r['cart'] : [];
-                    foreach ($cart as $i) {
-                        $pid = isset($i['id']) ? (int)$i['id'] : null;
-                        $qty = isset($i['quantity']) ? (float)$i['quantity'] : 1;
-                        $price = isset($i['price']) ? (float)$i['price'] : 0;
-                        $revenue = $qty * $price;
-                        if ($pid) $prodIds[$pid] = true;
-                        $byId[$pid ?? 0] = ($byId[$pid ?? 0] ?? 0) + $revenue;
+                if (is_array($rows) && count($rows) > 0) {
+                    $byId = [];
+                    $byCat = [];
+                    $prodIds = [];
+                    foreach ($rows as $r) {
+                        $cart = isset($r['cart']) && is_array($r['cart']) ? $r['cart'] : [];
+                        foreach ($cart as $i) {
+                            $pid = isset($i['id']) ? (int)$i['id'] : null;
+                            $qty = isset($i['quantity']) ? (float)$i['quantity'] : 1;
+                            $price = isset($i['price']) ? (float)$i['price'] : 0;
+                            $revenue = $qty * $price;
+                            if ($pid) $prodIds[$pid] = true;
+                            $byId[$pid ?? 0] = ($byId[$pid ?? 0] ?? 0) + $revenue;
+                        }
                     }
-                }
-                $catMap = [];
-                if (!empty($prodIds)) {
-                    $url = rtrim(env('SUPABASE_URL'), '/') . '/rest/v1/products';
-                    $resp = Http::withHeaders($this->supaHeaders())->get($url, [ 'select' => 'id,category,name', 'id' => 'in.(' . implode(',', array_map('intval', array_keys($prodIds))) . ')' ]);
-                    if ($resp->ok()) {
-                        foreach ((array)$resp->json() as $p) { $catMap[(int)$p['id']] = [ 'category' => $p['category'] ?? 'Uncategorized', 'name' => $p['name'] ?? '' ]; }
+                    $catMap = [];
+                    if (!empty($prodIds)) {
+                        $url = rtrim(env('SUPABASE_URL'), '/') . '/rest/v1/products';
+                        $resp = Http::withHeaders($this->supaHeaders())->get($url, [ 'select' => 'id,category,name', 'id' => 'in.(' . implode(',', array_map('intval', array_keys($prodIds))) . ')' ]);
+                        if ($resp->ok()) {
+                            foreach ((array)$resp->json() as $p) { $catMap[(int)$p['id']] = [ 'category' => $p['category'] ?? 'Uncategorized', 'name' => $p['name'] ?? '' ]; }
+                        }
                     }
+                    foreach ($byId as $pid => $rev) {
+                        $cat = isset($catMap[$pid]) ? ($catMap[$pid]['category'] ?? 'Uncategorized') : 'Uncategorized';
+                        $byCat[$cat] = ($byCat[$cat] ?? 0) + (float)$rev;
+                    }
+                    $total = array_sum($byCat);
+                    $categoryData = collect(array_map(function($cat,$rev) use ($total){ return (object)['category'=>$cat,'revenue'=>$rev,'percentage'=> $total>0?($rev/$total*100):0]; }, array_keys($byCat), array_values($byCat)))->values();
+                    $topProducts = collect($catMap)->map(function($v,$id) use ($byId){ return [ 'name'=>$v['name'] ?: ('Product #'.$id), 'category'=>$v['category'] ?? 'Uncategorized', 'revenue'=> (float)($byId[$id] ?? 0), 'sales'=> null ]; })->sortByDesc('revenue')->take(5)->map(fn($r) => (object)$r)->values();
+                    return [ 'topProducts' => $topProducts, 'categoryData' => $categoryData ];
                 }
-                foreach ($byId as $pid => $rev) {
-                    $cat = isset($catMap[$pid]) ? ($catMap[$pid]['category'] ?? 'Uncategorized') : 'Uncategorized';
-                    $byCat[$cat] = ($byCat[$cat] ?? 0) + (float)$rev;
-                }
-                $total = array_sum($byCat);
-                $categoryData = collect(array_map(function($cat,$rev) use ($total){ return (object)['category'=>$cat,'revenue'=>$rev,'percentage'=> $total>0?($rev/$total*100):0]; }, array_keys($byCat), array_values($byCat)))->values();
-                $topProducts = collect($catMap)->map(function($v,$id) use ($byId){ return [ 'name'=>$v['name'] ?: ('Product #'.$id), 'category'=>$v['category'] ?? 'Uncategorized', 'revenue'=> (float)($byId[$id] ?? 0), 'sales'=> null ]; })->sortByDesc('revenue')->take(5)->map(fn($r)=>(object)$r)->values();
-                return [ 'topProducts' => $topProducts, 'categoryData' => $categoryData ];
-            } catch (\Throwable $e) { /* fall back */ }
+            } catch (\Throwable $e) { /* fall back to DB */ }
         }
 
+        // Fallback to local DB when Supabase is disabled or has no rows
         $topProducts = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
