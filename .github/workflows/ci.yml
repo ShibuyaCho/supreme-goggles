@@ -20,8 +20,8 @@ jobs:
         run: mkdir -p bootstrap/cache
       - name: Fix permissions for bootstrap/cache
         run: chmod -R 775 bootstrap/cache
-      - name: Install PHP dependencies
-        run: composer install --no-interaction --prefer-dist
+      - name: Install PHP dependencies (no scripts)
+        run: composer install --no-interaction --prefer-dist --no-scripts
       - name: Generate app key
         run: php -r "file_exists('.env') || copy('.env.example', '.env');" && php artisan key:generate
       - name: Run Pint
