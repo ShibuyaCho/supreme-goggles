@@ -4657,7 +4657,11 @@ function cannabisPOS() {
           admin: "admin",
         };
         const department = deptMap[role] || "operations";
-        const employee_id = `EMP-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+        let employee_id = null;
+        try {
+          const r = await axios.get('/api/employees/next-id', { headers: { Accept: 'application/json' } });
+          employee_id = r?.data?.next_id || null;
+        } catch (_) { employee_id = null; }
         const hourly_rate = parseFloat(this.employeeForm.payRate || 0) || 0;
         const hire_date = this.employeeForm.hireDate;
         const permissionsByRole = {
