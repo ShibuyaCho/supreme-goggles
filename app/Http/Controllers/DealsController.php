@@ -11,11 +11,9 @@ use Illuminate\Support\Facades\Mail;
 
 class DealsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $deals = Deal::with(['categories', 'usageHistory'])
-                    ->orderBy('created_at', 'desc')
-                    ->get();
+        $deals = Deal::orderBy('created_at', 'desc')->get();
 
         // Load METRC categories with safe fallback
         $categories = [];
@@ -28,6 +26,14 @@ class DealsController extends Controller
             $categories = [
                 'Flower','Pre-Rolls','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Cartridges','Vape Pens','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Shake/Trim','Kief','Accessories'
             ];
+        }
+
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'deals' => $deals->map(fn($d) => $this->formatDealForResponse($d))->values()->all(),
+                'categories' => $categories,
+            ]);
         }
 
         return view('deals.index', compact('deals','categories'));
