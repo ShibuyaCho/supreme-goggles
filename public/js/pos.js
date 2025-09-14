@@ -3871,8 +3871,40 @@ function cannabisPOS() {
       } catch (error) {
         console.error("Error loading products:", error);
       }
-      this.normalizeCollections();
-      this.filterProducts();
+      const doFetch = async () => {
+        try {
+          const resp = await fetch('/products', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+          if (resp.ok) {
+            const data = await resp.json();
+            const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+            if (Array.isArray(items) && items.length) {
+              this.products = items;
+              try { localStorage.setItem('cannabisPOS-products', JSON.stringify({ data: items })); } catch (e) {}
+            }
+          }
+        } catch (e) {
+          try {
+            const resp = await fetch('/api/products', { headers: { Accept: 'application/json' } });
+            if (resp.ok) {
+              const data = await resp.json();
+              const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+              if (Array.isArray(items) && items.length) {
+                this.products = items;
+                try { localStorage.setItem('cannabisPOS-products', JSON.stringify({ data: items })); } catch (_) {}
+              }
+            }
+          } catch (_) {}
+        } finally {
+          this.normalizeCollections();
+          this.filterProducts();
+        }
+      };
+      if (!Array.isArray(this.products) || this.products.length === 0) {
+        doFetch();
+      } else {
+        this.normalizeCollections();
+        this.filterProducts();
+      }
     },
 
     loadCustomers() {
@@ -4726,6 +4758,7 @@ function cannabisPOS() {
       const base = [
         "Flower",
         "Pre-Rolls",
+        "Infused",
         "Concentrates",
         "Extracts",
         "Edibles",
