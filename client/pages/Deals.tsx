@@ -234,6 +234,25 @@ export default function Deals() {
       return;
     }
 
+    const payload = mapUiToApi(newDeal);
+    try {
+      const res = await fetch(`/api/deals/${selectedDeal.id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (res.ok && data?.deal) {
+        const mapped = mapApiDealToUi(data.deal);
+        setDeals(prev => prev.map(d => d.id === mapped.id ? mapped : d));
+        setShowEditDialog(false);
+        setSelectedDeal(null);
+        resetForm();
+        return;
+      }
+      alert(data?.message || 'Failed to update deal');
+      return;
+    } catch (e) {
+      alert('Failed to update deal');
+      return;
+    }
+
     const updatedDeal: Deal = {
       ...selectedDeal,
       name: newDeal.name || "",
