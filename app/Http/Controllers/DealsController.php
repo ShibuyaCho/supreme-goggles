@@ -196,6 +196,12 @@ class DealsController extends Controller
                     if (isset($payload['active_days']) && is_string($payload['active_days'])) {
                         $payload['active_days'] = json_decode($payload['active_days'], true);
                     }
+                    if (isset($payload['category_discounts']) && is_string($payload['category_discounts'])) {
+                        $payload['category_discounts'] = json_decode($payload['category_discounts'], true);
+                    }
+                    if (isset($payload['item_discounts']) && is_string($payload['item_discounts'])) {
+                        $payload['item_discounts'] = json_decode($payload['item_discounts'], true);
+                    }
                     $resp = Http::withHeaders([
                         'apikey' => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
@@ -330,6 +336,12 @@ class DealsController extends Controller
                     }
                     if (isset($payload['active_days']) && is_string($payload['active_days'])) {
                         $payload['active_days'] = json_decode($payload['active_days'], true);
+                    }
+                    if (isset($payload['category_discounts']) && is_string($payload['category_discounts'])) {
+                        $payload['category_discounts'] = json_decode($payload['category_discounts'], true);
+                    }
+                    if (isset($payload['item_discounts']) && is_string($payload['item_discounts'])) {
+                        $payload['item_discounts'] = json_decode($payload['item_discounts'], true);
                     }
                     $resp = Http::withHeaders([
                         'apikey' => $supabaseKey,
