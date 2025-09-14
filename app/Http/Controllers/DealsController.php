@@ -358,6 +358,35 @@ class DealsController extends Controller
         }
 
         try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $get = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json'
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [ 'select' => '*', 'id' => 'eq.' . $request->deal_id ]);
+                if (!$get->ok()) throw new \Exception('Supabase fetch error');
+                $rows = $get->json();
+                $row = is_array($rows) && isset($rows[0]) ? $rows[0] : null;
+                if (!$row) return response()->json(['success' => false, 'message' => 'Deal not found'], 404);
+                $newUses = (int)($row['current_uses'] ?? 0) + 1;
+                $upd = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($request->deal_id), [ 'current_uses' => $newUses ]);
+                if (!$upd->successful()) throw new \Exception('Supabase update error');
+                $updated = $upd->json();
+                $dealRow = is_array($updated) && isset($updated[0]) ? $updated[0] : $row;
+                return response()->json([
+                    'success' => true,
+                    'discount' => 0,
+                    'deal' => $dealRow
+                ]);
+            }
+
             $deal = Deal::findOrFail($request->deal_id);
 
             // Check if deal is active by model rules (dates, usage, frequency)
