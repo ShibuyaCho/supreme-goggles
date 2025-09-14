@@ -431,6 +431,7 @@ function dealsManager() {
                 applicable_categories: [],
                 specific_items: [],
                 category_discounts: {},
+                item_discounts: {},
                 minimum_purchase: null,
                 minimum_purchase_type: 'dollars',
                 max_uses: null,
