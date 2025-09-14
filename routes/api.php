@@ -265,6 +265,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         // Management operations (admin/manager only)
         Route::middleware('role:admin,manager')->group(function () {
+            Route::get('/next-id', [EmployeesController::class, 'nextId']);
             Route::post('/', [EmployeesController::class, 'store']);
             Route::get('/{employee}', [EmployeesController::class, 'show']);
             Route::put('/{employee}', [EmployeesController::class, 'update']);
