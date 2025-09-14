@@ -142,7 +142,7 @@ class DealsController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'type' => 'required|in:percentage,fixed_amount,bogo,bulk',
+            'type' => 'required|in:percentage,fixed,fixed_amount,bogo,bulk',
             'value' => 'required|numeric|min:0',
             'frequency' => 'required|in:always,daily,weekly,monthly,custom',
             'day_of_week' => 'nullable|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
@@ -280,7 +280,7 @@ class DealsController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'type' => 'required|in:percentage,fixed_amount,bogo,bulk',
+            'type' => 'required|in:percentage,fixed,fixed_amount,bogo,bulk',
             'value' => 'required|numeric|min:0',
             'frequency' => 'required|in:always,daily,weekly,monthly,custom',
             'day_of_week' => 'nullable|string|in:Monday,Tuesday,Wednesday,Thursday,Friday,Saturday,Sunday',
