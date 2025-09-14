@@ -594,6 +594,7 @@ function dealsManager() {
                 const response = await fetch(`/deals/${deal.id}`, {
                     method: 'DELETE',
                     headers: {
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 });
