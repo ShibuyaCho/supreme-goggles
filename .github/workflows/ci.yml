@@ -16,6 +16,10 @@ jobs:
           php-version: "8.2"
           coverage: xdebug
           tools: composer:v2
+      - name: Ensure bootstrap/cache exists
+        run: mkdir -p bootstrap/cache
+      - name: Fix permissions for bootstrap/cache
+        run: chmod -R 775 bootstrap/cache
       - name: Install PHP dependencies
         run: composer install --no-interaction --prefer-dist
       - name: Generate app key
