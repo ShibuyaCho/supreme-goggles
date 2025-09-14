@@ -868,13 +868,10 @@ function cannabisPOS() {
                   isVoided: false,
                   status: "completed",
                 };
+                const ok = String(optimistic.id || optimistic.numericId);
                 this.sales = [
                   optimistic,
-                  ...this.sales.filter(
-                    (x) =>
-                      (x.numericId || x.id) !==
-                      (optimistic.numericId || optimistic.id),
-                  ),
+                  ...this.sales.filter((x) => String(x.id || x.numericId) !== ok),
                 ];
                 this.filterSales();
                 try {
@@ -1483,7 +1480,17 @@ function cannabisPOS() {
         }
       }
 
-      this.sales = Array.isArray(list) ? list : [];
+      const rawList = Array.isArray(list) ? list : [];
+      const seen = new Set();
+      const unique = rawList.filter((s) => {
+        const key = s.id || s.sale_number || s.numericId;
+        if (key == null) return true;
+        const k = String(key);
+        if (seen.has(k)) return false;
+        seen.add(k);
+        return true;
+      });
+      this.sales = unique;
       this.filterSales();
       try {
         localStorage.setItem(
@@ -2739,11 +2746,13 @@ function cannabisPOS() {
           });
           if (!s) continue;
           const mapped = this.mapSaleToSpa(s);
+          const mk = String(mapped.id || mapped.numericId);
           this.sales = [
             mapped,
-            ...this.sales.filter(
-              (x) => (x.numericId || x.id) !== (mapped.numericId || mapped.id),
-            ),
+            ...this.sales.filter((x) => {
+              const k = String(x.id || x.numericId);
+              return k !== mk;
+            }),
           ];
           this.filterSales();
           try {
