@@ -156,7 +156,7 @@
 
         <!-- Deal Modal -->
         <div x-show="showModal" @open-deal-modal.window="openModal($event.detail)" x-cloak class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" @click.outside="closeModal()">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" @click.outside="closeModal()">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold" x-text="modalType === 'create' ? 'Create New Deal' : 'Edit Deal'"></h2>
@@ -291,7 +291,7 @@
                                     <template x-for="cat in categories" :key="cat">
                                         <div class="grid grid-cols-2 gap-2 items-center">
                                             <div class="text-sm" x-text="cat"></div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 min-w-0">
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -300,7 +300,7 @@
                                                     @input="form.category_discounts = { ...(form.category_discounts || {}), [cat]: parseFloat($event.target.value) || 0 }"
                                                     placeholder="Discount value"
                                                 >
-                                                <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                                                <select class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0" disabled>
                                                     <option>Uses deal type</option>
                                                 </select>
                                             </div>
@@ -320,7 +320,7 @@
                                                 <span x-text="getProductById(pid).name"></span>
                                                 <span class="text-xs text-gray-500" x-text="getProductById(pid).category ? ' • ' + getProductById(pid).category : ''"></span>
                                             </div>
-                                            <div class="flex items-center gap-2">
+                                            <div class="flex items-center gap-2 min-w-0">
                                                 <input
                                                     type="number"
                                                     step="0.01"
@@ -329,7 +329,7 @@
                                                     @input="form.item_discounts = { ...(form.item_discounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }"
                                                     placeholder="Discount value"
                                                 >
-                                                <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                                                <select class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0" disabled>
                                                     <option>Uses deal type</option>
                                                 </select>
                                             </div>
