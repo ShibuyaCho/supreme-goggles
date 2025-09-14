@@ -1865,17 +1865,31 @@ function cannabisPOS() {
     async loadDeals() {
       try {
         let list = [];
-        if (window.posAuth && typeof posAuth.apiRequest === "function") {
-          const res = await posAuth.apiRequest("get", "/deals");
-          const payload = res?.data;
-          const dealsArr = Array.isArray(payload?.deals)
-            ? payload.deals
-            : Array.isArray(payload)
-              ? payload
-              : [];
-          list = dealsArr.map((d) => this.mapDealToSpa(d));
+        // Primary: API (Node proxy -> Supabase)
+        try {
+          if (window.posAuth && typeof posAuth.apiRequest === "function") {
+            const res = await posAuth.apiRequest("get", "/deals");
+            const payload = res?.data;
+            const dealsArr = Array.isArray(payload?.deals)
+              ? payload.deals
+              : Array.isArray(payload)
+                ? payload
+                : [];
+            list = dealsArr.map((d) => this.mapDealToSpa(d));
+          }
+        } catch (_) {}
+        // Fallback: Laravel web route (merged Supabase + local DB)
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const resp = await fetch('/deals', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            if (resp.ok) {
+              const data = await resp.json();
+              const arr = Array.isArray(data?.deals) ? data.deals : (Array.isArray(data) ? data : []);
+              list = arr.map((d) => this.mapDealToSpa(d));
+            }
+          } catch (_) {}
         }
-        this.deals = list;
+        this.deals = list || [];
         this.filterDeals();
       } catch (e) {
         this.deals = this.deals || [];
@@ -2045,15 +2059,39 @@ function cannabisPOS() {
           if (f.endDate == null || f.endDate === "") delete payload.end_date;
         }
         const res = await posAuth.apiRequest(method, url, payload);
-        const data = res?.data || {};
-        const persisted = data?.deal && (data.deal.id != null);
-        if (res?.success && data?.success !== false && persisted) {
+        let data = res?.data || {};
+        let persisted = data?.deal && (data.deal.id != null);
+
+        // Fallback to Laravel web route when API fails (RLS, network, etc.)
+        if (!(res?.success && data?.success !== false && persisted)) {
+          try {
+            const webUrl = creating ? '/deals' : `/deals/${this.editingDeal.id}`;
+            const webMethod = creating ? 'POST' : 'PATCH';
+            const resp = await fetch(webUrl, {
+              method: webMethod,
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')||{}).content || ''
+              },
+              credentials: 'same-origin',
+              body: JSON.stringify(payload)
+            });
+            const j = await resp.json().catch(() => ({}));
+            if (resp.ok && j?.deal && j.deal.id != null) {
+              data = j;
+              persisted = true;
+            }
+          } catch (_) {}
+        }
+
+        if (persisted) {
           const created = this.mapDealToSpa(data.deal);
           if (creating) {
             this.deals = [created, ...this.deals];
           } else {
             this.deals = this.deals.map((d) =>
-              d.id === String(this.editingDeal.id)
+              String(d.id) === String(this.editingDeal.id)
                 ? { ...created, id: this.editingDeal.id }
                 : d,
             );
