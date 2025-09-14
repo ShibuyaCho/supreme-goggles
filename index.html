@@ -1385,7 +1385,7 @@
                             ></h3>
                             <p
                               class="text-sm text-gray-500"
-                              x-text="`${product.category} ����� ${product.weight || 'N/A'}`"
+                              x-text="`${product.category} ��� ${product.weight || 'N/A'}`"
                             ></p>
                             <div
                               x-show="!['Paraphernalia', 'Accessories', 'Glass', 'Accessories/Paraphernalia'].includes(product.category)"
@@ -19267,8 +19267,9 @@
                   </div>
                 </div>
 
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Per-Category Discounts (optional) -->
-                <div class="mt-4">
+                <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
                   <div class="space-y-2">
                     <template x-for="category in getUniqueCategories()" :key="category">
