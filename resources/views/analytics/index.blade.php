@@ -481,6 +481,7 @@ document.addEventListener('DOMContentLoaded', function() {
       document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fetchOverview(); });
       window.addEventListener('storage', (e)=>{ if (e && e.key === 'pos_last_sale_id') fetchOverview(); });
       document.addEventListener('pos-sale-completed', fetchOverview);
+      window.addEventListener('pos-sale-completed', fetchOverview);
     })();
 
     // Hydrate End of Day from Supabase-backed API
