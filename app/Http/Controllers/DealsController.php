@@ -67,15 +67,22 @@ class DealsController extends Controller
             $dealData = $request->all();
             $dealData['current_uses'] = 0;
 
+            // Normalize optional dates
+            foreach (['start_date','end_date'] as $dk) {
+                if (isset($dealData[$dk]) && (!$dealData[$dk] || $dealData[$dk] === '')) {
+                    $dealData[$dk] = null;
+                }
+            }
+
             // Convert applicable_categories array to JSON if present
-            if (isset($dealData['applicable_categories'])) {
+            if (isset($dealData['applicable_categories']) && is_array($dealData['applicable_categories'])) {
                 $dealData['applicable_categories'] = json_encode($dealData['applicable_categories']);
             }
 
             $deal = Deal::create($dealData);
 
             // Send email campaign if requested
-            if ($request->email_customers) {
+            if (!empty($deal->email_customers)) {
                 $this->sendDealEmailCampaign($deal);
             }
 
@@ -138,15 +145,23 @@ class DealsController extends Controller
             $deal = Deal::findOrFail($id);
             $dealData = $request->all();
 
+            // Normalize optional dates
+            foreach (['start_date','end_date'] as $dk) {
+                if (isset($dealData[$dk]) && (!$dealData[$dk] || $dealData[$dk] === '')) {
+                    $dealData[$dk] = null;
+                }
+            }
+
             // Convert applicable_categories array to JSON if present
-            if (isset($dealData['applicable_categories'])) {
+            if (isset($dealData['applicable_categories']) && is_array($dealData['applicable_categories'])) {
                 $dealData['applicable_categories'] = json_encode($dealData['applicable_categories']);
             }
 
+            $originalEmail = (bool)$deal->email_customers;
             $deal->update($dealData);
 
             // Send email campaign if newly enabled
-            if ($request->email_customers && !$deal->getOriginal('email_customers')) {
+            if ($deal->email_customers && !$originalEmail) {
                 $this->sendDealEmailCampaign($deal);
             }
 
@@ -372,8 +387,19 @@ class DealsController extends Controller
 
         foreach ($loyaltyMembers as $customer) {
             try {
-                // Here you would send the actual email
-                // Mail::to($customer->email)->send(new DealNotification($deal, $customer));
+                $payloadDeal = $deal->toArray();
+                if (!empty($payloadDeal['applicable_categories']) && is_string($payloadDeal['applicable_categories'])) {
+                    $decoded = json_decode($payloadDeal['applicable_categories'], true);
+                    if (json_last_error() === JSON_ERROR_NONE) $payloadDeal['applicable_categories'] = $decoded;
+                }
+                Mail::send('emails.deal-notification', [
+                    'deal' => $payloadDeal,
+                    'customer' => $customer->toArray(),
+                ], function ($message) use ($customer, $deal) {
+                    $message->to($customer->email)
+                        ->subject(($deal->name ? ($deal->name.' - ') : '').'New Deal at '.(config('app.name','Cannabis POS')))
+                        ->from(config('mail.from.address', env('MAIL_FROM_ADDRESS')), config('mail.from.name', env('MAIL_FROM_NAME')));
+                });
 
                 Log::info('Deal email sent', [
                     'deal_id' => $deal->id,
@@ -388,6 +414,24 @@ class DealsController extends Controller
                     'error' => $e->getMessage()
                 ]);
             }
+        }
+    }
+
+    public function sendEmailCampaign($id)
+    {
+        try {
+            $deal = Deal::findOrFail($id);
+            $this->sendDealEmailCampaign($deal);
+            return response()->json([
+                'success' => true,
+                'message' => 'Email campaign sent successfully'
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error sending deal email campaign', ['deal_id' => $id, 'error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send email campaign'
+            ], 500);
         }
     }
 }
