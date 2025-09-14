@@ -228,7 +228,7 @@ export default function Deals() {
     resetForm();
   };
 
-  const editDeal = () => {
+  const editDeal = async () => {
     if (!selectedDeal || !newDeal.name || !newDeal.description || !newDeal.discountValue) {
       alert("Please fill in all required fields");
       return;
