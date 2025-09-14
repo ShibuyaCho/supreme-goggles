@@ -422,6 +422,8 @@ document.addEventListener('DOMContentLoaded', function() {
     (function(){
       const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
       async function fetchOverview(){
+        const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
+        const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
         try{
           const timeframe = document.getElementById('timeframe-selector').value || 'today';
           const res = await (window.axios||axios).get('/api/analytics/overview', { params: { timeframe } });
