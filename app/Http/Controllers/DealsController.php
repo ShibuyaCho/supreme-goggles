@@ -674,6 +674,18 @@ class DealsController extends Controller
                 $dealArray['active_days'] = $decoded;
             }
         }
+        if (array_key_exists('category_discounts', $dealArray) && is_string($dealArray['category_discounts'])) {
+            $decoded = json_decode($dealArray['category_discounts'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $dealArray['category_discounts'] = $decoded;
+            }
+        }
+        if (array_key_exists('item_discounts', $dealArray) && is_string($dealArray['item_discounts'])) {
+            $decoded = json_decode($dealArray['item_discounts'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $dealArray['item_discounts'] = $decoded;
+            }
+        }
 
         return $dealArray;
     }
