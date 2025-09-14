@@ -282,61 +282,64 @@
                             </div>
                         </div>
 
-                        <!-- Per-Category Discounts (optional) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
-                            <div class="space-y-2">
-                                <template x-for="cat in categories" :key="cat">
-                                    <div class="grid grid-cols-2 gap-2 items-center">
-                                        <div class="text-sm" x-text="cat"></div>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
-                                                :value="(form.category_discounts && form.category_discounts[cat] !== undefined) ? form.category_discounts[cat] : ''"
-                                                @input="form.category_discounts = { ...(form.category_discounts || {}), [cat]: parseFloat($event.target.value) || 0 }"
-                                                placeholder="Discount value"
-                                            >
-                                            <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
-                                                <option>Uses deal type</option>
-                                            </select>
+                        <!-- Category and Item Discounts side-by-side -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                            <!-- Per-Category Discounts (optional) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
+                                <div class="space-y-2">
+                                    <template x-for="cat in categories" :key="cat">
+                                        <div class="grid grid-cols-2 gap-2 items-center">
+                                            <div class="text-sm" x-text="cat"></div>
+                                            <div class="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
+                                                    :value="(form.category_discounts && form.category_discounts[cat] !== undefined) ? form.category_discounts[cat] : ''"
+                                                    @input="form.category_discounts = { ...(form.category_discounts || {}), [cat]: parseFloat($event.target.value) || 0 }"
+                                                    placeholder="Discount value"
+                                                >
+                                                <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                                                    <option>Uses deal type</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                    </div>
-                                </template>
-                                <p class="text-xs text-gray-500">If set, these override the main discount for the selected category.</p>
+                                    </template>
+                                    <p class="text-xs text-gray-500">If set, these override the main discount for the selected category.</p>
+                                </div>
                             </div>
-                        </div>
 
-                        <!-- Per-Item Discounts (optional) -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
-                            <div class="space-y-2">
-                                <template x-for="pid in form.specific_items" :key="pid">
-                                    <div class="grid grid-cols-2 gap-2 items-center">
-                                        <div class="text-sm">
-                                            <span x-text="getProductById(pid).name"></span>
-                                            <span class="text-xs text-gray-500" x-text="getProductById(pid).category ? ' • ' + getProductById(pid).category : ''"></span>
+                            <!-- Per-Item Discounts (optional) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
+                                <div class="space-y-2">
+                                    <template x-for="pid in form.specific_items" :key="pid">
+                                        <div class="grid grid-cols-2 gap-2 items-center">
+                                            <div class="text-sm">
+                                                <span x-text="getProductById(pid).name"></span>
+                                                <span class="text-xs text-gray-500" x-text="getProductById(pid).category ? ' • ' + getProductById(pid).category : ''"></span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
+                                                    :value="(form.item_discounts && form.item_discounts[String(pid)] !== undefined) ? form.item_discounts[String(pid)] : ''"
+                                                    @input="form.item_discounts = { ...(form.item_discounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }"
+                                                    placeholder="Discount value"
+                                                >
+                                                <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                                                    <option>Uses deal type</option>
+                                                </select>
+                                            </div>
                                         </div>
-                                        <div class="flex items-center gap-2">
-                                            <input
-                                                type="number"
-                                                step="0.01"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
-                                                :value="(form.item_discounts && form.item_discounts[String(pid)] !== undefined) ? form.item_discounts[String(pid)] : ''"
-                                                @input="form.item_discounts = { ...(form.item_discounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }"
-                                                placeholder="Discount value"
-                                            >
-                                            <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
-                                                <option>Uses deal type</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </template>
-                                <template x-if="(form.specific_items || []).length === 0">
-                                    <div class="p-2 text-xs text-gray-500 border rounded">Select items above to set per-item discount overrides.</div>
-                                </template>
-                                <p class="text-xs text-gray-500">If set, these override both category and main discount for the item.</p>
+                                    </template>
+                                    <template x-if="(form.specific_items || []).length === 0">
+                                        <div class="p-2 text-xs text-gray-500 border rounded">Select items above to set per-item discount overrides.</div>
+                                    </template>
+                                    <p class="text-xs text-gray-500">If set, these override both category and main discount for the item.</p>
+                                </div>
                             </div>
                         </div>
 
