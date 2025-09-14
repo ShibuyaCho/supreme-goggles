@@ -19269,7 +19269,7 @@
 
                 <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <!-- Per-Category Discounts (optional) -->
-                <div class="min-w-0">
+                <div class="min-w-0 md:pr-6">
                   <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
                   <div class="space-y-2">
                     <template x-for="category in getUniqueCategories()" :key="category">
@@ -19288,7 +19288,7 @@
                 </div>
 
                 <!-- Per-Item Discounts (optional) -->
-                <div class="mt-4 min-w-0">
+                <div class="mt-4 min-w-0 md:pl-6">
                   <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
                   <div class="space-y-2">
                     <template x-for="pid in (dealForm.applicableProducts || [])" :key="pid">
