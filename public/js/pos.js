@@ -1300,7 +1300,7 @@ function cannabisPOS() {
           this._lastSalesToastAt = nowTs;
         }
       } catch(_) {}
-      const toISO = (d) => d.toISOString().slice(0, 10);
+      const toLocalISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       let start = this.salesFilter.startDate;
       let end = this.salesFilter.endDate;
       if (!start || !end || this.salesFilter.dateRange !== "custom") {
@@ -1309,20 +1309,20 @@ function cannabisPOS() {
         if (dr === "week") {
           const first = new Date(d);
           first.setDate(d.getDate() - 6);
-          start = toISO(first);
-          end = toISO(d);
+          start = toLocalISO(first);
+          end = toLocalISO(d);
         } else if (dr === "month") {
           const first = new Date(d.getFullYear(), d.getMonth(), 1);
           const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-          start = toISO(first);
-          end = toISO(last);
+          start = toLocalISO(first);
+          end = toLocalISO(last);
         } else if (dr === "yesterday") {
           d.setDate(d.getDate() - 1);
-          start = end = toISO(d);
+          start = end = toLocalISO(d);
         } else if (dr === "custom") {
           // keep provided custom range
         } else if (dr === "today") {
-          start = end = toISO(d);
+          start = end = toLocalISO(d);
         } else {
           start = ""; end = "";
         }
@@ -1447,16 +1447,16 @@ function cannabisPOS() {
       else if (range === "100+") { min = 100; max = Infinity; }
 
       // Date filter
-      const toISO = (d) => d.toISOString().slice(0,10);
+      const toLocalISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       let start = this.salesFilter.startDate;
       let end = this.salesFilter.endDate;
       const dr = this.salesFilter.dateRange || "today";
       if (!start || !end || dr !== "custom") {
         const d = new Date();
-        if (dr === "week") { const first = new Date(d); first.setDate(d.getDate()-6); start = toISO(first); end = toISO(d); }
-        else if (dr === "month") { const first = new Date(d.getFullYear(), d.getMonth(), 1); const last = new Date(d.getFullYear(), d.getMonth()+1, 0); start = toISO(first); end = toISO(last); }
-        else if (dr === "yesterday") { const y = new Date(d); y.setDate(d.getDate()-1); start = end = toISO(y); }
-        else if (dr === "today") { start = end = toISO(d); }
+        if (dr === "week") { const first = new Date(d); first.setDate(d.getDate()-6); start = toLocalISO(first); end = toLocalISO(d); }
+        else if (dr === "month") { const first = new Date(d.getFullYear(), d.getMonth(), 1); const last = new Date(d.getFullYear(), d.getMonth()+1, 0); start = toLocalISO(first); end = toLocalISO(last); }
+        else if (dr === "yesterday") { const y = new Date(d); y.setDate(d.getDate()-1); start = end = toLocalISO(y); }
+        else if (dr === "today") { start = end = toLocalISO(d); }
       }
       const dateKey = (d) => { try { const dt = new Date(d); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; } catch(_) { return ''; } };
       const startKey = start || '';
@@ -1477,14 +1477,14 @@ function cannabisPOS() {
         const d = new Date();
         const first = new Date(d.getFullYear(), d.getMonth(), 1);
         const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-        const toISO = (date) => date.toISOString().slice(0, 10);
+        const toLocalISO = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
         const params = {
           status: "completed",
           sort_by: "created_at",
           sort_order: "desc",
           limit: 1000,
-          date_from: toISO(first),
-          date_to: toISO(last),
+          date_from: toLocalISO(first),
+          date_to: toLocalISO(last),
         };
         const endpoints = [
           "/sales/recent-json",
@@ -1509,6 +1509,27 @@ function cannabisPOS() {
         const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
         this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
       } catch (_) { this.monthStats = this.monthStats || null; }
+    },
+
+    salesDateLabel() {
+      const dr = this.salesFilter.dateRange || "today";
+      const format = (val) => {
+        const dd = new Date(val);
+        return `${dd.getMonth()+1}/${dd.getDate()}/${dd.getFullYear()}`;
+      };
+      let start = this.salesFilter.startDate;
+      let end = this.salesFilter.endDate;
+      if (dr !== 'custom' || !start || !end) {
+        const d = new Date();
+        if (dr === 'week') { const first = new Date(d); first.setDate(d.getDate()-6); start = first; end = d; }
+        else if (dr === 'month') { const first = new Date(d.getFullYear(), d.getMonth(), 1); const last = new Date(d.getFullYear(), d.getMonth()+1, 0); start = first; end = last; }
+        else if (dr === 'yesterday') { const y = new Date(d); y.setDate(d.getDate()-1); start = y; end = y; }
+        else { start = d; end = d; }
+      }
+      const sStr = typeof start === 'string' ? start : `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,'0')}-${String(start.getDate()).padStart(2,'0')}`;
+      const eStr = typeof end === 'string' ? end : `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+      if (sStr === eStr) return format(sStr);
+      return `${format(sStr)} - ${format(eStr)}`;
     },
 
     getFilteredSalesStats() {
@@ -1573,19 +1594,19 @@ function cannabisPOS() {
 
     printEndOfDayReport() {
       const dr = this.salesFilter.dateRange || "today";
-      const toISO = (d) => d.toISOString().slice(0, 10);
+      const toLocalISO = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const now = new Date();
       let url = "/sales/report/daily";
       if (dr === "today") {
-        url = `/sales/report/daily?date=${toISO(now)}&format=pdf`;
+        url = `/sales/report/daily?date=${toLocalISO(now)}&format=pdf`;
       } else if (dr === "yesterday") {
         const d = new Date(); d.setDate(d.getDate() - 1);
-        url = `/sales/report/daily?date=${toISO(d)}&format=pdf`;
+        url = `/sales/report/daily?date=${toLocalISO(d)}&format=pdf`;
       } else if (dr === "week" || dr === "custom") {
         let start = this.salesFilter.startDate, end = this.salesFilter.endDate;
         if (dr === "week") {
           const d = new Date(); const first = new Date(d); first.setDate(d.getDate() - 6);
-          start = toISO(first); end = toISO(d);
+          start = toLocalISO(first); end = toLocalISO(d);
         }
         url = `/sales/report/weekly?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}&format=pdf`;
       } else if (dr === "month") {
