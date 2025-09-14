@@ -302,6 +302,8 @@ export default function Deals() {
       emailCustomers: false,
       loyaltyOnly: false,
       medicalOnly: false,
+      categoryDiscounts: {},
+      itemDiscounts: {},
       currentUses: 0
     });
   };
