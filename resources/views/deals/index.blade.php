@@ -249,6 +249,37 @@
                             <p class="text-xs text-gray-500 mt-1">Select one or more categories. Leave empty to apply to all.</p>
                         </div>
 
+                        <!-- Specific Products (optional) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Specific Products (optional)</label>
+                            <input type="text" x-model.debounce.300ms="productSearch" @input="searchProducts()" placeholder="Search products by name or SKU" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green mb-2">
+                            <div class="border border-gray-200 rounded-lg h-40 overflow-y-auto">
+                                <template x-if="productsLoading">
+                                    <div class="p-3 text-sm text-gray-500">Loading...</div>
+                                </template>
+                                <template x-if="!productsLoading && productResults.length === 0">
+                                    <div class="p-3 text-sm text-gray-500">No products found</div>
+                                </template>
+                                <template x-for="p in productResults" :key="p.id">
+                                    <label class="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50">
+                                        <div class="flex items-center gap-3">
+                                            <input type="checkbox" :checked="isProductSelected(p.id)" @change="toggleProduct(p.id)" class="h-4 w-4">
+                                            <div>
+                                                <div class="text-sm font-medium" x-text="p.name"></div>
+                                                <div class="text-xs text-gray-500" x-text="(p.sku ? ('SKU: ' + p.sku + ' • ') : '') + (p.category || '')"></div>
+                                            </div>
+                                        </div>
+                                        <span class="text-xs text-gray-400" x-text="'#' + p.id"></span>
+                                    </label>
+                                </template>
+                            </div>
+                            <div class="mt-2 text-xs text-gray-600">
+                                <span x-text="form.specific_items ? form.specific_items.length : 0"></span> selected
+                                <button type="button" class="ml-2 underline" @click="form.specific_items = []">Clear</button>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">If you select products here, the deal applies only to those products (in addition to any selected categories).</p>
+                        </div>
+
                         <!-- Minimum Purchase -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Purchase</label>
@@ -349,9 +380,13 @@ function dealsManager() {
         showModal: false,
         modalType: 'create',
         form: this.getDefaultForm(),
+        productsLoading: false,
+        productSearch: '',
+        productResults: [],
 
         init() {
             this.calculateStats();
+            this.loadProducts();
         },
 
         getDefaultForm() {
@@ -365,6 +400,7 @@ function dealsManager() {
                 start_date: today,
                 end_date: '',
                 applicable_categories: [],
+                specific_items: [],
                 minimum_purchase: null,
                 minimum_purchase_type: 'dollars',
                 max_uses: null,
@@ -391,6 +427,7 @@ function dealsManager() {
                 // Normalize audience from booleans
                 this.form.audience = (this.form.medical_only ? 'medical_caregiver' : (this.form.loyalty_only ? 'loyalty' : 'everyone'));
                 this.form.applicable_categories = detail.deal.applicable_categories || [];
+                this.form.specific_items = detail.deal.specific_items || [];
             } else {
                 this.form = this.getDefaultForm();
                 this.applyAudience();
@@ -414,6 +451,47 @@ function dealsManager() {
                 this.form.loyalty_only = false;
                 this.form.medical_only = false;
             }
+        },
+
+        isProductSelected(id) {
+            const list = this.form.specific_items || [];
+            return Array.isArray(list) && list.includes(id);
+        },
+        toggleProduct(id) {
+            if (!Array.isArray(this.form.specific_items)) {
+                this.form.specific_items = [];
+            }
+            const idx = this.form.specific_items.indexOf(id);
+            if (idx >= 0) {
+                this.form.specific_items.splice(idx, 1);
+            } else {
+                this.form.specific_items.push(id);
+            }
+        },
+        async loadProducts() {
+            try {
+                this.productsLoading = true;
+                const params = new URLSearchParams();
+                if (this.productSearch && this.productSearch.trim() !== '') {
+                    params.set('search', this.productSearch.trim());
+                }
+                const url = '/api/products' + (params.toString() ? ('?' + params.toString()) : '');
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+                    this.productResults = items;
+                } else {
+                    this.productResults = [];
+                }
+            } catch (e) {
+                this.productResults = [];
+            } finally {
+                this.productsLoading = false;
+            }
+        },
+        searchProducts() {
+            this.loadProducts();
         },
 
         async submitDeal() {
