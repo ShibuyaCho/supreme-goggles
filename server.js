@@ -1408,6 +1408,27 @@ async function handleProcessPayment(req, res) {
         row.meta.debit_amount = debitAmt;
     }
   } catch (_) {}
+  // Idempotency guard: prevent duplicate inserts within 10s for same employee, method, total, and item count
+  try {
+    const fp = `${row.employee_id || ""}|${row.payment_method}|${Number(row.total || 0)}|${(row.cart || []).length}`;
+    const last = __lastPayment;
+    const lastTs = last && last.ts ? Date.parse(last.ts) : 0;
+    if (last && last.row && last.rowFingerprint === fp && Date.now() - lastTs < 10000) {
+      const sinceIso = new Date(Date.now() - 60000).toISOString();
+      const q = {
+        select: "*",
+        and: `(employee_id.eq.${encodeURIComponent(String(row.employee_id || ""))},total.eq.${Number(row.total || 0)},created_at.gte.${sinceIso})`,
+        order: "created_at.desc",
+        limit: "1",
+      };
+      const r0 = await supaFetch("sales", { method: "GET", query: q });
+      const arr0 = r0.ok ? await r0.json() : [];
+      const found = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
+      if (found) {
+        return res.status(200).json({ success: true, sale_id: found.id, sale_number: found.sale_number || String(found.id), sale: found, deduped: true });
+      }
+    }
+  } catch (_) {}
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     if (!r.ok) {
@@ -1432,15 +1453,19 @@ async function handleProcessPayment(req, res) {
         .json({ success: false, error: errDetail || "Failed to record sale" });
     }
     const payload = await r.json();
+    const created = Array.isArray(payload) ? payload[0] : payload;
     __lastPayment = {
       ts: new Date().toISOString(),
       path: req.path,
       row,
+      rowFingerprint: `${row.employee_id || ""}|${row.payment_method}|${Number(row.total || 0)}|${(row.cart || []).length}`,
       ok: true,
     };
     return res.status(200).json({
       success: true,
-      sale: Array.isArray(payload) ? payload[0] : payload,
+      sale_id: created?.id,
+      sale_number: created?.sale_number || (created?.id != null ? String(created.id) : undefined),
+      sale: created,
     });
   } catch (e) {
     __lastPayment = {
