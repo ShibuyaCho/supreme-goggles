@@ -5621,12 +5621,25 @@ function cannabisPOS() {
       };
 
       try {
-        await (window.axios || axios).post(
+        const { data: result } = await (window.axios || axios).post(
           "/api/pos/process-payment-open",
           payload,
           { headers: { Accept: "application/json" } },
         );
         this.showToast("Debit payment processed successfully", "success");
+        try {
+          const detail = {
+            sale_id: result?.sale_id,
+            sale_number: result?.sale_number,
+            total: this.total,
+            paymentMethod: "debit",
+            paymentReference: String(this.debitPayment.lastFour || "") || null,
+            itemCount: items.reduce((a,b)=>a + Number(b.quantity||0), 0),
+          };
+          document.dispatchEvent(new CustomEvent("pos-sale-completed", { detail }));
+          try { localStorage.setItem("pos_last_sale_event", JSON.stringify({ ...detail, ts: Date.now() })); } catch(_) {}
+          try { if (detail.sale_id != null) localStorage.setItem("pos_last_sale_id", `${detail.sale_id}:${Date.now()}`); } catch(_) {}
+        } catch (_) {}
       } catch (e) {
         this.showToast("Failed to persist sale", "error");
         return;
@@ -5690,12 +5703,25 @@ function cannabisPOS() {
       };
 
       try {
-        await (window.axios || axios).post(
+        const { data: result } = await (window.axios || axios).post(
           "/api/pos/process-payment-open",
           payload,
           { headers: { Accept: "application/json" } },
         );
         this.showToast("Cash payment processed successfully", "success");
+        try {
+          const detail = {
+            sale_id: result?.sale_id,
+            sale_number: result?.sale_number,
+            total: this.total,
+            paymentMethod: "cash",
+            paymentReference: null,
+            itemCount: items.reduce((a,b)=>a + Number(b.quantity||0), 0),
+          };
+          document.dispatchEvent(new CustomEvent("pos-sale-completed", { detail }));
+          try { localStorage.setItem("pos_last_sale_event", JSON.stringify({ ...detail, ts: Date.now() })); } catch(_) {}
+          try { if (detail.sale_id != null) localStorage.setItem("pos_last_sale_id", `${detail.sale_id}:${Date.now()}`); } catch(_) {}
+        } catch (_) {}
       } catch (e) {
         this.showToast("Failed to persist sale", "error");
         return;
