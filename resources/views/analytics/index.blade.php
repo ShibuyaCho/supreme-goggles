@@ -206,6 +206,25 @@
                     </div>
                 </div>
 
+                <!-- Company-wide View -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Company-wide View</h3>
+                    <div class="overflow-x-auto">
+                      <table class="min-w-full text-sm">
+                        <thead>
+                          <tr class="text-gray-600">
+                            <th class="text-left py-2 pr-4">Store</th>
+                            <th class="text-right py-2 px-4">Visits</th>
+                            <th class="text-right py-2 px-4">Revenue</th>
+                            <th class="text-right py-2 pl-4">Avg Sale</th>
+                          </tr>
+                        </thead>
+                        <tbody id="company-stats-body"></tbody>
+                      </table>
+                    </div>
+                    <p id="company-stats-note" class="text-xs text-gray-500 mt-2 hidden">Store-level metrics require a store_id on sales.</p>
+                </div>
+
                 <!-- Open Carts Metrics -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Open Carts</h3>
