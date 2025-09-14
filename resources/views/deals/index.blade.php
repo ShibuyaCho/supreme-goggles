@@ -378,7 +378,7 @@ function dealsManager() {
             medicalDeals: 0,
             emailCampaigns: 0
         },
-        categories: @json($categories ?? ['Flower','Pre-Rolls','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Cartridges','Vape Pens','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Shake/Trim','Kief','Accessories']),
+        categories: @json($categories ?? ['Flower','Pre-Rolls','Infused','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Cartridges','Vape Pens','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Shake/Trim','Kief','Accessories']),
         showModal: false,
         modalType: 'create',
         form: this.getDefaultForm(),
