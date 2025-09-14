@@ -501,6 +501,7 @@ function dealsManager() {
             try {
                 this.productsLoading = true;
                 const params = new URLSearchParams();
+                params.set('status', 'in_stock');
                 if (this.productSearch && this.productSearch.trim() !== '') {
                     params.set('search', this.productSearch.trim());
                 }
