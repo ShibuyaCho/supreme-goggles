@@ -173,7 +173,75 @@ class POSController extends Controller
             }
             
             DB::commit();
-            
+
+            // Mirror to Supabase for analytics (idempotent)
+            $supabaseId = null;
+            try {
+                $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+                $supabaseKey = env('SUPABASE_ANON_KEY');
+                if ($supabaseUrl && $supabaseKey) {
+                    $employeeCode = optional(auth()->user()?->employee)->employee_id;
+                    if (!$employeeCode) { $employeeCode = 'Emp'.str_pad((string)($sale->employee_id), 2, '0', STR_PAD_LEFT); }
+                    $cartNorm = array_map(function($it){
+                        return [
+                            'id' => $it['id'] ?? null,
+                            'name' => (string)($it['name'] ?? ''),
+                            'price' => (float)($it['price'] ?? 0),
+                            'quantity' => (float)($it['quantity'] ?? 1),
+                            'discount_amount' => isset($it['discount']) ? (float)$it['discount'] : 0,
+                        ];
+                    }, $request->items);
+                    $pm = $sale->payment_method;
+                    $idemKey = hash('sha256', implode('|', [
+                        (string)$employeeCode,
+                        (string)$pm,
+                        number_format((float)$total, 2, '.', ''),
+                        (string)count($cartNorm),
+                        json_encode(array_map(function($x){ return ['name'=>$x['name'],'price'=>$x['price'],'quantity'=>$x['quantity']]; }, $cartNorm)),
+                    ]));
+                    $headers = [ 'apikey' => $supabaseKey, 'Authorization' => 'Bearer '.$supabaseKey, 'Accept' => 'application/json', 'Prefer' => 'return=representation' ];
+                    // Check existing by idempotency key in last 5 minutes
+                    $since = Carbon::now()->subMinutes(5)->toISOString();
+                    $query = [
+                        'select' => 'id,sale_number,created_at',
+                        'order' => 'created_at.desc',
+                        'limit' => '1',
+                        'and' => '(created_at.gte.'.$since.')',
+                        'meta->>idempotency_key' => 'eq.'.$idemKey,
+                    ];
+                    $exists = Http::withHeaders($headers)->get($supabaseUrl.'/rest/v1/sales', $query);
+                    if ($exists->ok() && is_array($exists->json()) && !empty($exists->json())) {
+                        $supabaseId = $exists->json()[0]['id'] ?? null;
+                    } else {
+                        $payload = [[
+                            'user_id' => auth()->id(),
+                            'employee_id' => $employeeCode,
+                            'sale_number' => $sale->sale_number,
+                            'payment_method' => $pm,
+                            'subtotal' => (float)$subtotal,
+                            'tax' => (float)$taxAmount,
+                            'total' => (float)$total,
+                            'discount_amount' => 0,
+                            'status' => 'completed',
+                            'customer_id' => $sale->customer_id,
+                            'customer' => $sale->customer_info ?: null,
+                            'cart' => $cartNorm,
+                            'payment_reference' => $request->card_details['last_four'] ?? null,
+                            'meta' => [
+                                'source' => 'pos',
+                                'timestamp' => now()->toIso8601String(),
+                                'employee_name' => optional(auth()->user())->name,
+                                'idempotency_key' => $idemKey,
+                            ],
+                        ]];
+                        $created = Http::withHeaders($headers)->post($supabaseUrl.'/rest/v1/sales', $payload);
+                        if ($created->successful() && is_array($created->json()) && !empty($created->json())) {
+                            $supabaseId = $created->json()[0]['id'] ?? null;
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
             // Generate receipt URL if needed
             $receiptUrl = null;
             if ($request->receipt_options['print'] ?? false) {
@@ -183,7 +251,8 @@ class POSController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Payment processed successfully',
-                'sale_id' => $sale->id,
+                'sale_id' => $supabaseId ?: $sale->id,
+                'local_sale_id' => $sale->id,
                 'sale_number' => $sale->sale_number,
                 'receipt_url' => $receiptUrl,
             ]);
