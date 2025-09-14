@@ -1270,6 +1270,11 @@ async function handleProcessPayment(req, res) {
   const finalSubtotal = total != null && tax != null ? (Number(total) - Number(tax)) : Number(subtotal || 0);
   const discount_amount = Math.max(0, Number(subtotal || 0) - Number(finalSubtotal || 0));
 
+  const cust = body.customer || (body.customer_id ? { id: body.customer_id } : null);
+  if (cust && !cust.type) {
+    cust.type = (cust.isMedical || String(body.customer_type||'').toLowerCase()==='medical') ? 'medical' : 'recreational';
+  }
+  const empNameFromUser = user?.name || (user?.employee && ((user.employee.first_name||'') + ' ' + (user.employee.last_name||'')).trim()) || null;
   const row = {
     user_id: user ? String(user.id) : null,
     employee_id,
@@ -1281,10 +1286,10 @@ async function handleProcessPayment(req, res) {
     total,
     discount_amount,
     status: "completed",
-    customer: body.customer || (body.customer_id ? { id: body.customer_id } : null),
+    customer: cust,
     cart: items,
     payment_reference,
-    meta: { source: "pos", timestamp: new Date().toISOString(), cart_discount: body?.cartDiscount || null },
+    meta: { source: "pos", timestamp: new Date().toISOString(), cart_discount: body?.cartDiscount || null, employee_name: empNameFromUser },
   };
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
