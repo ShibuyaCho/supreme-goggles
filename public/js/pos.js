@@ -1757,9 +1757,42 @@ function cannabisPOS() {
           0,
         ).getDate();
         this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
+        try {
+          const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          localStorage.setItem(`pos_month_stats_${ymKey}`, JSON.stringify({ ...this.monthStats, ts: Date.now() }));
+        } catch (_) {}
       } catch (_) {
-        this.monthStats = this.monthStats || null;
+        // Fallback to persisted month stats if available
+        try {
+          const ymKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+          const raw = localStorage.getItem(`pos_month_stats_${ymKey}`);
+          if (raw) this.monthStats = JSON.parse(raw);
+        } catch (_) {
+          this.monthStats = this.monthStats || null;
+        }
       }
+    },
+
+    updateMonthStatsFromSales() {
+      try {
+        const d = new Date();
+        const nowMonth = d.getMonth();
+        const nowYear = d.getFullYear();
+        const list = Array.isArray(this.sales) ? this.sales : [];
+        const monthList = list.filter((s) => {
+          const dt = new Date(s.date || s.created_at || s.createdAt || Date.now());
+          return dt.getFullYear() === nowYear && dt.getMonth() === nowMonth;
+        });
+        const revenue = monthList.reduce((sum, s) => sum + Number(s.total || 0), 0);
+        const recCount = monthList.filter((s) => (s.customerType || "") !== "medical").length;
+        const medUnique = new Set(monthList.filter((s) => (s.customerType || "") === "medical").map((s) => s.customerMedicalCard || s.customer)).size;
+        const customers = recCount + medUnique;
+        const dayOfMonth = d.getDate();
+        const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
+        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        localStorage.setItem(`pos_month_stats_${ymKey}`, JSON.stringify({ ...this.monthStats, ts: Date.now() }));
+      } catch (_) {}
     },
 
     salesDateLabel() {
