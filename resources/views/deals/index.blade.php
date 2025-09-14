@@ -311,9 +311,9 @@
                             </div>
 
                             <!-- Per-Item Discounts (optional) -->
-                            <div class="min-w-0 md:pl-4 w-full relative">
+                            <div class="min-w-0 md:pl-4 w-full relative md:flex md:justify-end">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
-                                <div class="space-y-2">
+                                <div class="space-y-2 md:ml-auto md:max-w-[420px] w-full">
                                     <template x-for="pid in form.specific_items" :key="pid">
                                         <div class="grid grid-cols-2 gap-2 items-center">
                                             <div class="text-sm">
