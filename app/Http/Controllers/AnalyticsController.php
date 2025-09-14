@@ -63,6 +63,7 @@ class AnalyticsController extends Controller
         if ($this->supabaseEnabled()) {
             try {
                 $rows = $this->supaSalesInRange($dateRange);
+                if (!is_array($rows) || count($rows) === 0) { throw new \RuntimeException('empty'); }
                 $by = [];
                 foreach ($rows as $r) {
                     $sid = $r['store_id'] ?? 'default';
