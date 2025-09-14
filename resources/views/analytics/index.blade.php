@@ -493,7 +493,7 @@ document.addEventListener('DOMContentLoaded', function() {
       fetchOverview();
       window.__analyticsTimer = setInterval(fetchOverview, 10000);
       document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fetchOverview(); });
-      window.addEventListener('storage', (e)=>{ if (e && e.key === 'pos_last_sale_id') fetchOverview(); });
+      window.addEventListener('storage', (e)=>{ if (!e) return; if (e.key === 'pos_last_sale_id' || e.key === 'pos_last_sale_event') fetchOverview(); });
       document.addEventListener('pos-sale-completed', fetchOverview);
       window.addEventListener('pos-sale-completed', fetchOverview);
       window.addEventListener('pos-cart-updated', fetchOverview);
