@@ -1605,6 +1605,19 @@ function cannabisPOS() {
       return deal?.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
     },
 
+    getDealSchedule(deal) {
+      try {
+        const freq = String(deal.frequency || '').toLowerCase();
+        if (freq === 'always') return 'Always Active';
+        if (freq === 'daily') return 'Daily';
+        if (freq === 'weekly') return deal.dayOfWeek ? `Weekly (${deal.dayOfWeek})` : 'Weekly';
+        if (freq === 'monthly') return deal.dayOfMonth ? `Monthly (Day ${deal.dayOfMonth})` : 'Monthly';
+        return 'Custom';
+      } catch (_) {
+        return 'Custom';
+      }
+    },
+
     async toggleDealStatus(deal) {
       try {
         const payload = { ...deal, is_active: !deal.isActive };
@@ -1639,13 +1652,25 @@ function cannabisPOS() {
     async saveDeal() {
       try {
         const f = this.dealForm || {};
+        let freq = f.frequency || 'always';
+        let dow = f.dayOfWeek || f.day_of_week || null;
+        try {
+          if (Array.isArray(f.activeDays) && f.activeDays.length > 0) {
+            const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            const idx = Number(f.activeDays[0]);
+            if (!isNaN(idx) && days[idx]) {
+              freq = 'weekly';
+              dow = days[idx];
+            }
+          }
+        } catch (_) {}
         const payload = {
           name: f.name,
           description: f.description || '',
           type: (f.type === 'fixed' ? 'fixed_amount' : f.type || 'percentage'),
           value: Number(f.discountValue || f.value || 0),
-          frequency: f.frequency || 'always',
-          day_of_week: f.dayOfWeek || f.day_of_week || null,
+          frequency: freq,
+          day_of_week: dow,
           day_of_month: f.dayOfMonth || f.day_of_month || null,
           start_date: f.startDate || null,
           end_date: f.endDate || null,
@@ -1703,14 +1728,14 @@ function cannabisPOS() {
         endDate: deal.endDate || '',
         startTime: '',
         endTime: '',
-        activeDays: [],
+        activeDays: (function(){ const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const idx = days.indexOf(deal.dayOfWeek || deal.day_of_week || ''); return idx >= 0 ? [idx] : []; })(),
       };
     },
 
     duplicateDeal(deal) {
       this.editingDeal = null;
       this.showCreateDealModal = true;
-      this.dealForm = { ...this.dealForm, name: `${deal.name} (Copy)`, description: deal.description, type: (deal.type === 'fixed_amount' ? 'fixed' : deal.type), discountValue: deal.discountValue, minPurchase: deal.minimumPurchase, minPurchaseType: deal.minimumPurchaseType || 'dollars', applicableCategories: (deal.categories||[]).slice(), loyaltyOnly: !!deal.loyaltyOnly, medicalOnly: !!deal.medicalOnly, emailCustomers: !!deal.emailCustomers, isActive: !!deal.isActive, startDate: deal.startDate || '', endDate: deal.endDate || '' };
+      this.dealForm = { ...this.dealForm, name: `${deal.name} (Copy)`, description: deal.description, type: (deal.type === 'fixed_amount' ? 'fixed' : deal.type), discountValue: deal.discountValue, minPurchase: deal.minimumPurchase, minPurchaseType: deal.minimumPurchaseType || 'dollars', applicableCategories: (deal.categories||[]).slice(), loyaltyOnly: !!deal.loyaltyOnly, medicalOnly: !!deal.medicalOnly, emailCustomers: !!deal.emailCustomers, isActive: !!deal.isActive, startDate: deal.startDate || '', endDate: deal.endDate || '', activeDays: (function(){ const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']; const idx = days.indexOf(deal.dayOfWeek || deal.day_of_week || ''); return idx >= 0 ? [idx] : []; })() };
     },
 
     getFilteredSalesStats() {
