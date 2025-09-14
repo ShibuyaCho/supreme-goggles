@@ -1,6 +1,6 @@
 <?php
 
-use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Facade;
 
 return [
     'name' => env('APP_NAME', 'Cannabis POS'),
@@ -21,8 +21,37 @@ return [
         'driver' => 'file',
     ],
 
-    // Load framework default providers and our application providers
-    'providers' => ServiceProvider::defaultProviders()->merge([
+    // Explicit default providers for Laravel 10
+    'providers' => [
+        Illuminate\Auth\AuthServiceProvider::class,
+        Illuminate\Broadcasting\BroadcastServiceProvider::class,
+        Illuminate\Bus\BusServiceProvider::class,
+        Illuminate\Cache\CacheServiceProvider::class,
+        Illuminate\Foundation\Providers\ConsoleSupportServiceProvider::class,
+        Illuminate\Cookie\CookieServiceProvider::class,
+        Illuminate\Database\DatabaseServiceProvider::class,
+        Illuminate\Encryption\EncryptionServiceProvider::class,
+        Illuminate\Filesystem\FilesystemServiceProvider::class,
+        Illuminate\Foundation\Providers\FoundationServiceProvider::class,
+        Illuminate\Hashing\HashServiceProvider::class,
+        Illuminate\Mail\MailServiceProvider::class,
+        Illuminate\Notifications\NotificationServiceProvider::class,
+        Illuminate\Pagination\PaginationServiceProvider::class,
+        Illuminate\Pipeline\PipelineServiceProvider::class,
+        Illuminate\Queue\QueueServiceProvider::class,
+        Illuminate\Redis\RedisServiceProvider::class,
+        Illuminate\Auth\Passwords\PasswordResetServiceProvider::class,
+        Illuminate\Session\SessionServiceProvider::class,
+        Illuminate\Translation\TranslationServiceProvider::class,
+        Illuminate\Validation\ValidationServiceProvider::class,
+        Illuminate\View\ViewServiceProvider::class,
+
+        // Application providers
         App\Providers\HelperServiceProvider::class,
+    ],
+
+    // Facade aliases (Laravel 10 compatible)
+    'aliases' => Facade::defaultAliases()->merge([
+        // Add custom aliases here if needed
     ])->toArray(),
 ];
