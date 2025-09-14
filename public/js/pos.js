@@ -517,6 +517,12 @@ function cannabisPOS() {
     activityLog: [],
 
     // Sales tracking state (SPA Sales page)
+    // Deals state
+    deals: [],
+    filteredDeals: [],
+    dealFilter: "",
+
+    // Sales state
     sales: [],
     filteredSales: [],
     salesFilter: {
@@ -1537,6 +1543,176 @@ function cannabisPOS() {
       return `${format(sStr)} - ${format(eStr)}`;
     },
 
+    // ===== Deals & Specials (API-backed) =====
+    mapDealToSpa(d) {
+      const t = String(d.type || d.deal_type || '').toLowerCase();
+      const type = t === 'fixed' ? 'fixed_amount' : t;
+      return {
+        id: d.id,
+        name: d.name,
+        description: d.description || '',
+        type: type,
+        discountValue: Number(d.value || d.discount_value || 0),
+        categories: Array.isArray(d.applicable_categories) ? d.applicable_categories : (Array.isArray(d.categories) ? d.categories : []),
+        specificItems: Array.isArray(d.specific_items) ? d.specific_items : [],
+        startDate: d.start_date || '',
+        endDate: d.end_date || '',
+        isActive: !!(d.is_active ?? true),
+        frequency: d.frequency || 'always',
+        dayOfWeek: d.day_of_week || undefined,
+        dayOfMonth: d.day_of_month || undefined,
+        emailCustomers: !!d.email_customers,
+        loyaltyOnly: !!d.loyalty_only,
+        medicalOnly: !!d.medical_only,
+        minimumPurchase: (d.minimum_purchase != null ? Number(d.minimum_purchase) : undefined),
+        minimumPurchaseType: d.minimum_purchase_type || 'dollars',
+        maxUses: d.max_uses != null ? Number(d.max_uses) : undefined,
+        currentUses: d.current_uses != null ? Number(d.current_uses) : 0,
+      };
+    },
+
+    async loadDeals() {
+      try {
+        let list = [];
+        if (window.posAuth && typeof posAuth.apiRequest === 'function') {
+          const res = await posAuth.apiRequest('get', '/deals');
+          const payload = res?.data;
+          const dealsArr = Array.isArray(payload?.deals) ? payload.deals : (Array.isArray(payload) ? payload : []);
+          list = dealsArr.map((d) => this.mapDealToSpa(d));
+        }
+        this.deals = list;
+        this.filterDeals();
+      } catch (e) {
+        this.deals = this.deals || [];
+        this.filterDeals();
+      }
+    },
+
+    filterDeals() {
+      const f = String(this.dealFilter || '').toLowerCase();
+      let list = Array.isArray(this.deals) ? this.deals.slice() : [];
+      if (f === 'active') list = list.filter((d) => !!d.isActive);
+      else if (f === 'inactive') list = list.filter((d) => !d.isActive);
+      else if (f === 'expired') list = list.filter((d) => !!(d.endDate) && new Date(d.endDate) < new Date());
+      this.filteredDeals = list;
+    },
+
+    getActiveDealsCount() {
+      return (this.deals || []).filter((d) => !!d.isActive).length;
+    },
+
+    getDealStatusClass(deal) {
+      return deal?.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800';
+    },
+
+    async toggleDealStatus(deal) {
+      try {
+        const payload = { ...deal, is_active: !deal.isActive };
+        payload.type = (payload.type === 'fixed' ? 'fixed_amount' : payload.type);
+        payload.value = payload.discountValue;
+        payload.applicable_categories = payload.categories || [];
+        const res = await posAuth.apiRequest('put', `/deals/${deal.id}`, payload);
+        if (res?.success !== false) {
+          deal.isActive = !deal.isActive;
+          this.filterDeals();
+          this.showToast && this.showToast(`Deal ${deal.isActive ? 'activated' : 'deactivated'}`, 'success');
+        } else {
+          this.showToast && this.showToast(res?.message || 'Failed to update deal', 'error');
+        }
+      } catch (e) { this.showToast && this.showToast('Failed to update deal', 'error'); }
+    },
+
+    async deleteDeal(id) {
+      if (!confirm('Delete this deal?')) return;
+      try {
+        const res = await posAuth.apiRequest('delete', `/deals/${id}`);
+        if (res?.success !== false) {
+          this.deals = (this.deals || []).filter((d) => d.id !== id);
+          this.filterDeals();
+          this.showToast && this.showToast('Deal deleted', 'success');
+        } else {
+          this.showToast && this.showToast(res?.message || 'Failed to delete deal', 'error');
+        }
+      } catch (e) { this.showToast && this.showToast('Failed to delete deal', 'error'); }
+    },
+
+    async saveDeal() {
+      try {
+        const f = this.dealForm || {};
+        const payload = {
+          name: f.name,
+          description: f.description || '',
+          type: (f.type === 'fixed' ? 'fixed_amount' : f.type || 'percentage'),
+          value: Number(f.discountValue || f.value || 0),
+          frequency: f.frequency || 'always',
+          day_of_week: f.dayOfWeek || f.day_of_week || null,
+          day_of_month: f.dayOfMonth || f.day_of_month || null,
+          start_date: f.startDate || null,
+          end_date: f.endDate || null,
+          applicable_categories: Array.isArray(f.applicableCategories) ? f.applicableCategories : [],
+          minimum_purchase: f.minPurchase != null ? Number(f.minPurchase) : null,
+          minimum_purchase_type: f.minPurchaseType || 'dollars',
+          max_uses: f.usageLimit != null && String(f.usageLimit).trim() !== '' ? Number(f.usageLimit) : null,
+          email_customers: !!f.emailCustomers,
+          loyalty_only: !!f.loyaltyOnly,
+          medical_only: !!f.medicalOnly,
+          is_active: f.isActive != null ? !!f.isActive : true,
+        };
+        const creating = !this.editingDeal;
+        const url = creating ? '/deals' : `/deals/${this.editingDeal.id}`;
+        const method = creating ? 'post' : 'put';
+        const res = await posAuth.apiRequest(method, url, payload);
+        const data = res?.data || {};
+        if (res?.success && (data?.success !== false)) {
+          const created = data?.deal ? this.mapDealToSpa(data.deal) : this.mapDealToSpa(payload);
+          if (creating) { this.deals = [created, ...this.deals]; }
+          else { this.deals = this.deals.map((d) => (d.id === this.editingDeal.id ? { ...created, id: this.editingDeal.id } : d)); }
+          this.filterDeals();
+          this.closeCreateDealModal();
+          this.showToast && this.showToast(creating ? 'Deal created' : 'Deal updated', 'success');
+        } else {
+          const msg = res?.message || data?.message || 'Failed to save deal';
+          this.showToast && this.showToast(msg, 'error');
+        }
+      } catch (e) { this.showToast && this.showToast('Failed to save deal', 'error'); }
+    },
+
+    editDeal(deal) {
+      this.showCreateDealModal = true;
+      this.editingDeal = deal;
+      this.dealForm = {
+        name: deal.name,
+        description: deal.description,
+        type: (deal.type === 'fixed_amount' ? 'fixed' : deal.type),
+        discountValue: deal.discountValue,
+        buyQuantity: 1,
+        getQuantity: 1,
+        minPurchase: deal.minimumPurchase,
+        minPurchaseType: deal.minimumPurchaseType || 'dollars',
+        usageLimit: deal.maxUses || '',
+        allCategories: false,
+        applicableCategories: deal.categories || [],
+        applicableProducts: [],
+        excludeGLS: true,
+        stackable: false,
+        loyaltyOnly: !!deal.loyaltyOnly,
+        medicalOnly: !!deal.medicalOnly,
+        emailCustomers: !!deal.emailCustomers,
+        isActive: !!deal.isActive,
+        startDate: deal.startDate || '',
+        endDate: deal.endDate || '',
+        startTime: '',
+        endTime: '',
+        activeDays: [],
+      };
+    },
+
+    duplicateDeal(deal) {
+      this.editingDeal = null;
+      this.showCreateDealModal = true;
+      this.dealForm = { ...this.dealForm, name: `${deal.name} (Copy)`, description: deal.description, type: (deal.type === 'fixed_amount' ? 'fixed' : deal.type), discountValue: deal.discountValue, minPurchase: deal.minimumPurchase, minPurchaseType: deal.minimumPurchaseType || 'dollars', applicableCategories: (deal.categories||[]).slice(), loyaltyOnly: !!deal.loyaltyOnly, medicalOnly: !!deal.medicalOnly, emailCustomers: !!deal.emailCustomers, isActive: !!deal.isActive, startDate: deal.startDate || '', endDate: deal.endDate || '' };
+    },
+
     getFilteredSalesStats() {
       const list = this.filteredSales || [];
       const totalRevenue = list.reduce((sum, s) => sum + Number(s.total || 0), 0);
@@ -1772,6 +1948,9 @@ function cannabisPOS() {
       if (page === "sales") {
         try { this.refreshSales(true); } catch (_) {}
         try { this._salesLiveTimer = setInterval(() => this.refreshSales(true), 8000); } catch (_) {}
+      }
+      if (page === "deals") {
+        try { this.loadDeals(); } catch (_) {}
       }
       if (page === "employees") {
         if ((this.employees || []).length === 0) {
