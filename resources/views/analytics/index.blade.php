@@ -275,7 +275,7 @@
         <div id="employees-tab" class="tab-content {{ $selectedTab !== 'employees' ? 'hidden' : '' }}">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Employee Performance</h3>
-                <div class="space-y-4">
+                <div id="employee-stats" class="space-y-4">
                     @foreach($employeeData as $employee)
                     <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div>
