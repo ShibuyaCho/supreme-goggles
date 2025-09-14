@@ -127,7 +127,63 @@ export default function Deals() {
     }
   }, [showCreateDialog, showEditDialog]);
 
-  const createDeal = () => {
+  const mapApiDealToUi = (d: any): Deal => ({
+    id: String(d.id),
+    name: d.name || "",
+    description: d.description || "",
+    type: d.type === 'fixed_amount' ? 'fixed' : (d.type || 'percentage'),
+    discountValue: Number(d.value || 0),
+    categories: Array.isArray(d.applicable_categories) ? d.applicable_categories : [],
+    specificItems: Array.isArray(d.specific_items) ? d.specific_items.map((x: any) => String(x)) : [],
+    startDate: d.start_date || "",
+    endDate: d.end_date || "",
+    isActive: !!d.is_active,
+    frequency: d.frequency || 'always',
+    dayOfWeek: d.day_of_week || undefined,
+    dayOfMonth: d.day_of_month || undefined,
+    emailCustomers: !!d.email_customers,
+    loyaltyOnly: !!d.loyalty_only,
+    medicalOnly: !!d.medical_only,
+    minimumPurchase: d.minimum_purchase ?? undefined,
+    minimumPurchaseType: d.minimum_purchase_type || 'dollars',
+    maxUses: d.max_uses ?? undefined,
+    currentUses: d.current_uses ?? 0,
+  });
+
+  const mapUiToApi = (f: Partial<Deal>) => ({
+    name: f.name || "",
+    description: f.description || "",
+    type: f.type === 'fixed' ? 'fixed_amount' : (f.type || 'percentage'),
+    value: Number(f.discountValue || 0),
+    frequency: f.frequency || 'always',
+    day_of_week: f.dayOfWeek || undefined,
+    day_of_month: f.dayOfMonth || undefined,
+    start_date: f.startDate || undefined,
+    end_date: f.endDate || undefined,
+    applicable_categories: f.categories || [],
+    specific_items: (f.specificItems || []).map((x) => Number(x)).filter((n) => !Number.isNaN(n)),
+    minimum_purchase: f.minimumPurchase ?? undefined,
+    minimum_purchase_type: f.minimumPurchaseType || 'dollars',
+    max_uses: f.maxUses ?? undefined,
+    email_customers: !!f.emailCustomers,
+    loyalty_only: !!f.loyaltyOnly,
+    medical_only: !!f.medicalOnly,
+    is_active: !!f.isActive,
+  });
+
+  useEffect(() => {
+    const loadDeals = async () => {
+      try {
+        const res = await fetch('/api/deals', { headers: { Accept: 'application/json' } });
+        const data = await res.json();
+        const list = Array.isArray(data?.deals) ? data.deals : [];
+        setDeals(list.map(mapApiDealToUi));
+      } catch {}
+    };
+    loadDeals();
+  }, []);
+
+  const createDeal = async () => {
     const deal: Deal = {
       id: Date.now().toString(),
       name: newDeal.name || "",
