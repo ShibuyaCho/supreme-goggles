@@ -117,6 +117,9 @@ class DealsController extends Controller
                 if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
                     $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
                 }
+                if (isset($payload['specific_items']) && is_string($payload['specific_items'])) {
+                    $payload['specific_items'] = json_decode($payload['specific_items'], true);
+                }
                 if (isset($payload['active_days']) && is_string($payload['active_days'])) {
                     $payload['active_days'] = json_decode($payload['active_days'], true);
                 }
