@@ -1387,8 +1387,11 @@ function cannabisPOS() {
       const discounts = discountAmt > 0 ? [{ id: `order-${s.id}`, type: "Order", amount: discountAmt }] : [];
       const paymentRef = s.payment_reference || s.card_last_four || null;
       let customerType = String(s.customer_type || '').toLowerCase();
-      const medicalCard = s.customer?.medical_card_number || s.customer_info?.medical_card_number || s.customer?.medical_card || s.customer_info?.medical_card || s.customer?.patient_card_number || null;
+      const medicalCard = s.customer?.medical_card_number || s.customer_info?.medical_card_number || s.customer?.medical_card || s.customer_info?.medical_card || s.customer?.patient_card_number || s.customer_info?.patient_card_number || null;
+      const customerStr = typeof s.customer === 'string' ? s.customer : '';
+      const isMedicalFlag = !!(s.customer?.isMedical || s.customer?.medical || s.customer_info?.is_medical || s.customer_info?.medical || /medical/i.test(customerStr));
       if (customerType !== 'medical' && (medicalCard && String(medicalCard).trim())) customerType = 'medical';
+      if (customerType !== 'medical' && isMedicalFlag) customerType = 'medical';
       const customerLabel = customerType === 'medical'
         ? 'Medical Customer'
         : 'Recreational Customer';
