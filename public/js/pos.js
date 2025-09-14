@@ -1889,6 +1889,15 @@ function cannabisPOS() {
             }
           } catch (_) {}
         }
+        // Merge any locally-saved deals (persist across logins in this browser)
+        try {
+          const rawLocal = localStorage.getItem('pos_deals_local_v1');
+          const localArr = rawLocal ? JSON.parse(rawLocal) : [];
+          const mappedLocal = (Array.isArray(localArr) ? localArr : []).map((d) => this.mapDealToSpa(d));
+          const existingIds = new Set((list || []).map((d) => String(d.id)));
+          const merged = [...(list || []), ...mappedLocal.filter((d) => !existingIds.has(String(d.id)))];
+          list = merged;
+        } catch (_) {}
         this.deals = list || [];
         this.filterDeals();
       } catch (e) {
@@ -1953,6 +1962,19 @@ function cannabisPOS() {
 
     async toggleDealStatus(deal) {
       try {
+        // Local-only deal handling
+        if (String(deal.id).startsWith('local-')) {
+          deal.isActive = !deal.isActive;
+          try {
+            const raw = localStorage.getItem('pos_deals_local_v1');
+            const arr = raw ? JSON.parse(raw) : [];
+            const next = (Array.isArray(arr) ? arr : []).map(d => (String(d.id) === String(deal.id) ? { ...d, is_active: deal.isActive } : d));
+            localStorage.setItem('pos_deals_local_v1', JSON.stringify(next));
+          } catch (_) {}
+          this.filterDeals();
+          this.showToast && this.showToast(`Deal ${deal.isActive ? 'activated' : 'deactivated'}`, 'success');
+          return;
+        }
         const payload = { ...deal, is_active: !deal.isActive };
         payload.type = payload.type === "fixed" ? "fixed_amount" : payload.type;
         payload.value = payload.discountValue;
@@ -1968,14 +1990,9 @@ function cannabisPOS() {
         if (res?.success !== false) {
           deal.isActive = !deal.isActive;
           this.filterDeals();
-          this.showToast &&
-            this.showToast(
-              `Deal ${deal.isActive ? "activated" : "deactivated"}`,
-              "success",
-            );
+          this.showToast && this.showToast(`Deal ${deal.isActive ? 'activated' : 'deactivated'}`, 'success');
         } else {
-          this.showToast &&
-            this.showToast(res?.message || "Failed to update deal", "error");
+          this.showToast && this.showToast(res?.message || "Failed to update deal", "error");
         }
       } catch (e) {
         this.showToast && this.showToast("Failed to update deal", "error");
@@ -1985,14 +2002,25 @@ function cannabisPOS() {
     async deleteDeal(id) {
       if (!confirm("Delete this deal?")) return;
       try {
+        if (String(id).startsWith('local-')) {
+          try {
+            const raw = localStorage.getItem('pos_deals_local_v1');
+            const arr = raw ? JSON.parse(raw) : [];
+            const next = (Array.isArray(arr) ? arr : []).filter(d => String(d.id) !== String(id));
+            localStorage.setItem('pos_deals_local_v1', JSON.stringify(next));
+          } catch (_) {}
+          this.deals = (this.deals || []).filter((d) => String(d.id) !== String(id));
+          this.filterDeals();
+          this.showToast && this.showToast("Deal deleted", "success");
+          return;
+        }
         const res = await posAuth.apiRequest("delete", `/deals/${id}`);
         if (res?.success !== false) {
           this.deals = (this.deals || []).filter((d) => d.id !== id);
           this.filterDeals();
           this.showToast && this.showToast("Deal deleted", "success");
         } else {
-          this.showToast &&
-            this.showToast(res?.message || "Failed to delete deal", "error");
+          this.showToast && this.showToast(res?.message || "Failed to delete deal", "error");
         }
       } catch (e) {
         this.showToast && this.showToast("Failed to delete deal", "error");
@@ -2100,7 +2128,24 @@ function cannabisPOS() {
           this.closeCreateDealModal();
           this.showToast && this.showToast(creating ? "Deal created" : "Deal updated", "success");
         } else {
-          this.showToast && this.showToast(data?.message || res?.message || "Failed to save deal", "error");
+          // Final fallback: persist locally in this browser so it survives logout/login
+          try {
+            const localId = `local-${Date.now()}`;
+            const localDeal = this.mapDealToSpa({ ...payload, id: localId });
+            // Save to localStorage cache
+            const raw = localStorage.getItem('pos_deals_local_v1');
+            const arr = raw ? JSON.parse(raw) : [];
+            const next = Array.isArray(arr) ? arr : [];
+            next.unshift({ ...localDeal });
+            localStorage.setItem('pos_deals_local_v1', JSON.stringify(next));
+            // Update UI
+            this.deals = [localDeal, ...(this.deals || [])];
+            this.filterDeals();
+            this.closeCreateDealModal();
+            this.showToast && this.showToast('Deal saved locally', 'success');
+          } catch (_) {
+            this.showToast && this.showToast(data?.message || res?.message || "Failed to save deal", "error");
+          }
         }
       } catch (e) {
         this.showToast && this.showToast("Failed to save deal", "error");
