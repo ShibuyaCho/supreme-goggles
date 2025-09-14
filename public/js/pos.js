@@ -3726,8 +3726,9 @@ function cannabisPOS() {
 
     getUniqueCategories() {
       const list = Array.isArray(this.products) ? this.products : [];
+      const base = ['Flower','Pre-Rolls','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Products','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Shake/Trim','Kief','Accessories','Capsules','Beverages','Suppositories','Mature Plants','Hemp','Paraphernalia'];
       const categories = [
-        ...new Set(list.map((p) => p.category).filter(Boolean)),
+        ...new Set([...base, ...list.map((p) => p.category).filter(Boolean)]),
       ];
       return categories.sort();
     },
