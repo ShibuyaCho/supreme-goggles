@@ -506,7 +506,7 @@ function dealsManager() {
                 if (this.productSearch && this.productSearch.trim() !== '') {
                     params.set('search', this.productSearch.trim());
                 }
-                const url = '/api/products' + (params.toString() ? ('?' + params.toString()) : '');
+                const url = '/products' + (params.toString() ? ('?' + params.toString()) : '');
                 const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
                 if (res.ok) {
                     const data = await res.json();
@@ -527,8 +527,8 @@ function dealsManager() {
 
         async submitDeal() {
             try {
-                const url = this.modalType === 'create' ? '/api/deals' : `/api/deals/${this.form.id}`;
-                const method = this.modalType === 'create' ? 'POST' : 'PUT';
+                const url = this.modalType === 'create' ? '/deals' : `/deals/${this.form.id}`;
+                const method = this.modalType === 'create' ? 'POST' : 'PATCH';
 
                 const response = await fetch(url, {
                     method: method,
@@ -565,8 +565,8 @@ function dealsManager() {
 
         async toggleDealStatus(deal) {
             try {
-                const response = await fetch(`/api/deals/${deal.id}`, {
-                    method: 'PUT',
+                const response = await fetch(`/deals/${deal.id}`, {
+                    method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -589,7 +589,7 @@ function dealsManager() {
             if (!confirm('Are you sure you want to delete this deal?')) return;
 
             try {
-                const response = await fetch(`/api/deals/${deal.id}`, {
+                const response = await fetch(`/deals/${deal.id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
