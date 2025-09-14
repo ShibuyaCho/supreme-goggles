@@ -188,10 +188,9 @@ class AnalyticsController extends Controller
         $start = $dateRange['start']->toISOString();
         $end = $dateRange['end']->toISOString();
         $resp = Http::withHeaders($this->supaHeaders())->get($url, [
-            'select' => 'id,customer,customer_id,employee_id,total,total_amount,created_at,store_id,cart',
+            'select' => 'id,customer,customer_id,employee_id,total,total_amount,created_at,store_id,cart,payment_method,tax,discount_amount',
             'status' => 'eq.completed',
-            'created_at' => 'gte.' . $start,
-            'created_at' => 'lte.' . $end,
+            'and' => '(created_at.gte.' . $start . ',created_at.lte.' . $end . ')',
         ]);
         if (!$resp->ok()) return [];
         $rows = $resp->json();
@@ -496,7 +495,7 @@ class AnalyticsController extends Controller
                     if (!empty($r['customer_id']) || (!empty($r['customer']) && is_array($r['customer']))) $customerCount++;
                     if ($pm==='cash') $cashSales += $amt; else if ($pm==='debit') $debitSales += $amt; else if ($pm==='credit') $creditSales += $amt;
                 }
-                $monthlyRows = Http::withHeaders($this->supaHeaders())->get(rtrim(env('SUPABASE_URL'),'/').'/rest/v1/sales', [ 'select'=>'total,total_amount,created_at', 'status'=>'eq.completed', 'created_at' => 'gte.' . $today->copy()->startOfMonth()->toISOString(), 'created_at' => 'lte.' . $today->copy()->endOfMonth()->toISOString() ]);
+                $monthlyRows = Http::withHeaders($this->supaHeaders())->get(rtrim(env('SUPABASE_URL'),'/').'/rest/v1/sales', [ 'select'=>'total,total_amount,created_at', 'status'=>'eq.completed', 'and' => '(created_at.gte.' . $today->copy()->startOfMonth()->toISOString() . ',created_at.lte.' . $today->copy()->endOfMonth()->toISOString() . ')' ]);
                 $monthlySales = 0; if ($monthlyRows->ok()) { foreach ((array)$monthlyRows->json() as $r) { $monthlySales += isset($r['total_amount'])?(float)$r['total_amount']:(float)($r['total']??0); } }
                 return [ 'totalSales'=>$totalSales, 'totalTax'=>$totalTax, 'customerCount'=>$customerCount, 'cashSales'=>$cashSales, 'debitSales'=>$debitSales, 'creditSales'=>$creditSales, 'monthlySalesTotal'=>$monthlySales, 'dayOfMonth'=> $today->day, 'daysInMonth'=>$today->daysInMonth, 'storeName'=> config('app.store_name','Cannabis Dispensary'), 'generatedBy'=> auth()->user()->name ?? 'System' ];
             } catch (\Throwable $e) { /* fall back */ }
