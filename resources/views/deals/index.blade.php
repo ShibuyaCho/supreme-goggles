@@ -138,8 +138,9 @@
                 </div>
             </template>
         </div>
+        </div>
 
-        <!-- Empty State -->
+         <!-- Empty State -->
         <div x-show="deals.length === 0" class="text-center py-12">
             <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
