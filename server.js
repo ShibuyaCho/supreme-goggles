@@ -1292,6 +1292,13 @@ async function handleProcessPayment(req, res) {
     meta: { source: "pos", timestamp: new Date().toISOString(), cart_discount: body?.cartDiscount || null, employee_name: empNameFromUser },
   };
   try {
+    if ((row.payment_method === 'debit' || String(body.method||'').toLowerCase()==='debit')) {
+      const debitAmt = body.debit_amount != null ? Number(body.debit_amount) : (body.amount_charged != null ? Number(body.amount_charged) : null);
+      if (!row.meta) row.meta = {};
+      if (debitAmt != null && !Number.isNaN(debitAmt)) row.meta.debit_amount = debitAmt;
+    }
+  } catch(_) {}
+  try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     if (!r.ok) {
       let errDetail = null;
