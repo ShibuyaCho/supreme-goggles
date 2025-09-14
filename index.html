@@ -19277,8 +19277,15 @@
                         <div class="text-sm" x-text="category"></div>
                         <div class="flex items-center gap-2 min-w-0 overflow-hidden">
                           <input type="number" step="0.01" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.categoryDiscounts && dealForm.categoryDiscounts[category] !== undefined) ? dealForm.categoryDiscounts[category] : ''" @input="dealForm.categoryDiscounts = { ...(dealForm.categoryDiscounts || {}), [category]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
-                          <select class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate" disabled>
-                            <option>Uses deal type</option>
+                          <select x-model="dealForm.type" class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate">
+                            <option value="percentage">Percentage Discount</option>
+                            <option value="fixed">Fixed Amount Discount</option>
+                            <option value="bogo">Buy One Get One</option>
+                            <option value="buy-x-get-y">Buy X Get Y</option>
+                            <option value="bundle">Bundle Deal</option>
+                            <option value="loyalty">Loyalty Discount</option>
+                            <option value="first-time">First Time Customer</option>
+                            <option value="senior">Senior Discount</option>
                           </select>
                         </div>
                       </div>
@@ -19299,8 +19306,15 @@
                         </div>
                         <div class="flex items-center gap-2 min-w-0 overflow-hidden">
                           <input type="number" step="0.01" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.itemDiscounts && dealForm.itemDiscounts[String(pid)] !== undefined) ? dealForm.itemDiscounts[String(pid)] : ''" @input="dealForm.itemDiscounts = { ...(dealForm.itemDiscounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
-                          <select class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate" disabled>
-                            <option>Uses deal type</option>
+                          <select x-model="dealForm.type" class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate">
+                            <option value="percentage">Percentage Discount</option>
+                            <option value="fixed">Fixed Amount Discount</option>
+                            <option value="bogo">Buy One Get One</option>
+                            <option value="buy-x-get-y">Buy X Get Y</option>
+                            <option value="bundle">Bundle Deal</option>
+                            <option value="loyalty">Loyalty Discount</option>
+                            <option value="first-time">First Time Customer</option>
+                            <option value="senior">Senior Discount</option>
                           </select>
                         </div>
                       </div>
