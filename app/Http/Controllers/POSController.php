@@ -352,6 +352,18 @@ class POSController extends Controller
         ]);
     }
 
+    public function endSale()
+    {
+        // Clear current cart and reset sale state
+        $this->cartService->clearCart();
+        Session::forget(['customer_info', 'selected_loyalty_customer', 'cart_discount', 'sale_started']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Sale ended. Start a new sale to add items.'
+        ]);
+    }
+
     public function processPayment(Request $request)
     {
         $request->validate([

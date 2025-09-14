@@ -57,6 +57,7 @@ Route::prefix('pos')->name('pos.')->group(function () {
     Route::post('/save-sale', [POSController::class, 'saveSale'])->name('save-sale');
     Route::get('/saved-sales', [POSController::class, 'savedSales'])->name('saved-sales');
     Route::post('/load-sale/{id}', [POSController::class, 'loadSale'])->name('load-sale');
+    Route::post('/end-sale', [POSController::class, 'endSale'])->name('end-sale');
     Route::post('/process-payment', [POSController::class, 'processPayment'])->name('process-payment');
     
     // POS Utilities

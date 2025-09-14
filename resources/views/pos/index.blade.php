@@ -123,13 +123,17 @@
         <div class="p-4 border-b border-gray-200">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-900">Cart</h2>
-                <button 
-                    id="clear-cart" 
-                    class="text-red-600 hover:text-red-800 text-sm font-medium"
-                    {{ empty($cart) ? 'disabled' : '' }}
-                >
-                    Clear Cart
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        id="clear-cart"
+                        class="text-red-600 hover:text-red-800 text-sm font-medium"
+                        {{ empty($cart) ? 'disabled' : '' }}
+                    >
+                        Clear Cart
+                    </button>
+                    <button id="hold-sale" class="text-yellow-700 hover:text-yellow-800 text-sm font-medium {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>Hold</button>
+                    <button id="end-sale" class="text-gray-700 hover:text-gray-900 text-sm font-medium">End Sale</button>
+                </div>
             </div>
 
             <!-- Customer Info -->
@@ -246,6 +250,45 @@
 
 @push('scripts')
 <script>
+    // POS extra actions: Hold and End Sale
+    document.addEventListener('DOMContentLoaded', function(){
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      const holdBtn = document.getElementById('hold-sale');
+      const endBtn = document.getElementById('end-sale');
+      if (holdBtn) holdBtn.addEventListener('click', async function(){
+        try {
+          const name = `Held Sale - ${new Date().toLocaleString()}`;
+          const res = await fetch('{{ route('pos.save-sale') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ name, notes: 'Held from POS' })
+          });
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to hold sale');
+          if (window.POS?.showToast) POS.showToast('Sale held and added to Saved Sales', 'success');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          // Optionally navigate to Order Queue
+          // window.location.href = '{{ route('order-queue.index') }}';
+          window.location.reload();
+        } catch (e) {
+          alert(e.message || 'Failed to hold sale');
+        }
+      });
+      if (endBtn) endBtn.addEventListener('click', async function(){
+        try {
+          if (!confirm('End current sale? You will need to start a new sale to add items.')) return;
+          const res = await fetch('{{ route('pos.end-sale') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }});
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to end sale');
+          if (window.POS?.showToast) POS.showToast('Sale ended. Start a new sale to continue.', 'info');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          window.location.reload();
+        } catch (e) {
+          alert(e.message || 'Failed to end sale');
+        }
+      });
+    });
+
     document.addEventListener('click', function(e) {
         const btn = e.target.closest('.delete-product');
         if (!btn) return;
