@@ -1109,6 +1109,7 @@ app.post("/api/deals", async (req, res) => {
   try {
     const r = await supaFetch("deals", {
       method: "POST",
+      headers: { Prefer: "return=representation" },
       body: [req.body || {}],
     });
     const payload = r.ok ? await r.json() : null;
@@ -1124,7 +1125,7 @@ app.put("/api/deals/:id", async (req, res) => {
   try {
     const r = await supaFetch(
       `deals?id=eq.${encodeURIComponent(req.params.id)}`,
-      { method: "PATCH", body: req.body || {} },
+      { method: "PATCH", headers: { Prefer: "return=representation" }, body: req.body || {} },
     );
     const payload = r.ok ? await r.json() : null;
     res.json({
