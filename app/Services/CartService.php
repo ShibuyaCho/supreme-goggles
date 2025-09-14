@@ -66,7 +66,7 @@ class CartService
                     return $amount >= $d->minimum_purchase;
                 });
                 if ($nonBogoDeals->isNotEmpty()) {
-                    $bestDeal = $nonBogoDeals->sortByDesc('discount_value')->first();
+                    $bestDeal = $nonBogoDeals->sortByDesc('value')->first();
                     $newItem = $this->applyAutomaticDeal($newItem, $bestDeal);
                 }
             }
@@ -282,8 +282,8 @@ class CartService
 
     protected function applyAutomaticDeal($item, $deal)
     {
-        $item['discount'] = $deal->discount_value;
-        $item['discount_type'] = $deal->type === 'percentage' ? 'percentage' : 'fixed';
+        $item['discount'] = $deal->value;
+        $item['discount_type'] = $deal->type === 'fixed_amount' ? 'fixed' : 'percentage';
         $item['discount_reason_code'] = 'AUTO-' . $deal->id;
         $item['auto_applied_deal'] = $deal->name;
 
