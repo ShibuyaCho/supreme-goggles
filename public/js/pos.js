@@ -254,6 +254,12 @@ function cannabisPOS() {
     showCsvImportModal: false,
     showTemplateModal: false,
 
+    // Saved sales UI state
+    showSavedSalesModal: false,
+    savedSales: [],
+    savedSalesSearch: "",
+    loadingSavedSales: false,
+
     // Selected items and data objects
     selectedCartItem: null,
     selectedCartItemIndex: null,
@@ -3162,6 +3168,83 @@ function cannabisPOS() {
         this.persistCartState();
       } catch (_) {}
       this.showToast("Cart cleared", "info");
+    },
+
+    filteredSavedSales() {
+      const q = String(this.savedSalesSearch || '').toLowerCase();
+      if (!q) return this.savedSales;
+      return (this.savedSales || []).filter(s => {
+        const name = String(s.name || '').toLowerCase();
+        const amt = (s.total_amount != null ? String(s.total_amount) : String(s.total || ''));
+        return name.includes(q) || amt.includes(q);
+      });
+    },
+
+    async openSavedSales() {
+      await this.fetchSavedSales();
+      this.showSavedSalesModal = true;
+    },
+
+    async fetchSavedSales() {
+      this.loadingSavedSales = true;
+      let list = [];
+      try {
+        if (this.isAuthenticated && window.posAuth && typeof posAuth.apiRequest === 'function') {
+          const res = await posAuth.apiRequest('get', '/pos/saved-sales');
+          list = (res && (res.data?.saved_sales || res.data || []) ) || [];
+        }
+      } catch (_) {}
+      if (!Array.isArray(list) || list.length === 0) {
+        try {
+          const uid = (window.posAuth?.getUser?.()?.id) || 'anon';
+          const key = `cannabisPOS-savedSales-${uid}`;
+          list = JSON.parse(localStorage.getItem(key) || '[]');
+        } catch (_) { list = []; }
+      }
+      this.savedSales = Array.isArray(list) ? list : [];
+      this.loadingSavedSales = false;
+    },
+
+    async deleteSavedSale(sale) {
+      const id = sale?.id;
+      try {
+        if (this.isAuthenticated && id && window.posAuth && typeof posAuth.apiRequest === 'function') {
+          await posAuth.apiRequest('delete', `/pos/saved-sales/${id}`);
+        } else {
+          const uid = (window.posAuth?.getUser?.()?.id) || 'anon';
+          const key = `cannabisPOS-savedSales-${uid}`;
+          const list = JSON.parse(localStorage.getItem(key) || '[]');
+          const next = list.filter(x => x.id !== id);
+          localStorage.setItem(key, JSON.stringify(next));
+        }
+        this.savedSales = (this.savedSales || []).filter(x => x.id !== id);
+        this.showToast('Saved sale deleted', 'success');
+      } catch (e) {
+        this.showToast('Failed to delete saved sale', 'error');
+      }
+    },
+
+    async loadSavedSale(sale) {
+      try {
+        let data = sale;
+        if ((!sale?.cart_items || sale.cart_items.length === 0) && this.isAuthenticated && sale?.id && window.posAuth) {
+          const res = await posAuth.apiRequest('get', `/pos/saved-sales/${sale.id}`);
+          data = res?.data?.saved_sale || res?.data || sale;
+        }
+        const items = Array.isArray(data.cart_items) ? data.cart_items : (Array.isArray(data.cart) ? data.cart : []);
+        if (!items.length) { this.showToast('Saved sale has no items', 'warning'); return; }
+        this.cart = items.map(i => ({ ...i }));
+        this.selectedCustomer = data.customer || data.customer_info || null;
+        this.cartDiscount = data.cart_discount || { type: 'percentage', value: 0, amount: 0, reason: '' };
+        this.calculateTotals();
+        try { this.persistCartState(); } catch (_) {}
+        this.showToast('Saved sale loaded into cart', 'success');
+        try { await this.deleteSavedSale(data); } catch (_) {}
+        this.showSavedSalesModal = false;
+        window.dispatchEvent(new Event('pos-cart-updated'));
+      } catch (e) {
+        this.showToast('Failed to load saved sale', 'error');
+      }
     },
 
     // Save current cart to Saved Sales (local or API), then clear cart
