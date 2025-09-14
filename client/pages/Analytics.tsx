@@ -92,19 +92,6 @@ const employeeMetrics = [
   { name: "David Kim", sales: 8150.00, transactions: 62, avgOrder: 131.45 }
 ];
 
-// ASPD (Average Sold Per Day) data for current month
-const aspdData = [
-  { id: "1", name: "Shake Special", category: "Flower", totalSold: 450, unitsSold: 450, totalRevenue: 481.50, daysInRange: 15, aspd: 30.0 },
-  { id: "2", name: "Outdoor Special", category: "Flower", totalSold: 320, unitsSold: 320, totalRevenue: 572.80, daysInRange: 15, aspd: 21.33 },
-  { id: "3", name: "House Blend", category: "Flower", totalSold: 180, unitsSold: 180, totalRevenue: 720.00, daysInRange: 15, aspd: 12.0 },
-  { id: "4", name: "Blue Dream", category: "Flower", totalSold: 125, unitsSold: 125, totalRevenue: 875.00, daysInRange: 15, aspd: 8.33 },
-  { id: "5", name: "OG Kush", category: "Flower", totalSold: 95, unitsSold: 95, totalRevenue: 1140.00, daysInRange: 15, aspd: 6.33 },
-  { id: "6", name: "Gelato", category: "Flower", totalSold: 68, unitsSold: 68, totalRevenue: 952.00, daysInRange: 15, aspd: 4.53 },
-  { id: "7", name: "Rainbow Belts", category: "Flower", totalSold: 45, unitsSold: 45, totalRevenue: 720.00, daysInRange: 15, aspd: 3.0 },
-  { id: "8", name: "Sour Diesel Pre-Roll", category: "Pre-Rolls", totalSold: 240, unitsSold: 240, totalRevenue: 1200.00, daysInRange: 15, aspd: 16.0 },
-  { id: "9", name: "Strawberry Gummies", category: "Edibles", totalSold: 85, unitsSold: 85, totalRevenue: 850.00, daysInRange: 15, aspd: 5.67 },
-  { id: "10", name: "Live Resin Cart", category: "Concentrates", totalSold: 42, unitsSold: 42, totalRevenue: 1260.00, daysInRange: 15, aspd: 2.8 }
-];
 
 // Sales trend data for last 30 days
 const salesTrendData = [
