@@ -58,8 +58,9 @@ class DealsController extends Controller
             'email_customers' => 'boolean',
             'loyalty_only' => 'boolean',
             'medical_only' => 'boolean',
-            'is_active' => 'boolean'
-        ]);
+            'is_active' => 'boolean',
+            'active_days' => 'nullable|array'
+        ];
 
         if ($validator->fails()) {
             return response()->json([
@@ -136,8 +137,9 @@ class DealsController extends Controller
             'email_customers' => 'boolean',
             'loyalty_only' => 'boolean',
             'medical_only' => 'boolean',
-            'is_active' => 'boolean'
-        ]);
+            'is_active' => 'boolean',
+            'active_days' => 'nullable|array'
+        ];
 
         if ($validator->fails()) {
             return response()->json([
