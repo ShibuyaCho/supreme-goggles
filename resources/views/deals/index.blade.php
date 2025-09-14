@@ -540,6 +540,12 @@ function dealsManager() {
         },
 
         getFrequencyDisplay(deal) {
+            // Prefer explicit active_days list when present
+            if (Array.isArray(deal.active_days) && deal.active_days.length > 0) {
+                const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                const labels = deal.active_days.map(i => days[i] || '').filter(Boolean);
+                if (labels.length) return 'Custom (' + labels.join(', ') + ')';
+            }
             switch (deal.frequency) {
                 case 'daily':
                     return 'Daily';
