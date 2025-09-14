@@ -1280,6 +1280,7 @@ function cannabisPOS() {
         const result = await posAuth.processPayment(paymentData);
         if (result.success) {
           this.showToast("Payment processed successfully", "success");
+          try { this.reportDealUsageFromCart && (await this.reportDealUsageFromCart()); } catch(_) {}
           // Live update the sales list and End of Day stats
           try {
             const sid = result?.data?.sale_id || result?.sale_id;
