@@ -167,6 +167,8 @@ export default function Deals() {
     end_date: f.endDate || undefined,
     applicable_categories: f.categories || [],
     specific_items: (f.specificItems || []).map((x) => Number(x)).filter((n) => !Number.isNaN(n)),
+    category_discounts: f.categoryDiscounts || {},
+    item_discounts: f.itemDiscounts || {},
     minimum_purchase: f.minimumPurchase ?? undefined,
     minimum_purchase_type: f.minimumPurchaseType || 'dollars',
     max_uses: f.maxUses ?? undefined,
