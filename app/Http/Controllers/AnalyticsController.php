@@ -195,31 +195,31 @@ class AnalyticsController extends Controller
     {
         $topProducts = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
             ->whereBetween('sales.created_at', [$dateRange['start'], $dateRange['end']])
             ->where('sales.status', 'completed')
             ->select(
-                'products.name',
-                'products.category',
+                DB::raw('COALESCE(products.name, sale_items.product_name) as name'),
+                DB::raw('COALESCE(products.category, sale_items.product_category) as category'),
                 DB::raw('SUM(sale_items.quantity) as sales'),
-                DB::raw('SUM(sale_items.total) as revenue')
+                DB::raw('SUM(sale_items.total_price) as revenue')
             )
-            ->groupBy('products.id', 'products.name', 'products.category')
+            ->groupBy('name', 'category')
             ->orderBy('revenue', 'desc')
             ->limit(5)
             ->get();
-        
+
         $categoryData = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
-            ->join('products', 'sale_items.product_id', '=', 'products.id')
+            ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
             ->whereBetween('sales.created_at', [$dateRange['start'], $dateRange['end']])
             ->where('sales.status', 'completed')
             ->select(
-                'products.category',
+                DB::raw('COALESCE(products.category, sale_items.product_category) as category'),
                 DB::raw('SUM(sale_items.quantity) as sales'),
-                DB::raw('SUM(sale_items.total) as revenue')
+                DB::raw('SUM(sale_items.total_price) as revenue')
             )
-            ->groupBy('products.category')
+            ->groupBy('category')
             ->get();
         
         // Calculate percentages
