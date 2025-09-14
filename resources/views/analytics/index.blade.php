@@ -475,7 +475,19 @@ document.addEventListener('DOMContentLoaded', function() {
           setText('open-carts-total', String(oc.total||0));
           setText('open-carts-avg', String(oc.avgMinutes||0));
           setText('open-carts-max', String(oc.maxMinutes||0));
-        } catch(_) {}
+        } catch(err) {
+          // Fallback: derive minimal metrics from recent sales endpoint
+          try {
+            const res2 = await (window.axios||axios).get('/api/sales/recent', { params: { status:'completed', limit: 200 }, headers:{Accept:'application/json'} });
+            let list = Array.isArray(res2?.data) ? res2.data : (Array.isArray(res2?.data?.data) ? res2.data.data : []);
+            let revenue = 0, tx = 0, customers = new Set();
+            list.forEach(s=>{ const amt = Number(s.total_amount ?? s.total ?? 0); revenue += amt; tx += 1; if (s.customer_id) customers.add(s.customer_id); });
+            setText('metric-revenue', fmtMoney(revenue));
+            setText('metric-transactions', tx.toLocaleString());
+            setText('metric-customers', customers.size.toLocaleString());
+            setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
+          } catch(_) {}
+        }
       }
       try { if (window.__analyticsTimer) clearInterval(window.__analyticsTimer); } catch(_) {}
       fetchOverview();
