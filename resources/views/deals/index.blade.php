@@ -308,6 +308,34 @@
                             </div>
                         </div>
 
+                        <!-- Per-Item Discounts (optional) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
+                            <div class="space-y-2" x-show="(form.specific_items || []).length > 0">
+                                <template x-for="pid in form.specific_items" :key="pid">
+                                    <div class="grid grid-cols-2 gap-2 items-center">
+                                        <div class="text-sm">
+                                            <span x-text="getProductById(pid).name"></span>
+                                            <span class="text-xs text-gray-500" x-text="getProductById(pid).category ? ' • ' + getProductById(pid).category : ''"></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
+                                                :value="(form.item_discounts && form.item_discounts[String(pid)] !== undefined) ? form.item_discounts[String(pid)] : ''"
+                                                @input="form.item_discounts = { ...(form.item_discounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }"
+                                                placeholder="Discount value"
+                                            >
+                                            <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                                                <option>Uses deal type</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </template>
+                                <p class="text-xs text-gray-500">If set, these override both category and main discount for the item.</p>
+                            </div>
+                        </div>
 
                         <!-- Minimum Purchase -->
                         <div>
