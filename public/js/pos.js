@@ -1322,6 +1322,7 @@ function cannabisPOS() {
           if (idx>=0) { this.deals[idx].currentUses = (Number(this.deals[idx].currentUses)||0) + n; }
         }
         this.filterDeals && this.filterDeals();
+        try { document.dispatchEvent(new CustomEvent('deal-usage-updated', { detail: { counts } })); } catch(_) {}
       } catch(_) {}
     },
 
