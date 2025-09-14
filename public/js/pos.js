@@ -1389,7 +1389,15 @@ function cannabisPOS() {
       const customerLabel = customerType === 'medical'
         ? `Medical Customer${medicalCard ? ' (Card: ' + medicalCard + ')' : ''}`
         : 'Recreational Customer';
-      const empName = (s.employee && (s.employee.full_name || s.employee.name || ((s.employee.first_name||'') + ' ' + (s.employee.last_name||'')).trim())) || (s.employee_name) || (s.meta && s.meta.employee_name) || "Unknown";
+      let empName = (s.employee && (s.employee.full_name || s.employee.name || ((s.employee.first_name||'') + ' ' + (s.employee.last_name||'')).trim())) || s.employee_name || (s.meta && s.meta.employee_name) || '';
+      if (!empName || /unknown/i.test(empName)) {
+        try {
+          const u = (window.posAuth && window.posAuth.getUser && window.posAuth.getUser()) || {};
+          const fallback = (u.name || (u.employee && (u.employee.name || ((u.employee.first_name||'') + ' ' + (u.employee.last_name||'')).trim())) || '').trim();
+          if (fallback) empName = fallback;
+        } catch (e) {}
+      }
+      if (!empName) empName = 'Unknown';
       return {
         id: s.sale_number || String(s.id),
         numericId: s.id,
