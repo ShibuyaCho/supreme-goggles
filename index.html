@@ -1024,6 +1024,49 @@
         </div>
       </nav>
 
+      <!-- Saved Sales Modal -->
+      <div x-show="showSavedSalesModal" x-cloak class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4">
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="text-xl font-semibold text-gray-900">Saved Sales</h3>
+              <button @click="showSavedSalesModal=false" class="text-gray-500 hover:text-gray-700">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div class="mb-4">
+              <input type="text" placeholder="Search saved sales..." x-model="savedSalesSearch" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" />
+            </div>
+            <div class="divide-y border rounded-lg">
+              <template x-if="loadingSavedSales">
+                <div class="p-4 text-gray-600">Loading...</div>
+              </template>
+              <template x-if="!loadingSavedSales && filteredSavedSales.length === 0">
+                <div class="p-6 text-center text-gray-500">No saved sales found</div>
+              </template>
+              <template x-for="sale in filteredSavedSales" :key="sale.id">
+                <div class="p-4 flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-gray-900" x-text="sale.name || ('Saved Sale #' + sale.id)"></div>
+                    <div class="text-sm text-gray-600">
+                      <span x-text="new Date(sale.created_at||sale.createdAt||Date.now()).toLocaleString()"></span>
+                      • <span x-text="(sale.total_amount!=null ? '$'+Number(sale.total_amount).toFixed(2) : ('$'+Number((sale.total||0)).toFixed(2)))"></span>
+                      • <span x-text="(sale.total_items!=null ? sale.total_items : ((sale.cart_items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0))) + ' items'"></span>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button @click="loadSavedSale(sale)" class="bg-cannabis-green text-white px-3 py-2 rounded hover:bg-green-700">Load</button>
+                    <button @click="deleteSavedSale(sale)" class="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700">Delete</button>
+                  </div>
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Main Content -->
       <main class="flex-1">
         <!-- POS Page -->
@@ -1160,6 +1203,12 @@
                       class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Clear Cart
+                    </button>
+                    <button
+                      @click="openSavedSales()"
+                      class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      Saved Sales
                     </button>
                   </div>
                 </div>
@@ -14502,7 +14551,7 @@
                                 data-export-format="pdf"
                                 class="flex-1 btn-export btn-pdf text-xs py-1"
                               >
-                                📄 PDF
+                                ��� PDF
                               </button>
                               <button
                                 data-export-report="inventory"

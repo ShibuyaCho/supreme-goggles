@@ -148,6 +148,27 @@ Route::middleware(['auth:sanctum'])->group(function () {
             // Stateless endpoint for SPA; nothing to clear server-side
             return response()->json(['success' => true, 'message' => 'Sale ended']);
         })->middleware('permission:pos:*');
+
+        // Saved sales management for SPA
+        Route::get('/saved-sales', function() {
+            $user = auth()->user();
+            $employeeId = optional($user?->employee)->id ?? $user?->id;
+            $list = \App\Models\SavedSale::active()->byEmployee($employeeId)->orderByDesc('created_at')->get();
+            return response()->json(['success' => true, 'saved_sales' => $list]);
+        })->middleware('permission:pos:*');
+        Route::get('/saved-sales/{id}', function($id){
+            $user = auth()->user();
+            $employeeId = optional($user?->employee)->id ?? $user?->id;
+            $sale = \App\Models\SavedSale::where('employee_id', $employeeId)->findOrFail($id);
+            return response()->json(['success' => true, 'saved_sale' => $sale]);
+        })->middleware('permission:pos:*');
+        Route::delete('/saved-sales/{id}', function($id){
+            $user = auth()->user();
+            $employeeId = optional($user?->employee)->id ?? $user?->id;
+            $sale = \App\Models\SavedSale::where('employee_id', $employeeId)->findOrFail($id);
+            $sale->delete();
+            return response()->json(['success' => true]);
+        })->middleware('permission:pos:*');
         Route::post('/packages/create', [MetrcController::class, 'createPackage'])
             ->middleware('permission:metrc:create');
         Route::post('/products/{product}/sync', [MetrcController::class, 'syncProduct'])
