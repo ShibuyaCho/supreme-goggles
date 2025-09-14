@@ -1056,7 +1056,7 @@
                       • <span x-text="(sale.total_items!=null ? sale.total_items : ((sale.cart_items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0))) + ' items'"></span>
                     </div>
                   </div>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-2 min-w-0">
                     <button @click="loadSavedSale(sale)" class="bg-cannabis-green text-white px-3 py-2 rounded hover:bg-green-700">Load</button>
                     <button @click="deleteSavedSale(sale)" class="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700">Delete</button>
                   </div>
@@ -1236,7 +1236,7 @@
 
                       <!-- Active Filters Display -->
                       <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <span
                             x-show="selectedCategory || searchQuery"
                             class="text-sm text-gray-600"
@@ -1928,7 +1928,7 @@
                     style="z-index: 20"
                   >
                     <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 min-w-0">
                         <h3 class="text-lg font-medium text-gray-900">
                           Shopping Cart
                         </h3>
@@ -1955,9 +1955,9 @@
                           ></span>
                         </div>
                       </div>
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 min-w-0">
                         <!-- Cart View Mode Toggle (always available) -->
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <span class="text-xs text-gray-500 hidden md:block"
                             >Cart View:</span
                           >
@@ -2374,7 +2374,7 @@
                               class="text-blue-600"
                             ></span>
                           </span>
-                          <div class="flex items-center gap-2">
+                          <div class="flex items-center gap-2 min-w-0">
                             <span
                               class="text-green-600 font-medium"
                               x-text="`-$${(cartDiscount.amount || 0).toFixed(2)}`"
@@ -6370,7 +6370,7 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Customer Database
                         </h3>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total customers: ' + customers.length"
@@ -6469,7 +6469,7 @@
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 min-w-0">
                                   <button
                                     @click="viewCustomer(customer)"
                                     class="text-blue-600 hover:text-blue-900"
@@ -6728,7 +6728,7 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Employee Directory
                         </h3>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total employees: ' + employees.length"
@@ -7238,7 +7238,7 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Product Catalogue
                         </h3>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total products: ' + products.length"
@@ -7388,7 +7388,7 @@
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 min-w-0">
                                   <button
                                     @click="editProduct(product)"
                                     class="text-blue-600 hover:text-blue-900"
@@ -7646,7 +7646,7 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Incoming Vendor Shipments
                         </h3>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total vendors: ' + incomingVendors.length"
@@ -7798,7 +7798,7 @@
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 min-w-0">
                                   <button
                                     @click="viewVendorPackages(vendor)"
                                     class="text-purple-600 hover:text-purple-900"
@@ -8090,7 +8090,7 @@
                                 class="text-sm font-medium text-gray-700"
                                 x-text="room.name"
                               ></span>
-                              <div class="flex items-center gap-2">
+                              <div class="flex items-center gap-2 min-w-0">
                                 <div class="w-32 bg-gray-200 rounded-full h-2">
                                   <div
                                     class="bg-orange-500 h-2 rounded-full"
@@ -9392,7 +9392,7 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Sales Transactions
                         </h3>
-                        <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-2 min-w-0">
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Showing ' + filteredSales.length + ' transactions'"
@@ -13766,7 +13766,7 @@
                           Define what each role can access across the POS.
                         </p>
                       </div>
-                      <div class="flex items-center gap-2">
+                      <div class="flex items-center gap-2 min-w-0">
                         <button
                           @click="openRoleModal('create')"
                           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
@@ -19022,7 +19022,7 @@
         style="display: none"
       >
         <div
-          class="relative top-20 mx-auto p-5 border w-[800px] shadow-lg rounded-md bg-white"
+          class="relative top-20 mx-auto p-5 border max-w-4xl w-full shadow-lg rounded-md bg-white"
         >
           <div class="mt-0">
             <div class="p-4 border-b flex items-center justify-between">
@@ -19267,7 +19267,7 @@
                   </div>
                 </div>
 
-                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
                 <!-- Per-Category Discounts (optional) -->
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
@@ -19275,9 +19275,9 @@
                     <template x-for="category in getUniqueCategories()" :key="category">
                       <div class="grid grid-cols-2 gap-2 items-center">
                         <div class="text-sm" x-text="category"></div>
-                        <div class="flex items-center gap-2">
-                          <input type="number" step="0.01" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.categoryDiscounts && dealForm.categoryDiscounts[category] !== undefined) ? dealForm.categoryDiscounts[category] : ''" @input="dealForm.categoryDiscounts = { ...(dealForm.categoryDiscounts || {}), [category]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
-                          <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                        <div class="flex items-center gap-2 min-w-0">
+                          <input type="number" step="0.01" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.categoryDiscounts && dealForm.categoryDiscounts[category] !== undefined) ? dealForm.categoryDiscounts[category] : ''" @input="dealForm.categoryDiscounts = { ...(dealForm.categoryDiscounts || {}), [category]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
+                          <select class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0" disabled>
                             <option>Uses deal type</option>
                           </select>
                         </div>
@@ -19294,9 +19294,9 @@
                     <template x-for="pid in (dealForm.applicableProducts || [])" :key="pid">
                       <div class="grid grid-cols-2 gap-2 items-center">
                         <div class="text-sm">Item #<span x-text="pid"></span></div>
-                        <div class="flex items-center gap-2">
-                          <input type="number" step="0.01" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.itemDiscounts && dealForm.itemDiscounts[String(pid)] !== undefined) ? dealForm.itemDiscounts[String(pid)] : ''" @input="dealForm.itemDiscounts = { ...(dealForm.itemDiscounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
-                          <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                        <div class="flex items-center gap-2 min-w-0">
+                          <input type="number" step="0.01" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.itemDiscounts && dealForm.itemDiscounts[String(pid)] !== undefined) ? dealForm.itemDiscounts[String(pid)] : ''" @input="dealForm.itemDiscounts = { ...(dealForm.itemDiscounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
+                          <select class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0" disabled>
                             <option>Uses deal type</option>
                           </select>
                         </div>
