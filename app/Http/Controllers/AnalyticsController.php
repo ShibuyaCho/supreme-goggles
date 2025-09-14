@@ -167,8 +167,9 @@ class AnalyticsController extends Controller
         $sales = Sale::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
                     ->where('status', 'completed')
                     ->get();
-        
-        $revenue = $sales->sum('total');
+
+        // Support both local DB (total_amount, tax_amount) and legacy (total, tax)
+        $revenue = $sales->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $transactions = $sales->count();
         $customers = $sales->whereNotNull('customer_id')->count();
         $avgOrderValue = $transactions > 0 ? $revenue / $transactions : 0;
