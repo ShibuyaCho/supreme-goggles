@@ -104,6 +104,9 @@ class UIHelpers
             'secondary' => 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
             'ghost' => 'text-gray-700 hover:bg-gray-100 focus:ring-gray-500',
             'link' => 'text-blue-600 underline-offset-4 hover:underline focus:ring-blue-500',
+            'success' => 'bg-green-600 text-white hover:bg-green-700 focus:ring-green-500',
+            'warning' => 'bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500',
+            'info' => 'bg-indigo-600 text-white hover:bg-indigo-700 focus:ring-indigo-500',
         ];
         
         $sizes = [

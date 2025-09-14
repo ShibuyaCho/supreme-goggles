@@ -56,19 +56,19 @@
                             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v3M7 4H5a1 1 0 00-1 1v16a1 1 0 001 1h14a1 1 0 001-1V5a1 1 0 00-1-1h-2M9 9h6m-6 4h6m-3 4h3" /></svg>
                             Create Drawer
                         </a>
-                        <x-ui.button variant="outline" onclick="openDialogNewsalemodal()">
+                        <x-ui.button id="start-sale-top" variant="success" onclick="openDialogNewsalemodal()">
                             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                             </svg>
                             New Sale
                         </x-ui.button>
-                        <x-ui.button variant="outline" onclick="holdCurrentSale()">
+                        <x-ui.button id="hold-sale-top" variant="warning" onclick="holdCurrentSale()">
                             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v10M16 7v10M3 7h18" />
                             </svg>
                             Hold
                         </x-ui.button>
-                        <x-ui.button variant="outline" onclick="endCurrentSale()">
+                        <x-ui.button id="end-sale-top" variant="info" onclick="endCurrentSale()">
                             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>

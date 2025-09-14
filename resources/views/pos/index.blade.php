@@ -151,8 +151,8 @@
                     >
                         Clear Cart
                     </button>
-                    <button id="hold-sale" class="text-yellow-700 hover:text-yellow-800 text-sm font-medium {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>Hold</button>
-                    <button id="end-sale" class="text-gray-700 hover:text-gray-900 text-sm font-medium">End Sale</button>
+                    <button id="hold-sale" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-3 py-2 rounded {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>Hold</button>
+                    <button id="end-sale" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded">End Sale</button>
                 </div>
             </div>
 
