@@ -46,7 +46,8 @@
         </div>
 
         <!-- Deals Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" x-show="deals.length > 0">
+        <div class="max-h-[70vh] overflow-y-auto pr-2">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" x-show="deals.length > 0">
             <template x-for="deal in deals" :key="deal.id">
                 <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
                     <!-- Deal Header -->
