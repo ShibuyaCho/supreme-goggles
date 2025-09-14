@@ -55,7 +55,7 @@ interface Deal {
 }
 
 const availableCategories = [
-  "Flower", "Pre-Rolls", "Concentrates", "Extracts", "Edibles", "Topicals",
+  "Flower", "Pre-Rolls", "Infused", "Concentrates", "Extracts", "Edibles", "Topicals",
   "Tinctures", "Vapes", "Inhalable Cannabinoids", "Clones", "Hemp", "Paraphernalia", "Accessories"
 ];
 
