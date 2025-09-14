@@ -1287,6 +1287,7 @@ function cannabisPOS() {
             if (sid) {
               await this.appendSaleById(sid);
               try { document.dispatchEvent(new CustomEvent('pos-sale-completed', { detail: { sale_id: sid } })); } catch (_) {}
+              try { window.dispatchEvent(new CustomEvent('pos-sale-completed', { detail: { sale_id: sid } })); } catch (_) {}
               try { localStorage.setItem('pos_last_sale_id', `${sid}:${Date.now()}`); } catch (_) {}
             }
           } catch (_) {}
