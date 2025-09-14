@@ -74,7 +74,7 @@ class DealsController extends Controller
             $deals = Deal::orderBy('created_at', 'desc')->get();
         }
 
-        // Load METRC categories with safe fallback
+        // Load METRC categories with safe fallback and ensure 'Infused' always included
         $categories = [];
         try {
             $categories = app(\App\Services\MetrcService::class)->getItemCategories();
@@ -86,6 +86,15 @@ class DealsController extends Controller
                 'Flower','Pre-Rolls','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Cartridges','Vape Pens','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Shake/Trim','Kief','Accessories'
             ];
         }
+        // Guarantee 'Infused' exists on both demo and live
+        try {
+            $categories = collect(is_array($categories) ? $categories : [])
+                ->filter(fn($c) => is_string($c) && $c !== '')
+                ->push('Infused')
+                ->unique()
+                ->values()
+                ->all();
+        } catch (\Throwable $e) { /* ignore */ }
 
         if ($request->wantsJson() || $request->expectsJson()) {
             $list = $deals instanceof \Illuminate\Support\Collection ? $deals->values()->all() : (is_array($deals) ? $deals : []);
@@ -553,11 +562,21 @@ class DealsController extends Controller
 
     private function formatDealForResponse($deal)
     {
-        $dealArray = $deal->toArray();
+        // Support both Eloquent models and array rows (e.g., Supabase)
+        if (is_array($deal)) {
+            $dealArray = $deal;
+        } elseif (is_object($deal) && method_exists($deal, 'toArray')) {
+            $dealArray = $deal->toArray();
+        } else {
+            $dealArray = (array)$deal;
+        }
 
-        // Decode JSON fields
-        if ($dealArray['applicable_categories']) {
-            $dealArray['applicable_categories'] = json_decode($dealArray['applicable_categories'], true);
+        // Normalize/decode JSON fields when stored as strings
+        if (array_key_exists('applicable_categories', $dealArray) && is_string($dealArray['applicable_categories'])) {
+            $decoded = json_decode($dealArray['applicable_categories'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $dealArray['applicable_categories'] = $decoded;
+            }
         }
         if (array_key_exists('specific_items', $dealArray) && is_string($dealArray['specific_items'])) {
             $decoded = json_decode($dealArray['specific_items'], true);
