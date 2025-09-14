@@ -459,6 +459,41 @@ class POSController extends Controller
         // Complete the sale
         $sale->complete($request->payment_method, $request->debit_last_four ?? $request->payment_reference);
 
+        // Mirror to Supabase (non-blocking, best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $employee = optional(\App\Models\Employee::find($employeeId));
+                $empPublicId = $employee?->employee_id ?: (string)$employeeId;
+                $row = [
+                    'sale_number'    => $sale->sale_number,
+                    'user_id'        => optional(auth()->user())->id,
+                    'employee_id'    => $empPublicId,
+                    'payment_method' => $request->payment_method,
+                    'subtotal'       => (float) $cartTotals['subtotal'],
+                    'tax'            => (float) $cartTotals['tax'],
+                    'tax_amount'     => (float) $cartTotals['tax'],
+                    'total'          => (float) $cartTotals['total'],
+                    'total_amount'   => (float) $cartTotals['total'],
+                    'discount_amount'=> (float) $cartTotals['discount'],
+                    'status'         => 'completed',
+                    'customer_type'  => Session::get('customer_type', 'recreational'),
+                    'customer'       => $customer ? [ 'id' => $customer->id, 'name' => $customer->name ] : ($customerInfo ?: null),
+                    'cart'           => array_map(function($it){ return [ 'id'=>$it['id'], 'name'=>$it['name'], 'price'=>(float)($it['price']??0), 'quantity'=>(float)($it['quantity']??0), 'discount'=>(float)($it['discount']??0), 'category'=>$it['category'] ?? null ]; }, $cart),
+                    'payment_reference' => $request->debit_last_four ?? $request->payment_reference ?? null,
+                ];
+                \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/sales', [$row]);
+            }
+        } catch (\Throwable $e) {
+            // Do not disrupt POS flow if Supabase sync fails
+        }
+
         // Clear session
         $this->cartService->clearCart();
         Session::forget(['customer_info', 'selected_loyalty_customer', 'cart_discount', 'sale_started']);
