@@ -1620,7 +1620,11 @@ app.get("/api/analytics/end-of-day", async (_req, res) => {
     const customerCountRaw = list.filter((s) => !!(s.customer && (s.customer.id || s.customer.name))).length;
 
     const cashSales = list.filter((s) => s.payment_method === "cash").reduce((a, s) => a + Number(s.total || 0), 0);
-    const debitSales = list.filter((s) => s.payment_method === "debit").reduce((a, s) => a + Number(s.total || 0), 0);
+    const debitSales = list.filter((s) => s.payment_method === "debit").reduce((a, s) => {
+      const meta = s.meta || {};
+      const amt = meta.debit_amount != null ? Number(meta.debit_amount) : Number(s.total || 0);
+      return a + (isFinite(amt) ? amt : 0);
+    }, 0);
     const creditSales = list.filter((s) => s.payment_method === "credit").reduce((a, s) => a + Number(s.total || 0), 0);
 
     // Monthly totals
