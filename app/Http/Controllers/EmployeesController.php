@@ -103,12 +103,13 @@ class EmployeesController extends Controller
         }
         
         $hashedPassword = Hash::make($request->password);
+        $empId = $request->filled('employee_id') ? $request->employee_id : \App\Helpers\EmployeeIdHelper::generateNextId();
         $employee = Employee::create([
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
             'phone' => $request->phone,
-            'employee_id' => $request->employee_id,
+            'employee_id' => $empId,
             'department' => $request->department,
             'position' => $request->position,
             'role' => $this->mapPositionToRole($request->position ?? ''),
