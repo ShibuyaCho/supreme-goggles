@@ -68,66 +68,7 @@ const sampleProducts = [
   { id: "5", name: "Live Resin Cart", category: "Concentrates" }
 ];
 
-const mockDeals: Deal[] = [
-  {
-    id: "1",
-    name: "Happy Hour Special",
-    description: "20% off all flower products during weekday happy hours",
-    type: "percentage",
-    discountValue: 20,
-    categories: ["Flower"],
-    specificItems: [],
-    startDate: "2024-01-15",
-    endDate: "2024-12-31",
-    isActive: true,
-    frequency: "daily",
-    emailCustomers: true,
-    loyaltyOnly: false,
-    medicalOnly: false,
-    minimumPurchase: 25,
-    minimumPurchaseType: 'dollars',
-    currentUses: 156
-  },
-  {
-    id: "2",
-    name: "BOGO Edibles Friday",
-    description: "Buy one get one 50% off on all edibles every Friday",
-    type: "bogo",
-    discountValue: 50,
-    categories: ["Edibles"],
-    specificItems: [],
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    isActive: true,
-    frequency: "weekly",
-    dayOfWeek: "Friday",
-    emailCustomers: true,
-    loyaltyOnly: true,
-    medicalOnly: false,
-    minimumPurchaseType: 'dollars',
-    currentUses: 89
-  },
-  {
-    id: "3",
-    name: "Monthly Member Special",
-    description: "$10 off purchases over $100 for loyalty members",
-    type: "fixed",
-    discountValue: 10,
-    categories: [],
-    specificItems: [],
-    startDate: "2024-01-01",
-    endDate: "2024-12-31",
-    isActive: true,
-    frequency: "always",
-    emailCustomers: false,
-    loyaltyOnly: true,
-    medicalOnly: false,
-    minimumPurchase: 100,
-    minimumPurchaseType: 'dollars',
-    maxUses: 1000,
-    currentUses: 234
-  }
-];
+const mockDeals: Deal[] = [];
 
 export default function Deals() {
   const [deals, setDeals] = useState<Deal[]>(mockDeals);
