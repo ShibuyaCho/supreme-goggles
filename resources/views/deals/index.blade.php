@@ -251,6 +251,32 @@
                             <p class="text-xs text-gray-500 mt-1">Select one or more categories. Leave empty to apply to all.</p>
                         </div>
 
+                        <!-- Per-Category Discounts (optional) -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
+                            <div class="space-y-2" x-show="(form.applicable_categories || []).length > 0">
+                                <template x-for="cat in form.applicable_categories" :key="cat">
+                                    <div class="grid grid-cols-2 gap-2 items-center">
+                                        <div class="text-sm" x-text="cat"></div>
+                                        <div class="flex items-center gap-2">
+                                            <input
+                                                type="number"
+                                                step="0.01"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
+                                                :value="(form.category_discounts && form.category_discounts[cat] !== undefined) ? form.category_discounts[cat] : ''"
+                                                @input="form.category_discounts = { ...(form.category_discounts || {}), [cat]: parseFloat($event.target.value) || 0 }"
+                                                placeholder="Discount value"
+                                            >
+                                            <select class="px-2 py-2 border border-gray-300 rounded-lg" disabled>
+                                                <option>Uses deal type</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </template>
+                                <p class="text-xs text-gray-500">If set, these override the main discount for the selected category.</p>
+                            </div>
+                        </div>
+
                         <!-- Specific Products (optional) -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Specific Products (optional)</label>
@@ -403,6 +429,7 @@ function dealsManager() {
                 end_date: '',
                 applicable_categories: [],
                 specific_items: [],
+                category_discounts: {},
                 minimum_purchase: null,
                 minimum_purchase_type: 'dollars',
                 max_uses: null,
