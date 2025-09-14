@@ -14,7 +14,30 @@ class DealsController extends Controller
 {
     public function index(Request $request)
     {
-        $deals = Deal::orderBy('created_at', 'desc')->get();
+        $deals = null;
+        $supabaseUrl = env('SUPABASE_URL');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $resp = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [
+                    'select' => '*',
+                    'order' => 'created_at.desc'
+                ]);
+                if ($resp->ok()) {
+                    $rows = $resp->json();
+                    $deals = collect(is_array($rows) ? $rows : []);
+                }
+            } catch (\Throwable $e) {
+                $deals = null;
+            }
+        }
+        if ($deals === null) {
+            $deals = Deal::orderBy('created_at', 'desc')->get();
+        }
 
         // Load METRC categories with safe fallback
         $categories = [];
