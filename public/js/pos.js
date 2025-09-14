@@ -1803,6 +1803,22 @@ function cannabisPOS() {
     mapDealToSpa(d) {
       const t = String(d.type || d.deal_type || "").toLowerCase();
       const type = t === "fixed" ? "fixed_amount" : t;
+      const normDate = (v) => {
+        if (!v) return "";
+        const s = String(v);
+        if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+        // Try to parse and format as YYYY-MM-DD
+        try {
+          const dt = new Date(s);
+          if (!isNaN(dt.getTime())) {
+            const y = dt.getFullYear();
+            const m = String(dt.getMonth() + 1).padStart(2, "0");
+            const d2 = String(dt.getDate()).padStart(2, "0");
+            return `${y}-${m}-${d2}`;
+          }
+        } catch (_) {}
+        return s.split("T")[0] || "";
+      };
       const activeDays = Array.isArray(d.active_days)
         ? d.active_days
         : typeof d.active_days === "string"
@@ -1827,8 +1843,8 @@ function cannabisPOS() {
             ? d.categories
             : [],
         specificItems: Array.isArray(d.specific_items) ? d.specific_items : [],
-        startDate: d.start_date || "",
-        endDate: d.end_date || "",
+        startDate: normDate(d.start_date || d.startDate || ""),
+        endDate: normDate(d.end_date || d.endDate || ""),
         isActive: !!(d.is_active ?? true),
         frequency: d.frequency || "always",
         dayOfWeek: d.day_of_week || undefined,
@@ -1999,8 +2015,8 @@ function cannabisPOS() {
           frequency: freq,
           day_of_week: dow,
           day_of_month: f.dayOfMonth || f.day_of_month || null,
-          start_date: f.startDate || null,
-          end_date: f.endDate || null,
+          start_date: f.startDate || undefined,
+          end_date: f.endDate || undefined,
           applicable_categories: Array.isArray(f.applicableCategories)
             ? f.applicableCategories
             : [],
@@ -2022,6 +2038,10 @@ function cannabisPOS() {
         const creating = !this.editingDeal;
         const url = creating ? "/deals" : `/deals/${this.editingDeal.id}`;
         const method = creating ? "post" : "put";
+        if (!creating) {
+          if (!f.startDate) delete payload.start_date;
+          if (f.endDate == null || f.endDate === "") delete payload.end_date;
+        }
         const res = await posAuth.apiRequest(method, url, payload);
         const data = res?.data || {};
         if (res?.success && data?.success !== false) {
