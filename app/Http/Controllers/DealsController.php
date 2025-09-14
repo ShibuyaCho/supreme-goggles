@@ -30,6 +30,41 @@ class DealsController extends Controller
                 if ($resp->ok()) {
                     $rows = $resp->json();
                     $deals = collect(is_array($rows) ? $rows : []);
+                    try {
+                        if ($deals->count() === 0) {
+                            $localDeals = Deal::orderBy('created_at','asc')->get();
+                            if ($localDeals->count() > 0) {
+                                $payloads = $localDeals->map(function($d){
+                                    $arr = $d->toArray();
+                                    if (isset($arr['applicable_categories']) && is_string($arr['applicable_categories'])) {
+                                        $dec = json_decode($arr['applicable_categories'], true);
+                                        if (json_last_error() === JSON_ERROR_NONE) $arr['applicable_categories'] = $dec;
+                                    }
+                                    if (isset($arr['specific_items']) && is_string($arr['specific_items'])) {
+                                        $dec = json_decode($arr['specific_items'], true);
+                                        if (json_last_error() === JSON_ERROR_NONE) $arr['specific_items'] = $dec;
+                                    }
+                                    if (isset($arr['active_days']) && is_string($arr['active_days'])) {
+                                        $dec = json_decode($arr['active_days'], true);
+                                        if (json_last_error() === JSON_ERROR_NONE) $arr['active_days'] = $dec;
+                                    }
+                                    return $arr;
+                                })->values()->all();
+                                $ins = Http::withHeaders([
+                                    'apikey' => $supabaseKey,
+                                    'Authorization' => 'Bearer ' . $supabaseKey,
+                                    'Accept' => 'application/json',
+                                    'Prefer' => 'return=representation'
+                                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/deals', $payloads);
+                                if ($ins->ok()) {
+                                    $rows = $ins->json();
+                                    $deals = collect(is_array($rows) ? $rows : []);
+                                }
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        // ignore sync failure
+                    }
                 }
             } catch (\Throwable $e) {
                 $deals = null;
