@@ -529,6 +529,7 @@ function cannabisPOS() {
     deals: [],
     filteredDeals: [],
     dealFilter: "",
+    dealProductSearch: "",
 
     // Sales state
     sales: [],
@@ -2020,6 +2021,7 @@ function cannabisPOS() {
           applicable_categories: Array.isArray(f.applicableCategories)
             ? f.applicableCategories
             : [],
+          specific_items: Array.isArray(f.applicableProducts) ? f.applicableProducts.map(id => Number(id)).filter(n => !isNaN(n)) : [],
           minimum_purchase:
             f.minPurchase != null ? Number(f.minPurchase) : null,
           minimum_purchase_type: f.minPurchaseType || "dollars",
@@ -2073,6 +2075,17 @@ function cannabisPOS() {
       }
     },
 
+    getDealSelectableProducts() {
+      const q = String(this.dealProductSearch || '').toLowerCase();
+      const list = Array.isArray(this.products) ? this.products : [];
+      if (!q) return list.slice(0, 100);
+      return list.filter(p => {
+        const name = String(p.name || '').toLowerCase();
+        const sku = String(p.sku || '').toLowerCase();
+        return name.includes(q) || sku.includes(q);
+      }).slice(0, 100);
+    },
+
     editDeal(deal) {
       this.showCreateDealModal = true;
       this.editingDeal = deal;
@@ -2088,7 +2101,7 @@ function cannabisPOS() {
         usageLimit: deal.maxUses || "",
         allCategories: false,
         applicableCategories: deal.categories || [],
-        applicableProducts: [],
+        applicableProducts: Array.isArray(deal.specificItems) ? deal.specificItems.slice() : [],
         excludeGLS: true,
         stackable: false,
         loyaltyOnly: !!deal.loyaltyOnly,
@@ -2127,6 +2140,7 @@ function cannabisPOS() {
         minPurchase: deal.minimumPurchase,
         minPurchaseType: deal.minimumPurchaseType || "dollars",
         applicableCategories: (deal.categories || []).slice(),
+        applicableProducts: Array.isArray(deal.specificItems) ? deal.specificItems.slice() : [],
         loyaltyOnly: !!deal.loyaltyOnly,
         medicalOnly: !!deal.medicalOnly,
         emailCustomers: !!deal.emailCustomers,
@@ -3099,6 +3113,10 @@ function cannabisPOS() {
             !d.categories.includes(cat)
           )
             continue;
+          if (Array.isArray(d.specificItems) && d.specificItems.length > 0) {
+            const pid = (item && item.id) ? item.id : null;
+            if (pid == null || !d.specificItems.includes(pid)) continue;
+          }
           if (d.minimumPurchase != null) {
             if ((d.minimumPurchaseType || "dollars") === "grams") {
               if (!grams || grams < Number(d.minimumPurchase)) continue;
