@@ -51,6 +51,8 @@ Route::get('/health', function () {
 Route::get('/deals', [DealsController::class, 'index']);
 // Email campaign trigger (rate-limited)
 Route::post('/deals/{id}/email', [DealsController::class, 'sendEmailCampaign'])->middleware('throttle:6,1');
+// Products list for pickers (returns JSON, supports search/status params)
+Route::get('/products', [ProductsController::class, 'index']);
 
 // Authentication routes
 Route::prefix('auth')->group(function () {
