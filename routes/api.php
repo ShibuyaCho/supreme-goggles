@@ -287,6 +287,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     | Sales Management Routes
     |--------------------------------------------------------------------------
     */
+    // Analytics API
+    Route::prefix('analytics')->group(function () {
+        Route::get('/overview', [AnalyticsController::class, 'overview']);
+        Route::get('/end-of-day', [AnalyticsController::class, 'endOfDay']);
+        Route::get('/company', [AnalyticsController::class, 'companyView']);
+        Route::get('/aspd', [AnalyticsController::class, 'getASPDAnalytics']);
+    });
+
     Route::prefix('sales')->group(function () {
         // Read operations
         Route::middleware('permission:sales:read')->group(function () {
