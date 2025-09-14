@@ -528,6 +528,12 @@ function dealsManager() {
             this.loadProducts();
         },
 
+        getProductById(id) {
+            const list = Array.isArray(this.productResults) ? this.productResults : [];
+            const found = list.find(p => String(p.id) === String(id));
+            return found || { id, name: `#${id}`, category: '' };
+        },
+
         async submitDeal() {
             try {
                 const url = this.modalType === 'create' ? '/deals' : `/deals/${this.form.id}`;
