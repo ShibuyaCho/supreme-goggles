@@ -203,6 +203,8 @@ class DealsController extends Controller
                     if ($resp->successful()) {
                         $rows = $resp->json();
                         $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                        // Mirror to local DB for persistence across sessions and offline
+                        try { $this->upsertLocalDealFromSupabaseRow($row); } catch (\Throwable $e) { Log::warning('Local mirror of Supabase deal failed', ['error' => $e->getMessage()]); }
                         return response()->json([
                             'success' => true,
                             'message' => 'Deal created successfully',
@@ -322,6 +324,8 @@ class DealsController extends Controller
                     if ($resp->successful()) {
                         $rows = $resp->json();
                         $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                        // Mirror to local DB
+                        try { $this->upsertLocalDealFromSupabaseRow($row); } catch (\Throwable $e) { Log::warning('Local mirror of Supabase deal failed', ['error' => $e->getMessage()]); }
                         return response()->json([
                             'success' => true,
                             'message' => 'Deal updated successfully',
@@ -406,6 +410,8 @@ class DealsController extends Controller
                     ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id));
                     if ($resp->successful()) {
                         Log::info('Deal deleted successfully (Supabase)', [ 'deal_id' => $id, 'user_id' => auth()->id() ]);
+                        // Also delete locally if present
+                        try { if (\App\Models\Deal::where('id', $id)->exists()) { \App\Models\Deal::where('id', $id)->delete(); } } catch (\Throwable $e) { Log::warning('Local delete mirror failed', ['error' => $e->getMessage()]); }
                         return response()->json([
                             'success' => true,
                             'message' => 'Deal deleted successfully'
@@ -597,6 +603,14 @@ class DealsController extends Controller
             $dealArray = (array)$deal;
         }
 
+        // Normalize field name variants
+        if (!isset($dealArray['value']) && isset($dealArray['discount_value'])) {
+            $dealArray['value'] = $dealArray['discount_value'];
+        }
+        if (!isset($dealArray['applicable_categories']) && isset($dealArray['categories'])) {
+            $dealArray['applicable_categories'] = $dealArray['categories'];
+        }
+
         // Normalize/decode JSON fields when stored as strings
         if (array_key_exists('applicable_categories', $dealArray) && is_string($dealArray['applicable_categories'])) {
             $decoded = json_decode($dealArray['applicable_categories'], true);
@@ -618,6 +632,58 @@ class DealsController extends Controller
         }
 
         return $dealArray;
+    }
+
+    private function upsertLocalDealFromSupabaseRow($row)
+    {
+        if (!$row) return;
+        $arr = is_array($row) ? $row : (array)$row;
+        $mapped = [
+            'id' => $arr['id'] ?? null,
+            'name' => $arr['name'] ?? null,
+            'description' => $arr['description'] ?? null,
+            'type' => $arr['type'] ?? 'percentage',
+            'value' => $arr['value'] ?? ($arr['discount_value'] ?? 0),
+            'frequency' => $arr['frequency'] ?? 'always',
+            'day_of_week' => $arr['day_of_week'] ?? null,
+            'day_of_month' => $arr['day_of_month'] ?? null,
+            'start_date' => $arr['start_date'] ?? null,
+            'end_date' => $arr['end_date'] ?? null,
+            'applicable_categories' => $arr['applicable_categories'] ?? ($arr['categories'] ?? null),
+            'specific_items' => $arr['specific_items'] ?? null,
+            'minimum_purchase' => $arr['minimum_purchase'] ?? null,
+            'minimum_purchase_type' => $arr['minimum_purchase_type'] ?? 'dollars',
+            'max_uses' => $arr['max_uses'] ?? null,
+            'current_uses' => $arr['current_uses'] ?? 0,
+            'email_customers' => (bool)($arr['email_customers'] ?? false),
+            'loyalty_only' => (bool)($arr['loyalty_only'] ?? false),
+            'medical_only' => (bool)($arr['medical_only'] ?? false),
+            'is_active' => (bool)($arr['is_active'] ?? true),
+            'active_days' => $arr['active_days'] ?? null,
+        ];
+        // Ensure JSON fields are arrays
+        foreach (['applicable_categories','specific_items','active_days'] as $k) {
+            if (isset($mapped[$k]) && is_string($mapped[$k])) {
+                $dec = json_decode($mapped[$k], true);
+                if (json_last_error() === JSON_ERROR_NONE) $mapped[$k] = $dec;
+            }
+        }
+        // Upsert by id if numeric
+        $id = $mapped['id'] ?? null;
+        if ($id !== null) {
+            $existing = \App\Models\Deal::find($id);
+            if ($existing) {
+                $existing->fill($mapped);
+                $existing->save();
+            } else {
+                // Allow setting ID explicitly
+                $deal = new \App\Models\Deal($mapped);
+                $deal->id = $id;
+                $deal->save();
+            }
+        } else {
+            \App\Models\Deal::updateOrCreate(['name' => $mapped['name']], $mapped);
+        }
     }
 
     private function isDealValid($deal)
