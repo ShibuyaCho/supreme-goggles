@@ -108,7 +108,12 @@ class DealsController extends Controller
             ]);
         }
 
-        return view('deals.index', compact('deals','categories'));
+        // For Blade view, normalize each deal to consistent array structure as well
+        $normalizedDeals = $deals instanceof \Illuminate\Support\Collection
+            ? $deals->map(fn($d) => $this->formatDealForResponse($d))->values()->all()
+            : (is_array($deals) ? array_map(fn($d) => $this->formatDealForResponse($d), $deals) : []);
+
+        return view('deals.index', ['deals' => $normalizedDeals, 'categories' => $categories]);
     }
 
     public function store(Request $request)
