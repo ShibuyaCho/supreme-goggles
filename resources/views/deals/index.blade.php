@@ -283,9 +283,9 @@
                         </div>
 
                         <!-- Category and Item Discounts side-by-side -->
-                        <div class="grid grid-cols-1 md:[grid-template-columns:minmax(0,1fr)_minmax(320px,420px)] gap-4 items-start">
+                        <div class="space-y-6">
                             <!-- Per-Category Discounts (optional) -->
-                            <div class="min-w-0 md:pr-4 w-full relative">
+                            <div class="w-full">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
                                 <div class="space-y-2">
                                     <template x-for="cat in categories" :key="cat">
@@ -311,7 +311,7 @@
                             </div>
 
                             <!-- Per-Item Discounts (optional) -->
-                            <div class="min-w-0 md:pl-4 w-full relative">
+                            <div class="w-full">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
                                 <div class="space-y-2 w-full">
                                     <template x-for="pid in form.specific_items" :key="pid">
