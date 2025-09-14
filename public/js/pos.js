@@ -4706,7 +4706,7 @@ function cannabisPOS() {
         const created =
           res.data && res.data.employee ? res.data.employee : null;
         const uiEmployee = {
-          id: created && created.id ? created.id : employee_id,
+          id: created && created.id ? created.id : (employee_id || created?.employee_id || null),
           name: `${first_name} ${last_name}`.trim(),
           email: this.employeeForm.email,
           phone: this.employeeForm.phone || "",
