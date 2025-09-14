@@ -109,6 +109,32 @@ class DealsController extends Controller
                 }
             }
 
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $payload = $dealData;
+                if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
+                    $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
+                }
+                if (isset($payload['active_days']) && is_string($payload['active_days'])) {
+                    $payload['active_days'] = json_decode($payload['active_days'], true);
+                }
+                $resp = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [$payload]);
+                if (!$resp->successful()) throw new \Exception('Supabase error: '.$resp->body());
+                $rows = $resp->json();
+                $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Deal created successfully',
+                    'deal' => $row
+                ]);
+            }
+
             // Convert applicable_categories array to JSON if present
             if (isset($dealData['applicable_categories']) && is_array($dealData['applicable_categories'])) {
                 $dealData['applicable_categories'] = json_encode($dealData['applicable_categories']);
