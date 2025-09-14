@@ -458,10 +458,8 @@ class AuthController extends Controller
             ], 422);
         }
 
-        // Generate a unique employee identifier
-        do {
-            $generatedId = strtoupper(Str::random(6));
-        } while (Employee::where('employee_id', $generatedId)->exists());
+        // Generate a sequential employee identifier like Emp01, Emp02, ...
+        $generatedId = \App\Helpers\EmployeeIdHelper::generateNextId();
 
         // Split name into first and last
         $parts = preg_split('/\s+/', trim($request->name), 2);
