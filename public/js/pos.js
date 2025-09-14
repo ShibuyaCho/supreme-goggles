@@ -1832,6 +1832,23 @@ function cannabisPOS() {
               }
             })()
           : [];
+      // Normalize discount maps
+      const catMap = (() => {
+        const v = d.category_discounts;
+        if (!v) return {};
+        if (typeof v === "string") {
+          try { const x = JSON.parse(v); return x && typeof x === "object" ? x : {}; } catch (_) { return {}; }
+        }
+        return v;
+      })();
+      const itemMap = (() => {
+        const v = d.item_discounts;
+        if (!v) return {};
+        if (typeof v === "string") {
+          try { const x = JSON.parse(v); return x && typeof x === "object" ? x : {}; } catch (_) { return {}; }
+        }
+        return v;
+      })();
       return {
         id: d.id,
         name: d.name,
@@ -1844,6 +1861,8 @@ function cannabisPOS() {
             ? d.categories
             : [],
         specificItems: Array.isArray(d.specific_items) ? d.specific_items : [],
+        categoryDiscounts: catMap || {},
+        itemDiscounts: itemMap || {},
         startDate: normDate(d.start_date || d.startDate || ""),
         endDate: normDate(d.end_date || d.endDate || ""),
         isActive: !!(d.is_active ?? true),
@@ -3201,13 +3220,19 @@ function cannabisPOS() {
               if (base < Number(d.minimumPurchase)) continue;
             }
           }
+          // Determine effective value (per-item > per-category > base)
+          const pid = (item && item.id) ? String(item.id) : null;
+          const catOverride = (d.categoryDiscounts && cat in d.categoryDiscounts) ? Number(d.categoryDiscounts[cat]) : null;
+          const itemOverride = (pid && d.itemDiscounts && (pid in d.itemDiscounts)) ? Number(d.itemDiscounts[pid]) : null;
+          const effectiveValue = itemOverride != null ? itemOverride : (catOverride != null ? catOverride : Number(d.discountValue));
+
           let amt = 0;
           if (d.type === "percentage")
-            amt = base * (Number(d.discountValue) / 100);
+            amt = base * (effectiveValue / 100);
           else if (d.type === "fixed_amount")
-            amt = Math.min(Number(d.discountValue), base);
+            amt = Math.min(effectiveValue, base);
           else if (d.type === "bogo" || d.type === "bulk")
-            amt = base * (Number(d.discountValue) / 100);
+            amt = base * (effectiveValue / 100);
           if (amt > best.amount)
             best = {
               amount: amt,
