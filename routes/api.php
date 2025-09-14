@@ -119,6 +119,35 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/transfers/incoming', [MetrcController::class, 'getIncomingTransfers']);
         Route::post('/packages/update-status', [MetrcController::class, 'updatePackageStatus']);
         Route::post('/packages/change-location', [MetrcController::class, 'changePackageLocation']);
+    });
+
+    // POS hold/end sale for SPA (token-auth via Sanctum)
+    Route::prefix('pos')->group(function () {
+        Route::post('/save-sale', function(\Illuminate\Http\Request $request) {
+            $user = auth()->user();
+            $employee = $user?->employee;
+            $name = $request->input('name') ?: ('Held Sale - ' . now()->toDateTimeString());
+            $saved = \App\Models\SavedSale::create([
+                'name' => $name,
+                'employee_id' => $employee->id ?? $user?->id,
+                'employee_name' => $employee->full_name ?? ($user?->name ?? 'Employee'),
+                'customer_type' => $request->input('customer_type','rec'),
+                'customer_info' => $request->input('customer') ?: $request->input('customer_info', []),
+                'cart_items' => $request->input('cart_items', []),
+                'cart_discount' => $request->input('cart_discount'),
+                'selected_loyalty_customer' => $request->input('selected_loyalty_customer'),
+                'total_items' => (int)($request->input('total_items') ?? collect($request->input('cart_items', []))->sum('quantity')),
+                'total_amount' => (float)($request->input('total_amount') ?? 0),
+                'notes' => $request->input('notes','Held from SPA'),
+                'status' => 'active',
+            ]);
+            return response()->json(['success' => true, 'saved_sale_id' => $saved->id]);
+        })->middleware('permission:pos:*');
+
+        Route::post('/end-sale', function() {
+            // Stateless endpoint for SPA; nothing to clear server-side
+            return response()->json(['success' => true, 'message' => 'Sale ended']);
+        })->middleware('permission:pos:*');
         Route::post('/packages/create', [MetrcController::class, 'createPackage'])
             ->middleware('permission:metrc:create');
         Route::post('/products/{product}/sync', [MetrcController::class, 'syncProduct'])
