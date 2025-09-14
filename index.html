@@ -18785,20 +18785,28 @@
                   </h4>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2"
-                      >Minimum Purchase Amount</label
-                    >
-                    <input
-                      id="min-purchase"
-                      name="min-purchase"
-                      type="number"
-                      x-model="dealForm.minPurchase"
-                      placeholder="0.00"
-                      step="0.01"
-                      min="0"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      aria-describedby="min-purchase-help"
-                    />
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Purchase Amount</label>
+                    <div class="grid grid-cols-3 gap-2">
+                      <div>
+                        <select x-model="dealForm.minPurchaseType" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500">
+                          <option value="dollars">Dollars ($)</option>
+                          <option value="grams">Grams (g)</option>
+                        </select>
+                      </div>
+                      <div class="col-span-2">
+                        <input
+                          id="min-purchase"
+                          name="min-purchase"
+                          type="number"
+                          x-model.number="dealForm.minPurchase"
+                          :placeholder="dealForm.minPurchaseType === 'grams' ? '0.00 (grams)' : '0.00 ($)'"
+                          step="0.01"
+                          min="0"
+                          class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
+                          aria-describedby="min-purchase-help"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <div>
