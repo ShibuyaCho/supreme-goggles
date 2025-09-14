@@ -1570,6 +1570,7 @@ function cannabisPOS() {
     mapDealToSpa(d) {
       const t = String(d.type || d.deal_type || '').toLowerCase();
       const type = t === 'fixed' ? 'fixed_amount' : t;
+      const activeDays = Array.isArray(d.active_days) ? d.active_days : (typeof d.active_days === 'string' ? (function(s){ try{ const x=JSON.parse(s); return Array.isArray(x)?x:[]; } catch(_){ return []; } })() : []);
       return {
         id: d.id,
         name: d.name,
@@ -1584,6 +1585,7 @@ function cannabisPOS() {
         frequency: d.frequency || 'always',
         dayOfWeek: d.day_of_week || undefined,
         dayOfMonth: d.day_of_month || undefined,
+        activeDays: activeDays,
         emailCustomers: !!d.email_customers,
         loyaltyOnly: !!d.loyalty_only,
         medicalOnly: !!d.medical_only,
