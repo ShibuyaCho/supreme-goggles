@@ -3,6 +3,7 @@ import express from "express";
 import path from "node:path";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
+import crypto from "node:crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -1314,6 +1315,20 @@ async function handleProcessPayment(req, res) {
     (s, i) => s + Number(i.price || 0) * Number(i.quantity || 1),
     0,
   );
+  // Build idempotency fingerprint using normalized cart
+  const cartNorm = (items || []).map((i) => ({ name: i?.name || "", price: Number(i?.price || 0), quantity: Number(i?.quantity || 1) }));
+  const idemKey = crypto
+    .createHash("sha256")
+    .update(
+      [
+        String(body.employeePin || user?.employee_id || user?.employee?.employee_id || ""),
+        String(body.method || (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown")),
+        String(Number(body.total != null ? body.total : computedSubtotal + (body.taxAmount ?? body.tax ?? 0) || 0)),
+        String(cartNorm.length),
+        JSON.stringify(cartNorm),
+      ].join("|"),
+    )
+    .digest("hex");
   const subtotal =
     body.subtotal != null
       ? Number(body.subtotal)
@@ -1390,6 +1405,7 @@ async function handleProcessPayment(req, res) {
       timestamp: new Date().toISOString(),
       cart_discount: body?.cartDiscount || null,
       employee_name: empNameFromUser,
+      idempotency_key: idemKey,
     },
   };
   try {
@@ -1406,6 +1422,23 @@ async function handleProcessPayment(req, res) {
       if (!row.meta) row.meta = {};
       if (debitAmt != null && !Number.isNaN(debitAmt))
         row.meta.debit_amount = debitAmt;
+    }
+  } catch (_) {}
+  // Strong idempotency: check by idempotency_key in Supabase first
+  try {
+    const sinceIso = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const q = {
+      select: "*",
+      order: "created_at.desc",
+      limit: "1",
+      [`meta->>idempotency_key`]: `eq.${idemKey}`,
+      and: `(created_at.gte.${sinceIso})`,
+    };
+    const r0 = await supaFetch("sales", { method: "GET", query: q });
+    const arr0 = r0.ok ? await r0.json() : [];
+    const found = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
+    if (found) {
+      return res.status(200).json({ success: true, sale_id: found.id, sale_number: found.sale_number || String(found.id), sale: found, deduped: true });
     }
   } catch (_) {}
   // Idempotency guard: prevent duplicate inserts within 10s for same employee, method, total, and item count
