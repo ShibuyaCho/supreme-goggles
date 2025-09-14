@@ -47,6 +47,11 @@ Route::get('/health', function () {
     ]);
 });
 
+// Public deals list for SPA compatibility (read-only)
+Route::get('/deals', [DealsController::class, 'index']);
+// Email campaign trigger (rate-limited)
+Route::post('/deals/{id}/email', [DealsController::class, 'sendEmailCampaign'])->middleware('throttle:6,1');
+
 // Authentication routes
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
