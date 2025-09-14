@@ -1408,6 +1408,8 @@ function cannabisPOS() {
       const tax = Number(s.tax_amount != null ? s.tax_amount : (s.tax != null ? s.tax : 0));
       const total = Number(s.total_amount != null ? s.total_amount : (s.total != null ? s.total : 0));
       const discountPercent = subtotal > 0 && discountAmt > 0 ? (discountAmt / subtotal) * 100 : 0;
+      const meta = s.meta || null;
+      const debitAmount = meta && meta.debit_amount != null ? Number(meta.debit_amount) : null;
       return {
         id: s.sale_number || String(s.id),
         numericId: s.id,
@@ -1427,6 +1429,8 @@ function cannabisPOS() {
         employee: empName,
         isVoided: String(s.status || "").toLowerCase() === "voided",
         status: String(s.status || "completed").toLowerCase(),
+        meta,
+        debitAmount,
       };
     },
 
