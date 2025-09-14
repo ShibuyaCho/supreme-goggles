@@ -908,19 +908,30 @@ app.post("/api/employees", async (req, res) => {
   const b = req.body || {};
   async function getNextEmpId() {
     try {
-      const r = await supaFetch("employees?select=employee_id,created_at&order=created_at.desc&limit=200", { method: "GET" });
+      const r = await supaFetch(
+        "employees?select=employee_id,created_at&order=created_at.desc&limit=200",
+        { method: "GET" },
+      );
       const arr = r.ok ? await r.json() : [];
       let max = 0;
       for (const row of Array.isArray(arr) ? arr : []) {
         const v = row && row.employee_id ? String(row.employee_id) : "";
         const m = v.match(/(\d+)/);
-        if (m) { const n = parseInt(m[1].replace(/^0+/, '') || '0', 10); if (n > max) max = n; }
+        if (m) {
+          const n = parseInt(m[1].replace(/^0+/, "") || "0", 10);
+          if (n > max) max = n;
+        }
       }
       const next = Math.max(1, max + 1);
       const pad = next < 100 ? 2 : String(next).length;
-      return `Emp${String(next).padStart(pad, '0')}`;
+      return `Emp${String(next).padStart(pad, "0")}`;
     } catch (_) {
-      return "Emp" + Math.floor(1 + Math.random() * 98).toString().padStart(2, '0');
+      return (
+        "Emp" +
+        Math.floor(1 + Math.random() * 98)
+          .toString()
+          .padStart(2, "0")
+      );
     }
   }
   const row = {
@@ -1253,53 +1264,107 @@ let __lastPayment = null;
 async function handleProcessPayment(req, res) {
   const user = getAuthUser(req);
   const body = req.body || {};
-  async function getStoreId(){
-    try{
-      const r = await supaFetch("pos_settings?id=eq.default&select=settings", { method: "GET" });
+  async function getStoreId() {
+    try {
+      const r = await supaFetch("pos_settings?id=eq.default&select=settings", {
+        method: "GET",
+      });
       const arr = r.ok ? await r.json() : [];
       const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-      const settings = row && row.settings && typeof row.settings === 'object' ? row.settings : {};
-      const raw = settings.store_id || settings.store_name || 'default';
-      return String(raw).toLowerCase().replace(/[^a-z0-9-_.]/g,'-');
-    } catch(_){ return 'default'; }
+      const settings =
+        row && row.settings && typeof row.settings === "object"
+          ? row.settings
+          : {};
+      const raw = settings.store_id || settings.store_name || "default";
+      return String(raw)
+        .toLowerCase()
+        .replace(/[^a-z0-9-_.]/g, "-");
+    } catch (_) {
+      return "default";
+    }
   }
   // Normalize incoming payload
-  const items = Array.isArray(body.cart) && body.cart.length
-    ? body.cart
-    : (Array.isArray(body.items) ? body.items.map((i) => ({
-        id: i?.id ?? null,
-        name: i?.name ?? undefined,
-        price: Number(i?.price ?? 0),
-        quantity: Number(i?.quantity ?? 1),
-        // preserve any discount info if present
-        discount: i?.discount ?? undefined,
-        discount_amount: i?.discount_amount != null
-          ? Number(i.discount_amount)
-          : (typeof i?.discount === "number"
-              ? Number(i.discount)
-              : (i?.discount && typeof i.discount.amount === "number"
-                  ? Number(i.discount.amount)
-                  : undefined)),
-      })) : []);
-  const computedSubtotal = items.reduce((s, i) => s + Number(i.price || 0) * Number(i.quantity || 1), 0);
-  const subtotal = body.subtotal != null ? Number(body.subtotal) : (items.length ? computedSubtotal : null);
-  const tax = body.taxAmount != null ? Number(body.taxAmount) : (body.tax != null ? Number(body.tax) : 0);
-  const total = body.total != null ? Number(body.total) : (subtotal != null ? Number(subtotal) + Number(tax || 0) : null);
-  const payment_reference = body.card_details?.last_four || body.lastFour || body.payment_reference || null;
+  const items =
+    Array.isArray(body.cart) && body.cart.length
+      ? body.cart
+      : Array.isArray(body.items)
+        ? body.items.map((i) => ({
+            id: i?.id ?? null,
+            name: i?.name ?? undefined,
+            price: Number(i?.price ?? 0),
+            quantity: Number(i?.quantity ?? 1),
+            // preserve any discount info if present
+            discount: i?.discount ?? undefined,
+            discount_amount:
+              i?.discount_amount != null
+                ? Number(i.discount_amount)
+                : typeof i?.discount === "number"
+                  ? Number(i.discount)
+                  : i?.discount && typeof i.discount.amount === "number"
+                    ? Number(i.discount.amount)
+                    : undefined,
+          }))
+        : [];
+  const computedSubtotal = items.reduce(
+    (s, i) => s + Number(i.price || 0) * Number(i.quantity || 1),
+    0,
+  );
+  const subtotal =
+    body.subtotal != null
+      ? Number(body.subtotal)
+      : items.length
+        ? computedSubtotal
+        : null;
+  const tax =
+    body.taxAmount != null
+      ? Number(body.taxAmount)
+      : body.tax != null
+        ? Number(body.tax)
+        : 0;
+  const total =
+    body.total != null
+      ? Number(body.total)
+      : subtotal != null
+        ? Number(subtotal) + Number(tax || 0)
+        : null;
+  const payment_reference =
+    body.card_details?.last_four ||
+    body.lastFour ||
+    body.payment_reference ||
+    null;
 
   const employee_id = body.employeePin
     ? String(body.employeePin)
-    : (user?.employee_id || user?.employee?.employee_id || null);
+    : user?.employee_id || user?.employee?.employee_id || null;
 
   // derive discount amount: discount = subtotal - (total - tax)
-  const finalSubtotal = total != null && tax != null ? (Number(total) - Number(tax)) : Number(subtotal || 0);
-  const discount_amount = Math.max(0, Number(subtotal || 0) - Number(finalSubtotal || 0));
+  const finalSubtotal =
+    total != null && tax != null
+      ? Number(total) - Number(tax)
+      : Number(subtotal || 0);
+  const discount_amount = Math.max(
+    0,
+    Number(subtotal || 0) - Number(finalSubtotal || 0),
+  );
 
-  const cust = body.customer || (body.customer_id ? { id: body.customer_id } : null);
+  const cust =
+    body.customer || (body.customer_id ? { id: body.customer_id } : null);
   if (cust && !cust.type) {
-    cust.type = (cust.isMedical || String(body.customer_type||'').toLowerCase()==='medical') ? 'medical' : 'recreational';
+    cust.type =
+      cust.isMedical ||
+      String(body.customer_type || "").toLowerCase() === "medical"
+        ? "medical"
+        : "recreational";
   }
-  const empNameFromUser = user?.name || (user?.employee && ((user.employee.first_name||'') + ' ' + (user.employee.last_name||'')).trim()) || null;
+  const empNameFromUser =
+    user?.name ||
+    (user?.employee &&
+      (
+        (user.employee.first_name || "") +
+        " " +
+        (user.employee.last_name || "")
+      ).trim()) ||
+    null;
   const row = {
     user_id: user ? String(user.id) : null,
     employee_id,
@@ -1315,34 +1380,84 @@ async function handleProcessPayment(req, res) {
     customer: cust,
     cart: items,
     payment_reference,
-    meta: { source: "pos", timestamp: new Date().toISOString(), cart_discount: body?.cartDiscount || null, employee_name: empNameFromUser },
+    meta: {
+      source: "pos",
+      timestamp: new Date().toISOString(),
+      cart_discount: body?.cartDiscount || null,
+      employee_name: empNameFromUser,
+    },
   };
   try {
-    if ((row.payment_method === 'debit' || String(body.method||'').toLowerCase()==='debit')) {
-      const debitAmt = body.debit_amount != null ? Number(body.debit_amount) : (body.amount_charged != null ? Number(body.amount_charged) : null);
+    if (
+      row.payment_method === "debit" ||
+      String(body.method || "").toLowerCase() === "debit"
+    ) {
+      const debitAmt =
+        body.debit_amount != null
+          ? Number(body.debit_amount)
+          : body.amount_charged != null
+            ? Number(body.amount_charged)
+            : null;
       if (!row.meta) row.meta = {};
-      if (debitAmt != null && !Number.isNaN(debitAmt)) row.meta.debit_amount = debitAmt;
+      if (debitAmt != null && !Number.isNaN(debitAmt))
+        row.meta.debit_amount = debitAmt;
     }
-  } catch(_) {}
+  } catch (_) {}
   try {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     if (!r.ok) {
       let errDetail = null;
-      try { errDetail = await r.json(); } catch (_) { try { errDetail = await r.text(); } catch (_) {} }
-      __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: false, status: r.status, error: errDetail };
-      return res.status(500).json({ success: false, error: errDetail || "Failed to record sale" });
+      try {
+        errDetail = await r.json();
+      } catch (_) {
+        try {
+          errDetail = await r.text();
+        } catch (_) {}
+      }
+      __lastPayment = {
+        ts: new Date().toISOString(),
+        path: req.path,
+        row,
+        ok: false,
+        status: r.status,
+        error: errDetail,
+      };
+      return res
+        .status(500)
+        .json({ success: false, error: errDetail || "Failed to record sale" });
     }
     const payload = await r.json();
-    __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: true };
-    return res.status(200).json({ success: true, sale: Array.isArray(payload) ? payload[0] : payload });
+    __lastPayment = {
+      ts: new Date().toISOString(),
+      path: req.path,
+      row,
+      ok: true,
+    };
+    return res
+      .status(200)
+      .json({
+        success: true,
+        sale: Array.isArray(payload) ? payload[0] : payload,
+      });
   } catch (e) {
-    __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: false, error: String(e?.message || e) };
-    return res.status(500).json({ success: false, error: "Failed to record sale" });
+    __lastPayment = {
+      ts: new Date().toISOString(),
+      path: req.path,
+      row,
+      ok: false,
+      error: String(e?.message || e),
+    };
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to record sale" });
   }
 }
 
 // POS: process payment -> persist sale to Supabase (aliases)
-app.post(["/api/pos/process-payment", "/api/pos/process-payment-open", "/api/sales"], handleProcessPayment);
+app.post(
+  ["/api/pos/process-payment", "/api/pos/process-payment-open", "/api/sales"],
+  handleProcessPayment,
+);
 
 // Diagnostics: last payment payload
 app.get("/api/diag/last-payment", (_req, res) => {
@@ -1352,7 +1467,10 @@ app.get("/api/diag/last-payment", (_req, res) => {
 // Sales: recent list (for UI grids)
 app.get("/api/sales/recent", async (req, res) => {
   try {
-    const limit = Math.max(1, Math.min(1000, parseInt(String(req.query?.limit || "200"), 10) || 200));
+    const limit = Math.max(
+      1,
+      Math.min(1000, parseInt(String(req.query?.limit || "200"), 10) || 200),
+    );
     const q = { select: "*", order: "created_at.desc", limit: String(limit) };
     const status = String(req.query?.status || "").toLowerCase();
     if (status) q["status"] = `eq.${status}`;
@@ -1361,15 +1479,28 @@ app.get("/api/sales/recent", async (req, res) => {
     if (df && dt) {
       const s = new Date(df);
       const e = new Date(dt);
-      const startIso = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0)).toISOString();
-      const endIso = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate() + 1, 0, 0, 0)).toISOString();
+      const startIso = new Date(
+        Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0),
+      ).toISOString();
+      const endIso = new Date(
+        Date.UTC(
+          e.getUTCFullYear(),
+          e.getUTCMonth(),
+          e.getUTCDate() + 1,
+          0,
+          0,
+          0,
+        ),
+      ).toISOString();
       q["and"] = `(created_at.gte.${startIso},created_at.lt.${endIso})`;
     }
     const r = await supaFetch("sales", { method: "GET", query: q });
     const rows = r.ok ? await r.json() : [];
     const arr = Array.isArray(rows) ? rows : [];
     // Build employee lookup
-    const empIds = Array.from(new Set(arr.map((x) => x.employee_id).filter(Boolean)));
+    const empIds = Array.from(
+      new Set(arr.map((x) => x.employee_id).filter(Boolean)),
+    );
     let empMap = new Map();
     if (empIds.length) {
       try {
@@ -1377,28 +1508,43 @@ app.get("/api/sales/recent", async (req, res) => {
           select: "employee_id,first_name,last_name",
         };
         // in. requires quoted strings for text
-        q["employee_id"] = `in.(${empIds.map((v) => `"${String(v).replaceAll("\"", "\\\"")}"`).join(",")})`;
+        q["employee_id"] =
+          `in.(${empIds.map((v) => `"${String(v).replaceAll('"', '\\"')}"`).join(",")})`;
         const er = await supaFetch("employees", { method: "GET", query: q });
         const list = er.ok ? await er.json() : [];
-        empMap = new Map((Array.isArray(list) ? list : []).map((e) => [String(e.employee_id), `${e.first_name || ""} ${e.last_name || ""}`.trim()]));
+        empMap = new Map(
+          (Array.isArray(list) ? list : []).map((e) => [
+            String(e.employee_id),
+            `${e.first_name || ""} ${e.last_name || ""}`.trim(),
+          ]),
+        );
       } catch (_) {}
     }
     const mapped = arr.map((s) => {
       const cart = Array.isArray(s.cart) ? s.cart : [];
       const itemCount = cart.reduce((a, i) => a + Number(i?.quantity || 0), 0);
-      const empName = empMap.get(String(s.employee_id || "")) || (s && s.meta && s.meta.employee_name) || null;
+      const empName =
+        empMap.get(String(s.employee_id || "")) ||
+        (s && s.meta && s.meta.employee_name) ||
+        null;
       // Derive customer info (type and medical card if provided)
       let customer = s.customer || null;
-      let customer_type = '';
+      let customer_type = "";
       let customer_info = null;
       try {
-        if (customer && typeof customer === 'object') {
-          customer_type = String(customer.type || customer.customerType || '').toLowerCase();
+        if (customer && typeof customer === "object") {
+          customer_type = String(
+            customer.type || customer.customerType || "",
+          ).toLowerCase();
           customer_info = {
-            medical_card_number: customer.medical_card_number || customer.medical_card || customer.patient_card_number || null,
+            medical_card_number:
+              customer.medical_card_number ||
+              customer.medical_card ||
+              customer.patient_card_number ||
+              null,
           };
         }
-      } catch(_) {}
+      } catch (_) {}
       return {
         id: s.id,
         sale_number: s.sale_number || String(s.id),
@@ -1414,7 +1560,11 @@ app.get("/api/sales/recent", async (req, res) => {
           quantity: Number(i?.quantity || 1),
           unit_price: Number(i?.price || 0),
           total_price: Number(i?.price || 0) * Number(i?.quantity || 1),
-          category: i?.category || i?.product_category || (i?.product && i?.product.category) || null,
+          category:
+            i?.category ||
+            i?.product_category ||
+            (i?.product && i?.product.category) ||
+            null,
         })),
         subtotal: Number(s.subtotal || 0),
         tax_amount: Number(s.tax || 0),
@@ -1448,7 +1598,10 @@ app.get("/api/sales/:id", async (req, res) => {
     let empName = null;
     try {
       if (s.employee_id) {
-        const er = await supaFetch(`employees?employee_id=eq.${encodeURIComponent(String(s.employee_id))}&select=first_name,last_name`, { method: "GET" });
+        const er = await supaFetch(
+          `employees?employee_id=eq.${encodeURIComponent(String(s.employee_id))}&select=first_name,last_name`,
+          { method: "GET" },
+        );
         const el = er.ok ? await er.json() : [];
         const e = Array.isArray(el) && el[0] ? el[0] : null;
         if (e) empName = `${e.first_name || ""} ${e.last_name || ""}`.trim();
@@ -1485,7 +1638,10 @@ app.get("/api/sales/:id", async (req, res) => {
 // Sales: minimal view page (HTML)
 app.get("/sales/:id", async (req, res) => {
   const id = String(req.params.id || "");
-  const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "GET", query: { select: "*" } });
+  const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, {
+    method: "GET",
+    query: { select: "*" },
+  });
   const rows = r.ok ? await r.json() : [];
   const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!s) return res.status(404).type("text").send("Sale not found");
@@ -1496,10 +1652,10 @@ app.get("/sales/:id", async (req, res) => {
     <p><strong>Payment:</strong> ${s.payment_method || "cash"}</p>
     <p><strong>Status:</strong> ${s.status || "completed"}</p>
     <table><thead><tr><th>Item</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead><tbody>
-      ${cart.map(i => `<tr><td>${i.name||"Item"}</td><td>${i.quantity||1}</td><td>$${Number(i.price||0).toFixed(2)}</td><td>$${(Number(i.price||0)*Number(i.quantity||1)).toFixed(2)}</td></tr>`).join("")}
+      ${cart.map((i) => `<tr><td>${i.name || "Item"}</td><td>${i.quantity || 1}</td><td>$${Number(i.price || 0).toFixed(2)}</td><td>$${(Number(i.price || 0) * Number(i.quantity || 1)).toFixed(2)}</td></tr>`).join("")}
     </tbody></table>
     <h3>Totals</h3>
-    <p>Subtotal: $${Number(s.subtotal||0).toFixed(2)} | Tax: $${Number(s.tax||0).toFixed(2)} | Total: $${Number(s.total||0).toFixed(2)}</p>
+    <p>Subtotal: $${Number(s.subtotal || 0).toFixed(2)} | Tax: $${Number(s.tax || 0).toFixed(2)} | Total: $${Number(s.total || 0).toFixed(2)}</p>
   </body></html>`;
   res.type("html").send(html);
 });
@@ -1507,15 +1663,18 @@ app.get("/sales/:id", async (req, res) => {
 // Sales: receipt (HTML fallback)
 app.get("/sales/:id/receipt", async (req, res) => {
   const id = String(req.params.id || "");
-  const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "GET", query: { select: "*" } });
+  const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, {
+    method: "GET",
+    query: { select: "*" },
+  });
   const rows = r.ok ? await r.json() : [];
   const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!s) return res.status(404).type("text").send("Receipt not found");
   const cart = Array.isArray(s.cart) ? s.cart : [];
   const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Receipt ${id}</title><style>body{font-family:monospace;padding:16px}</style></head><body>
     <h2>Receipt #${s.sale_number || id}</h2>
-    ${cart.map(i => `${i.quantity||1} x ${i.name||"Item"} @ $${Number(i.price||0).toFixed(2)} = $${(Number(i.price||0)*Number(i.quantity||1)).toFixed(2)}`).join("<br/>")}
-    <hr/>Subtotal: $${Number(s.subtotal||0).toFixed(2)} | Tax: $${Number(s.tax||0).toFixed(2)} | Total: $${Number(s.total||0).toFixed(2)}
+    ${cart.map((i) => `${i.quantity || 1} x ${i.name || "Item"} @ $${Number(i.price || 0).toFixed(2)} = $${(Number(i.price || 0) * Number(i.quantity || 1)).toFixed(2)}`).join("<br/>")}
+    <hr/>Subtotal: $${Number(s.subtotal || 0).toFixed(2)} | Tax: $${Number(s.tax || 0).toFixed(2)} | Total: $${Number(s.total || 0).toFixed(2)}
   </body></html>`;
   res.type("html").send(html);
 });
@@ -1524,7 +1683,10 @@ app.get("/sales/:id/receipt", async (req, res) => {
 app.post("/sales/:id/void", async (req, res) => {
   try {
     const id = String(req.params.id || "");
-    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: { status: "voided" } });
+    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: { status: "voided" },
+    });
     if (!r.ok) return res.status(500).json({ error: "Failed to void" });
     res.json({ message: "Sale voided", id });
   } catch (e) {
@@ -1536,11 +1698,17 @@ app.post("/sales/:id/void", async (req, res) => {
 app.post("/sales/:id/refund", async (req, res) => {
   try {
     const id = String(req.params.id || "");
-    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, { method: "GET", query: { select: "*" } });
+    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, {
+      method: "GET",
+      query: { select: "*" },
+    });
     const rows = r.ok ? await r.json() : [];
     const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
     if (!s) return res.status(404).json({ error: "Sale not found" });
-    const amount = req.body?.refund_amount != null ? Number(req.body.refund_amount) : Number(s.total || 0);
+    const amount =
+      req.body?.refund_amount != null
+        ? Number(req.body.refund_amount)
+        : Number(s.total || 0);
     const refund = {
       user_id: s.user_id || null,
       employee_id: s.employee_id || null,
@@ -1551,10 +1719,15 @@ app.post("/sales/:id/refund", async (req, res) => {
       status: "completed",
       customer: s.customer || null,
       cart: Array.isArray(s.cart) ? s.cart : [],
-      meta: { source: "refund", original_id: s.id, ts: new Date().toISOString() },
+      meta: {
+        source: "refund",
+        original_id: s.id,
+        ts: new Date().toISOString(),
+      },
     };
     const r2 = await supaFetch("sales", { method: "POST", body: [refund] });
-    if (!r2.ok) return res.status(500).json({ error: "Failed to create refund" });
+    if (!r2.ok)
+      return res.status(500).json({ error: "Failed to create refund" });
     res.json({ message: "Refund created" });
   } catch (e) {
     res.status(500).json({ error: "Failed to refund" });
@@ -1565,9 +1738,13 @@ app.post("/sales/:id/refund", async (req, res) => {
 app.get("/api/diag/supabase", async (_req, res) => {
   try {
     const configured = !!SUPABASE_URL && !!SUPABASE_ANON_KEY;
-    let ok = false, count = 0;
+    let ok = false,
+      count = 0;
     if (configured) {
-      const r = await supaFetch("sales", { method: "GET", query: { select: "id", limit: "1000" } });
+      const r = await supaFetch("sales", {
+        method: "GET",
+        query: { select: "id", limit: "1000" },
+      });
       ok = !!r && r.ok;
       if (ok) {
         const rows = await r.json();
@@ -1576,7 +1753,13 @@ app.get("/api/diag/supabase", async (_req, res) => {
     }
     res.json({ configured, ok, count });
   } catch (e) {
-    res.status(500).json({ configured: !!SUPABASE_URL && !!SUPABASE_ANON_KEY, ok: false, error: String(e?.message || e) });
+    res
+      .status(500)
+      .json({
+        configured: !!SUPABASE_URL && !!SUPABASE_ANON_KEY,
+        ok: false,
+        error: String(e?.message || e),
+      });
   }
 });
 
@@ -1586,7 +1769,7 @@ app.get("/diag", async (_req, res) => {
   <style>body{font-family:system-ui,Arial,sans-serif;padding:24px;max-width:900px;margin:0 auto}button{background:#16a34a;color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}button.secondary{background:#2563eb}pre{background:#f3f4f6;padding:12px;border-radius:8px;overflow:auto}</style></head>
   <body>
     <h1>Diagnostics</h1>
-    <p>Supabase URL: <code>${SUPABASE_URL || '(not set)'}</code></p>
+    <p>Supabase URL: <code>${SUPABASE_URL || "(not set)"}</code></p>
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;">
       <button id="check">Check Supabase</button>
       <button id="create" class="secondary">Create Test Sale</button>
@@ -1615,12 +1798,17 @@ app.post("/api/sales/diag/create", async (_req, res) => {
       discount_amount: 0,
       status: "completed",
       customer: { name: "Walk-in Customer" },
-      cart: [ { name: "Test Item", price: 10.0, quantity: 1 } ],
+      cart: [{ name: "Test Item", price: 10.0, quantity: 1 }],
       meta: { source: "diag", ts: new Date().toISOString() },
     };
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    res.status(r.ok ? 201 : 500).json({ success: r.ok, sale: Array.isArray(payload) ? payload[0] : payload });
+    res
+      .status(r.ok ? 201 : 500)
+      .json({
+        success: r.ok,
+        sale: Array.isArray(payload) ? payload[0] : payload,
+      });
   } catch (e) {
     res.status(500).json({ success: false, error: String(e?.message || e) });
   }
@@ -1630,38 +1818,90 @@ app.post("/api/sales/diag/create", async (_req, res) => {
 app.get("/api/analytics/end-of-day", async (_req, res) => {
   try {
     const today = new Date();
-    const start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
-    const end = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+    const start = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0),
+    );
+    const end = new Date(
+      Date.UTC(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1,
+        0,
+        0,
+        0,
+      ),
+    );
     const startIso = start.toISOString();
     const endIso = end.toISOString();
 
     // Today's sales
-    const r = await supaFetch("sales", { method: "GET", query: { select: "*", status: "eq.completed", and: `(created_at.gte.${startIso},created_at.lt.${endIso})` } });
+    const r = await supaFetch("sales", {
+      method: "GET",
+      query: {
+        select: "*",
+        status: "eq.completed",
+        and: `(created_at.gte.${startIso},created_at.lt.${endIso})`,
+      },
+    });
     const rows = r.ok ? await r.json() : [];
     const list = Array.isArray(rows) ? rows : [];
 
     const totalSales = list.reduce((a, s) => a + Number(s.total || 0), 0);
     const totalTax = list.reduce((a, s) => a + Number(s.tax || 0), 0);
-    const totalDiscounts = list.reduce((a, s) => a + Number(s.discount_amount || 0), 0);
-    const customerCountRaw = list.filter((s) => !!(s.customer && (s.customer.id || s.customer.name))).length;
+    const totalDiscounts = list.reduce(
+      (a, s) => a + Number(s.discount_amount || 0),
+      0,
+    );
+    const customerCountRaw = list.filter(
+      (s) => !!(s.customer && (s.customer.id || s.customer.name)),
+    ).length;
 
-    const cashSales = list.filter((s) => s.payment_method === "cash").reduce((a, s) => a + Number(s.total || 0), 0);
-    const debitSales = list.filter((s) => s.payment_method === "debit").reduce((a, s) => {
-      const meta = s.meta || {};
-      const amt = meta.debit_amount != null ? Number(meta.debit_amount) : Number(s.total || 0);
-      return a + (isFinite(amt) ? amt : 0);
-    }, 0);
-    const creditSales = list.filter((s) => s.payment_method === "credit").reduce((a, s) => a + Number(s.total || 0), 0);
+    const cashSales = list
+      .filter((s) => s.payment_method === "cash")
+      .reduce((a, s) => a + Number(s.total || 0), 0);
+    const debitSales = list
+      .filter((s) => s.payment_method === "debit")
+      .reduce((a, s) => {
+        const meta = s.meta || {};
+        const amt =
+          meta.debit_amount != null
+            ? Number(meta.debit_amount)
+            : Number(s.total || 0);
+        return a + (isFinite(amt) ? amt : 0);
+      }, 0);
+    const creditSales = list
+      .filter((s) => s.payment_method === "credit")
+      .reduce((a, s) => a + Number(s.total || 0), 0);
 
     // Monthly totals
-    const mStart = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0)).toISOString();
-    const mEnd = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1, 0, 0, 0)).toISOString();
-    const mr = await supaFetch("sales", { method: "GET", query: { select: "total", status: "eq.completed", and: `(created_at.gte.${mStart},created_at.lt.${mEnd})` } });
+    const mStart = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0),
+    ).toISOString();
+    const mEnd = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth() + 1, 1, 0, 0, 0),
+    ).toISOString();
+    const mr = await supaFetch("sales", {
+      method: "GET",
+      query: {
+        select: "total",
+        status: "eq.completed",
+        and: `(created_at.gte.${mStart},created_at.lt.${mEnd})`,
+      },
+    });
     const mrows = mr.ok ? await mr.json() : [];
-    const monthlySalesTotal = (Array.isArray(mrows) ? mrows : []).reduce((a, s) => a + Number(s.total || 0), 0);
+    const monthlySalesTotal = (Array.isArray(mrows) ? mrows : []).reduce(
+      (a, s) => a + Number(s.total || 0),
+      0,
+    );
 
     // If all customers are generic/walk-in, treat each sale as a distinct customer for pacing consistency
-    const allGeneric = list.every((s) => !s.customer || String(s.customer?.name || "").toLowerCase().includes("walk-in"));
+    const allGeneric = list.every(
+      (s) =>
+        !s.customer ||
+        String(s.customer?.name || "")
+          .toLowerCase()
+          .includes("walk-in"),
+    );
     const customerCount = allGeneric ? list.length : customerCountRaw;
 
     res.json({
@@ -1674,7 +1914,9 @@ app.get("/api/analytics/end-of-day", async (_req, res) => {
       creditSales,
       monthlySalesTotal,
       dayOfMonth: today.getUTCDate(),
-      daysInMonth: new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 0)).getUTCDate(),
+      daysInMonth: new Date(
+        Date.UTC(today.getFullYear(), today.getMonth() + 1, 0),
+      ).getUTCDate(),
     });
   } catch (e) {
     res.status(500).json({ error: "Failed to compute end-of-day" });
@@ -1686,30 +1928,89 @@ app.get("/api/analytics/aspd", async (req, res) => {
   try {
     const tf = String(req.query?.timeframe || "week");
     const today = new Date();
-    let start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
-    let end = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+    let start = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0),
+    );
+    let end = new Date(
+      Date.UTC(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1,
+        0,
+        0,
+        0,
+      ),
+    );
     if (tf === "today") {
       // already set
     } else if (tf === "month") {
-      start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0));
-      end = new Date(Date.UTC(today.getFullYear(), today.getMonth() + 1, 1, 0, 0, 0));
+      start = new Date(
+        Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0),
+      );
+      end = new Date(
+        Date.UTC(today.getFullYear(), today.getMonth() + 1, 1, 0, 0, 0),
+      );
     } else if (tf === "custom") {
-      const s = req.query?.start_date ? new Date(String(req.query.start_date)) : start;
-      const e = req.query?.end_date ? new Date(String(req.query.end_date)) : new Date(start.getTime());
-      start = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0));
-      end = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate() + 1, 0, 0, 0));
+      const s = req.query?.start_date
+        ? new Date(String(req.query.start_date))
+        : start;
+      const e = req.query?.end_date
+        ? new Date(String(req.query.end_date))
+        : new Date(start.getTime());
+      start = new Date(
+        Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0),
+      );
+      end = new Date(
+        Date.UTC(
+          e.getUTCFullYear(),
+          e.getUTCMonth(),
+          e.getUTCDate() + 1,
+          0,
+          0,
+          0,
+        ),
+      );
     } else {
       // week (default): last 7 days inclusive
-      const d = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0));
+      const d = new Date(
+        Date.UTC(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate(),
+          0,
+          0,
+          0,
+        ),
+      );
       start = new Date(d.getTime() - 6 * 24 * 60 * 60 * 1000);
-      end = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+      end = new Date(
+        Date.UTC(
+          today.getFullYear(),
+          today.getMonth(),
+          today.getDate() + 1,
+          0,
+          0,
+          0,
+        ),
+      );
     }
     const startIso = start.toISOString();
     const endIso = end.toISOString();
-    const daysInRange = Math.max(1, Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)));
+    const daysInRange = Math.max(
+      1,
+      Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)),
+    );
 
     // Current window data (for table)
-    const r = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startIso},created_at.lt.${endIso})`, limit: "2000" } });
+    const r = await supaFetch("sales", {
+      method: "GET",
+      query: {
+        select: "created_at,cart",
+        status: "eq.completed",
+        and: `(created_at.gte.${startIso},created_at.lt.${endIso})`,
+        limit: "2000",
+      },
+    });
     const rows = r.ok ? await r.json() : [];
     const list = Array.isArray(rows) ? rows : [];
 
@@ -1720,15 +2021,29 @@ app.get("/api/analytics/aspd", async (req, res) => {
       const cart = Array.isArray(s.cart) ? s.cart : [];
       for (const it of cart) {
         const name = (it?.name || it?.product_name || "Unknown").toString();
-        const category = (it?.category || it?.product_category || it?.product?.category || "—").toString();
+        const category = (
+          it?.category ||
+          it?.product_category ||
+          it?.product?.category ||
+          "—"
+        ).toString();
         const qty = Number(it?.quantity || 0);
         const rev = Number(it?.price || 0) * qty;
         const key = `${name}||${category}`;
-        const cur = prodMap.get(key) || { name, category, totalSold: 0, totalRevenue: 0 };
+        const cur = prodMap.get(key) || {
+          name,
+          category,
+          totalSold: 0,
+          totalRevenue: 0,
+        };
         cur.totalSold += qty;
         cur.totalRevenue += rev;
         prodMap.set(key, cur);
-        const ccur = catMap.get(category) || { category, totalSold: 0, totalRevenue: 0 };
+        const ccur = catMap.get(category) || {
+          category,
+          totalSold: 0,
+          totalRevenue: 0,
+        };
         ccur.totalSold += qty;
         ccur.totalRevenue += rev;
         catMap.set(category, ccur);
@@ -1736,12 +2051,37 @@ app.get("/api/analytics/aspd", async (req, res) => {
     }
 
     // Trend calculation: compare last 30 days vs previous 30 days
-    const endC = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1, 0, 0, 0));
+    const endC = new Date(
+      Date.UTC(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate() + 1,
+        0,
+        0,
+        0,
+      ),
+    );
     const startC = new Date(endC.getTime() - 30 * 24 * 60 * 60 * 1000);
     const startP = new Date(startC.getTime() - 30 * 24 * 60 * 60 * 1000);
     const endP = new Date(startC.getTime());
-    const cR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startC.toISOString()},created_at.lt.${endC.toISOString()})`, limit: "3000" } });
-    const pR = await supaFetch("sales", { method: "GET", query: { select: "created_at,cart", status: "eq.completed", and: `(created_at.gte.${startP.toISOString()},created_at.lt.${endP.toISOString()})`, limit: "3000" } });
+    const cR = await supaFetch("sales", {
+      method: "GET",
+      query: {
+        select: "created_at,cart",
+        status: "eq.completed",
+        and: `(created_at.gte.${startC.toISOString()},created_at.lt.${endC.toISOString()})`,
+        limit: "3000",
+      },
+    });
+    const pR = await supaFetch("sales", {
+      method: "GET",
+      query: {
+        select: "created_at,cart",
+        status: "eq.completed",
+        and: `(created_at.gte.${startP.toISOString()},created_at.lt.${endP.toISOString()})`,
+        limit: "3000",
+      },
+    });
     const curRows = cR.ok ? await cR.json() : [];
     const prevRows = pR.ok ? await pR.json() : [];
 
@@ -1754,7 +2094,12 @@ app.get("/api/analytics/aspd", async (req, res) => {
         const cart = Array.isArray(s.cart) ? s.cart : [];
         for (const it of cart) {
           const name = (it?.name || it?.product_name || "Unknown").toString();
-          const category = (it?.category || it?.product_category || it?.product?.category || "—").toString();
+          const category = (
+            it?.category ||
+            it?.product_category ||
+            it?.product?.category ||
+            "—"
+          ).toString();
           const qty = Number(it?.quantity || 0);
           const key = `${name}||${category}`;
           pm.set(key, (pm.get(key) || 0) + qty);
@@ -1768,51 +2113,55 @@ app.get("/api/analytics/aspd", async (req, res) => {
     const EPS = 0.01; // day^-1 units; treat below threshold as stagnant
 
     // Build product results with trends
-    const items = Array.from(prodMap.values()).map((v) => {
-      const key = `${v.name}||${v.category}`;
-      const aspd = v.totalSold / daysInRange;
-      const curAspd30 = (curProdMap.get(key) || 0) / 30;
-      const prevAspd30 = (prevProdMap.get(key) || 0) / 30;
-      let trend = "stagnant";
-      if ((prevProdMap.get(key) || 0) > 0) {
-        if (curAspd30 - prevAspd30 > EPS) trend = "up";
-        else if (prevAspd30 - curAspd30 > EPS) trend = "down";
-      }
-      return {
-        name: v.name,
-        category: v.category,
-        totalSold: v.totalSold,
-        totalRevenue: v.totalRevenue,
-        daysInRange,
-        aspd,
-        cur30Aspd: curAspd30,
-        prev30Aspd: prevAspd30,
-        trend,
-      };
-    }).sort((a, b) => b.aspd - a.aspd);
+    const items = Array.from(prodMap.values())
+      .map((v) => {
+        const key = `${v.name}||${v.category}`;
+        const aspd = v.totalSold / daysInRange;
+        const curAspd30 = (curProdMap.get(key) || 0) / 30;
+        const prevAspd30 = (prevProdMap.get(key) || 0) / 30;
+        let trend = "stagnant";
+        if ((prevProdMap.get(key) || 0) > 0) {
+          if (curAspd30 - prevAspd30 > EPS) trend = "up";
+          else if (prevAspd30 - curAspd30 > EPS) trend = "down";
+        }
+        return {
+          name: v.name,
+          category: v.category,
+          totalSold: v.totalSold,
+          totalRevenue: v.totalRevenue,
+          daysInRange,
+          aspd,
+          cur30Aspd: curAspd30,
+          prev30Aspd: prevAspd30,
+          trend,
+        };
+      })
+      .sort((a, b) => b.aspd - a.aspd);
 
     // Build category aggregates with trends and embed products
-    const categories = Array.from(catMap.values()).map((c) => {
-      const aspd = c.totalSold / daysInRange;
-      const curAspd30 = (curCatQty.get(c.category) || 0) / 30;
-      const prevAspd30 = (prevCatQty.get(c.category) || 0) / 30;
-      let trend = "stagnant";
-      if ((prevCatQty.get(c.category) || 0) > 0) {
-        if (curAspd30 - prevAspd30 > EPS) trend = "up";
-        else if (prevAspd30 - curAspd30 > EPS) trend = "down";
-      }
-      return {
-        category: c.category,
-        totalSold: c.totalSold,
-        totalRevenue: c.totalRevenue,
-        daysInRange,
-        aspd,
-        cur30Aspd: curAspd30,
-        prev30Aspd: prevAspd30,
-        trend,
-        items: items.filter((it) => it.category === c.category),
-      };
-    }).sort((a, b) => b.aspd - a.aspd);
+    const categories = Array.from(catMap.values())
+      .map((c) => {
+        const aspd = c.totalSold / daysInRange;
+        const curAspd30 = (curCatQty.get(c.category) || 0) / 30;
+        const prevAspd30 = (prevCatQty.get(c.category) || 0) / 30;
+        let trend = "stagnant";
+        if ((prevCatQty.get(c.category) || 0) > 0) {
+          if (curAspd30 - prevAspd30 > EPS) trend = "up";
+          else if (prevAspd30 - curAspd30 > EPS) trend = "down";
+        }
+        return {
+          category: c.category,
+          totalSold: c.totalSold,
+          totalRevenue: c.totalRevenue,
+          daysInRange,
+          aspd,
+          cur30Aspd: curAspd30,
+          prev30Aspd: prevAspd30,
+          trend,
+          items: items.filter((it) => it.category === c.category),
+        };
+      })
+      .sort((a, b) => b.aspd - a.aspd);
 
     res.json({ daysInRange, items, categories });
   } catch (e) {
