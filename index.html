@@ -9238,9 +9238,10 @@
                         </h3>
                         <div class="flex items-center gap-2">
                           <span
-                            class="text-sm text-gray-500"
-                            x-text="'Showing ' + filteredSales.length + ' transactions'"
-                          ></span>
+                              class="text-sm text-gray-500"
+                              x-text="'Showing ' + filteredSales.length + ' transactions'"
+                            ></span>
+                          <span class="text-xs text-gray-400" x-text="salesDateLabel()"></span>
                           <button
                             @click="refreshSales()"
                             class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
