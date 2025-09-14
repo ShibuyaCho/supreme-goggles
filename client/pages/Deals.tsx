@@ -305,7 +305,7 @@ export default function Deals() {
     });
   };
 
-  const toggleDealStatus = (dealId: string) => {
+  const toggleDealStatus = async (dealId: string) => {
     setDeals(prev => prev.map(deal => 
       deal.id === dealId ? { ...deal, isActive: !deal.isActive } : deal
     ));
