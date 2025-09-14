@@ -1303,6 +1303,28 @@ function cannabisPOS() {
       }
     },
 
+    // Report deal usage to backend and update UI counters
+    async reportDealUsageFromCart() {
+      try {
+        const counts = {};
+        (this.cart || []).forEach((item) => {
+          const id = item?._appliedDealId;
+          if (id) counts[id] = (counts[id] || 0) + 1;
+        });
+        const ids = Object.keys(counts);
+        if (!ids.length) return;
+        for (const id of ids) {
+          const n = counts[id];
+          for (let i = 0; i < n; i++) {
+            try { await posAuth.apiRequest('post', `/deals/apply`, { deal_id: id, cart_total: 0 }); } catch(_) {}
+          }
+          const idx = (this.deals||[]).findIndex((d)=>String(d.id)===String(id));
+          if (idx>=0) { this.deals[idx].currentUses = (Number(this.deals[idx].currentUses)||0) + n; }
+        }
+        this.filterDeals && this.filterDeals();
+      } catch(_) {}
+    },
+
     // SALES: Load, filter, stats, actions
     async refreshSales(forceNetwork = true) {
       try {
