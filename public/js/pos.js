@@ -2046,29 +2046,23 @@ function cannabisPOS() {
         }
         const res = await posAuth.apiRequest(method, url, payload);
         const data = res?.data || {};
-        if (res?.success && data?.success !== false) {
-          const created = data?.deal
-            ? this.mapDealToSpa(data.deal)
-            : this.mapDealToSpa(payload);
+        const persisted = data?.deal && (data.deal.id != null);
+        if (res?.success && data?.success !== false && persisted) {
+          const created = this.mapDealToSpa(data.deal);
           if (creating) {
             this.deals = [created, ...this.deals];
           } else {
             this.deals = this.deals.map((d) =>
-              d.id === this.editingDeal.id
+              d.id === String(this.editingDeal.id)
                 ? { ...created, id: this.editingDeal.id }
                 : d,
             );
           }
           this.filterDeals();
           this.closeCreateDealModal();
-          this.showToast &&
-            this.showToast(
-              creating ? "Deal created" : "Deal updated",
-              "success",
-            );
+          this.showToast && this.showToast(creating ? "Deal created" : "Deal updated", "success");
         } else {
-          const msg = res?.message || data?.message || "Failed to save deal";
-          this.showToast && this.showToast(msg, "error");
+          this.showToast && this.showToast(data?.message || res?.message || "Failed to save deal", "error");
         }
       } catch (e) {
         this.showToast && this.showToast("Failed to save deal", "error");
