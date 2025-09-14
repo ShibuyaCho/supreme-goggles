@@ -18,6 +18,7 @@ function cannabisPOS() {
       this.loadData();
       this.filterProducts();
       this.initializeReportData();
+      try { this.loadMonthStats(); } catch (_) {}
     },
 
     // Login form data
@@ -522,6 +523,7 @@ function cannabisPOS() {
       paymentMethod: "", // cash|debit|credit
     },
     endOfDayReportGenerated: false,
+    monthStats: null,
     metrcPushSettings: { startDate: "", endDate: "" },
     metrcPushInProgress: false,
     lastMetrcPush: "",
@@ -1436,12 +1438,53 @@ function cannabisPOS() {
       });
     },
 
+    async loadMonthStats() {
+      try {
+        const d = new Date();
+        const first = new Date(d.getFullYear(), d.getMonth(), 1);
+        const last = new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        const toISO = (date) => date.toISOString().slice(0, 10);
+        const params = {
+          status: "completed",
+          sort_by: "created_at",
+          sort_order: "desc",
+          limit: 1000,
+          date_from: toISO(first),
+          date_to: toISO(last),
+        };
+        const endpoints = [
+          "/sales/recent-json",
+          "/api/sales/recent",
+          "/sales/recent",
+        ];
+        const http = (window.axios || axios);
+        let list = [];
+        for (const url of endpoints) {
+          try {
+            const res = await http.get(url, { params, headers: { Accept: "application/json" } });
+            let data = res?.data;
+            if (!Array.isArray(data) && data && Array.isArray(data.data)) data = data.data;
+            if (Array.isArray(data)) { list = data.map((s) => this.mapSaleToSpa(s)); break; }
+          } catch (_) { continue; }
+        }
+        const revenue = (list || []).reduce((sum, s) => sum + Number(s.total || 0), 0);
+        const recCount = (list || []).filter((s) => (s.customerType || '') !== 'medical').length;
+        const medUnique = new Set((list || []).filter((s) => (s.customerType || '') === 'medical').map((s) => s.customerMedicalCard || s.customer)).size;
+        const customers = recCount + medUnique;
+        const dayOfMonth = d.getDate();
+        const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
+      } catch (_) { this.monthStats = this.monthStats || null; }
+    },
+
     getFilteredSalesStats() {
       const list = this.filteredSales || [];
       const totalRevenue = list.reduce((sum, s) => sum + Number(s.total || 0), 0);
       const totalSales = list.length;
       const avgSale = totalSales > 0 ? totalRevenue / totalSales : 0;
-      const uniqueCustomers = new Set(list.map((s) => s.customer || "")).size;
+      const recCount = list.filter((s) => (s.customerType || "") !== "medical").length;
+      const medUnique = new Set(list.filter((s) => (s.customerType || "") === "medical").map((s) => s.customerMedicalCard || s.customer)).size;
+      const uniqueCustomers = recCount + medUnique;
       return { totalRevenue, totalSales, avgSale, uniqueCustomers };
     },
 
@@ -1469,8 +1512,28 @@ function cannabisPOS() {
         averageSale: totalSales > 0 ? revenue / totalSales : 0,
         totalDiscounts,
         tillBreakdown: { opening: 0 },
-        paceReport: { currentMonthSales: revenue, dailyAverage: totalSales > 0 ? revenue / Math.max(1, totalSales) : 0, monthProjection: revenue },
-        customerPaceReport: { currentMonthCustomers: customerCount, dailyAverage: totalSales > 0 ? customerCount / Math.max(1, totalSales) : 0, monthProjection: customerCount },
+        paceReport: {
+          currentMonthSales: (this.monthStats && this.monthStats.revenue != null ? this.monthStats.revenue : revenue),
+          dailyAverage: totalSales > 0 ? revenue / Math.max(1, totalSales) : 0,
+          monthProjection: (() => {
+            const now = new Date();
+            const d = (this.monthStats && this.monthStats.dayOfMonth) || now.getDate();
+            const dim = (this.monthStats && this.monthStats.daysInMonth) || new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const m = (this.monthStats && this.monthStats.revenue != null ? this.monthStats.revenue : revenue);
+            return d > 0 ? (m / d) * dim : 0;
+          })()
+        },
+        customerPaceReport: {
+          currentMonthCustomers: (this.monthStats && this.monthStats.customers != null ? this.monthStats.customers : customerCount),
+          dailyAverage: totalSales > 0 ? customerCount / Math.max(1, totalSales) : 0,
+          monthProjection: (() => {
+            const now = new Date();
+            const d = (this.monthStats && this.monthStats.dayOfMonth) || now.getDate();
+            const dim = (this.monthStats && this.monthStats.daysInMonth) || new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            const m = (this.monthStats && this.monthStats.customers != null ? this.monthStats.customers : customerCount);
+            return d > 0 ? (m / d) * dim : 0;
+          })()
+        },
       };
     },
 
