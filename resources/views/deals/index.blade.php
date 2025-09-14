@@ -455,6 +455,8 @@ function dealsManager() {
             this.modalType = detail.type;
             if (detail.type === 'edit' && detail.deal) {
                 this.form = { ...detail.deal };
+                if (!this.form.category_discounts) this.form.category_discounts = {};
+                if (!this.form.item_discounts) this.form.item_discounts = {};
                 // Normalize audience from booleans
                 this.form.audience = (this.form.medical_only ? 'medical_caregiver' : (this.form.loyalty_only ? 'loyalty' : 'everyone'));
                 this.form.applicable_categories = detail.deal.applicable_categories || [];
