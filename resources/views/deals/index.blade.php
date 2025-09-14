@@ -240,15 +240,46 @@
                             </div>
                         </div>
 
-                        <!-- Categories -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Categories (from Oregon METRC)</label>
-                            <select multiple x-model="form.applicable_categories" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green h-32">
-                                <template x-for="category in categories" :key="category">
-                                    <option :value="category" x-text="category"></option>
-                                </template>
-                            </select>
-                            <p class="text-xs text-gray-500 mt-1">Select one or more categories. Leave empty to apply to all.</p>
+                        <!-- Categories + Applicable Items side-by-side -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Categories (from Oregon METRC)</label>
+                                <select multiple x-model="form.applicable_categories" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green h-32">
+                                    <template x-for="category in categories" :key="category">
+                                        <option :value="category" x-text="category"></option>
+                                    </template>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Select one or more categories. Leave empty to apply to all.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Items (active in POS)</label>
+                                <input type="text" x-model.debounce.300ms="productSearch" @input="searchProducts()" placeholder="Search products by name or SKU" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green mb-2">
+                                <div class="border border-gray-200 rounded-lg h-40 overflow-y-auto">
+                                    <template x-if="productsLoading">
+                                        <div class="p-3 text-sm text-gray-500">Loading...</div>
+                                    </template>
+                                    <template x-if="!productsLoading && productResults.length === 0">
+                                        <div class="p-3 text-sm text-gray-500">No products found</div>
+                                    </template>
+                                    <template x-for="p in productResults" :key="p.id">
+                                        <label class="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50">
+                                            <div class="flex items-center gap-3">
+                                                <input type="checkbox" :checked="isProductSelected(p.id)" @change="toggleProduct(p.id)" class="h-4 w-4">
+                                                <div>
+                                                    <div class="text-sm font-medium" x-text="p.name"></div>
+                                                    <div class="text-xs text-gray-500" x-text="(p.sku ? ('SKU: ' + p.sku + ' • ') : '') + (p.category || '')"></div>
+                                                </div>
+                                            </div>
+                                            <span class="text-xs text-gray-400" x-text="'#' + p.id"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-600">
+                                    <span x-text="form.specific_items ? form.specific_items.length : 0"></span> selected
+                                    <button type="button" class="ml-2 underline" @click="form.specific_items = []">Clear</button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
+                            </div>
                         </div>
 
                         <!-- Per-Category Discounts (optional) -->
