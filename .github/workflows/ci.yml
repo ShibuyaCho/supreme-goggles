@@ -30,17 +30,19 @@ jobs:
       - name: Install PHP dependencies (verbose, no scripts)
         run: composer install --no-interaction --prefer-dist --no-progress -vvv --no-scripts
       - name: Generate app key
-        run: php -r "file_exists('.env') || copy('.env.example', '.env');" && php artisan key:generate
+        run: php -r "file_exists('.env') || copy('.env.example', '.env');" && php artisan key:generate -vvv
+      - name: Ensure SQLite file for CI
+        run: mkdir -p /tmp && touch /tmp/database.sqlite && echo "DB_CONNECTION=sqlite" >> .env && echo "DB_DATABASE=/tmp/database.sqlite" >> .env && echo "APP_ENV=testing" >> .env
       - name: Dump autoload (verbose)
         run: composer dump-autoload -o -vvv
-      - name: Package discover (verbose)
-        run: php artisan package:discover -vvv
+      - name: Artisan diagnostic
+        run: php artisan --version -vvv || true
       - name: Run Pint
         run: vendor/bin/pint --test
       - name: PHPStan (Larastan)
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
       - name: PHPUnit
-        run: vendor/bin/phpunit --testdox --coverage-text
+        run: vendor/bin/phpunit --testdox --coverage-text -v
 
   frontend:
     runs-on: ubuntu-latest
