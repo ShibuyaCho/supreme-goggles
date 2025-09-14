@@ -300,8 +300,11 @@
                                                     @input="form.category_discounts = { ...(form.category_discounts || {}), [cat]: parseFloat($event.target.value) || 0 }"
                                                     placeholder="Discount value"
                                                 >
-                                                <select class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0" disabled>
-                                                    <option>Uses deal type</option>
+                                                <select x-model="form.type" class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0">
+                                                    <option value="percentage">Percentage Off</option>
+                                                    <option value="fixed_amount">Fixed Amount Off</option>
+                                                    <option value="bogo">Buy One Get One</option>
+                                                    <option value="bulk">Bulk Discount</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -329,8 +332,11 @@
                                                     @input="form.item_discounts = { ...(form.item_discounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }"
                                                     placeholder="Discount value"
                                                 >
-                                                <select class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0" disabled>
-                                                    <option>Uses deal type</option>
+                                                <select x-model="form.type" class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0">
+                                                    <option value="percentage">Percentage Off</option>
+                                                    <option value="fixed_amount">Fixed Amount Off</option>
+                                                    <option value="bogo">Buy One Get One</option>
+                                                    <option value="bulk">Bulk Discount</option>
                                                 </select>
                                             </div>
                                         </div>
