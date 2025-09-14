@@ -62,6 +62,18 @@
                             </svg>
                             New Sale
                         </x-ui.button>
+                        <x-ui.button variant="outline" onclick="holdCurrentSale()">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v10M16 7v10M3 7h18" />
+                            </svg>
+                            Hold
+                        </x-ui.button>
+                        <x-ui.button variant="outline" onclick="endCurrentSale()">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            End Sale
+                        </x-ui.button>
                         <x-ui.button variant="outline" onclick="showSavedSales()">
                             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3-3m0 0l-3 3m3-3v12" />
@@ -586,14 +598,46 @@ function proceedToPayment() {
     openDialogPaymentmodal();
 }
 
-function saveSaleForLater() {
+async function holdCurrentSale() {
     if (pos.cart.length === 0) {
-        toast_warning('Cart is empty', 'Add items to cart before saving');
+        toast_warning('Cart is empty', 'Add items before holding');
         return;
     }
-    
-    // Implementation for saving sale
-    toast_success('Sale saved', 'Sale has been saved for later');
+    try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const name = `Held Sale - ${new Date().toLocaleString()}`;
+        const res = await fetch('{{ route('pos.save-sale') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ name, notes: 'Held from POS Main' })
+        });
+        const data = await res.json();
+        if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to hold sale');
+        window.POS?.showToast?.('Sale held and added to Saved Sales', 'success');
+        try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+        window.location.reload();
+    } catch (e) {
+        window.POS?.showToast?.(e.message || 'Failed to hold sale', 'error');
+    }
+}
+
+async function endCurrentSale() {
+    try {
+        if (!confirm('End current sale? You will need to start a new sale to add items.')) return;
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        const res = await fetch('{{ route('pos.end-sale') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf } });
+        const data = await res.json();
+        if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to end sale');
+        window.POS?.showToast?.('Sale ended. Start a new sale to continue.', 'info');
+        try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+        window.location.reload();
+    } catch (e) {
+        window.POS?.showToast?.(e.message || 'Failed to end sale', 'error');
+    }
+}
+
+function saveSaleForLater() {
+    return holdCurrentSale();
 }
 
 function printQuote() {
