@@ -285,8 +285,8 @@
                         <!-- Per-Category Discounts (optional) -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
-                            <div class="space-y-2" x-show="(form.applicable_categories || []).length > 0">
-                                <template x-for="cat in form.applicable_categories" :key="cat">
+                            <div class="space-y-2" x-show="(categories || []).length > 0">
+                                <template x-for="cat in categories" :key="cat">
                                     <div class="grid grid-cols-2 gap-2 items-center">
                                         <div class="text-sm" x-text="cat"></div>
                                         <div class="flex items-center gap-2">
