@@ -16,7 +16,7 @@ jobs:
           php-version: "8.2"
           coverage: xdebug
           tools: composer:v2
-          extensions: mbstring, zip, sqlite3, pdo_mysql, gd, intl, dom, fileinfo, xml
+          extensions: mbstring, zip, sqlite3, pdo_sqlite, pdo_mysql, gd, intl, dom, fileinfo, xml
       - name: Show PHP info
         run: php -v && php -m
       - name: Ensure bootstrap/cache exists
@@ -32,19 +32,35 @@ jobs:
       - name: Generate app key
         run: php -r "file_exists('.env') || copy('.env.example', '.env');" && php artisan key:generate -vvv
       - name: Ensure SQLite file for CI
-        run: mkdir -p /tmp && touch /tmp/database.sqlite && echo "DB_CONNECTION=sqlite" >> .env && echo "DB_DATABASE=/tmp/database.sqlite" >> .env && echo "APP_ENV=testing" >> .env
+        run: |
+          mkdir -p /tmp
+          touch /tmp/database.sqlite
+          echo "DB_CONNECTION=sqlite" >> .env
+          echo "DB_DATABASE=/tmp/database.sqlite" >> .env
+          echo "APP_ENV=testing" >> .env
+          echo "DB_FOREIGN_KEYS=false" >> .env
+          echo "CACHE_DRIVER=array" >> .env
+          echo "SESSION_DRIVER=array" >> .env
+          echo "QUEUE_CONNECTION=sync" >> .env
       - name: Dump autoload (verbose)
         run: composer dump-autoload -o -vvv
       - name: Artisan diagnostics
-        run: php artisan --version -vvv && php artisan about -vvv
+        run: php artisan --version -vvv && php artisan about -vvv && php artisan config:clear -vvv
       - name: Run migrations (verbose)
-        run: php artisan migrate --force -vvv
+        run: php artisan migrate --force --no-interaction -vvv
       - name: Run Pint
         run: vendor/bin/pint --test
       - name: PHPStan (Larastan)
         run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
       - name: PHPUnit
         run: vendor/bin/phpunit --testdox --coverage-text -v
+      - name: Dump Laravel logs on failure
+        if: ${{ failure() }}
+        run: |
+          echo "==== storage/logs ===="
+          ls -la storage/logs || true
+          echo "==== laravel.log (tail) ===="
+          tail -n 200 storage/logs/laravel.log || true
 
   frontend:
     runs-on: ubuntu-latest
