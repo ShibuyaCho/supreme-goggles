@@ -3170,7 +3170,7 @@ function cannabisPOS() {
       this.showToast("Cart cleared", "info");
     },
 
-    filteredSavedSales() {
+    get filteredSavedSales() {
       const q = String(this.savedSalesSearch || '').toLowerCase();
       if (!q) return this.savedSales;
       return (this.savedSales || []).filter(s => {
