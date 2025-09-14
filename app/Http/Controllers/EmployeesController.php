@@ -11,6 +11,16 @@ use Illuminate\Support\Facades\Schema;
 
 class EmployeesController extends Controller
 {
+    public function nextId(Request $request)
+    {
+        $user = auth()->user();
+        if (!$user || !($user->isAdmin() || $user->isManager())) {
+            abort(403, 'Unauthorized');
+        }
+        $next = \App\Helpers\EmployeeIdHelper::generateNextId();
+        return response()->json(['next_id' => $next]);
+    }
+
     public function index(Request $request)
     {
         $searchQuery = $request->get('search', '');
