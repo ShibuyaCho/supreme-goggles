@@ -28,7 +28,8 @@ class Deal extends Model
         'email_customers',
         'loyalty_only',
         'medical_only',
-        'is_active'
+        'is_active',
+        'active_days'
     ];
 
     protected $casts = [
@@ -43,7 +44,8 @@ class Deal extends Model
         'minimum_purchase' => 'decimal:2',
         'current_uses' => 'integer',
         'max_uses' => 'integer',
-        'day_of_month' => 'integer'
+        'day_of_month' => 'integer',
+        'active_days' => 'array'
     ];
 
     public function isActive()
@@ -76,6 +78,12 @@ class Deal extends Model
     {
         if (!$date) {
             $date = Carbon::now();
+        }
+
+        // If explicit active_days configured (custom schedule), honor it
+        if (is_array($this->active_days) && count($this->active_days) > 0) {
+            $idx = (int)$date->dayOfWeek; // 0=Sunday
+            return in_array($idx, $this->active_days);
         }
 
         switch ($this->frequency) {
@@ -196,6 +204,11 @@ class Deal extends Model
 
     public function getFrequencyDisplayAttribute()
     {
+        if (is_array($this->active_days) && count($this->active_days) > 0) {
+            $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            $labels = array_map(fn($i) => $days[$i] ?? '', $this->active_days);
+            return 'Custom (' . implode(', ', array_filter($labels)) . ')';
+        }
         switch ($this->frequency) {
             case 'daily':
                 return 'Daily';
