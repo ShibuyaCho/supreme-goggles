@@ -2561,6 +2561,7 @@ function cannabisPOS() {
     },
 
     calculateTotals() {
+      try { this.autoApplyDealsToCart && this.autoApplyDealsToCart(); } catch (_) {}
       if (!this.cart || !Array.isArray(this.cart)) {
         this.subtotal = 0;
         this.taxAmount = 0;
