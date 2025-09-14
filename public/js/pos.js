@@ -1404,6 +1404,10 @@ function cannabisPOS() {
         } catch (e) {}
       }
       if (!empName) empName = 'Unknown';
+      const subtotal = Number(s.subtotal != null ? s.subtotal : (s.subtotal_amount != null ? s.subtotal_amount : 0));
+      const tax = Number(s.tax_amount != null ? s.tax_amount : (s.tax != null ? s.tax : 0));
+      const total = Number(s.total_amount != null ? s.total_amount : (s.total != null ? s.total : 0));
+      const discountPercent = subtotal > 0 && discountAmt > 0 ? (discountAmt / subtotal) * 100 : 0;
       return {
         id: s.sale_number || String(s.id),
         numericId: s.id,
@@ -1413,8 +1417,11 @@ function cannabisPOS() {
         customerMedicalCard: medicalCard,
         isMedical: customerType === "medical",
         itemCount,
-        total: Number(s.total_amount || 0),
+        subtotal,
+        tax,
+        total,
         discounts,
+        discountPercent,
         paymentMethod: String(s.payment_method || "cash").toLowerCase(),
         paymentReference: paymentRef ? String(paymentRef).slice(-4) : null,
         employee: empName,
