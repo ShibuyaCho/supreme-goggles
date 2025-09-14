@@ -21,6 +21,8 @@ class Deal extends Model
         'start_date',
         'end_date',
         'applicable_categories',
+        'category_discounts',
+        'item_discounts',
         'specific_items',
         'minimum_purchase',
         'minimum_purchase_type',
@@ -38,6 +40,8 @@ class Deal extends Model
         'end_date' => 'date',
         'applicable_categories' => 'array',
         'specific_items' => 'array',
+        'category_discounts' => 'array',
+        'item_discounts' => 'array',
         'is_active' => 'boolean',
         'email_customers' => 'boolean',
         'loyalty_only' => 'boolean',
@@ -139,7 +143,7 @@ class Deal extends Model
         return true;
     }
 
-    public function calculateDiscount($amount, $category = null, $customer = null, $quantity = null)
+    public function calculateDiscount($amount, $category = null, $customer = null, $quantity = null, $productId = null)
     {
         if (!$this->isActive()) {
             return 0;
@@ -157,16 +161,30 @@ class Deal extends Model
             return 0;
         }
 
+        // Resolve per-item or per-category override values (percentage or fixed depending on deal type)
+        $overrideValue = null;
+        if ($productId !== null && is_array($this->item_discounts)) {
+            $pidKey = (string)$productId;
+            if (array_key_exists($pidKey, $this->item_discounts)) {
+                $overrideValue = (float)$this->item_discounts[$pidKey];
+            }
+        }
+        if ($overrideValue === null && $category && is_array($this->category_discounts)) {
+            if (array_key_exists($category, $this->category_discounts)) {
+                $overrideValue = (float)$this->category_discounts[$category];
+            }
+        }
+        $effectiveValue = $overrideValue !== null ? $overrideValue : (float)$this->value;
+
         switch ($this->type) {
             case 'percentage':
-                return $amount * ($this->value / 100);
+                return $amount * ($effectiveValue / 100);
             case 'fixed_amount':
-                return min($this->value, $amount);
+                return min($effectiveValue, $amount);
             case 'bogo':
-                // Buy one get one - apply percentage discount
-                return $amount * ($this->value / 200); // Half the percentage for BOGO
+                return $amount * ($effectiveValue / 200); // Half the percentage for BOGO
             case 'bulk':
-                return $amount * ($this->value / 100);
+                return $amount * ($effectiveValue / 100);
             default:
                 return 0;
         }
