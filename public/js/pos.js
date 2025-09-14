@@ -4115,7 +4115,8 @@ function cannabisPOS() {
         items,
         employeePin: this.debitPayment.employeePin,
         card_details: { last_four: String(this.debitPayment.lastFour || ""), type: "debit" },
-        customer: this.selectedCustomer ? { name: this.selectedCustomer.name || "Walk-in Customer" } : null,
+        debit_amount: parseFloat(this.debitPayment.amount) || this.total,
+        customer: this.selectedCustomer ? { name: this.selectedCustomer.name || "Walk-in Customer", isMedical: !!this.selectedCustomer.isMedical, type: this.selectedCustomer.isMedical ? 'medical' : 'recreational', medical_card_number: this.selectedCustomer.medicalCard || this.selectedCustomer.medicalCardNumber || this.selectedCustomer.patientCardNumber || null } : null,
       };
 
       try {
