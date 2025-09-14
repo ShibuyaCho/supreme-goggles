@@ -9346,16 +9346,9 @@
                                 x-text="sale.id"
                               ></td>
                               <td class="px-6 py-4 whitespace-nowrap">
-                                <div
-                                  class="text-sm font-medium text-gray-900"
-                                  x-text="sale.customer"
-                                ></div>
-                                <div
-                                  x-show="sale.isMedical"
-                                  class="text-xs text-green-600"
-                                >
-                                  Medical
-                                </div>
+                                <div class="text-sm font-medium text-gray-900" x-text="sale.customer"></div>
+                                <div x-show="sale.isMedical" class="text-xs text-green-700">Medical Customer</div>
+                                <div x-show="sale.customerMedicalCard" class="text-xs text-gray-500" x-text="'Card: ' + sale.customerMedicalCard"></div>
                               </td>
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
@@ -20805,12 +20798,32 @@
                   d = r2.ok ? await r2.json() : null;
                 } catch (_) {}
               }
-              if (d) {
-                this.items = Array.isArray(d.items) ? d.items : [];
-                this.categories = Array.isArray(d.categories) ? d.categories : [];
-                this.days = Number(d.daysInRange || 0);
+              if (d && Array.isArray(d.items) && d.items.length) {
+                this.items = d.items; this.categories = Array.isArray(d.categories) ? d.categories : []; this.days = Number(d.daysInRange || 0);
               } else {
-                this.items = []; this.categories = []; this.days = 0;
+                // Fallback: compute ASPD from recent sales if endpoint unavailable or empty
+                try {
+                  const sr = await fetch('/api/sales/recent', { headers: { Accept: 'application/json' } });
+                  const sl = sr.ok ? await sr.json() : [];
+                  const map = new Map();
+                  const now = new Date();
+                  const start = new Date(); start.setDate(now.getDate() - (tf === 'week' ? 6 : 29));
+                  const days = Math.max(1, Math.round((now - start) / (24*60*60*1000)));
+                  for (const s of Array.isArray(sl) ? sl : []) {
+                    const when = new Date(s.created_at || s.date || now);
+                    if (when < start) continue;
+                    const items = Array.isArray(s.sale_items) ? s.sale_items : [];
+                    for (const it of items) {
+                      const name = it.product_name || it.name || 'Unknown';
+                      const qty = Number(it.quantity || 0);
+                      const key = name;
+                      map.set(key, (map.get(key) || 0) + qty);
+                    }
+                  }
+                  this.items = Array.from(map.entries()).map(([name, qty]) => ({ name, totalSold: qty, aspd: qty / days }));
+                  this.categories = [];
+                  this.days = days;
+                } catch(_) { this.items = []; this.categories = []; this.days = 0; }
               }
             } catch (_) { this.items = []; this.categories = []; this.days = 0; }
             finally { this.loading = false; }
