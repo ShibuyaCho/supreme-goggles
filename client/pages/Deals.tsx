@@ -184,6 +184,23 @@ export default function Deals() {
   }, []);
 
   const createDeal = async () => {
+    const payload = mapUiToApi(newDeal);
+    try {
+      const res = await fetch('/api/deals', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(payload) });
+      const data = await res.json();
+      if (res.ok && data?.deal) {
+        setDeals(prev => [mapApiDealToUi(data.deal), ...prev]);
+        setShowCreateDialog(false);
+        resetForm();
+        return;
+      }
+      alert(data?.message || 'Failed to create deal');
+      return;
+    } catch (e) {
+      alert('Failed to create deal');
+      return;
+    }
+
     const deal: Deal = {
       id: Date.now().toString(),
       name: newDeal.name || "",
