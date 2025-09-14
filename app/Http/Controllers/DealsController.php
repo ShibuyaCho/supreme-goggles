@@ -720,7 +720,7 @@ class DealsController extends Controller
             'active_days' => $arr['active_days'] ?? null,
         ];
         // Ensure JSON fields are arrays
-        foreach (['applicable_categories','specific_items','active_days'] as $k) {
+        foreach (['applicable_categories','specific_items','active_days','category_discounts','item_discounts'] as $k) {
             if (isset($mapped[$k]) && is_string($mapped[$k])) {
                 $dec = json_decode($mapped[$k], true);
                 if (json_last_error() === JSON_ERROR_NONE) $mapped[$k] = $dec;
