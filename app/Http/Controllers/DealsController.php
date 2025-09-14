@@ -53,9 +53,13 @@ class DealsController extends Controller
         }
 
         if ($request->wantsJson() || $request->expectsJson()) {
+            $list = $deals instanceof \Illuminate\Support\Collection ? $deals->values()->all() : (is_array($deals) ? $deals : []);
+            if ($deals instanceof \Illuminate\Support\Collection) {
+                $list = $deals->map(fn($d) => $this->formatDealForResponse($d))->values()->all();
+            }
             return response()->json([
                 'success' => true,
-                'deals' => $deals->map(fn($d) => $this->formatDealForResponse($d))->values()->all(),
+                'deals' => $list,
                 'categories' => $categories,
             ]);
         }
