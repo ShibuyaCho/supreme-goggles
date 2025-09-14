@@ -939,7 +939,6 @@ export default function Analytics() {
             <TabsTrigger value="customers">Customers</TabsTrigger>
             <TabsTrigger value="inventory">Inventory</TabsTrigger>
             <TabsTrigger value="employees">Employees</TabsTrigger>
-            <TabsTrigger value="aspd">ASPD</TabsTrigger>
             <TabsTrigger value="eod">End of Day</TabsTrigger>
           </TabsList>
 
