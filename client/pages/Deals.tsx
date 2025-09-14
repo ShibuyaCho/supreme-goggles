@@ -485,7 +485,8 @@ export default function Deals() {
                   </div>
                 </div>
 
-                <div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
                   <Label>Categories</Label>
                   <div className="grid grid-cols-3 gap-2 mt-2">
                     {availableCategories.map(category => (
@@ -559,6 +560,7 @@ export default function Deals() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
+                </div>
                 </div>
 
                 <div>
