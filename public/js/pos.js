@@ -1632,6 +1632,11 @@ function cannabisPOS() {
 
     getDealSchedule(deal) {
       try {
+        const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        if (Array.isArray(deal.activeDays) && deal.activeDays.length > 0) {
+          const labels = deal.activeDays.map((i) => days[i] || '').filter(Boolean);
+          return labels.length ? `Custom (${labels.join(', ')})` : 'Custom';
+        }
         const freq = String(deal.frequency || '').toLowerCase();
         if (freq === 'always') return 'Always Active';
         if (freq === 'daily') return 'Daily';
