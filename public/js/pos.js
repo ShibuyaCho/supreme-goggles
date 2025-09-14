@@ -1712,6 +1712,7 @@ function cannabisPOS() {
           loyalty_only: !!f.loyaltyOnly,
           medical_only: !!f.medicalOnly,
           is_active: f.isActive != null ? !!f.isActive : true,
+          active_days: Array.isArray(f.activeDays) ? f.activeDays.map((x)=>Number(x)).filter((n)=>!isNaN(n)) : []
         };
         const creating = !this.editingDeal;
         const url = creating ? '/deals' : `/deals/${this.editingDeal.id}`;
