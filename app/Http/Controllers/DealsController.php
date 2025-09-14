@@ -159,7 +159,7 @@ class DealsController extends Controller
             'medical_only' => 'boolean',
             'is_active' => 'boolean',
             'active_days' => 'nullable|array'
-        ];
+        ]);
 
         if ($validator->fails()) {
             return response()->json([
