@@ -65,16 +65,16 @@
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-medium text-gray-600">View:</span>
                         <div class="flex border rounded-lg p-1">
-                            <button 
-                                id="view-cards" 
+                            <button
+                                id="view-cards"
                                 class="view-toggle px-3 py-1 rounded text-sm font-medium transition-colors bg-blue-500 text-white"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                                 </svg>
                             </button>
-                            <button 
-                                id="view-list" 
+                            <button
+                                id="view-list"
                                 class="view-toggle px-3 py-1 rounded text-sm font-medium transition-colors text-gray-600 hover:bg-gray-100"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -82,6 +82,26 @@
                                 </svg>
                             </button>
                         </div>
+                    </div>
+
+                    <!-- POS Actions in Header -->
+                    <div class="ml-auto flex items-center gap-2">
+                        <button id="start-sale-top" class="inline-flex items-center rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                            New Sale
+                        </button>
+                        <button id="hold-sale-top" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium shadow-sm border text-yellow-800 border-yellow-300 hover:bg-yellow-50 {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v10M16 7v10M3 7h18"/></svg>
+                            Hold
+                        </button>
+                        <button id="end-sale-top" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium shadow-sm border text-gray-800 border-gray-300 hover:bg-gray-50">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            End Sale
+                        </button>
+                        <button id="clear-cart-top" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-white shadow-sm bg-red-600 hover:bg-red-700 {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            Clear Cart
+                        </button>
                     </div>
                 </div>
             </div>
@@ -255,6 +275,62 @@
       const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
       const holdBtn = document.getElementById('hold-sale');
       const endBtn = document.getElementById('end-sale');
+      const holdTopBtn = document.getElementById('hold-sale-top');
+      const endTopBtn = document.getElementById('end-sale-top');
+      const clearTopBtn = document.getElementById('clear-cart-top');
+      const startTopBtn = document.getElementById('start-sale-top');
+
+      if (startTopBtn) startTopBtn.addEventListener('click', function(){
+        const modal = document.getElementById('new-sale-modal');
+        if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+        else { document.getElementById('start-sale-btn')?.click(); }
+      });
+
+      async function doHold() {
+        try {
+          const name = `Held Sale - ${new Date().toLocaleString()}`;
+          const res = await fetch('{{ route('pos.save-sale') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ name, notes: 'Held from POS' })
+          });
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to hold sale');
+          if (window.POS?.showToast) POS.showToast('Sale held and added to Saved Sales', 'success');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          window.location.reload();
+        } catch (e) {
+          alert(e.message || 'Failed to hold sale');
+        }
+      }
+
+      if (holdBtn) holdBtn.addEventListener('click', doHold);
+      if (holdTopBtn) holdTopBtn.addEventListener('click', doHold);
+
+      async function doEnd() {
+        try {
+          if (!confirm('End current sale? You will need to start a new sale to add items.')) return;
+          const res = await fetch('{{ route('pos.end-sale') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }});
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to end sale');
+          if (window.POS?.showToast) POS.showToast('Sale ended. Start a new sale to continue.', 'info');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          window.location.reload();
+        } catch (e) { alert(e.message || 'Failed to end sale'); }
+      }
+
+      if (endBtn) endBtn.addEventListener('click', doEnd);
+      if (endTopBtn) endTopBtn.addEventListener('click', doEnd);
+
+      if (clearTopBtn) clearTopBtn.addEventListener('click', async function(){
+        try {
+          const res = await fetch('{{ route('pos.clear-cart') }}', { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf } });
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to clear cart');
+          window.location.reload();
+        } catch (e) { alert(e.message || 'Failed to clear cart'); }
+      });
+
       if (holdBtn) holdBtn.addEventListener('click', async function(){
         try {
           const name = `Held Sale - ${new Date().toLocaleString()}`;
