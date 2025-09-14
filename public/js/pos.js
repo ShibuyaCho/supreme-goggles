@@ -454,6 +454,8 @@ function cannabisPOS() {
       allCategories: false,
       applicableCategories: [],
       applicableProducts: [],
+      categoryDiscounts: {},
+      itemDiscounts: {},
       excludeGLS: true,
       stackable: false,
       loyaltyOnly: false,
@@ -2097,6 +2099,18 @@ function cannabisPOS() {
           active_days: Array.isArray(f.activeDays)
             ? f.activeDays.map((x) => Number(x)).filter((n) => !isNaN(n))
             : [],
+          category_discounts: (function(){
+            const m = f.categoryDiscounts || {};
+            const out = {};
+            Object.keys(m).forEach(k => { const v = Number(m[k]); if (!isNaN(v)) out[k] = v; });
+            return out;
+          })(),
+          item_discounts: (function(){
+            const m = f.itemDiscounts || {};
+            const out = {};
+            Object.keys(m).forEach(k => { const v = Number(m[k]); if (!isNaN(v)) out[String(k)] = v; });
+            return out;
+          })(),
         };
         const creating = !this.editingDeal;
         const url = creating ? "/deals" : `/deals/${this.editingDeal.id}`;
@@ -2198,6 +2212,8 @@ function cannabisPOS() {
         allCategories: false,
         applicableCategories: deal.categories || [],
         applicableProducts: Array.isArray(deal.specificItems) ? deal.specificItems.slice() : [],
+        categoryDiscounts: deal.categoryDiscounts || deal.category_discounts || {},
+        itemDiscounts: deal.itemDiscounts || deal.item_discounts || {},
         excludeGLS: true,
         stackable: false,
         loyaltyOnly: !!deal.loyaltyOnly,
@@ -2237,6 +2253,8 @@ function cannabisPOS() {
         minPurchaseType: deal.minimumPurchaseType || "dollars",
         applicableCategories: (deal.categories || []).slice(),
         applicableProducts: Array.isArray(deal.specificItems) ? deal.specificItems.slice() : [],
+        categoryDiscounts: deal.categoryDiscounts || deal.category_discounts || {},
+        itemDiscounts: deal.itemDiscounts || deal.item_discounts || {},
         loyaltyOnly: !!deal.loyaltyOnly,
         medicalOnly: !!deal.medicalOnly,
         emailCustomers: !!deal.emailCustomers,
