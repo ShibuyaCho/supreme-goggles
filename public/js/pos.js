@@ -1321,6 +1321,8 @@ function cannabisPOS() {
           start = end = toISO(d);
         } else if (dr === "custom") {
           // keep provided custom range
+        } else if (dr === "today") {
+          start = end = toISO(d);
         } else {
           start = ""; end = "";
         }
