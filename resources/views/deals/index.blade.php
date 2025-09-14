@@ -156,7 +156,7 @@
 
         <!-- Deal Modal -->
         <div x-show="showModal" @open-deal-modal.window="openModal($event.detail)" x-cloak class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto" @click.outside="closeModal()">
+            <div class="bg-white rounded-lg max-w-[1000px] w-full max-h-[90vh] overflow-y-auto" @click.outside="closeModal()">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold" x-text="modalType === 'create' ? 'Create New Deal' : 'Edit Deal'"></h2>
@@ -283,9 +283,9 @@
                         </div>
 
                         <!-- Category and Item Discounts side-by-side -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+                        <div class="grid grid-cols-1 md:grid-cols-2 md:[grid-template-columns:1fr_1fr] gap-6 items-start md:divide-x md:divide-gray-200">
                             <!-- Per-Category Discounts (optional) -->
-                            <div class="min-w-0 md:pr-6">
+                            <div class="min-w-0 md:pr-6 w-full relative">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
                                 <div class="space-y-2">
                                     <template x-for="cat in categories" :key="cat">
@@ -311,7 +311,7 @@
                             </div>
 
                             <!-- Per-Item Discounts (optional) -->
-                            <div class="min-w-0 md:pl-6">
+                            <div class="min-w-0 md:pl-6 w-full relative">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
                                 <div class="space-y-2">
                                     <template x-for="pid in form.specific_items" :key="pid">
