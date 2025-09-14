@@ -202,29 +202,32 @@ class AnalyticsController extends Controller
         if ($this->supabaseEnabled()) {
             try {
                 $rows = $this->supaSalesInRange($dateRange);
-                $revenue = 0; $transactions = 0; $customers = 0;
-                foreach ($rows as $r) {
-                    $revenue += isset($r['total_amount']) ? (float)$r['total_amount'] : (float)($r['total'] ?? 0);
-                    $transactions += 1;
-                    if (!empty($r['customer_id']) || (!empty($r['customer']) && is_array($r['customer']))) $customers += 1;
+                if (is_array($rows) && count($rows) > 0) {
+                    $revenue = 0; $transactions = 0; $customers = 0;
+                    foreach ($rows as $r) {
+                        $revenue += isset($r['total_amount']) ? (float)$r['total_amount'] : (float)($r['total'] ?? 0);
+                        $transactions += 1;
+                        if (!empty($r['customer_id']) || (!empty($r['customer']) && is_array($r['customer']))) $customers += 1;
+                    }
+                    $avgOrderValue = $transactions > 0 ? $revenue / $transactions : 0;
+                    $previousPeriod = $this->getPreviousPeriodData($dateRange);
+                    return [
+                        'revenue' => $revenue,
+                        'transactions' => $transactions,
+                        'customers' => $customers,
+                        'avgOrderValue' => $avgOrderValue,
+                        'change' => [
+                            'revenue' => $this->calculatePercentageChange($revenue, $previousPeriod['revenue']),
+                            'transactions' => $this->calculatePercentageChange($transactions, $previousPeriod['transactions']),
+                            'customers' => $this->calculatePercentageChange($customers, $previousPeriod['customers']),
+                            'avgOrderValue' => $this->calculatePercentageChange($avgOrderValue, $previousPeriod['avgOrderValue'])
+                        ]
+                    ];
                 }
-                $avgOrderValue = $transactions > 0 ? $revenue / $transactions : 0;
-                $previousPeriod = $this->getPreviousPeriodData($dateRange);
-                return [
-                    'revenue' => $revenue,
-                    'transactions' => $transactions,
-                    'customers' => $customers,
-                    'avgOrderValue' => $avgOrderValue,
-                    'change' => [
-                        'revenue' => $this->calculatePercentageChange($revenue, $previousPeriod['revenue']),
-                        'transactions' => $this->calculatePercentageChange($transactions, $previousPeriod['transactions']),
-                        'customers' => $this->calculatePercentageChange($customers, $previousPeriod['customers']),
-                        'avgOrderValue' => $this->calculatePercentageChange($avgOrderValue, $previousPeriod['avgOrderValue'])
-                    ]
-                ];
-            } catch (\Throwable $e) { /* fall back */ }
+            } catch (\Throwable $e) { /* fall back to DB */ }
         }
 
+        // Fallback to local DB when Supabase is disabled or has no rows
         $sales = Sale::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
                     ->where('status', 'completed')
                     ->get();
