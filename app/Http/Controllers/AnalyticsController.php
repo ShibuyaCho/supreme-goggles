@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Customer;
 use App\Models\Employee;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 
 class AnalyticsController extends Controller
 {
