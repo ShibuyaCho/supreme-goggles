@@ -1654,6 +1654,7 @@ function cannabisPOS() {
         payload.type = (payload.type === 'fixed' ? 'fixed_amount' : payload.type);
         payload.value = payload.discountValue;
         payload.applicable_categories = payload.categories || [];
+        payload.active_days = Array.isArray(deal.activeDays) ? deal.activeDays.slice() : [];
         const res = await posAuth.apiRequest('put', `/deals/${deal.id}`, payload);
         if (res?.success !== false) {
           deal.isActive = !deal.isActive;
