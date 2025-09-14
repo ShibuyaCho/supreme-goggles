@@ -205,6 +205,25 @@
                         @endforeach
                     </div>
                 </div>
+
+                <!-- Open Carts Metrics -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Open Carts</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-600">Total Open</div>
+                            <div id="open-carts-total" class="text-2xl font-bold text-gray-900">0</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-600">Avg Minutes</div>
+                            <div id="open-carts-avg" class="text-2xl font-bold text-gray-900">0</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-600">Max Minutes</div>
+                            <div id="open-carts-max" class="text-2xl font-bold text-gray-900">0</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
