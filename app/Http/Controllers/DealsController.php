@@ -168,6 +168,10 @@ class DealsController extends Controller
             if (isset($dealData['applicable_categories']) && is_array($dealData['applicable_categories'])) {
                 $dealData['applicable_categories'] = json_encode($dealData['applicable_categories']);
             }
+            // Normalize active_days
+            if (isset($dealData['active_days']) && is_array($dealData['active_days'])) {
+                $dealData['active_days'] = json_encode(array_values(array_unique(array_map('intval', $dealData['active_days']))));
+            }
 
             $originalEmail = (bool)$deal->email_customers;
             $deal->update($dealData);
