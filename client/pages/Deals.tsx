@@ -32,6 +32,7 @@ interface ProductItem {
 }
 
 interface Deal {
+  categoryDiscounts?: Record<string, number>;
   id: string;
   name: string;
   description: string;
@@ -520,6 +521,41 @@ export default function Deals() {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
+                </div>
+
+                <div>
+                  <Label>Per-Category Discounts (optional)</Label>
+                  {(newDeal.categories || []).length > 0 ? (
+                    <div className="mt-2 space-y-2">
+                      {(newDeal.categories || []).map(cat => (
+                        <div key={cat} className="grid grid-cols-2 gap-2 items-center">
+                          <div className="text-sm">{cat}</div>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={String((newDeal.categoryDiscounts || {})[cat] ?? "")}
+                              onChange={(e) => setNewDeal(prev => ({
+                                ...prev,
+                                categoryDiscounts: { ...(prev.categoryDiscounts || {}), [cat]: parseFloat(e.target.value) || 0 }
+                              }))}
+                              placeholder="Discount value"
+                            />
+                            <Select value={newDeal.type} onValueChange={(value: Deal['type']) => setNewDeal(prev => ({...prev, type: value}))}>
+                              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Deal type" /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="percentage">Percentage</SelectItem>
+                                <SelectItem value="fixed">Fixed Amount</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+                      ))}
+                      <p className="text-xs text-muted-foreground">If set, these override the main discount for the selected category.</p>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground mt-1">Select categories to set per-category discounts.</p>
+                  )}
                 </div>
 
                 <div>
