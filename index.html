@@ -9183,7 +9183,7 @@
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                        <select id="sales-date-range" name="sales-date-range" x-model="salesFilter.dateRange" @change="filterSales()" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Filter sales by date range">
+                        <select id="sales-date-range" name="sales-date-range" x-model="salesFilter.dateRange" @change="refreshSales(true)" class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label="Filter sales by date range">
                           <option value="today">Today</option>
                           <option value="yesterday">Yesterday</option>
                           <option value="week">This Week</option>
