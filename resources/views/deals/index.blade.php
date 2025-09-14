@@ -258,7 +258,7 @@
                                     <option value="grams">Grams (g)</option>
                                 </select>
                                 <div class="col-span-2">
-                                    <input type="number" x-model="form.minimum_purchase" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" :placeholder="'Minimum ' + (form.minimum_purchase_type === 'grams' ? 'grams' : 'dollars')">
+                                    <input type="number" x-model.number="form.minimum_purchase" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" :placeholder="'Minimum ' + (form.minimum_purchase_type === 'grams' ? 'grams' : 'dollars')">
                                 </div>
                             </div>
                         </div>
