@@ -138,6 +138,8 @@ export default function Deals() {
     discountValue: Number(d.value || 0),
     categories: Array.isArray(d.applicable_categories) ? d.applicable_categories : [],
     specificItems: Array.isArray(d.specific_items) ? d.specific_items.map((x: any) => String(x)) : [],
+    categoryDiscounts: (() => { const v = (d as any).category_discounts; if (!v) return {}; if (typeof v === 'string') { try { const x = JSON.parse(v); return x && typeof x === 'object' ? x : {}; } catch { return {}; } } return v; })(),
+    itemDiscounts: (() => { const v = (d as any).item_discounts; if (!v) return {}; if (typeof v === 'string') { try { const x = JSON.parse(v); return x && typeof x === 'object' ? x : {}; } catch { return {}; } } return v; })(),
     startDate: d.start_date || "",
     endDate: d.end_date || "",
     isActive: !!d.is_active,
@@ -970,7 +972,7 @@ export default function Deals() {
                         />
                         <div>
                           <div className="text-sm font-medium">{p.name}</div>
-                          <div className="text-xs text-muted-foreground">{[p.sku ? `SKU: ${p.sku}` : null, p.category].filter(Boolean).join(" ��� ")}</div>
+                          <div className="text-xs text-muted-foreground">{[p.sku ? `SKU: ${p.sku}` : null, p.category].filter(Boolean).join(" • ")}</div>
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground">#{idStr}</span>
