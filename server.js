@@ -170,7 +170,7 @@ app.get("/", (_req, res) => {
           <div>• METRC Compliance</div>
           <div>• Oregon State Limits</div>
           <div>• Age Verification</div>
-          <div>• Tax Calculations</div>
+          <div>��� Tax Calculations</div>
           <div>• Room Management</div>
           <div>• Product Actions</div>
         </div>
@@ -1303,6 +1303,7 @@ async function handleProcessPayment(req, res) {
   const row = {
     user_id: user ? String(user.id) : null,
     employee_id,
+    store_id: await getStoreId(),
     payment_method:
       body.method ||
       (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown"),
