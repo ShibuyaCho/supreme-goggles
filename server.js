@@ -906,10 +906,25 @@ app.get("/api/employees", async (_req, res) => {
 // Employees: create
 app.post("/api/employees", async (req, res) => {
   const b = req.body || {};
+  async function getNextEmpId() {
+    try {
+      const r = await supaFetch("employees?select=employee_id,created_at&order=created_at.desc&limit=200", { method: "GET" });
+      const arr = r.ok ? await r.json() : [];
+      let max = 0;
+      for (const row of Array.isArray(arr) ? arr : []) {
+        const v = row && row.employee_id ? String(row.employee_id) : "";
+        const m = v.match(/(\d+)/);
+        if (m) { const n = parseInt(m[1].replace(/^0+/, '') || '0', 10); if (n > max) max = n; }
+      }
+      const next = Math.max(1, max + 1);
+      const pad = next < 100 ? 2 : String(next).length;
+      return `Emp${String(next).padStart(pad, '0')}`;
+    } catch (_) {
+      return "Emp" + Math.floor(1 + Math.random() * 98).toString().padStart(2, '0');
+    }
+  }
   const row = {
-    employee_id:
-      b.employee_id ||
-      "EMP" + Math.random().toString(36).slice(2, 7).toUpperCase(),
+    employee_id: b.employee_id || (await getNextEmpId()),
     first_name: b.first_name || b.name?.split(" ")[0] || "",
     last_name: b.last_name || b.name?.split(" ").slice(1).join(" ") || "",
     role: b.role || "cashier",
