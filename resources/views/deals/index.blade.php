@@ -93,15 +93,15 @@
                                 </svg>
                                 <span x-text="getFrequencyDisplay(deal)"></span>
                             </div>
-                            <div x-show="deal.categories && deal.categories.length > 0" class="flex items-center gap-2">
+                            <div x-show="deal.applicable_categories && deal.applicable_categories.length > 0" class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                                 </svg>
                                 <div class="flex flex-wrap gap-1">
-                                    <template x-for="(category, index) in deal.categories ? deal.categories.slice(0, 2) : []" :key="index">
+                                    <template x-for="(category, index) in deal.applicable_categories ? deal.applicable_categories.slice(0, 2) : []" :key="index">
                                         <span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded" x-text="category"></span>
                                     </template>
-                                    <span x-show="deal.categories && deal.categories.length > 2" class="text-xs text-gray-500" x-text="'+' + (deal.categories.length - 2) + ' more'"></span>
+                                    <span x-show="deal.applicable_categories && deal.applicable_categories.length > 2" class="text-xs text-gray-500" x-text="'+' + (deal.applicable_categories.length - 2) + ' more'"></span>
                                 </div>
                             </div>
                             <div x-show="deal.minimum_purchase" class="flex items-center gap-2">
@@ -211,7 +211,7 @@
                                 <input type="date" x-model="form.start_date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">End Date (optional)</label>
                                 <input type="date" x-model="form.end_date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                             </div>
                         </div>
@@ -502,8 +502,26 @@ function dealsManager() {
             this.openModal({ type: 'edit', deal: deal });
         },
 
-        sendDealEmail(deal) {
-            this.showToast(`Email campaign for "${deal.name}" has been sent to loyalty program members!`, 'success');
+        async sendDealEmail(deal) {
+            try {
+                const res = await fetch(`/api/deals/${deal.id}/email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    this.showToast(data.message || `Email campaign for "${deal.name}" sent`, 'success');
+                } else {
+                    this.showToast(data.message || 'Failed to send deal emails', 'error');
+                }
+            } catch (e) {
+                console.error('Email send failed', e);
+                this.showToast('Failed to send deal emails', 'error');
+            }
         },
 
         formatDiscount(deal) {
