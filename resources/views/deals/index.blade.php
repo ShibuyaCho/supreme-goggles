@@ -285,7 +285,7 @@
                         <!-- Per-Category Discounts (optional) -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
-                            <div class="space-y-2" x-show="(categories || []).length > 0">
+                            <div class="space-y-2">
                                 <template x-for="cat in categories" :key="cat">
                                     <div class="grid grid-cols-2 gap-2 items-center">
                                         <div class="text-sm" x-text="cat"></div>
@@ -311,7 +311,7 @@
                         <!-- Per-Item Discounts (optional) -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
-                            <div class="space-y-2" x-show="(form.specific_items || []).length > 0">
+                            <div class="space-y-2">
                                 <template x-for="pid in form.specific_items" :key="pid">
                                     <div class="grid grid-cols-2 gap-2 items-center">
                                         <div class="text-sm">
@@ -332,6 +332,9 @@
                                             </select>
                                         </div>
                                     </div>
+                                </template>
+                                <template x-if="(form.specific_items || []).length === 0">
+                                    <div class="p-2 text-xs text-gray-500 border rounded">Select items above to set per-item discount overrides.</div>
                                 </template>
                                 <p class="text-xs text-gray-500">If set, these override both category and main discount for the item.</p>
                             </div>
