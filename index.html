@@ -1142,8 +1142,22 @@
                       New Sale
                     </button>
                     <button
+                      @click="holdCurrentSale()"
+                      :disabled="cart.length === 0"
+                      class="px-4 py-2 rounded-lg border text-yellow-800 border-yellow-300 hover:bg-yellow-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Hold
+                    </button>
+                    <button
+                      @click="endCurrentSale()"
+                      class="px-4 py-2 rounded-lg border text-gray-800 border-gray-300 hover:bg-gray-50 transition-colors"
+                    >
+                      End Sale
+                    </button>
+                    <button
                       @click="clearCart()"
-                      class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+                      :disabled="cart.length === 0"
+                      class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Clear Cart
                     </button>
