@@ -935,8 +935,8 @@
                 </svg>
                 <div class="flex flex-col text-left">
                   <span x-show="selectedCustomer && selectedCustomer.isMedical">Medical Customer</span>
-                  <span x-show="selectedCustomer && selectedCustomer.isMedical" class="text-xs opacity-80" x-text="selectedCustomer.medicalCard || selectedCustomer.medicalCardNumber || selectedCustomer.patientCardNumber || 'Not provided'"></span>
-                  <span x-show="selectedCustomer && !selectedCustomer.isMedical" x-text="selectedCustomer.name"></span>
+                  <span x-show="selectedCustomer && selectedCustomer.isMedical" class="text-xs opacity-80" x-text="selectedCustomer ? (selectedCustomer.medicalCard || selectedCustomer.medicalCardNumber || selectedCustomer.patientCardNumber || 'Not provided') : 'Not provided'"></span>
+                  <span x-show="selectedCustomer && !selectedCustomer.isMedical" x-text="selectedCustomer ? (selectedCustomer.name || '') : ''"></span>
                   <span x-show="!selectedCustomer">Select Customer</span>
                 </div>
               </button>
