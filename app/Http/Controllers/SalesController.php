@@ -687,8 +687,29 @@ class SalesController extends Controller
                 $rows = $rows->filter(fn($r) => substr((string)($r['created_at'] ?? ''),0,10) <= $dateTo);
             }
 
+            // Build employee name map from Supabase employees table (by employee_id)
+            $empMap = collect();
+            try {
+                $empIds = $rows->pluck('employee_id')->filter()->unique()->values();
+                if ($empIds->count() > 0) {
+                    $in = 'in.(' . $empIds->map(fn($v) => '"' . str_replace('"','\"', (string)$v) . '"')->implode(',') . ')';
+                    $er = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/employees', [ 'select' => 'employee_id,first_name,last_name', 'employee_id' => $in ]);
+                    if ($er->successful()) {
+                        $elist = collect($er->json() ?: []);
+                        $empMap = $elist->mapWithKeys(function($e){
+                            $name = trim(($e['first_name'] ?? '') . ' ' . ($e['last_name'] ?? ''));
+                            return [ (string)($e['employee_id'] ?? '') => $name ?: 'Unknown' ];
+                        });
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+
             // Normalize for SPA mapper expectations
-            $normalized = $rows->map(function($r){
+            $normalized = $rows->map(function($r) use ($empMap){
                 $cart = is_array($r['cart'] ?? null) ? $r['cart'] : [];
                 $itemCount = collect($cart)->sum(function($i){ return (int)($i['quantity'] ?? 1); });
                 $saleItems = collect($cart)->map(function($i){
@@ -700,12 +721,15 @@ class SalesController extends Controller
                         'total_price' => (float)((($i['price'] ?? 0) * ($i['quantity'] ?? 1))),
                     ];
                 })->values()->all();
+                $empName = $empMap->get((string)($r['employee_id'] ?? ''));
                 return [
                     'id' => $r['id'] ?? null,
                     'sale_number' => $r['sale_number'] ?? ('S-' . ($r['id'] ?? '')),
                     'created_at' => $r['created_at'] ?? now()->toIso8601String(),
                     'customer' => $r['customer'] ?? null,
-                    'employee' => null,
+                    'customer_type' => $r['customer_type'] ?? null,
+                    'employee' => $empName ? [ 'name' => $empName ] : null,
+                    'employee_name' => $empName,
                     'item_count' => $itemCount,
                     'sale_items' => $saleItems,
                     'subtotal' => (float)($r['subtotal'] ?? 0),
