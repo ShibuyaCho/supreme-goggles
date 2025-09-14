@@ -503,6 +503,12 @@ class DealsController extends Controller
         if ($dealArray['applicable_categories']) {
             $dealArray['applicable_categories'] = json_decode($dealArray['applicable_categories'], true);
         }
+        if (array_key_exists('specific_items', $dealArray) && is_string($dealArray['specific_items'])) {
+            $decoded = json_decode($dealArray['specific_items'], true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $dealArray['specific_items'] = $decoded;
+            }
+        }
         if (array_key_exists('active_days', $dealArray) && is_string($dealArray['active_days'])) {
             $decoded = json_decode($dealArray['active_days'], true);
             if (json_last_error() === JSON_ERROR_NONE) {
