@@ -1456,15 +1456,16 @@ function cannabisPOS() {
         else if (dr === "yesterday") { const y = new Date(d); y.setDate(d.getDate()-1); start = end = toISO(y); }
         else if (dr === "today") { start = end = toISO(d); }
       }
-      const startTs = start ? new Date(start).getTime() : -Infinity;
-      const endTs = end ? new Date(end + 'T23:59:59').getTime() : Infinity;
+      const dateKey = (d) => { try { const dt = new Date(d); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; } catch(_) { return ''; } };
+      const startKey = start || '';
+      const endKey = end || '';
 
       this.filteredSales = (this.sales || []).filter((s) => {
-        const nameOk = !q || (s.customer || "").toLowerCase().includes(q);
+        const nameOk = !q || (s.customer || "").toLowerCase().includes(q) || (s.customerMedicalCard || '').toLowerCase().includes(q);
         const payOk = !pay || s.paymentMethod === pay;
         const amtOk = s.total >= min && s.total <= max;
-        const t = new Date(s.date).getTime();
-        const dateOk = t >= startTs && t <= endTs;
+        const k = dateKey(s.date);
+        const dateOk = (!startKey || !endKey) ? true : (k >= startKey && k <= endKey);
         return nameOk && payOk && amtOk && dateOk;
       });
     },
