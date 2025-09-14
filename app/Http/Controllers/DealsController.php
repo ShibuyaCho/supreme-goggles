@@ -238,6 +238,14 @@ class DealsController extends Controller
             if (isset($dealData['active_days']) && is_array($dealData['active_days'])) {
                 $dealData['active_days'] = json_encode(array_values(array_unique(array_map('intval', $dealData['active_days']))));
             }
+            if (isset($dealData['category_discounts']) && is_array($dealData['category_discounts'])) {
+                $dealData['category_discounts'] = json_encode($dealData['category_discounts']);
+            }
+            if (isset($dealData['item_discounts']) && is_array($dealData['item_discounts'])) {
+                $normalized = [];
+                foreach ($dealData['item_discounts'] as $k => $v) { $normalized[(string)$k] = $v; }
+                $dealData['item_discounts'] = json_encode($normalized);
+            }
 
             $deal = Deal::create($dealData);
 
@@ -388,6 +396,14 @@ class DealsController extends Controller
             // Normalize active_days
             if (isset($dealData['active_days']) && is_array($dealData['active_days'])) {
                 $dealData['active_days'] = json_encode(array_values(array_unique(array_map('intval', $dealData['active_days']))));
+            }
+            if (isset($dealData['category_discounts']) && is_array($dealData['category_discounts'])) {
+                $dealData['category_discounts'] = json_encode($dealData['category_discounts']);
+            }
+            if (isset($dealData['item_discounts']) && is_array($dealData['item_discounts'])) {
+                $normalized = [];
+                foreach ($dealData['item_discounts'] as $k => $v) { $normalized[(string)$k] = $v; }
+                $dealData['item_discounts'] = json_encode($normalized);
             }
 
             $originalEmail = (bool)$deal->email_customers;
