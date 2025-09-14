@@ -2511,6 +2511,57 @@ function cannabisPOS() {
       this.showToast(`${product.name} added to cart`, "success");
     },
 
+    // Auto-apply active deals to cart items (exclude GLS items)
+    autoApplyDealsToCart() {
+      const now = new Date();
+      const dayIdx = now.getDay(); // 0=Sunday
+      const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const isDealActiveNow = (d) => {
+        if (!d || !d.isActive) return false;
+        try {
+          if (d.startDate) { const sd = new Date(d.startDate); if (now < sd) return false; }
+          if (d.endDate) { const ed = new Date(d.endDate); if (now > ed) return false; }
+        } catch(_){}
+        if (Array.isArray(d.activeDays) && d.activeDays.length > 0) {
+          return d.activeDays.includes(dayIdx);
+        }
+        const f = String(d.frequency || '').toLowerCase();
+        if (f === 'always' || f === 'daily') return true;
+        if (f === 'weekly') return !d.dayOfWeek || (d.dayOfWeek === dayNames[dayIdx]);
+        if (f === 'monthly') return !d.dayOfMonth || (now.getDate() === Number(d.dayOfMonth));
+        return true;
+      };
+      const deals = Array.isArray(this.deals) ? this.deals.filter(isDealActiveNow) : [];
+      const getCategory = (item) => item.category || item.categoryName || item.category_label || item.type || '';
+      (this.cart || []).forEach((item) => {
+        if (!item) return;
+        if (item.isGLS) { return; }
+        const base = Number(item.price || 0) * Number(item.quantity || 1);
+        const grams = Number(item.selectedWeight || 0) * Number(item.quantity || 1);
+        let best = { amount: 0, dealId: null, type: 'fixed', value: 0, reason: '' };
+        const cat = getCategory(item);
+        for (const d of deals) {
+          if (Array.isArray(d.categories) && d.categories.length > 0 && !d.categories.includes(cat)) continue;
+          if (d.minimumPurchase != null) {
+            if ((d.minimumPurchaseType || 'dollars') === 'grams') {
+              if (!grams || grams < Number(d.minimumPurchase)) continue;
+            } else {
+              if (base < Number(d.minimumPurchase)) continue;
+            }
+          }
+          let amt = 0;
+          if (d.type === 'percentage') amt = base * (Number(d.discountValue) / 100);
+          else if (d.type === 'fixed_amount') amt = Math.min(Number(d.discountValue), base);
+          else if (d.type === 'bogo' || d.type === 'bulk') amt = base * (Number(d.discountValue) / 100);
+          if (amt > best.amount) best = { amount: amt, dealId: d.id, type: d.type, value: Number(d.discountValue), reason: d.name };
+        }
+        if (!item.discount || !item.discount.reason || (item.discount.reason || '').startsWith('[AUTO]')) {
+          item.discount = best.amount > 0 ? { amount: best.amount, type: best.type === 'fixed_amount' ? 'fixed' : 'percentage', value: best.value, reason: best.dealId ? `[AUTO] ${best.reason}` : '' } : { amount: 0, type: 'fixed', value: 0, reason: '' };
+          item._appliedDealId = best.dealId || null;
+        }
+      });
+    },
+
     // Add flower to cart with specific weight and price
     addFlowerToCart(product, weight, price) {
       const existingItem = this.cart.find(
