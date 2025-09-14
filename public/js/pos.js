@@ -1384,18 +1384,26 @@ function cannabisPOS() {
       const discountAmt = Number(s.discount_amount || 0);
       const discounts = discountAmt > 0 ? [{ id: `order-${s.id}`, type: "Order", amount: discountAmt }] : [];
       const paymentRef = s.payment_reference || s.card_last_four || null;
+      const customerType = String(s.customer_type || '').toLowerCase();
+      const medicalCard = s.customer?.medical_card_number || s.customer_info?.medical_card_number || s.customer?.medical_card || s.customer_info?.medical_card || null;
+      const customerLabel = customerType === 'medical'
+        ? `Medical Customer${medicalCard ? ' (Card: ' + medicalCard + ')' : ''}`
+        : 'Recreational Customer';
+      const empName = (s.employee && (s.employee.full_name || s.employee.name || ((s.employee.first_name||'') + ' ' + (s.employee.last_name||'')).trim())) || (s.employee_name) || "Unknown";
       return {
         id: s.sale_number || String(s.id),
         numericId: s.id,
         date: s.created_at,
-        customer: (s.customer && (s.customer.full_name || s.customer.name)) || (s.customer_info && (s.customer_info.name || s.customer_info.email)) || "Walk-in Customer",
-        isMedical: String(s.customer_type || "").toLowerCase() === "medical",
+        customer: customerLabel,
+        customerType,
+        customerMedicalCard: medicalCard,
+        isMedical: customerType === "medical",
         itemCount,
         total: Number(s.total_amount || 0),
         discounts,
         paymentMethod: String(s.payment_method || "cash").toLowerCase(),
         paymentReference: paymentRef ? String(paymentRef).slice(-4) : null,
-        employee: (s.employee && (s.employee.full_name || s.employee.name)) || "Unknown",
+        employee: empName,
         isVoided: String(s.status || "").toLowerCase() === "voided",
         status: String(s.status || "completed").toLowerCase(),
       };
