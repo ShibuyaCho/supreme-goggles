@@ -295,6 +295,22 @@ class DealsController extends Controller
     public function destroy($id)
     {
         try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $resp = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json'
+                ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id));
+                if (!$resp->successful()) throw new \Exception('Supabase error: '.$resp->body());
+                Log::info('Deal deleted successfully (Supabase)', [ 'deal_id' => $id, 'user_id' => auth()->id() ]);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Deal deleted successfully'
+                ]);
+            }
+
             $deal = Deal::findOrFail($id);
             $dealName = $deal->name;
 
