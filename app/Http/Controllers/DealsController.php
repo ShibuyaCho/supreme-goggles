@@ -211,6 +211,11 @@ class DealsController extends Controller
                     if ($resp->successful()) {
                         $rows = $resp->json();
                         $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                        // If Supabase schema lacks custom columns, merge them from payload for local persistence/response
+                        if (is_array($row)) {
+                            if (!array_key_exists('category_discounts', $row) && isset($payload['category_discounts'])) $row['category_discounts'] = $payload['category_discounts'];
+                            if (!array_key_exists('item_discounts', $row) && isset($payload['item_discounts'])) $row['item_discounts'] = $payload['item_discounts'];
+                        }
                         // Mirror to local DB for persistence across sessions and offline
                         try { $this->upsertLocalDealFromSupabaseRow($row); } catch (\Throwable $e) { Log::warning('Local mirror of Supabase deal failed', ['error' => $e->getMessage()]); }
                         return response()->json([
@@ -360,6 +365,11 @@ class DealsController extends Controller
                     if ($resp->successful()) {
                         $rows = $resp->json();
                         $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                        if (is_array($row)) {
+                            $reqAll = $request->all();
+                            if (!array_key_exists('category_discounts', $row) && isset($reqAll['category_discounts'])) $row['category_discounts'] = $reqAll['category_discounts'];
+                            if (!array_key_exists('item_discounts', $row) && isset($reqAll['item_discounts'])) $row['item_discounts'] = $reqAll['item_discounts'];
+                        }
                         // Mirror to local DB
                         try { $this->upsertLocalDealFromSupabaseRow($row); } catch (\Throwable $e) { Log::warning('Local mirror of Supabase deal failed', ['error' => $e->getMessage()]); }
                         return response()->json([
