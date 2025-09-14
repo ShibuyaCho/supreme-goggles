@@ -64,7 +64,7 @@
 
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700">Employee ID</label>
-                                    <input type="text" name="employee_id" placeholder="EMP005" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500">
+                                    <input type="text" name="employee_id" placeholder="Emp01" required readonly class="mt-1 block w-full border-gray-300 rounded-md shadow-sm bg-gray-50 focus:ring-green-500 focus:border-green-500">
                                 </div>
 
                                 <div>
