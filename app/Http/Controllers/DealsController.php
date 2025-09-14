@@ -113,30 +113,37 @@ class DealsController extends Controller
             $supabaseUrl = env('SUPABASE_URL');
             $supabaseKey = env('SUPABASE_ANON_KEY');
             if ($supabaseUrl && $supabaseKey) {
-                $payload = $dealData;
-                if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
-                    $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
+                try {
+                    $payload = $dealData;
+                    if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
+                        $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
+                    }
+                    if (isset($payload['specific_items']) && is_string($payload['specific_items'])) {
+                        $payload['specific_items'] = json_decode($payload['specific_items'], true);
+                    }
+                    if (isset($payload['active_days']) && is_string($payload['active_days'])) {
+                        $payload['active_days'] = json_decode($payload['active_days'], true);
+                    }
+                    $resp = Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'return=representation'
+                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [$payload]);
+                    if ($resp->successful()) {
+                        $rows = $resp->json();
+                        $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Deal created successfully',
+                            'deal' => $row
+                        ]);
+                    } else {
+                        Log::warning('Supabase create deal failed, falling back to local DB', ['response' => $resp->body()]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Supabase create deal threw, falling back to local DB', ['error' => $e->getMessage()]);
                 }
-                if (isset($payload['specific_items']) && is_string($payload['specific_items'])) {
-                    $payload['specific_items'] = json_decode($payload['specific_items'], true);
-                }
-                if (isset($payload['active_days']) && is_string($payload['active_days'])) {
-                    $payload['active_days'] = json_decode($payload['active_days'], true);
-                }
-                $resp = Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                    'Prefer' => 'return=representation'
-                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [$payload]);
-                if (!$resp->successful()) throw new \Exception('Supabase error: '.$resp->body());
-                $rows = $resp->json();
-                $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Deal created successfully',
-                    'deal' => $row
-                ]);
             }
 
             // Convert applicable_categories array to JSON if present
@@ -220,35 +227,42 @@ class DealsController extends Controller
             $supabaseUrl = env('SUPABASE_URL');
             $supabaseKey = env('SUPABASE_ANON_KEY');
             if ($supabaseUrl && $supabaseKey) {
-                $payload = $request->all();
-                foreach (['start_date','end_date'] as $dk) {
-                    if (isset($payload[$dk]) && (!$payload[$dk] || $payload[$dk] === '')) {
-                        $payload[$dk] = null;
+                try {
+                    $payload = $request->all();
+                    foreach (['start_date','end_date'] as $dk) {
+                        if (isset($payload[$dk]) && (!$payload[$dk] || $payload[$dk] === '')) {
+                            $payload[$dk] = null;
+                        }
                     }
+                    if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
+                        $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
+                    }
+                    if (isset($payload['specific_items']) && is_string($payload['specific_items'])) {
+                        $payload['specific_items'] = json_decode($payload['specific_items'], true);
+                    }
+                    if (isset($payload['active_days']) && is_string($payload['active_days'])) {
+                        $payload['active_days'] = json_decode($payload['active_days'], true);
+                    }
+                    $resp = Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'return=representation'
+                    ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id), $payload);
+                    if ($resp->successful()) {
+                        $rows = $resp->json();
+                        $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Deal updated successfully',
+                            'deal' => $row
+                        ]);
+                    } else {
+                        Log::warning('Supabase update deal failed, falling back to local DB', ['response' => $resp->body()]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Supabase update deal threw, falling back to local DB', ['error' => $e->getMessage()]);
                 }
-                if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
-                    $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
-                }
-                if (isset($payload['specific_items']) && is_string($payload['specific_items'])) {
-                    $payload['specific_items'] = json_decode($payload['specific_items'], true);
-                }
-                if (isset($payload['active_days']) && is_string($payload['active_days'])) {
-                    $payload['active_days'] = json_decode($payload['active_days'], true);
-                }
-                $resp = Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                    'Prefer' => 'return=representation'
-                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id), $payload);
-                if (!$resp->successful()) throw new \Exception('Supabase error: '.$resp->body());
-                $rows = $resp->json();
-                $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Deal updated successfully',
-                    'deal' => $row
-                ]);
             }
 
             $deal = Deal::findOrFail($id);
@@ -314,17 +328,24 @@ class DealsController extends Controller
             $supabaseUrl = env('SUPABASE_URL');
             $supabaseKey = env('SUPABASE_ANON_KEY');
             if ($supabaseUrl && $supabaseKey) {
-                $resp = Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json'
-                ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id));
-                if (!$resp->successful()) throw new \Exception('Supabase error: '.$resp->body());
-                Log::info('Deal deleted successfully (Supabase)', [ 'deal_id' => $id, 'user_id' => auth()->id() ]);
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Deal deleted successfully'
-                ]);
+                try {
+                    $resp = Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json'
+                    ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id));
+                    if ($resp->successful()) {
+                        Log::info('Deal deleted successfully (Supabase)', [ 'deal_id' => $id, 'user_id' => auth()->id() ]);
+                        return response()->json([
+                            'success' => true,
+                            'message' => 'Deal deleted successfully'
+                        ]);
+                    } else {
+                        Log::warning('Supabase delete deal failed, falling back to local DB', ['response' => $resp->body()]);
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning('Supabase delete deal threw, falling back to local DB', ['error' => $e->getMessage()]);
+                }
             }
 
             $deal = Deal::findOrFail($id);
