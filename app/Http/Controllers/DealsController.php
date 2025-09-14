@@ -208,6 +208,37 @@ class DealsController extends Controller
         }
 
         try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $payload = $request->all();
+                foreach (['start_date','end_date'] as $dk) {
+                    if (isset($payload[$dk]) && (!$payload[$dk] || $payload[$dk] === '')) {
+                        $payload[$dk] = null;
+                    }
+                }
+                if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
+                    $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
+                }
+                if (isset($payload['active_days']) && is_string($payload['active_days'])) {
+                    $payload['active_days'] = json_decode($payload['active_days'], true);
+                }
+                $resp = Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id), $payload);
+                if (!$resp->successful()) throw new \Exception('Supabase error: '.$resp->body());
+                $rows = $resp->json();
+                $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Deal updated successfully',
+                    'deal' => $row
+                ]);
+            }
+
             $deal = Deal::findOrFail($id);
             $dealData = $request->all();
 
