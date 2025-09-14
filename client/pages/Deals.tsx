@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -23,6 +23,13 @@ import {
   Package,
   Star
 } from "lucide-react";
+
+interface ProductItem {
+  id: number | string;
+  name: string;
+  sku?: string;
+  category?: string;
+}
 
 interface Deal {
   id: string;
@@ -126,6 +133,9 @@ export default function Deals() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
+  const [productSearch, setProductSearch] = useState("");
+  const [productLoading, setProductLoading] = useState(false);
+  const [productResults, setProductResults] = useState<ProductItem[]>([]);
 
   const [newDeal, setNewDeal] = useState<Partial<Deal>>({
     name: "",
@@ -144,6 +154,36 @@ export default function Deals() {
     minimumPurchaseType: 'dollars',
     currentUses: 0
   });
+
+  const loadProducts = async (q?: string) => {
+    try {
+      setProductLoading(true);
+      const params = new URLSearchParams();
+      params.set("status", "in_stock");
+      const search = typeof q === 'string' ? q : productSearch;
+      if (search && search.trim() !== "") {
+        params.set("search", search.trim());
+      }
+      const res = await fetch(`/api/products?${params.toString()}`, { headers: { Accept: 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        const items: ProductItem[] = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+        setProductResults(items);
+      } else {
+        setProductResults([]);
+      }
+    } catch (e) {
+      setProductResults([]);
+    } finally {
+      setProductLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (showCreateDialog || showEditDialog) {
+      loadProducts();
+    }
+  }, [showCreateDialog, showEditDialog]);
 
   const createDeal = () => {
     const deal: Deal = {
@@ -426,6 +466,60 @@ export default function Deals() {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                <div>
+                  <Label>Specific Products (current inventory)</Label>
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      placeholder="Search by name or SKU"
+                      value={productSearch}
+                      onChange={(e) => setProductSearch(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); loadProducts(); } }}
+                    />
+                    <Button type="button" variant="outline" onClick={() => loadProducts()}>Search</Button>
+                    <Button type="button" variant="ghost" onClick={() => { setProductSearch(""); loadProducts(""); }}>Clear</Button>
+                  </div>
+                  <div className="mt-2 border rounded-lg max-h-48 overflow-y-auto">
+                    {productLoading && (
+                      <div className="p-3 text-sm text-gray-500">Loading...</div>
+                    )}
+                    {!productLoading && productResults.length === 0 && (
+                      <div className="p-3 text-sm text-gray-500">No products found</div>
+                    )}
+                    {!productLoading && productResults.map(p => {
+                      const idStr = String(p.id);
+                      const checked = (newDeal.specificItems || []).includes(idStr);
+                      return (
+                        <label key={idStr} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50">
+                          <div className="flex items-center space-x-3">
+                            <Checkbox
+                              checked={checked}
+                              onCheckedChange={(c) => {
+                                setNewDeal(prev => {
+                                  const current = new Set(prev.specificItems || []);
+                                  if (c) current.add(idStr); else current.delete(idStr);
+                                  return { ...prev, specificItems: Array.from(current) };
+                                });
+                              }}
+                            />
+                            <div>
+                              <div className="text-sm font-medium">{p.name}</div>
+                              <div className="text-xs text-muted-foreground">{[p.sku ? `SKU: ${p.sku}` : null, p.category].filter(Boolean).join(" • ")}</div>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">#{idStr}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-2 text-xs text-muted-foreground">
+                    {(newDeal.specificItems || []).length} selected
+                    {(newDeal.specificItems || []).length > 0 && (
+                      <Button type="button" variant="link" className="ml-2 h-auto p-0" onClick={() => setNewDeal(prev => ({...prev, specificItems: []}))}>Clear</Button>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
                 </div>
 
                 <div>
@@ -754,6 +848,60 @@ export default function Deals() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            <div>
+              <Label>Specific Products (current inventory)</Label>
+              <div className="mt-2 flex gap-2">
+                <Input
+                  placeholder="Search by name or SKU"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); loadProducts(); } }}
+                />
+                <Button type="button" variant="outline" onClick={() => loadProducts()}>Search</Button>
+                <Button type="button" variant="ghost" onClick={() => { setProductSearch(""); loadProducts(""); }}>Clear</Button>
+              </div>
+              <div className="mt-2 border rounded-lg max-h-48 overflow-y-auto">
+                {productLoading && (
+                  <div className="p-3 text-sm text-gray-500">Loading...</div>
+                )}
+                {!productLoading && productResults.length === 0 && (
+                  <div className="p-3 text-sm text-gray-500">No products found</div>
+                )}
+                {!productLoading && productResults.map(p => {
+                  const idStr = String(p.id);
+                  const checked = (newDeal.specificItems || []).includes(idStr);
+                  return (
+                    <label key={idStr} className="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50">
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(c) => {
+                            setNewDeal(prev => {
+                              const current = new Set(prev.specificItems || []);
+                              if (c) current.add(idStr); else current.delete(idStr);
+                              return { ...prev, specificItems: Array.from(current) };
+                            });
+                          }}
+                        />
+                        <div>
+                          <div className="text-sm font-medium">{p.name}</div>
+                          <div className="text-xs text-muted-foreground">{[p.sku ? `SKU: ${p.sku}` : null, p.category].filter(Boolean).join(" • ")}</div>
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted-foreground">#{idStr}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="mt-2 text-xs text-muted-foreground">
+                {(newDeal.specificItems || []).length} selected
+                {(newDeal.specificItems || []).length > 0 && (
+                  <Button type="button" variant="link" className="ml-2 h-auto p-0" onClick={() => setNewDeal(prev => ({...prev, specificItems: []}))}>Clear</Button>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
             </div>
 
             <div className="flex gap-2">
