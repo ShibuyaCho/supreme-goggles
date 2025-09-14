@@ -652,7 +652,8 @@ export default function Deals() {
         </div>
 
         {/* Deals List */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="max-h-[70vh] overflow-y-auto pr-1">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {deals.map(deal => (
             <Card key={deal.id} className="hover:shadow-md transition-shadow">
               <CardHeader>
@@ -774,6 +775,7 @@ export default function Deals() {
               </CardContent>
             </Card>
           ))}
+          </div>
         </div>
       </div>
 
