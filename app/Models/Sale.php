@@ -13,6 +13,7 @@ class Sale extends Model
         'sale_number',
         'customer_id',
         'employee_id',
+        'store_id',
         'customer_type',
         'customer_info',
         'subtotal',
