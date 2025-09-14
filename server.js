@@ -159,7 +159,7 @@ app.get("/", (_req, res) => {
               <li>• Laravel Controllers ✓</li>
               <li>• Cannabis Models ✓</li>
               <li>• METRC Service ✓</li>
-              <li>• Oregon Limits Service ✓</li>
+              <li>• Oregon Limits Service ��</li>
             </ul>
           </div>
         </div>
@@ -1320,10 +1320,19 @@ app.get("/api/diag/last-payment", (_req, res) => {
 app.get("/api/sales/recent", async (req, res) => {
   try {
     const limit = Math.max(1, Math.min(1000, parseInt(String(req.query?.limit || "200"), 10) || 200));
-    const r = await supaFetch("sales", {
-      method: "GET",
-      query: { select: "*", order: "created_at.desc", limit: String(limit) },
-    });
+    const q = { select: "*", order: "created_at.desc", limit: String(limit) };
+    const status = String(req.query?.status || "").toLowerCase();
+    if (status) q["status"] = `eq.${status}`;
+    const df = req.query?.date_from ? String(req.query.date_from) : "";
+    const dt = req.query?.date_to ? String(req.query.date_to) : "";
+    if (df && dt) {
+      const s = new Date(df);
+      const e = new Date(dt);
+      const startIso = new Date(Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0)).toISOString();
+      const endIso = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate() + 1, 0, 0, 0)).toISOString();
+      q["and"] = `(created_at.gte.${startIso},created_at.lt.${endIso})`;
+    }
+    const r = await supaFetch("sales", { method: "GET", query: q });
     const rows = r.ok ? await r.json() : [];
     const arr = Array.isArray(rows) ? rows : [];
     // Build employee lookup
