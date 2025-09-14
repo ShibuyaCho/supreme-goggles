@@ -1253,6 +1253,16 @@ let __lastPayment = null;
 async function handleProcessPayment(req, res) {
   const user = getAuthUser(req);
   const body = req.body || {};
+  async function getStoreId(){
+    try{
+      const r = await supaFetch("pos_settings?id=eq.default&select=settings", { method: "GET" });
+      const arr = r.ok ? await r.json() : [];
+      const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+      const settings = row && row.settings && typeof row.settings === 'object' ? row.settings : {};
+      const raw = settings.store_id || settings.store_name || 'default';
+      return String(raw).toLowerCase().replace(/[^a-z0-9-_.]/g,'-');
+    } catch(_){ return 'default'; }
+  }
   // Normalize incoming payload
   const items = Array.isArray(body.cart) && body.cart.length
     ? body.cart
