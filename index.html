@@ -1336,7 +1336,7 @@
                             </div>
                             <p
                               class="text-xs text-gray-400 mt-1"
-                              x-text="`SKU: ${product.sku || 'N/A'} • Room: ${product.room || 'Main'}`"
+                              x-text="`SKU: ${product.sku || 'N/A'} �� Room: ${product.room || 'Main'}`"
                             ></p>
                             <p
                               class="text-xs text-gray-400"
@@ -11902,7 +11902,7 @@
                                         >Discount:</span
                                       >
                                       <span
-                                        x-text="deal.discountType === 'percentage' ? deal.discountValue + '%' : '$' + deal.discountValue.toFixed(2)"
+                                        x-text="deal.type === 'percentage' ? (Number(deal.discountValue).toFixed(0) + '%') : ('$' + Number(deal.discountValue).toFixed(2))"
                                       ></span>
                                     </p>
                                     <p>
@@ -11910,7 +11910,7 @@
                                         >Min Purchase:</span
                                       >
                                       <span
-                                        x-text="deal.minPurchase ? '$' + deal.minPurchase.toFixed(2) : 'None'"
+                                        x-text="deal.minimumPurchase ? (deal.minimumPurchaseType === 'grams' ? (Number(deal.minimumPurchase).toFixed(2) + 'g') : ('$' + Number(deal.minimumPurchase).toFixed(2))) : 'None'"
                                       ></span>
                                     </p>
                                     <div x-show="deal.description" class="mt-2">
@@ -11936,24 +11936,13 @@
                                         >Categories:</span
                                       >
                                       <span
-                                        x-text="deal.applicableCategories.length > 0 ? deal.applicableCategories.join(', ') : 'All Categories'"
+                                        x-text="(deal.categories && deal.categories.length > 0) ? deal.categories.join(', ') : 'All Categories'"
                                       ></span>
                                     </p>
                                     <p>
-                                      <span class="text-gray-600"
-                                        >Products:</span
-                                      >
-                                      <span
-                                        x-text="deal.applicableProducts.length > 0 ? deal.applicableProducts.length + ' specific products' : 'All Products'"
-                                      ></span>
+                                      <span class="text-gray-600">Schedule:</span>
+                                      <span x-text="getDealSchedule(deal)"></span>
                                     </p>
-                                    <div
-                                      x-show="deal.excludeGLS"
-                                      class="mt-2 text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded"
-                                    >
-                                      ������ Excludes GLS items (manual discount
-                                      only)
-                                    </div>
                                   </div>
                                 </div>
 
@@ -11983,13 +11972,13 @@
                                       <span class="text-gray-600"
                                         >Usage Count:</span
                                       >
-                                      <span x-text="deal.usageCount"></span>
+                                      <span x-text="deal.currentUses"></span>
                                     </p>
                                     <p x-show="deal.usageLimit">
                                       <span class="text-gray-600"
                                         >Usage Limit:</span
                                       >
-                                      <span x-text="deal.usageLimit"></span>
+                                      <span x-text="deal.maxUses"></span>
                                     </p>
                                   </div>
                                 </div>
@@ -18867,65 +18856,6 @@
                     </div>
                   </div>
 
-                  <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2"
-                      >Specific Products (Optional)</label
-                    >
-                    <select
-                      id="applicable-products"
-                      name="applicable-products"
-                      multiple
-                      x-model="dealForm.applicableProducts"
-                      class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500"
-                      size="4"
-                      aria-describedby="products-help"
-                    >
-                      <template
-                        x-for="product in (Array.isArray(products)?products:[]).filter(p => !p.isGLS)"
-                        :key="product.id"
-                      >
-                        <option
-                          :value="product.id"
-                          x-text="product.name"
-                        ></option>
-                      </template>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">
-                      Hold Ctrl/Cmd to select multiple products. GLS items are
-                      excluded.
-                    </p>
-                  </div>
-
-                  <div class="flex items-center">
-                    <input
-                      type="checkbox"
-                      x-model="dealForm.excludeGLS"
-                      id="excludeGLS"
-                      name="exclude-gls"
-                      class="mr-2"
-                      checked
-                      disabled
-                      aria-describedby="exclude-gls-help"
-                    />
-                    <label for="excludeGLS" class="text-sm text-gray-700"
-                      >Exclude GLS items (automatic - GLS items only accept
-                      manual discounts)</label
-                    >
-                  </div>
-
-                  <div class="flex items-center">
-                    <input
-                      type="checkbox"
-                      x-model="dealForm.stackable"
-                      id="stackable"
-                      name="stackable"
-                      class="mr-2"
-                      aria-describedby="stackable-help"
-                    />
-                    <label for="stackable" class="text-sm text-gray-700"
-                      >Allow stacking with other deals</label
-                    >
-                  </div>
                 </div>
               </div>
 
