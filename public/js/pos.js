@@ -1939,6 +1939,41 @@ function cannabisPOS() {
       this.filteredDeals = list;
     },
 
+    // Dashboard helpers used in templates
+    getTodaysSavings() {
+      try {
+        const s = this.getEndOfDayStats ? this.getEndOfDayStats() : null;
+        const v = s && typeof s.totalDiscounts === 'number' ? s.totalDiscounts : 0;
+        return Number.isFinite(v) ? v : 0;
+      } catch (_) {
+        return 0;
+      }
+    },
+    getCustomersHelped() {
+      try {
+        const s = this.getEndOfDayStats ? this.getEndOfDayStats() : null;
+        const v = (s && typeof s.customerCount === 'number') ? s.customerCount : (s && typeof s.totalSales === 'number' ? s.totalSales : 0);
+        return Number.isFinite(v) ? v : 0;
+      } catch (_) {
+        return 0;
+      }
+    },
+    getMostPopularDeal() {
+      try {
+        const list = Array.isArray(this.deals) ? this.deals : [];
+        if (!list.length) return '—';
+        let best = list[0];
+        for (const d of list) {
+          const cu = Number(d?.currentUses ?? d?.current_uses ?? 0) || 0;
+          const bestCu = Number(best?.currentUses ?? best?.current_uses ?? 0) || 0;
+          if (cu > bestCu) best = d;
+        }
+        return (best && best.name) ? best.name : '—';
+      } catch (_) {
+        return '—';
+      }
+    },
+
     getActiveDealsCount() {
       return (this.deals || []).filter((d) => !!d.isActive).length;
     },
