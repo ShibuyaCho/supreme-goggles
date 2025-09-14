@@ -1516,7 +1516,7 @@ async function handleProcessPayment(req, res) {
 
 // POS: process payment -> persist sale to Supabase (aliases)
 app.post(
-  ["/api/pos/process-payment", "/api/pos/process-payment-open", "/api/sales"],
+  "/api/pos/process-payment-open",
   handleProcessPayment,
 );
 
