@@ -58,8 +58,7 @@ const App = () => (
 // Only create root once
 const container = document.getElementById("root");
 if (container) {
-  // Check if root already exists by looking for React's internal marker
-  if (!container.hasAttribute('data-reactroot') && !container._reactInternalFiber && !container._reactInternalInstance) {
+  if (!container.hasAttribute('data-reactroot')) {
     const root = createRoot(container);
     root.render(<App />);
   }
