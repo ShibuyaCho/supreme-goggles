@@ -74,10 +74,6 @@
                         data-tab="employees">
                     Employees
                 </button>
-                <button class="analytics-tab py-4 px-1 border-b-2 font-medium text-sm {{ $selectedTab === 'aspd' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}" 
-                        data-tab="aspd">
-                    ASPD
-                </button>
                 <button class="analytics-tab py-4 px-1 border-b-2 font-medium text-sm {{ $selectedTab === 'end-of-day' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}" 
                         data-tab="end-of-day">
                     End of Day
@@ -296,36 +292,6 @@
             </div>
         </div>
 
-        <!-- ASPD Tab -->
-        <div id="aspd-tab" class="tab-content {{ $selectedTab !== 'aspd' ? 'hidden' : '' }}">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Average Sales Per Day (ASPD)</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sold</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASPD</th>
-                            </tr>
-                        </thead>
-                        <tbody id="aspd-tbody" class="bg-white divide-y divide-gray-200">
-                            @foreach($aspdData->take(10) as $item)
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $item['name'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item['category'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item['totalSold'], 2) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item['daysInRange'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ number_format($item['aspd'], 2) }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <!-- End of Day Tab -->
         <div id="end-of-day-tab" class="tab-content {{ $selectedTab !== 'end-of-day' ? 'hidden' : '' }}">
@@ -436,28 +402,6 @@ document.addEventListener('DOMContentLoaded', function() {
             .catch(() => {});
     } catch(_) {}
 
-    // Hydrate ASPD table
-    try {
-        fetch('/api/analytics/aspd', { headers: { 'Accept': 'application/json' }})
-            .then(r => r.ok ? r.json() : null)
-            .then(data => {
-                if (!data || !Array.isArray(data.items)) return;
-                const tb = document.getElementById('aspd-tbody');
-                if (!tb) return;
-                tb.innerHTML = '';
-                data.items.slice(0, 10).forEach((item) => {
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.category || '—'}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${Number(item.totalSold || 0).toFixed(2)}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.daysInRange}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">${Number(item.aspd || 0).toFixed(2)}</td>`;
-                    tb.appendChild(tr);
-                });
-            })
-            .catch(() => {});
-    } catch(_) {}
 });
 
 function switchTab(tabName) {
