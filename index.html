@@ -12006,6 +12006,7 @@
                                 class="text-white px-4 py-2 rounded-lg text-sm transition-colors"
                                 x-text="deal.isActive ? 'Deactivate' : 'Activate'"
                               ></button>
+                              <button x-show="deal.emailCustomers" @click="sendDealEmail(deal)" class="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm transition-colors">Email</button>
                               <button
                                 @click="editDeal(deal)"
                                 class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm transition-colors"
