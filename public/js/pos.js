@@ -1491,6 +1491,8 @@ function cannabisPOS() {
           JSON.stringify({ ts: Date.now(), list: this.sales }),
         );
       } catch (_) {}
+      // Update month pace stats from loaded sales to persist across days
+      try { this.updateMonthStatsFromSales && this.updateMonthStatsFromSales(); } catch (_) {}
       try {
         const nowTs2 = Date.now();
         if (
