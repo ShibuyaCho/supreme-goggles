@@ -1440,11 +1440,28 @@ function cannabisPOS() {
       else if (range === "50-100") { min = 50; max = 100; }
       else if (range === "100+") { min = 100; max = Infinity; }
 
+      // Date filter
+      const toISO = (d) => d.toISOString().slice(0,10);
+      let start = this.salesFilter.startDate;
+      let end = this.salesFilter.endDate;
+      const dr = this.salesFilter.dateRange || "today";
+      if (!start || !end || dr !== "custom") {
+        const d = new Date();
+        if (dr === "week") { const first = new Date(d); first.setDate(d.getDate()-6); start = toISO(first); end = toISO(d); }
+        else if (dr === "month") { const first = new Date(d.getFullYear(), d.getMonth(), 1); const last = new Date(d.getFullYear(), d.getMonth()+1, 0); start = toISO(first); end = toISO(last); }
+        else if (dr === "yesterday") { const y = new Date(d); y.setDate(d.getDate()-1); start = end = toISO(y); }
+        else if (dr === "today") { start = end = toISO(d); }
+      }
+      const startTs = start ? new Date(start).getTime() : -Infinity;
+      const endTs = end ? new Date(end + 'T23:59:59').getTime() : Infinity;
+
       this.filteredSales = (this.sales || []).filter((s) => {
         const nameOk = !q || (s.customer || "").toLowerCase().includes(q);
         const payOk = !pay || s.paymentMethod === pay;
         const amtOk = s.total >= min && s.total <= max;
-        return nameOk && payOk && amtOk;
+        const t = new Date(s.date).getTime();
+        const dateOk = t >= startTs && t <= endTs;
+        return nameOk && payOk && amtOk && dateOk;
       });
     },
 
