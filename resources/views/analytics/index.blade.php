@@ -93,7 +93,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Total Revenue</p>
-                            <p class="text-3xl font-bold text-gray-900">${{ number_format($salesData['revenue'], 2) }}</p>
+                            <p id="metric-revenue" class="text-3xl font-bold text-gray-900">${{ number_format($salesData['revenue'], 2) }}</p>
                             <p class="text-sm {{ $salesData['change']['revenue'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['revenue'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['revenue'], 1) }}% from previous period
                             </p>
@@ -111,7 +111,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Transactions</p>
-                            <p class="text-3xl font-bold text-gray-900">{{ number_format($salesData['transactions']) }}</p>
+                            <p id="metric-transactions" class="text-3xl font-bold text-gray-900">{{ number_format($salesData['transactions']) }}</p>
                             <p class="text-sm {{ $salesData['change']['transactions'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['transactions'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['transactions'], 1) }}% from previous period
                             </p>
@@ -129,7 +129,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Customers Served</p>
-                            <p class="text-3xl font-bold text-gray-900">{{ number_format($salesData['customers']) }}</p>
+                            <p id="metric-customers" class="text-3xl font-bold text-gray-900">{{ number_format($salesData['customers']) }}</p>
                             <p class="text-sm {{ $salesData['change']['customers'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['customers'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['customers'], 1) }}% from previous period
                             </p>
@@ -147,7 +147,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Avg Order Value</p>
-                            <p class="text-3xl font-bold text-gray-900">${{ number_format($salesData['avgOrderValue'], 2) }}</p>
+                            <p id="metric-avgorder" class="text-3xl font-bold text-gray-900">${{ number_format($salesData['avgOrderValue'], 2) }}</p>
                             <p class="text-sm {{ $salesData['change']['avgOrderValue'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['avgOrderValue'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['avgOrderValue'], 1) }}% from previous period
                             </p>
@@ -166,7 +166,7 @@
                 <!-- Category Breakdown Chart -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Sales by Category</h3>
-                    <div class="space-y-4">
+                    <div id="category-breakdown" class="space-y-4">
                         @foreach($productData['categoryData'] as $category)
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
@@ -380,6 +380,58 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
         }
     });
+    // Real-time analytics polling
+    (function(){
+      const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
+      async function fetchOverview(){
+        try{
+          const timeframe = document.getElementById('timeframe-selector').value || 'today';
+          const res = await (window.axios||axios).get('/api/analytics/overview', { params: { timeframe } });
+          const data = res?.data || {};
+          // Headline metrics
+          const m = data.sales || {};
+          const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+          setText('metric-revenue', fmtMoney(m.revenue));
+          setText('metric-transactions', (m.transactions||0).toLocaleString());
+          setText('metric-customers', (m.customers||0).toLocaleString());
+          setText('metric-avgorder', fmtMoney(m.avgOrderValue));
+          // Categories
+          const catWrap = document.getElementById('category-breakdown');
+          if (catWrap && Array.isArray(data.categories)){
+            catWrap.innerHTML = '';
+            data.categories.forEach(cat=>{
+              const row = document.createElement('div');
+              row.className = 'flex items-center justify-between';
+              row.innerHTML = `<div class="flex items-center space-x-3"><div class="w-4 h-4 bg-green-500 rounded-full"></div><span class="text-sm font-medium text-gray-900">${cat.category||'Uncategorized'}</span></div><div class="text-right"><div class="text-sm font-semibold text-gray-900">${fmtMoney(cat.revenue||0)}</div><div class="text-xs text-gray-500">${Number(cat.percentage||0).toFixed(1)}%</div></div>`;
+              catWrap.appendChild(row);
+            });
+          }
+          // Employees
+          const empWrap = document.getElementById('employee-stats');
+          if (empWrap && Array.isArray(data.employees)){
+            empWrap.innerHTML='';
+            data.employees.forEach(e=>{
+              const row = document.createElement('div');
+              row.className='flex items-center justify-between p-4 border border-gray-200 rounded-lg';
+              row.innerHTML = `<div><div class="text-sm font-medium text-gray-900">${e.name||'Employee'}</div><div class="text-xs text-gray-600">${(e.transactions||0).toLocaleString()} transactions</div></div><div class="text-right"><div class="text-sm font-semibold text-gray-900">${fmtMoney(e.sales||0)}</div><div class="text-xs text-gray-600">Avg: ${fmtMoney(e.avgOrder||0)}</div></div>`;
+              empWrap.appendChild(row);
+            });
+          }
+          // Open carts
+          const oc = data.openCarts || {};
+          setText('open-carts-total', String(oc.total||0));
+          setText('open-carts-avg', String(oc.avgMinutes||0));
+          setText('open-carts-max', String(oc.maxMinutes||0));
+        } catch(_) {}
+      }
+      try { if (window.__analyticsTimer) clearInterval(window.__analyticsTimer); } catch(_) {}
+      fetchOverview();
+      window.__analyticsTimer = setInterval(fetchOverview, 10000);
+      document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fetchOverview(); });
+      window.addEventListener('storage', (e)=>{ if (e && e.key === 'pos_last_sale_id') fetchOverview(); });
+      document.addEventListener('pos-sale-completed', fetchOverview);
+    })();
+
     // Hydrate End of Day from Supabase-backed API
     try {
         fetch('/api/analytics/end-of-day', { headers: { 'Accept': 'application/json' }})

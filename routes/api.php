@@ -294,13 +294,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('analytics')->middleware('permission:analytics:read')->group(function () {
-        Route::get('/overview', [AnalyticsController::class, 'getOverview']);
-        Route::get('/products', [AnalyticsController::class, 'getProductAnalytics']);
-        Route::get('/customers', [AnalyticsController::class, 'getCustomerAnalytics']);
-        Route::get('/inventory', [AnalyticsController::class, 'getInventoryAnalytics']);
-        Route::get('/employees', [AnalyticsController::class, 'getEmployeeAnalytics']);
+        // Real-time JSON endpoints
+        Route::get('/overview', [AnalyticsController::class, 'overview']);
+        Route::get('/company', [AnalyticsController::class, 'companyView']);
+        Route::get('/end-of-day', [AnalyticsController::class, 'endOfDay']);
+        // Existing endpoints (keep for compatibility)
         Route::get('/aspd', [AnalyticsController::class, 'getASPDAnalytics']);
-        Route::get('/end-of-day', [AnalyticsController::class, 'getEndOfDayReport']);
+        Route::get('/aspd-open', [AnalyticsController::class, 'getASPDAnalyticsOpen']);
     });
 
     /*

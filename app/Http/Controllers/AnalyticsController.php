@@ -12,6 +12,76 @@ use Carbon\Carbon;
 
 class AnalyticsController extends Controller
 {
+    public function overview(Request $request)
+    {
+        $timeframe = $request->get('timeframe', 'today');
+        $dateRange = $this->getDateRange($timeframe, $request);
+        $salesData = $this->getSalesData($dateRange);
+        $productData = $this->getProductData($dateRange);
+        $employeeData = $this->getEmployeeData($dateRange);
+        $open = $this->getOpenCartsData();
+        $company = $this->getCompanyViewData($dateRange);
+        return response()->json([
+            'range' => [ 'start' => $dateRange['start']->toISOString(), 'end' => $dateRange['end']->toISOString() ],
+            'sales' => $salesData,
+            'categories' => $productData['categoryData'],
+            'employees' => $employeeData,
+            'openCarts' => $open,
+            'company' => $company,
+        ]);
+    }
+
+    public function endOfDay(Request $request)
+    {
+        return response()->json($this->getEndOfDayData());
+    }
+
+    public function companyView(Request $request)
+    {
+        $timeframe = $request->get('timeframe', 'today');
+        $dateRange = $this->getDateRange($timeframe, $request);
+        return response()->json($this->getCompanyViewData($dateRange));
+    }
+
+    private function getOpenCartsData(): array
+    {
+        try {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('saved_sales')) return ['total' => 0, 'avgMinutes' => 0, 'maxMinutes' => 0];
+            $rows = DB::table('saved_sales')->select('id','created_at')->get();
+            $now = Carbon::now();
+            $durations = $rows->map(fn($r) => $now->diffInMinutes(Carbon::parse($r->created_at)));
+            $total = $rows->count();
+            $avg = $total > 0 ? round($durations->avg(), 1) : 0;
+            $max = $total > 0 ? (int)$durations->max() : 0;
+            return [ 'total' => $total, 'avgMinutes' => $avg, 'maxMinutes' => $max ];
+        } catch (\Throwable $e) { return ['total' => 0, 'avgMinutes' => 0, 'maxMinutes' => 0]; }
+    }
+
+    private function getCompanyViewData(array $dateRange): array
+    {
+        $hasStore = \Illuminate\Support\Facades\Schema::hasColumn('sales','store_id');
+        $q = Sale::query()->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->where('status','completed');
+        if ($hasStore) {
+            $rows = $q->select('store_id', DB::raw('COUNT(*) as transactions'), DB::raw('SUM(total_amount) as revenue'))
+                ->groupBy('store_id')->get();
+            $stores = $rows->map(function($r){
+                $tx = (int)$r->transactions; $rev = (float)$r->revenue; $avg = $tx>0 ? ($rev/$tx) : 0;
+                return [ 'store_id' => $r->store_id, 'transactions' => $tx, 'revenue' => $rev, 'avg' => $avg ];
+            })->values()->all();
+        } else {
+            $rev = (float)$q->sum('total_amount');
+            $tx = (int)$q->count();
+            $avg = $tx>0 ? ($rev/$tx) : 0;
+            $stores = [[ 'store_id' => 'default', 'transactions' => $tx, 'revenue' => $rev, 'avg' => $avg ]];
+        }
+        $overall = [
+            'transactions' => array_sum(array_map(fn($s)=>$s['transactions'],$stores)),
+            'revenue' => array_sum(array_map(fn($s)=>$s['revenue'],$stores)),
+        ];
+        $overall['avg'] = $overall['transactions']>0 ? ($overall['revenue']/$overall['transactions']) : 0;
+        return [ 'stores' => $stores, 'overall' => $overall, 'hasStoreDimension' => $hasStore ];
+    }
+
     public function index(Request $request)
     {
         $timeframe = $request->get('timeframe', 'today');
