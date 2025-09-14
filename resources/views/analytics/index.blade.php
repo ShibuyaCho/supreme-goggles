@@ -455,6 +455,19 @@ document.addEventListener('DOMContentLoaded', function() {
               empWrap.appendChild(row);
             });
           }
+          // Company-wide
+          const company = data.company || {};
+          const body = document.getElementById('company-stats-body');
+          const note = document.getElementById('company-stats-note');
+          if (body && company && Array.isArray(company.stores)){
+            body.innerHTML = '';
+            company.stores.forEach(s=>{
+              const tr = document.createElement('tr');
+              tr.innerHTML = `<td class="py-2 pr-4">${String(s.store_id)}</td><td class="text-right py-2 px-4">${(s.transactions||0).toLocaleString()}</td><td class="text-right py-2 px-4">${fmtMoney(s.revenue||0)}</td><td class="text-right py-2 pl-4">${fmtMoney(s.avg||0)}</td>`;
+              body.appendChild(tr);
+            });
+            if (note) note.classList.toggle('hidden', !!company.hasStoreDimension);
+          }
           // Open carts
           const oc = data.openCarts || {};
           setText('open-carts-total', String(oc.total||0));
