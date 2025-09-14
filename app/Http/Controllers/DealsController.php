@@ -265,6 +265,18 @@ class DealsController extends Controller
 
     public function update(Request $request, $id)
     {
+        // Support lightweight PATCH for status toggle only
+        if ($request->has('is_active') && count($request->all()) === 1) {
+            $deal = Deal::findOrFail($id);
+            $deal->is_active = (bool)$request->boolean('is_active');
+            $deal->save();
+            return response()->json([
+                'success' => true,
+                'message' => 'Deal status updated',
+                'deal' => $this->formatDealForResponse($deal)
+            ]);
+        }
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
