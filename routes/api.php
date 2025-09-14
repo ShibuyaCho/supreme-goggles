@@ -47,8 +47,12 @@ Route::get('/health', function () {
     ]);
 });
 
-// Public deals list for SPA compatibility (read-only)
+// Public deals API for SPA compatibility
 Route::get('/deals', [DealsController::class, 'index']);
+Route::post('/deals', [DealsController::class, 'store']);
+Route::put('/deals/{id}', [DealsController::class, 'update']);
+Route::patch('/deals/{id}', [DealsController::class, 'update']);
+Route::delete('/deals/{id}', [DealsController::class, 'destroy']);
 // Email campaign trigger (rate-limited)
 Route::post('/deals/{id}/email', [DealsController::class, 'sendEmailCampaign'])->middleware('throttle:6,1');
 // Products list for pickers (returns JSON, supports search/status params)
