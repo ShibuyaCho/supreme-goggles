@@ -9347,6 +9347,7 @@
                                       ></span>
                                     </div>
                                   </template>
+                                  <div class="text-xs text-yellow-800 font-medium" x-show="sale.discounts && sale.discounts.length > 0" x-text="(() => { const total = sale.discounts.reduce((sum,d)=>sum+Number(d.amount||0),0); const base = sale.subtotal && sale.subtotal > 0 ? sale.subtotal : (sale.total + total); const pct = base > 0 ? Math.round((total / base) * 100) : 0; return pct + '% discount'; })()"></div>
                                   <div
                                     class="text-xs text-gray-500"
                                     x-text="'Total: -$' + sale.discounts.reduce((sum, d) => sum + d.amount, 0).toFixed(2)"
@@ -20763,7 +20764,7 @@
       window.exportAspd = function() {
         try {
           const rows = Array.from(document.querySelectorAll('[x-data^="aspdPage()"] tbody tr'));
-          const header = ['Product','TotalSold','Days','ASPD','Trend'];
+          const header = ['Product','Category','TotalSold','Days','ASPD','Trend'];
           const out = [header.join(',')].concat(rows.map(tr => Array.from(tr.children).map(td => td.innerText.replace(/,/g,'')).slice(0,5).join(','))).join('\n');
           const blob = new Blob([out], { type: 'text/csv' });
           const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'aspd.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url), 2000);
