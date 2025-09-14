@@ -3164,6 +3164,71 @@ function cannabisPOS() {
       this.showToast("Cart cleared", "info");
     },
 
+    // Save current cart to Saved Sales (local or API), then clear cart
+    async holdCurrentSale() {
+      if (!Array.isArray(this.cart) || this.cart.length === 0) {
+        this.showToast("Cart is empty", "warning");
+        return;
+      }
+      const name = `Held Sale - ${new Date().toLocaleString()}`;
+      const payload = {
+        id: Date.now(),
+        name,
+        employee: this.getCurrentEmployee && this.getCurrentEmployee(),
+        customer: this.selectedCustomer || null,
+        cart_items: (this.cart || []).map((x) => ({ ...x })),
+        cart_discount: this.cartDiscount || null,
+        total_items: (this.cart || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0),
+        total_amount: Number(this.total || 0),
+        created_at: new Date().toISOString(),
+      };
+
+      // Try API when authenticated; fallback to localStorage
+      let savedOk = false;
+      try {
+        if (this.isAuthenticated && window.posAuth && typeof posAuth.apiRequest === "function") {
+          const res = await posAuth.apiRequest("post", "/pos/save-sale", payload);
+          savedOk = !!(res && (res.success || res.ok));
+        }
+      } catch (_) {}
+      if (!savedOk) {
+        try {
+          const uid = (window.posAuth?.getUser?.()?.id) || "anon";
+          const key = `cannabisPOS-savedSales-${uid}`;
+          const list = JSON.parse(localStorage.getItem(key) || "[]");
+          list.unshift(payload);
+          localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
+          savedOk = true;
+        } catch (_) {}
+      }
+
+      if (savedOk) {
+        this.showToast("Sale held and added to Saved Sales", "success");
+        this.clearCart();
+        try { window.dispatchEvent(new Event("pos-cart-updated")); } catch (_) {}
+      } else {
+        this.showToast("Failed to hold sale", "error");
+      }
+    },
+
+    // End current sale by clearing state (no save)
+    async endCurrentSale() {
+      try {
+        if (typeof window.confirm === "function") {
+          const ok = window.confirm("End current sale? You will need to start a new sale to add items.");
+          if (!ok) return;
+        }
+        this.clearCart();
+        this.selectedCustomer = null;
+        this.cartDiscount = { type: "percentage", value: 0, amount: 0, reason: "" };
+        try { this.persistCartState(); } catch (_) {}
+        this.showToast("Sale ended. Start a new sale to continue.", "info");
+        try { window.dispatchEvent(new Event("pos-cart-updated")); } catch (_) {}
+      } catch (e) {
+        this.showToast("Failed to end sale", "error");
+      }
+    },
+
     calculateTotals() {
       try {
         this.autoApplyDealsToCart && this.autoApplyDealsToCart();
