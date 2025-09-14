@@ -6442,6 +6442,17 @@ function cannabisPOS() {
       }
     },
 
+    async sendDealEmail(deal) {
+      try {
+        const id = deal?.numericId || deal?.id;
+        if (!id) { this.showToast && this.showToast('Deal ID missing', 'error'); return; }
+        const http = (window.axios||axios);
+        const res = await http.post(`/api/deals/${id}/email`, {}, { headers: { Accept: 'application/json' } });
+        if (res?.status >= 200 && res?.status < 300) { this.showToast && this.showToast('Email campaign sent', 'success'); }
+        else { this.showToast && this.showToast('Failed to send emails', 'error'); }
+      } catch (e) { this.showToast && this.showToast('Failed to send emails', 'error'); }
+    },
+
     // CSV Import Functions
     closeCsvImportModal() {
       this.showCsvImportModal = false;
