@@ -1492,7 +1492,9 @@ function cannabisPOS() {
         );
       } catch (_) {}
       // Update month pace stats from loaded sales to persist across days
-      try { this.updateMonthStatsFromSales && this.updateMonthStatsFromSales(); } catch (_) {}
+      try {
+        this.updateMonthStatsFromSales && this.updateMonthStatsFromSales();
+      } catch (_) {}
       try {
         const nowTs2 = Date.now();
         if (
@@ -1758,13 +1760,16 @@ function cannabisPOS() {
         ).getDate();
         this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
         try {
-          const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          localStorage.setItem(`pos_month_stats_${ymKey}`, JSON.stringify({ ...this.monthStats, ts: Date.now() }));
+          const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+          localStorage.setItem(
+            `pos_month_stats_${ymKey}`,
+            JSON.stringify({ ...this.monthStats, ts: Date.now() }),
+          );
         } catch (_) {}
       } catch (_) {
         // Fallback to persisted month stats if available
         try {
-          const ymKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+          const ymKey = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`;
           const raw = localStorage.getItem(`pos_month_stats_${ymKey}`);
           if (raw) this.monthStats = JSON.parse(raw);
         } catch (_) {
@@ -1780,18 +1785,36 @@ function cannabisPOS() {
         const nowYear = d.getFullYear();
         const list = Array.isArray(this.sales) ? this.sales : [];
         const monthList = list.filter((s) => {
-          const dt = new Date(s.date || s.created_at || s.createdAt || Date.now());
+          const dt = new Date(
+            s.date || s.created_at || s.createdAt || Date.now(),
+          );
           return dt.getFullYear() === nowYear && dt.getMonth() === nowMonth;
         });
-        const revenue = monthList.reduce((sum, s) => sum + Number(s.total || 0), 0);
-        const recCount = monthList.filter((s) => (s.customerType || "") !== "medical").length;
-        const medUnique = new Set(monthList.filter((s) => (s.customerType || "") === "medical").map((s) => s.customerMedicalCard || s.customer)).size;
+        const revenue = monthList.reduce(
+          (sum, s) => sum + Number(s.total || 0),
+          0,
+        );
+        const recCount = monthList.filter(
+          (s) => (s.customerType || "") !== "medical",
+        ).length;
+        const medUnique = new Set(
+          monthList
+            .filter((s) => (s.customerType || "") === "medical")
+            .map((s) => s.customerMedicalCard || s.customer),
+        ).size;
         const customers = recCount + medUnique;
         const dayOfMonth = d.getDate();
-        const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        const daysInMonth = new Date(
+          d.getFullYear(),
+          d.getMonth() + 1,
+          0,
+        ).getDate();
         this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
-        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        localStorage.setItem(`pos_month_stats_${ymKey}`, JSON.stringify({ ...this.monthStats, ts: Date.now() }));
+        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        localStorage.setItem(
+          `pos_month_stats_${ymKey}`,
+          JSON.stringify({ ...this.monthStats, ts: Date.now() }),
+        );
       } catch (_) {}
     },
 
@@ -1874,7 +1897,12 @@ function cannabisPOS() {
         const v = d.category_discounts;
         if (!v) return {};
         if (typeof v === "string") {
-          try { const x = JSON.parse(v); return x && typeof x === "object" ? x : {}; } catch (_) { return {}; }
+          try {
+            const x = JSON.parse(v);
+            return x && typeof x === "object" ? x : {};
+          } catch (_) {
+            return {};
+          }
         }
         return v;
       })();
@@ -1882,7 +1910,12 @@ function cannabisPOS() {
         const v = d.item_discounts;
         if (!v) return {};
         if (typeof v === "string") {
-          try { const x = JSON.parse(v); return x && typeof x === "object" ? x : {}; } catch (_) { return {}; }
+          try {
+            const x = JSON.parse(v);
+            return x && typeof x === "object" ? x : {};
+          } catch (_) {
+            return {};
+          }
         }
         return v;
       })();
@@ -1937,21 +1970,33 @@ function cannabisPOS() {
         // Fallback: Laravel web route (merged Supabase + local DB)
         if (!Array.isArray(list) || list.length === 0) {
           try {
-            const resp = await fetch('/deals', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+            const resp = await fetch("/deals", {
+              headers: { Accept: "application/json" },
+              credentials: "same-origin",
+            });
             if (resp.ok) {
               const data = await resp.json();
-              const arr = Array.isArray(data?.deals) ? data.deals : (Array.isArray(data) ? data : []);
+              const arr = Array.isArray(data?.deals)
+                ? data.deals
+                : Array.isArray(data)
+                  ? data
+                  : [];
               list = arr.map((d) => this.mapDealToSpa(d));
             }
           } catch (_) {}
         }
         // Merge any locally-saved deals (persist across logins in this browser)
         try {
-          const rawLocal = localStorage.getItem('pos_deals_local_v1');
+          const rawLocal = localStorage.getItem("pos_deals_local_v1");
           const localArr = rawLocal ? JSON.parse(rawLocal) : [];
-          const mappedLocal = (Array.isArray(localArr) ? localArr : []).map((d) => this.mapDealToSpa(d));
+          const mappedLocal = (Array.isArray(localArr) ? localArr : []).map(
+            (d) => this.mapDealToSpa(d),
+          );
           const existingIds = new Set((list || []).map((d) => String(d.id)));
-          const merged = [...(list || []), ...mappedLocal.filter((d) => !existingIds.has(String(d.id)))];
+          const merged = [
+            ...(list || []),
+            ...mappedLocal.filter((d) => !existingIds.has(String(d.id))),
+          ];
           list = merged;
         } catch (_) {}
         this.deals = list || [];
@@ -1978,7 +2023,8 @@ function cannabisPOS() {
     getTodaysSavings() {
       try {
         const s = this.getEndOfDayStats ? this.getEndOfDayStats() : null;
-        const v = s && typeof s.totalDiscounts === 'number' ? s.totalDiscounts : 0;
+        const v =
+          s && typeof s.totalDiscounts === "number" ? s.totalDiscounts : 0;
         return Number.isFinite(v) ? v : 0;
       } catch (_) {
         return 0;
@@ -1987,7 +2033,12 @@ function cannabisPOS() {
     getCustomersHelped() {
       try {
         const s = this.getEndOfDayStats ? this.getEndOfDayStats() : null;
-        const v = (s && typeof s.customerCount === 'number') ? s.customerCount : (s && typeof s.totalSales === 'number' ? s.totalSales : 0);
+        const v =
+          s && typeof s.customerCount === "number"
+            ? s.customerCount
+            : s && typeof s.totalSales === "number"
+              ? s.totalSales
+              : 0;
         return Number.isFinite(v) ? v : 0;
       } catch (_) {
         return 0;
@@ -1996,16 +2047,17 @@ function cannabisPOS() {
     getMostPopularDeal() {
       try {
         const list = Array.isArray(this.deals) ? this.deals : [];
-        if (!list.length) return '—';
+        if (!list.length) return "—";
         let best = list[0];
         for (const d of list) {
           const cu = Number(d?.currentUses ?? d?.current_uses ?? 0) || 0;
-          const bestCu = Number(best?.currentUses ?? best?.current_uses ?? 0) || 0;
+          const bestCu =
+            Number(best?.currentUses ?? best?.current_uses ?? 0) || 0;
           if (cu > bestCu) best = d;
         }
-        return (best && best.name) ? best.name : '—';
+        return best && best.name ? best.name : "—";
       } catch (_) {
-        return '—';
+        return "—";
       }
     },
 
@@ -2054,16 +2106,24 @@ function cannabisPOS() {
     async toggleDealStatus(deal) {
       try {
         // Local-only deal handling
-        if (String(deal.id).startsWith('local-')) {
+        if (String(deal.id).startsWith("local-")) {
           deal.isActive = !deal.isActive;
           try {
-            const raw = localStorage.getItem('pos_deals_local_v1');
+            const raw = localStorage.getItem("pos_deals_local_v1");
             const arr = raw ? JSON.parse(raw) : [];
-            const next = (Array.isArray(arr) ? arr : []).map(d => (String(d.id) === String(deal.id) ? { ...d, is_active: deal.isActive } : d));
-            localStorage.setItem('pos_deals_local_v1', JSON.stringify(next));
+            const next = (Array.isArray(arr) ? arr : []).map((d) =>
+              String(d.id) === String(deal.id)
+                ? { ...d, is_active: deal.isActive }
+                : d,
+            );
+            localStorage.setItem("pos_deals_local_v1", JSON.stringify(next));
           } catch (_) {}
           this.filterDeals();
-          this.showToast && this.showToast(`Deal ${deal.isActive ? 'activated' : 'deactivated'}`, 'success');
+          this.showToast &&
+            this.showToast(
+              `Deal ${deal.isActive ? "activated" : "deactivated"}`,
+              "success",
+            );
           return;
         }
         const payload = { ...deal, is_active: !deal.isActive };
@@ -2081,9 +2141,14 @@ function cannabisPOS() {
         if (res?.success !== false) {
           deal.isActive = !deal.isActive;
           this.filterDeals();
-          this.showToast && this.showToast(`Deal ${deal.isActive ? 'activated' : 'deactivated'}`, 'success');
+          this.showToast &&
+            this.showToast(
+              `Deal ${deal.isActive ? "activated" : "deactivated"}`,
+              "success",
+            );
         } else {
-          this.showToast && this.showToast(res?.message || "Failed to update deal", "error");
+          this.showToast &&
+            this.showToast(res?.message || "Failed to update deal", "error");
         }
       } catch (e) {
         this.showToast && this.showToast("Failed to update deal", "error");
@@ -2093,14 +2158,18 @@ function cannabisPOS() {
     async deleteDeal(id) {
       if (!confirm("Delete this deal?")) return;
       try {
-        if (String(id).startsWith('local-')) {
+        if (String(id).startsWith("local-")) {
           try {
-            const raw = localStorage.getItem('pos_deals_local_v1');
+            const raw = localStorage.getItem("pos_deals_local_v1");
             const arr = raw ? JSON.parse(raw) : [];
-            const next = (Array.isArray(arr) ? arr : []).filter(d => String(d.id) !== String(id));
-            localStorage.setItem('pos_deals_local_v1', JSON.stringify(next));
+            const next = (Array.isArray(arr) ? arr : []).filter(
+              (d) => String(d.id) !== String(id),
+            );
+            localStorage.setItem("pos_deals_local_v1", JSON.stringify(next));
           } catch (_) {}
-          this.deals = (this.deals || []).filter((d) => String(d.id) !== String(id));
+          this.deals = (this.deals || []).filter(
+            (d) => String(d.id) !== String(id),
+          );
           this.filterDeals();
           this.showToast && this.showToast("Deal deleted", "success");
           return;
@@ -2111,7 +2180,8 @@ function cannabisPOS() {
           this.filterDeals();
           this.showToast && this.showToast("Deal deleted", "success");
         } else {
-          this.showToast && this.showToast(res?.message || "Failed to delete deal", "error");
+          this.showToast &&
+            this.showToast(res?.message || "Failed to delete deal", "error");
         }
       } catch (e) {
         this.showToast && this.showToast("Failed to delete deal", "error");
@@ -2154,7 +2224,11 @@ function cannabisPOS() {
           applicable_categories: Array.isArray(f.applicableCategories)
             ? f.applicableCategories
             : [],
-          specific_items: Array.isArray(f.applicableProducts) ? f.applicableProducts.map(id => Number(id)).filter(n => !isNaN(n)) : [],
+          specific_items: Array.isArray(f.applicableProducts)
+            ? f.applicableProducts
+                .map((id) => Number(id))
+                .filter((n) => !isNaN(n))
+            : [],
           minimum_purchase:
             f.minPurchase != null ? Number(f.minPurchase) : null,
           minimum_purchase_type: f.minPurchaseType || "dollars",
@@ -2169,16 +2243,22 @@ function cannabisPOS() {
           active_days: Array.isArray(f.activeDays)
             ? f.activeDays.map((x) => Number(x)).filter((n) => !isNaN(n))
             : [],
-          category_discounts: (function(){
+          category_discounts: (function () {
             const m = f.categoryDiscounts || {};
             const out = {};
-            Object.keys(m).forEach(k => { const v = Number(m[k]); if (!isNaN(v)) out[k] = v; });
+            Object.keys(m).forEach((k) => {
+              const v = Number(m[k]);
+              if (!isNaN(v)) out[k] = v;
+            });
             return out;
           })(),
-          item_discounts: (function(){
+          item_discounts: (function () {
             const m = f.itemDiscounts || {};
             const out = {};
-            Object.keys(m).forEach(k => { const v = Number(m[k]); if (!isNaN(v)) out[String(k)] = v; });
+            Object.keys(m).forEach((k) => {
+              const v = Number(m[k]);
+              if (!isNaN(v)) out[String(k)] = v;
+            });
             return out;
           })(),
         };
@@ -2191,22 +2271,26 @@ function cannabisPOS() {
         }
         const res = await posAuth.apiRequest(method, url, payload);
         let data = res?.data || {};
-        let persisted = data?.deal && (data.deal.id != null);
+        let persisted = data?.deal && data.deal.id != null;
 
         // Fallback to Laravel web route when API fails (RLS, network, etc.)
         if (!(res?.success && data?.success !== false && persisted)) {
           try {
-            const webUrl = creating ? '/deals' : `/deals/${this.editingDeal.id}`;
-            const webMethod = creating ? 'POST' : 'PATCH';
+            const webUrl = creating
+              ? "/deals"
+              : `/deals/${this.editingDeal.id}`;
+            const webMethod = creating ? "POST" : "PATCH";
             const resp = await fetch(webUrl, {
               method: webMethod,
               headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]')||{}).content || ''
+                "Content-Type": "application/json",
+                Accept: "application/json",
+                "X-CSRF-TOKEN":
+                  (document.querySelector('meta[name="csrf-token"]') || {})
+                    .content || "",
               },
-              credentials: 'same-origin',
-              body: JSON.stringify(payload)
+              credentials: "same-origin",
+              body: JSON.stringify(payload),
             });
             const j = await resp.json().catch(() => ({}));
             if (resp.ok && j?.deal && j.deal.id != null) {
@@ -2229,25 +2313,33 @@ function cannabisPOS() {
           }
           this.filterDeals();
           this.closeCreateDealModal();
-          this.showToast && this.showToast(creating ? "Deal created" : "Deal updated", "success");
+          this.showToast &&
+            this.showToast(
+              creating ? "Deal created" : "Deal updated",
+              "success",
+            );
         } else {
           // Final fallback: persist locally in this browser so it survives logout/login
           try {
             const localId = `local-${Date.now()}`;
             const localDeal = this.mapDealToSpa({ ...payload, id: localId });
             // Save to localStorage cache
-            const raw = localStorage.getItem('pos_deals_local_v1');
+            const raw = localStorage.getItem("pos_deals_local_v1");
             const arr = raw ? JSON.parse(raw) : [];
             const next = Array.isArray(arr) ? arr : [];
             next.unshift({ ...localDeal });
-            localStorage.setItem('pos_deals_local_v1', JSON.stringify(next));
+            localStorage.setItem("pos_deals_local_v1", JSON.stringify(next));
             // Update UI
             this.deals = [localDeal, ...(this.deals || [])];
             this.filterDeals();
             this.closeCreateDealModal();
-            this.showToast && this.showToast('Deal saved locally', 'success');
+            this.showToast && this.showToast("Deal saved locally", "success");
           } catch (_) {
-            this.showToast && this.showToast(data?.message || res?.message || "Failed to save deal", "error");
+            this.showToast &&
+              this.showToast(
+                data?.message || res?.message || "Failed to save deal",
+                "error",
+              );
           }
         }
       } catch (e) {
@@ -2256,14 +2348,16 @@ function cannabisPOS() {
     },
 
     getDealSelectableProducts() {
-      const q = String(this.dealProductSearch || '').toLowerCase();
+      const q = String(this.dealProductSearch || "").toLowerCase();
       const list = Array.isArray(this.products) ? this.products : [];
       if (!q) return list.slice(0, 100);
-      return list.filter(p => {
-        const name = String(p.name || '').toLowerCase();
-        const sku = String(p.sku || '').toLowerCase();
-        return name.includes(q) || sku.includes(q);
-      }).slice(0, 100);
+      return list
+        .filter((p) => {
+          const name = String(p.name || "").toLowerCase();
+          const sku = String(p.sku || "").toLowerCase();
+          return name.includes(q) || sku.includes(q);
+        })
+        .slice(0, 100);
     },
 
     editDeal(deal) {
@@ -2281,8 +2375,11 @@ function cannabisPOS() {
         usageLimit: deal.maxUses || "",
         allCategories: false,
         applicableCategories: deal.categories || [],
-        applicableProducts: Array.isArray(deal.specificItems) ? deal.specificItems.slice() : [],
-        categoryDiscounts: deal.categoryDiscounts || deal.category_discounts || {},
+        applicableProducts: Array.isArray(deal.specificItems)
+          ? deal.specificItems.slice()
+          : [],
+        categoryDiscounts:
+          deal.categoryDiscounts || deal.category_discounts || {},
         itemDiscounts: deal.itemDiscounts || deal.item_discounts || {},
         excludeGLS: true,
         stackable: false,
@@ -2322,8 +2419,11 @@ function cannabisPOS() {
         minPurchase: deal.minimumPurchase,
         minPurchaseType: deal.minimumPurchaseType || "dollars",
         applicableCategories: (deal.categories || []).slice(),
-        applicableProducts: Array.isArray(deal.specificItems) ? deal.specificItems.slice() : [],
-        categoryDiscounts: deal.categoryDiscounts || deal.category_discounts || {},
+        applicableProducts: Array.isArray(deal.specificItems)
+          ? deal.specificItems.slice()
+          : [],
+        categoryDiscounts:
+          deal.categoryDiscounts || deal.category_discounts || {},
         itemDiscounts: deal.itemDiscounts || deal.item_discounts || {},
         loyaltyOnly: !!deal.loyaltyOnly,
         medicalOnly: !!deal.medicalOnly,
@@ -3298,7 +3398,7 @@ function cannabisPOS() {
           )
             continue;
           if (Array.isArray(d.specificItems) && d.specificItems.length > 0) {
-            const pid = (item && item.id) ? item.id : null;
+            const pid = item && item.id ? item.id : null;
             if (pid == null || !d.specificItems.includes(pid)) continue;
           }
           if (d.minimumPurchase != null) {
@@ -3309,14 +3409,24 @@ function cannabisPOS() {
             }
           }
           // Determine effective value (per-item > per-category > base)
-          const pid = (item && item.id) ? String(item.id) : null;
-          const catOverride = (d.categoryDiscounts && cat in d.categoryDiscounts) ? Number(d.categoryDiscounts[cat]) : null;
-          const itemOverride = (pid && d.itemDiscounts && (pid in d.itemDiscounts)) ? Number(d.itemDiscounts[pid]) : null;
-          const effectiveValue = itemOverride != null ? itemOverride : (catOverride != null ? catOverride : Number(d.discountValue));
+          const pid = item && item.id ? String(item.id) : null;
+          const catOverride =
+            d.categoryDiscounts && cat in d.categoryDiscounts
+              ? Number(d.categoryDiscounts[cat])
+              : null;
+          const itemOverride =
+            pid && d.itemDiscounts && pid in d.itemDiscounts
+              ? Number(d.itemDiscounts[pid])
+              : null;
+          const effectiveValue =
+            itemOverride != null
+              ? itemOverride
+              : catOverride != null
+                ? catOverride
+                : Number(d.discountValue);
 
           let amt = 0;
-          if (d.type === "percentage")
-            amt = base * (effectiveValue / 100);
+          if (d.type === "percentage") amt = base * (effectiveValue / 100);
           else if (d.type === "fixed_amount")
             amt = Math.min(effectiveValue, base);
           else if (d.type === "bogo" || d.type === "bulk")
@@ -3399,11 +3509,14 @@ function cannabisPOS() {
     },
 
     get filteredSavedSales() {
-      const q = String(this.savedSalesSearch || '').toLowerCase();
+      const q = String(this.savedSalesSearch || "").toLowerCase();
       if (!q) return this.savedSales;
-      return (this.savedSales || []).filter(s => {
-        const name = String(s.name || '').toLowerCase();
-        const amt = (s.total_amount != null ? String(s.total_amount) : String(s.total || ''));
+      return (this.savedSales || []).filter((s) => {
+        const name = String(s.name || "").toLowerCase();
+        const amt =
+          s.total_amount != null
+            ? String(s.total_amount)
+            : String(s.total || "");
         return name.includes(q) || amt.includes(q);
       });
     },
@@ -3417,17 +3530,23 @@ function cannabisPOS() {
       this.loadingSavedSales = true;
       let list = [];
       try {
-        if (this.isAuthenticated && window.posAuth && typeof posAuth.apiRequest === 'function') {
-          const res = await posAuth.apiRequest('get', '/pos/saved-sales');
-          list = (res && (res.data?.saved_sales || res.data || []) ) || [];
+        if (
+          this.isAuthenticated &&
+          window.posAuth &&
+          typeof posAuth.apiRequest === "function"
+        ) {
+          const res = await posAuth.apiRequest("get", "/pos/saved-sales");
+          list = (res && (res.data?.saved_sales || res.data || [])) || [];
         }
       } catch (_) {}
       if (!Array.isArray(list) || list.length === 0) {
         try {
-          const uid = (window.posAuth?.getUser?.()?.id) || 'anon';
+          const uid = window.posAuth?.getUser?.()?.id || "anon";
           const key = `cannabisPOS-savedSales-${uid}`;
-          list = JSON.parse(localStorage.getItem(key) || '[]');
-        } catch (_) { list = []; }
+          list = JSON.parse(localStorage.getItem(key) || "[]");
+        } catch (_) {
+          list = [];
+        }
       }
       this.savedSales = Array.isArray(list) ? list : [];
       this.loadingSavedSales = false;
@@ -3436,42 +3555,71 @@ function cannabisPOS() {
     async deleteSavedSale(sale) {
       const id = sale?.id;
       try {
-        if (this.isAuthenticated && id && window.posAuth && typeof posAuth.apiRequest === 'function') {
-          await posAuth.apiRequest('delete', `/pos/saved-sales/${id}`);
+        if (
+          this.isAuthenticated &&
+          id &&
+          window.posAuth &&
+          typeof posAuth.apiRequest === "function"
+        ) {
+          await posAuth.apiRequest("delete", `/pos/saved-sales/${id}`);
         } else {
-          const uid = (window.posAuth?.getUser?.()?.id) || 'anon';
+          const uid = window.posAuth?.getUser?.()?.id || "anon";
           const key = `cannabisPOS-savedSales-${uid}`;
-          const list = JSON.parse(localStorage.getItem(key) || '[]');
-          const next = list.filter(x => x.id !== id);
+          const list = JSON.parse(localStorage.getItem(key) || "[]");
+          const next = list.filter((x) => x.id !== id);
           localStorage.setItem(key, JSON.stringify(next));
         }
-        this.savedSales = (this.savedSales || []).filter(x => x.id !== id);
-        this.showToast('Saved sale deleted', 'success');
+        this.savedSales = (this.savedSales || []).filter((x) => x.id !== id);
+        this.showToast("Saved sale deleted", "success");
       } catch (e) {
-        this.showToast('Failed to delete saved sale', 'error');
+        this.showToast("Failed to delete saved sale", "error");
       }
     },
 
     async loadSavedSale(sale) {
       try {
         let data = sale;
-        if ((!sale?.cart_items || sale.cart_items.length === 0) && this.isAuthenticated && sale?.id && window.posAuth) {
-          const res = await posAuth.apiRequest('get', `/pos/saved-sales/${sale.id}`);
+        if (
+          (!sale?.cart_items || sale.cart_items.length === 0) &&
+          this.isAuthenticated &&
+          sale?.id &&
+          window.posAuth
+        ) {
+          const res = await posAuth.apiRequest(
+            "get",
+            `/pos/saved-sales/${sale.id}`,
+          );
           data = res?.data?.saved_sale || res?.data || sale;
         }
-        const items = Array.isArray(data.cart_items) ? data.cart_items : (Array.isArray(data.cart) ? data.cart : []);
-        if (!items.length) { this.showToast('Saved sale has no items', 'warning'); return; }
-        this.cart = items.map(i => ({ ...i }));
+        const items = Array.isArray(data.cart_items)
+          ? data.cart_items
+          : Array.isArray(data.cart)
+            ? data.cart
+            : [];
+        if (!items.length) {
+          this.showToast("Saved sale has no items", "warning");
+          return;
+        }
+        this.cart = items.map((i) => ({ ...i }));
         this.selectedCustomer = data.customer || data.customer_info || null;
-        this.cartDiscount = data.cart_discount || { type: 'percentage', value: 0, amount: 0, reason: '' };
+        this.cartDiscount = data.cart_discount || {
+          type: "percentage",
+          value: 0,
+          amount: 0,
+          reason: "",
+        };
         this.calculateTotals();
-        try { this.persistCartState(); } catch (_) {}
-        this.showToast('Saved sale loaded into cart', 'success');
-        try { await this.deleteSavedSale(data); } catch (_) {}
+        try {
+          this.persistCartState();
+        } catch (_) {}
+        this.showToast("Saved sale loaded into cart", "success");
+        try {
+          await this.deleteSavedSale(data);
+        } catch (_) {}
         this.showSavedSalesModal = false;
-        window.dispatchEvent(new Event('pos-cart-updated'));
+        window.dispatchEvent(new Event("pos-cart-updated"));
       } catch (e) {
-        this.showToast('Failed to load saved sale', 'error');
+        this.showToast("Failed to load saved sale", "error");
       }
     },
 
@@ -3489,7 +3637,10 @@ function cannabisPOS() {
         customer: this.selectedCustomer || null,
         cart_items: (this.cart || []).map((x) => ({ ...x })),
         cart_discount: this.cartDiscount || null,
-        total_items: (this.cart || []).reduce((s, i) => s + (Number(i.quantity) || 0), 0),
+        total_items: (this.cart || []).reduce(
+          (s, i) => s + (Number(i.quantity) || 0),
+          0,
+        ),
         total_amount: Number(this.total || 0),
         created_at: new Date().toISOString(),
       };
@@ -3497,14 +3648,22 @@ function cannabisPOS() {
       // Try API when authenticated; fallback to localStorage
       let savedOk = false;
       try {
-        if (this.isAuthenticated && window.posAuth && typeof posAuth.apiRequest === "function") {
-          const res = await posAuth.apiRequest("post", "/pos/save-sale", payload);
+        if (
+          this.isAuthenticated &&
+          window.posAuth &&
+          typeof posAuth.apiRequest === "function"
+        ) {
+          const res = await posAuth.apiRequest(
+            "post",
+            "/pos/save-sale",
+            payload,
+          );
           savedOk = !!(res && (res.success || res.ok));
         }
       } catch (_) {}
       if (!savedOk) {
         try {
-          const uid = (window.posAuth?.getUser?.()?.id) || "anon";
+          const uid = window.posAuth?.getUser?.()?.id || "anon";
           const key = `cannabisPOS-savedSales-${uid}`;
           const list = JSON.parse(localStorage.getItem(key) || "[]");
           list.unshift(payload);
@@ -3516,7 +3675,9 @@ function cannabisPOS() {
       if (savedOk) {
         this.showToast("Sale held and added to Saved Sales", "success");
         this.clearCart();
-        try { window.dispatchEvent(new Event("pos-cart-updated")); } catch (_) {}
+        try {
+          window.dispatchEvent(new Event("pos-cart-updated"));
+        } catch (_) {}
       } else {
         this.showToast("Failed to hold sale", "error");
       }
@@ -3526,15 +3687,26 @@ function cannabisPOS() {
     async endCurrentSale() {
       try {
         if (typeof window.confirm === "function") {
-          const ok = window.confirm("End current sale? You will need to start a new sale to add items.");
+          const ok = window.confirm(
+            "End current sale? You will need to start a new sale to add items.",
+          );
           if (!ok) return;
         }
         this.clearCart();
         this.selectedCustomer = null;
-        this.cartDiscount = { type: "percentage", value: 0, amount: 0, reason: "" };
-        try { this.persistCartState(); } catch (_) {}
+        this.cartDiscount = {
+          type: "percentage",
+          value: 0,
+          amount: 0,
+          reason: "",
+        };
+        try {
+          this.persistCartState();
+        } catch (_) {}
         this.showToast("Sale ended. Start a new sale to continue.", "info");
-        try { window.dispatchEvent(new Event("pos-cart-updated")); } catch (_) {}
+        try {
+          window.dispatchEvent(new Event("pos-cart-updated"));
+        } catch (_) {}
       } catch (e) {
         this.showToast("Failed to end sale", "error");
       }
@@ -4063,24 +4235,47 @@ function cannabisPOS() {
       }
       const doFetch = async () => {
         try {
-          const resp = await fetch('/products', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+          const resp = await fetch("/products", {
+            headers: { Accept: "application/json" },
+            credentials: "same-origin",
+          });
           if (resp.ok) {
             const data = await resp.json();
-            const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+            const items = Array.isArray(data?.data)
+              ? data.data
+              : Array.isArray(data)
+                ? data
+                : [];
             if (Array.isArray(items) && items.length) {
               this.products = items;
-              try { localStorage.setItem('cannabisPOS-products', JSON.stringify({ data: items })); } catch (e) {}
+              try {
+                localStorage.setItem(
+                  "cannabisPOS-products",
+                  JSON.stringify({ data: items }),
+                );
+              } catch (e) {}
             }
           }
         } catch (e) {
           try {
-            const resp = await fetch('/api/products', { headers: { Accept: 'application/json' } });
+            const resp = await fetch("/api/products", {
+              headers: { Accept: "application/json" },
+            });
             if (resp.ok) {
               const data = await resp.json();
-              const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+              const items = Array.isArray(data?.data)
+                ? data.data
+                : Array.isArray(data)
+                  ? data
+                  : [];
               if (Array.isArray(items) && items.length) {
                 this.products = items;
-                try { localStorage.setItem('cannabisPOS-products', JSON.stringify({ data: items })); } catch (_) {}
+                try {
+                  localStorage.setItem(
+                    "cannabisPOS-products",
+                    JSON.stringify({ data: items }),
+                  );
+                } catch (_) {}
               }
             }
           } catch (_) {}

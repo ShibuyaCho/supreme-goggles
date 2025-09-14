@@ -1125,7 +1125,11 @@ app.put("/api/deals/:id", async (req, res) => {
   try {
     const r = await supaFetch(
       `deals?id=eq.${encodeURIComponent(req.params.id)}`,
-      { method: "PATCH", headers: { Prefer: "return=representation" }, body: req.body || {} },
+      {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: req.body || {},
+      },
     );
     const payload = r.ok ? await r.json() : null;
     res.json({
@@ -1434,12 +1438,10 @@ async function handleProcessPayment(req, res) {
       row,
       ok: true,
     };
-    return res
-      .status(200)
-      .json({
-        success: true,
-        sale: Array.isArray(payload) ? payload[0] : payload,
-      });
+    return res.status(200).json({
+      success: true,
+      sale: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
     __lastPayment = {
       ts: new Date().toISOString(),
@@ -1754,13 +1756,11 @@ app.get("/api/diag/supabase", async (_req, res) => {
     }
     res.json({ configured, ok, count });
   } catch (e) {
-    res
-      .status(500)
-      .json({
-        configured: !!SUPABASE_URL && !!SUPABASE_ANON_KEY,
-        ok: false,
-        error: String(e?.message || e),
-      });
+    res.status(500).json({
+      configured: !!SUPABASE_URL && !!SUPABASE_ANON_KEY,
+      ok: false,
+      error: String(e?.message || e),
+    });
   }
 });
 
@@ -1804,12 +1804,10 @@ app.post("/api/sales/diag/create", async (_req, res) => {
     };
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     const payload = r.ok ? await r.json() : null;
-    res
-      .status(r.ok ? 201 : 500)
-      .json({
-        success: r.ok,
-        sale: Array.isArray(payload) ? payload[0] : payload,
-      });
+    res.status(r.ok ? 201 : 500).json({
+      success: r.ok,
+      sale: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
     res.status(500).json({ success: false, error: String(e?.message || e) });
   }

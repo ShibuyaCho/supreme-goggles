@@ -1025,40 +1025,87 @@
       </nav>
 
       <!-- Saved Sales Modal -->
-      <div x-show="showSavedSalesModal" x-cloak class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div
+        x-show="showSavedSalesModal"
+        x-cloak
+        class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      >
         <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4">
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-xl font-semibold text-gray-900">Saved Sales</h3>
-              <button @click="showSavedSalesModal=false" class="text-gray-500 hover:text-gray-700">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              <button
+                @click="showSavedSalesModal=false"
+                class="text-gray-500 hover:text-gray-700"
+              >
+                <svg
+                  class="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
             <div class="mb-4">
-              <input type="text" placeholder="Search saved sales..." x-model="savedSalesSearch" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" />
+              <input
+                type="text"
+                placeholder="Search saved sales..."
+                x-model="savedSalesSearch"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
+              />
             </div>
             <div class="divide-y border rounded-lg">
               <template x-if="loadingSavedSales">
                 <div class="p-4 text-gray-600">Loading...</div>
               </template>
-              <template x-if="!loadingSavedSales && filteredSavedSales.length === 0">
-                <div class="p-6 text-center text-gray-500">No saved sales found</div>
+              <template
+                x-if="!loadingSavedSales && filteredSavedSales.length === 0"
+              >
+                <div class="p-6 text-center text-gray-500">
+                  No saved sales found
+                </div>
               </template>
               <template x-for="sale in filteredSavedSales" :key="sale.id">
                 <div class="p-4 flex items-center justify-between">
                   <div>
-                    <div class="font-medium text-gray-900" x-text="sale.name || ('Saved Sale #' + sale.id)"></div>
+                    <div
+                      class="font-medium text-gray-900"
+                      x-text="sale.name || ('Saved Sale #' + sale.id)"
+                    ></div>
                     <div class="text-sm text-gray-600">
-                      <span x-text="new Date(sale.created_at||sale.createdAt||Date.now()).toLocaleString()"></span>
-                      • <span x-text="(sale.total_amount!=null ? '$'+Number(sale.total_amount).toFixed(2) : ('$'+Number((sale.total||0)).toFixed(2)))"></span>
-                      • <span x-text="(sale.total_items!=null ? sale.total_items : ((sale.cart_items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0))) + ' items'"></span>
+                      <span
+                        x-text="new Date(sale.created_at||sale.createdAt||Date.now()).toLocaleString()"
+                      ></span>
+                      •
+                      <span
+                        x-text="(sale.total_amount!=null ? '$'+Number(sale.total_amount).toFixed(2) : ('$'+Number((sale.total||0)).toFixed(2)))"
+                      ></span>
+                      •
+                      <span
+                        x-text="(sale.total_items!=null ? sale.total_items : ((sale.cart_items||[]).reduce((s,i)=>s+(Number(i.quantity)||0),0))) + ' items'"
+                      ></span>
                     </div>
                   </div>
                   <div class="flex items-center gap-2 min-w-0 overflow-hidden">
-                    <button @click="loadSavedSale(sale)" class="bg-cannabis-green text-white px-3 py-2 rounded hover:bg-green-700">Load</button>
-                    <button @click="deleteSavedSale(sale)" class="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700">Delete</button>
+                    <button
+                      @click="loadSavedSale(sale)"
+                      class="bg-cannabis-green text-white px-3 py-2 rounded hover:bg-green-700"
+                    >
+                      Load
+                    </button>
+                    <button
+                      @click="deleteSavedSale(sale)"
+                      class="bg-red-600 text-white px-3 py-2 rounded hover:bg-red-700"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               </template>
@@ -1236,7 +1283,9 @@
 
                       <!-- Active Filters Display -->
                       <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                        >
                           <span
                             x-show="selectedCategory || searchQuery"
                             class="text-sm text-gray-600"
@@ -1928,7 +1977,9 @@
                     style="z-index: 20"
                   >
                     <div class="flex items-center justify-between mb-4">
-                      <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                      <div
+                        class="flex items-center gap-2 min-w-0 overflow-hidden"
+                      >
                         <h3 class="text-lg font-medium text-gray-900">
                           Shopping Cart
                         </h3>
@@ -1955,9 +2006,13 @@
                           ></span>
                         </div>
                       </div>
-                      <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                      <div
+                        class="flex items-center gap-2 min-w-0 overflow-hidden"
+                      >
                         <!-- Cart View Mode Toggle (always available) -->
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                        >
                           <span class="text-xs text-gray-500 hidden md:block"
                             >Cart View:</span
                           >
@@ -2374,7 +2429,9 @@
                               class="text-blue-600"
                             ></span>
                           </span>
-                          <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                          <div
+                            class="flex items-center gap-2 min-w-0 overflow-hidden"
+                          >
                             <span
                               class="text-green-600 font-medium"
                               x-text="`-$${(cartDiscount.amount || 0).toFixed(2)}`"
@@ -6370,7 +6427,9 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Customer Database
                         </h3>
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                        >
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total customers: ' + customers.length"
@@ -6469,7 +6528,9 @@
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                                <div
+                                  class="flex items-center gap-2 min-w-0 overflow-hidden"
+                                >
                                   <button
                                     @click="viewCustomer(customer)"
                                     class="text-blue-600 hover:text-blue-900"
@@ -6728,7 +6789,9 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Employee Directory
                         </h3>
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                        >
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total employees: ' + employees.length"
@@ -7238,7 +7301,9 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Product Catalogue
                         </h3>
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                        >
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total products: ' + products.length"
@@ -7388,7 +7453,9 @@
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                                <div
+                                  class="flex items-center gap-2 min-w-0 overflow-hidden"
+                                >
                                   <button
                                     @click="editProduct(product)"
                                     class="text-blue-600 hover:text-blue-900"
@@ -7646,7 +7713,9 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Incoming Vendor Shipments
                         </h3>
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                        >
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Total vendors: ' + incomingVendors.length"
@@ -7798,7 +7867,9 @@
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                                <div
+                                  class="flex items-center gap-2 min-w-0 overflow-hidden"
+                                >
                                   <button
                                     @click="viewVendorPackages(vendor)"
                                     class="text-purple-600 hover:text-purple-900"
@@ -8090,7 +8161,9 @@
                                 class="text-sm font-medium text-gray-700"
                                 x-text="room.name"
                               ></span>
-                              <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                              <div
+                                class="flex items-center gap-2 min-w-0 overflow-hidden"
+                              >
                                 <div class="w-32 bg-gray-200 rounded-full h-2">
                                   <div
                                     class="bg-orange-500 h-2 rounded-full"
@@ -9392,7 +9465,9 @@
                         <h3 class="text-lg font-semibold text-gray-900">
                           Sales Transactions
                         </h3>
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                        <div
+                          class="flex items-center gap-2 min-w-0 overflow-hidden"
+                        >
                           <span
                             class="text-sm text-gray-500"
                             x-text="'Showing ' + filteredSales.length + ' transactions'"
@@ -13766,7 +13841,9 @@
                           Define what each role can access across the POS.
                         </p>
                       </div>
-                      <div class="flex items-center gap-2 min-w-0 overflow-hidden">
+                      <div
+                        class="flex items-center gap-2 min-w-0 overflow-hidden"
+                      >
                         <button
                           @click="openRoleModal('create')"
                           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
@@ -19222,15 +19299,40 @@
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Categories</label>
-                    <div class="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Applicable Categories</label
+                    >
+                    <div
+                      class="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3"
+                    >
                       <label class="flex items-center">
-                        <input id="all-categories" name="all-categories" type="checkbox" value="" x-model="dealForm.allCategories" @change="toggleAllCategories()" class="mr-2" aria-describedby="all-categories-help" />
+                        <input
+                          id="all-categories"
+                          name="all-categories"
+                          type="checkbox"
+                          value=""
+                          x-model="dealForm.allCategories"
+                          @change="toggleAllCategories()"
+                          class="mr-2"
+                          aria-describedby="all-categories-help"
+                        />
                         <span class="text-sm font-medium">All Categories</span>
                       </label>
-                      <template x-for="category in getUniqueCategories()" :key="category">
+                      <template
+                        x-for="category in getUniqueCategories()"
+                        :key="category"
+                      >
                         <label class="flex items-center">
-                          <input :id="`category-${category}`" :name="`category-${category}`" type="checkbox" :value="category" x-model="dealForm.applicableCategories" :disabled="dealForm.allCategories" class="mr-2" :aria-describedby="`category-${category}-help`" />
+                          <input
+                            :id="`category-${category}`"
+                            :name="`category-${category}`"
+                            type="checkbox"
+                            :value="category"
+                            x-model="dealForm.applicableCategories"
+                            :disabled="dealForm.allCategories"
+                            class="mr-2"
+                            :aria-describedby="`category-${category}-help`"
+                          />
                           <span class="text-sm" x-text="category"></span>
                         </label>
                       </template>
@@ -19238,94 +19340,199 @@
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Items (active in POS)</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Applicable Items (active in POS)</label
+                    >
                     <div class="flex gap-2 mb-2">
-                      <input type="text" x-model.debounce.300ms="dealProductSearch" placeholder="Search products by name or SKU" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+                      <input
+                        type="text"
+                        x-model.debounce.300ms="dealProductSearch"
+                        placeholder="Search products by name or SKU"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                      />
                     </div>
-                    <div class="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                    <div
+                      class="border border-gray-200 rounded-lg max-h-40 overflow-y-auto"
+                    >
                       <template x-if="getDealSelectableProducts().length === 0">
-                        <div class="p-3 text-sm text-gray-500">No products found</div>
+                        <div class="p-3 text-sm text-gray-500">
+                          No products found
+                        </div>
                       </template>
-                      <template x-for="p in getDealSelectableProducts()" :key="p.id">
-                        <label class="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50">
+                      <template
+                        x-for="p in getDealSelectableProducts()"
+                        :key="p.id"
+                      >
+                        <label
+                          class="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50"
+                        >
                           <div class="flex items-center gap-3">
-                            <input type="checkbox" :value="p.id" x-model.number="dealForm.applicableProducts" class="h-4 w-4" />
+                            <input
+                              type="checkbox"
+                              :value="p.id"
+                              x-model.number="dealForm.applicableProducts"
+                              class="h-4 w-4"
+                            />
                             <div>
-                              <div class="text-sm font-medium" x-text="p.name"></div>
-                              <div class="text-xs text-gray-500"><span x-text="p.sku ? ('SKU: ' + p.sku + ' • ') : ''"></span><span x-text="p.category || ''"></span></div>
+                              <div
+                                class="text-sm font-medium"
+                                x-text="p.name"
+                              ></div>
+                              <div class="text-xs text-gray-500">
+                                <span
+                                  x-text="p.sku ? ('SKU: ' + p.sku + ' • ') : ''"
+                                ></span
+                                ><span x-text="p.category || ''"></span>
+                              </div>
                             </div>
                           </div>
-                          <span class="text-xs text-gray-400" x-text="'#' + p.id"></span>
+                          <span
+                            class="text-xs text-gray-400"
+                            x-text="'#' + p.id"
+                          ></span>
                         </label>
                       </template>
                     </div>
                     <div class="mt-2 text-xs text-gray-600">
-                      <span x-text="(dealForm.applicableProducts || []).length"></span> selected
-                      <button type="button" class="ml-2 underline" @click="dealForm.applicableProducts = []">Clear</button>
+                      <span
+                        x-text="(dealForm.applicableProducts || []).length"
+                      ></span>
+                      selected
+                      <button
+                        type="button"
+                        class="ml-2 underline"
+                        @click="dealForm.applicableProducts = []"
+                      >
+                        Clear
+                      </button>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
+                    <p class="text-xs text-gray-500 mt-1">
+                      Only products currently in stock are shown and eligible.
+                    </p>
                   </div>
                 </div>
 
                 <div class="mt-4 space-y-6">
-                <!-- Per-Category Discounts (optional) -->
-                <div class="w-full">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
-                  <div class="space-y-2">
-                    <template x-for="category in getUniqueCategories()" :key="category">
-                      <div class="grid grid-cols-2 gap-2 items-center min-w-0">
-                        <div class="text-sm" x-text="category"></div>
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
-                          <input type="number" step="0.01" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.categoryDiscounts && dealForm.categoryDiscounts[category] !== undefined) ? dealForm.categoryDiscounts[category] : ''" @input="dealForm.categoryDiscounts = { ...(dealForm.categoryDiscounts || {}), [category]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
-                          <select x-model="dealForm.type" class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate">
-                            <option value="percentage">Percentage Discount</option>
-                            <option value="fixed">Fixed Amount Discount</option>
-                            <option value="bogo">Buy One Get One</option>
-                            <option value="buy-x-get-y">Buy X Get Y</option>
-                            <option value="bundle">Bundle Deal</option>
-                            <option value="loyalty">Loyalty Discount</option>
-                            <option value="first-time">First Time Customer</option>
-                            <option value="senior">Senior Discount</option>
-                          </select>
+                  <!-- Per-Category Discounts (optional) -->
+                  <div class="w-full">
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Per-Category Discounts (optional)</label
+                    >
+                    <div class="space-y-2">
+                      <template
+                        x-for="category in getUniqueCategories()"
+                        :key="category"
+                      >
+                        <div
+                          class="grid grid-cols-2 gap-2 items-center min-w-0"
+                        >
+                          <div class="text-sm" x-text="category"></div>
+                          <div
+                            class="flex items-center gap-2 min-w-0 overflow-hidden"
+                          >
+                            <input
+                              type="number"
+                              step="0.01"
+                              class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                              :value="(dealForm.categoryDiscounts && dealForm.categoryDiscounts[category] !== undefined) ? dealForm.categoryDiscounts[category] : ''"
+                              @input="dealForm.categoryDiscounts = { ...(dealForm.categoryDiscounts || {}), [category]: parseFloat($event.target.value) || 0 }"
+                              placeholder="Discount value"
+                            />
+                            <select
+                              x-model="dealForm.type"
+                              class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate"
+                            >
+                              <option value="percentage">
+                                Percentage Discount
+                              </option>
+                              <option value="fixed">
+                                Fixed Amount Discount
+                              </option>
+                              <option value="bogo">Buy One Get One</option>
+                              <option value="buy-x-get-y">Buy X Get Y</option>
+                              <option value="bundle">Bundle Deal</option>
+                              <option value="loyalty">Loyalty Discount</option>
+                              <option value="first-time">
+                                First Time Customer
+                              </option>
+                              <option value="senior">Senior Discount</option>
+                            </select>
+                          </div>
                         </div>
-                      </div>
-                    </template>
-                    <p class="text-xs text-gray-500">If set, these override the main discount for that category.</p>
+                      </template>
+                      <p class="text-xs text-gray-500">
+                        If set, these override the main discount for that
+                        category.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Per-Item Discounts (optional) -->
+                  <div class="mt-4 w-full">
+                    <label class="block text-sm font-medium text-gray-700 mb-2"
+                      >Per-Item Discounts (optional)</label
+                    >
+                    <div class="space-y-2 w-full">
+                      <template
+                        x-for="pid in (dealForm.applicableProducts || [])"
+                        :key="pid"
+                      >
+                        <div
+                          class="grid grid-cols-2 gap-2 items-center min-w-0"
+                        >
+                          <div class="text-sm">
+                            <span
+                              x-text="(function(){ const list = Array.isArray(products) ? products : []; const p = list.find(pp => String(pp.id) === String(pid)); return p && p.name ? p.name : ('Item #' + pid); })()"
+                            ></span>
+                            <span
+                              class="text-xs text-gray-500"
+                              x-show="(function(){ const list = Array.isArray(products) ? products : []; const p = list.find(pp => String(pp.id) === String(pid)); return !!(p && p.category); })()"
+                              x-text="(function(){ const list = Array.isArray(products) ? products : []; const p = list.find(pp => String(pp.id) === String(pid)); return p && p.category ? ' • ' + p.category : ''; })()"
+                            ></span>
+                          </div>
+                          <div
+                            class="flex items-center gap-2 min-w-0 overflow-hidden"
+                          >
+                            <input
+                              type="number"
+                              step="0.01"
+                              class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500"
+                              :value="(dealForm.itemDiscounts && dealForm.itemDiscounts[String(pid)] !== undefined) ? dealForm.itemDiscounts[String(pid)] : ''"
+                              @input="dealForm.itemDiscounts = { ...(dealForm.itemDiscounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }"
+                              placeholder="Discount value"
+                            />
+                            <select
+                              x-model="dealForm.type"
+                              class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate"
+                            >
+                              <option value="percentage">
+                                Percentage Discount
+                              </option>
+                              <option value="fixed">
+                                Fixed Amount Discount
+                              </option>
+                              <option value="bogo">Buy One Get One</option>
+                              <option value="buy-x-get-y">Buy X Get Y</option>
+                              <option value="bundle">Bundle Deal</option>
+                              <option value="loyalty">Loyalty Discount</option>
+                              <option value="first-time">
+                                First Time Customer
+                              </option>
+                              <option value="senior">Senior Discount</option>
+                            </select>
+                          </div>
+                        </div>
+                      </template>
+                      <template
+                        x-if="(dealForm.applicableProducts || []).length === 0"
+                      >
+                        <div class="p-2 text-xs text-gray-500 border rounded">
+                          Select items above to set per-item overrides.
+                        </div>
+                      </template>
+                    </div>
                   </div>
                 </div>
-
-                <!-- Per-Item Discounts (optional) -->
-                <div class="mt-4 w-full">
-                  <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
-                  <div class="space-y-2 w-full">
-                    <template x-for="pid in (dealForm.applicableProducts || [])" :key="pid">
-                      <div class="grid grid-cols-2 gap-2 items-center min-w-0">
-                        <div class="text-sm">
-                          <span x-text="(function(){ const list = Array.isArray(products) ? products : []; const p = list.find(pp => String(pp.id) === String(pid)); return p && p.name ? p.name : ('Item #' + pid); })()"></span>
-                          <span class="text-xs text-gray-500" x-show="(function(){ const list = Array.isArray(products) ? products : []; const p = list.find(pp => String(pp.id) === String(pid)); return !!(p && p.category); })()" x-text="(function(){ const list = Array.isArray(products) ? products : []; const p = list.find(pp => String(pp.id) === String(pid)); return p && p.category ? ' • ' + p.category : ''; })()"></span>
-                        </div>
-                        <div class="flex items-center gap-2 min-w-0 overflow-hidden">
-                          <input type="number" step="0.01" class="flex-1 min-w-0 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" :value="(dealForm.itemDiscounts && dealForm.itemDiscounts[String(pid)] !== undefined) ? dealForm.itemDiscounts[String(pid)] : ''" @input="dealForm.itemDiscounts = { ...(dealForm.itemDiscounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }" placeholder="Discount value" />
-                          <select x-model="dealForm.type" class="px-2 py-2 border border-gray-300 rounded-lg w-32 shrink-0 truncate">
-                            <option value="percentage">Percentage Discount</option>
-                            <option value="fixed">Fixed Amount Discount</option>
-                            <option value="bogo">Buy One Get One</option>
-                            <option value="buy-x-get-y">Buy X Get Y</option>
-                            <option value="bundle">Bundle Deal</option>
-                            <option value="loyalty">Loyalty Discount</option>
-                            <option value="first-time">First Time Customer</option>
-                            <option value="senior">Senior Discount</option>
-                          </select>
-                        </div>
-                      </div>
-                    </template>
-                    <template x-if="(dealForm.applicableProducts || []).length === 0">
-                      <div class="p-2 text-xs text-gray-500 border rounded">Select items above to set per-item overrides.</div>
-                    </template>
-                  </div>
-                </div>
-                </div>
-
               </div>
 
               <!-- Audience & Email -->
@@ -19487,7 +19694,9 @@
               </div>
 
               <!-- Action Buttons -->
-              <div class="flex gap-3 mt-4 p-4 border-t border-gray-200 sticky bottom-0 bg-white">
+              <div
+                class="flex gap-3 mt-4 p-4 border-t border-gray-200 sticky bottom-0 bg-white"
+              >
                 <button
                   type="button"
                   @click="closeCreateDealModal()"
