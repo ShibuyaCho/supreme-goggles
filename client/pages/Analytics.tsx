@@ -51,14 +51,24 @@ const salesData = {
     transactions: 285,
     customers: 198,
     avgOrderValue: 65.79,
-    change: { revenue: 5.1, transactions: 2.4, customers: 3.2, avgOrderValue: -1.2 },
+    change: {
+      revenue: 5.1,
+      transactions: 2.4,
+      customers: 3.2,
+      avgOrderValue: -1.2,
+    },
   },
   month: {
     revenue: 87425.5,
     transactions: 1350,
     customers: 892,
     avgOrderValue: 64.76,
-    change: { revenue: 7.3, transactions: 1.8, customers: 2.6, avgOrderValue: 0.9 },
+    change: {
+      revenue: 7.3,
+      transactions: 1.8,
+      customers: 2.6,
+      avgOrderValue: 0.9,
+    },
   },
 };
 
@@ -68,7 +78,11 @@ const topProducts = [
   { name: "OG Kush", sales: 35, revenue: 1750.0, category: "Flower" },
   { name: "Vape Cartridge", sales: 28, revenue: 1540.0, category: "Vapes" },
   { name: "CBD Tincture", sales: 22, revenue: 1430.0, category: "Tinctures" },
-].map(p => ({ ...p, unitsSold: p.sales, avgPrice: p.sales > 0 ? p.revenue / p.sales : 0 }));
+].map((p) => ({
+  ...p,
+  unitsSold: p.sales,
+  avgPrice: p.sales > 0 ? p.revenue / p.sales : 0,
+}));
 
 const categoryData = [
   { name: "Flower", sales: 125, revenue: 5875.0, percentage: 35.2 },
@@ -658,7 +672,7 @@ export default function Analytics() {
                 <div class="metric-label">Returning Customers</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value">$${(customerInsights.newCustomers + customerInsights.returningCustomers > 0 ? (salesData.today.revenue / (customerInsights.newCustomers + customerInsights.returningCustomers)) : 0).toFixed(2)}</div>
+                <div class="metric-value">$${(customerInsights.newCustomers + customerInsights.returningCustomers > 0 ? salesData.today.revenue / (customerInsights.newCustomers + customerInsights.returningCustomers) : 0).toFixed(2)}</div>
                 <div class="metric-label">Avg Spend per Customer</div>
               </div>
               <div class="metric-card">

@@ -58,7 +58,7 @@ const App = () => (
 // Only create root once
 const container = document.getElementById("root");
 if (container) {
-  if (!container.hasAttribute('data-reactroot')) {
+  if (!container.hasAttribute("data-reactroot")) {
     const root = createRoot(container);
     root.render(<App />);
   }
