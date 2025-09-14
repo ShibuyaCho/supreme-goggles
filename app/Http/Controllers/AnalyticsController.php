@@ -492,6 +492,7 @@ class AnalyticsController extends Controller
                 $today = Carbon::today();
                 $range = ['start'=>$today->copy()->startOfDay(),'end'=>$today->copy()->endOfDay()];
                 $rows = $this->supaSalesInRange($range);
+                if (!is_array($rows) || count($rows) === 0) { throw new \RuntimeException('empty'); }
                 $totalSales = 0; $totalTax = 0; $customerCount = 0; $cashSales=0; $debitSales=0; $creditSales=0;
                 foreach ($rows as $r) {
                     $amt = isset($r['total_amount']) ? (float)$r['total_amount'] : (float)($r['total'] ?? 0);
