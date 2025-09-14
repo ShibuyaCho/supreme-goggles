@@ -1389,7 +1389,7 @@ function cannabisPOS() {
       const customerLabel = customerType === 'medical'
         ? `Medical Customer${medicalCard ? ' (Card: ' + medicalCard + ')' : ''}`
         : 'Recreational Customer';
-      const empName = (s.employee && (s.employee.full_name || s.employee.name || ((s.employee.first_name||'') + ' ' + (s.employee.last_name||'')).trim())) || (s.employee_name) || "Unknown";
+      const empName = (s.employee && (s.employee.full_name || s.employee.name || ((s.employee.first_name||'') + ' ' + (s.employee.last_name||'')).trim())) || (s.employee_name) || (s.meta && s.meta.employee_name) || "Unknown";
       return {
         id: s.sale_number || String(s.id),
         numericId: s.id,
