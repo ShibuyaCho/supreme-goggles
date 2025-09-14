@@ -29,10 +29,35 @@ class DealsController extends Controller
                 ]);
                 if ($resp->ok()) {
                     $rows = $resp->json();
-                    $deals = collect(is_array($rows) ? $rows : []);
+                    $supabaseDeals = collect(is_array($rows) ? $rows : []);
+
+                    // Always also load local deals and merge any that aren't present in Supabase
+                    $localDeals = Deal::orderBy('created_at','desc')->get();
+                    $merged = collect([]);
+                    // Normalize keys and avoid id collisions
+                    $supabaseByKey = $supabaseDeals->keyBy(function($d){
+                        $id = is_array($d) ? ($d['id'] ?? null) : (is_object($d) ? ($d->id ?? null) : null);
+                        return 'supa:' . (string)$id;
+                    });
+                    $merged = $merged->merge($supabaseByKey->values());
+
+                    foreach ($localDeals as $d) {
+                        $key = 'local:' . (string)$d->id;
+                        // If a Supabase row with same numeric id exists, keep Supabase and skip to avoid duplicates
+                        if ($supabaseDeals->contains(function($sd) use ($d){
+                            $sid = is_array($sd) ? ($sd['id'] ?? null) : (is_object($sd) ? ($sd->id ?? null) : null);
+                            return (string)$sid === (string)$d->id;
+                        })) {
+                            continue;
+                        }
+                        $merged->push($d);
+                    }
+
+                    $deals = $merged;
+
                     try {
-                        if ($deals->count() === 0) {
-                            $localDeals = Deal::orderBy('created_at','asc')->get();
+                        if ($supabaseDeals->count() === 0) {
+                            // If Supabase is empty, push all local deals up
                             if ($localDeals->count() > 0) {
                                 $payloads = $localDeals->map(function($d){
                                     $arr = $d->toArray();
@@ -50,16 +75,12 @@ class DealsController extends Controller
                                     }
                                     return $arr;
                                 })->values()->all();
-                                $ins = Http::withHeaders([
+                                Http::withHeaders([
                                     'apikey' => $supabaseKey,
                                     'Authorization' => 'Bearer ' . $supabaseKey,
                                     'Accept' => 'application/json',
                                     'Prefer' => 'return=representation'
                                 ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/deals', $payloads);
-                                if ($ins->ok()) {
-                                    $rows = $ins->json();
-                                    $deals = collect(is_array($rows) ? $rows : []);
-                                }
                             }
                         }
                     } catch (\Throwable $e) {
