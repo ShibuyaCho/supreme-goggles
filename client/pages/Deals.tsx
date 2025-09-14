@@ -33,6 +33,7 @@ interface ProductItem {
 
 interface Deal {
   categoryDiscounts?: Record<string, number>;
+  itemDiscounts?: Record<string, number>;
   id: string;
   name: string;
   description: string;
