@@ -1446,11 +1446,10 @@ function cannabisPOS() {
       const cashSales = list.filter((s) => s.paymentMethod === "cash").reduce((a, b) => a + Number(b.total || 0), 0);
       const debitSales = list.filter((s) => s.paymentMethod === "debit").reduce((a, b) => a + Number(b.total || 0), 0);
       const creditSales = list.filter((s) => s.paymentMethod === "credit").reduce((a, b) => a + Number(b.total || 0), 0);
-      let customerCount = new Set(list.map((s) => s.customer || "")).size;
+      const recCount = list.filter((s) => (s.customerType || '') !== 'medical').length; // each recreational sale = distinct customer
+      const medUnique = new Set(list.filter((s) => (s.customerType || '') === 'medical').map((s) => s.customerMedicalCard || s.customer)).size;
+      const customerCount = recCount + medUnique;
       const totalSales = list.length;
-      // If all customers are generic/walk-in, treat each sale as a distinct customer for pacing
-      const allGeneric = list.every((s) => !s.customer || String(s.customer).toLowerCase().includes("walk-in"));
-      if (allGeneric) customerCount = totalSales;
       return {
         totalSales,
         totalRevenue: revenue,
@@ -3336,7 +3335,7 @@ function cannabisPOS() {
       } else {
         const dimensions = {
           small: { width: 100, height: 50 }, // 2" × 1"
-          medium: { width: 150, height: 100 }, // 3" �� 2"
+          medium: { width: 150, height: 100 }, // 3" ��� 2"
           large: { width: 200, height: 150 }, // 4" × 3"
           "extra-large": { width: 300, height: 200 }, // 6" × 4"
         };
