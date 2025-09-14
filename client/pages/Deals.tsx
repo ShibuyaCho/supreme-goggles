@@ -95,6 +95,8 @@ export default function Deals() {
     loyaltyOnly: false,
     medicalOnly: false,
     minimumPurchaseType: 'dollars',
+    categoryDiscounts: {},
+    itemDiscounts: {},
     currentUses: 0
   });
 
@@ -968,7 +970,7 @@ export default function Deals() {
                         />
                         <div>
                           <div className="text-sm font-medium">{p.name}</div>
-                          <div className="text-xs text-muted-foreground">{[p.sku ? `SKU: ${p.sku}` : null, p.category].filter(Boolean).join(" • ")}</div>
+                          <div className="text-xs text-muted-foreground">{[p.sku ? `SKU: ${p.sku}` : null, p.category].filter(Boolean).join(" ��� ")}</div>
                         </div>
                       </div>
                       <span className="text-xs text-muted-foreground">#{idStr}</span>
