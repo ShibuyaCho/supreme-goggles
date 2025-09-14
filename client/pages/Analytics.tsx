@@ -648,27 +648,27 @@ export default function Analytics() {
 
             <div class="metrics-grid">
               <div class="metric-card">
-                <div class="metric-value">${customerMetrics.newCustomers}</div>
+                <div class="metric-value">${customerInsights.newCustomers}</div>
                 <div class="metric-label">New Customers</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value">${customerMetrics.returningCustomers}</div>
+                <div class="metric-value">${customerInsights.returningCustomers}</div>
                 <div class="metric-label">Returning Customers</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value">$${customerMetrics.avgSpendPerCustomer.toFixed(2)}</div>
+                <div class="metric-value">$${(customerInsights.newCustomers + customerInsights.returningCustomers > 0 ? (salesData.today.revenue / (customerInsights.newCustomers + customerInsights.returningCustomers)) : 0).toFixed(2)}</div>
                 <div class="metric-label">Avg Spend per Customer</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value">${customerMetrics.loyaltyMembers}</div>
+                <div class="metric-value">${customerInsights.loyaltyMembers}</div>
                 <div class="metric-label">Loyalty Members</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value">${customerMetrics.medicalPatients}</div>
+                <div class="metric-value">${customerInsights.medicalPatients}</div>
                 <div class="metric-label">Medical Patients</div>
               </div>
               <div class="metric-card">
-                <div class="metric-value">${customerMetrics.totalCustomers}</div>
+                <div class="metric-value">${customerInsights.newCustomers + customerInsights.returningCustomers}</div>
                 <div class="metric-label">Total Customers</div>
               </div>
             </div>
