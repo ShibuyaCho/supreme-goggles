@@ -707,6 +707,8 @@ class DealsController extends Controller
             'end_date' => $arr['end_date'] ?? null,
             'applicable_categories' => $arr['applicable_categories'] ?? ($arr['categories'] ?? null),
             'specific_items' => $arr['specific_items'] ?? null,
+            'category_discounts' => $arr['category_discounts'] ?? null,
+            'item_discounts' => $arr['item_discounts'] ?? null,
             'minimum_purchase' => $arr['minimum_purchase'] ?? null,
             'minimum_purchase_type' => $arr['minimum_purchase_type'] ?? 'dollars',
             'max_uses' => $arr['max_uses'] ?? null,
