@@ -9316,7 +9316,7 @@
                                 x-text="sale.id"
                               ></td>
                               <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm font-medium text-gray-900" x-text="sale.customer"></div>
+                                <div class="text-sm font-medium text-gray-900" x-text="sale.isMedical ? 'Medical Customer' : 'Recreational Customer'"></div>
                                 <div x-show="sale.customerMedicalCard" class="text-xs text-gray-500" x-text="'Card: ' + sale.customerMedicalCard"></div>
                               </td>
                               <td
@@ -20756,6 +20756,30 @@
                   this.categories = [];
                   this.days = days;
                 } catch(_) { this.items = []; this.categories = []; this.days = 0; }
+                if (this.items && this.items.length) {
+                  // Build categories and default trend when using fallback data
+                  try {
+                    const catMap = new Map();
+                    for (const s of (sl || [])) {
+                      const items = Array.isArray(s.sale_items) ? s.sale_items : [];
+                      for (const it of items) {
+                        const name = it.product_name || it.name || 'Unknown';
+                        const cat = it.category || it.product_category || (it.product && it.product.category) || '—';
+                        const qty = Number(it.quantity || 0);
+                        const key = name + '||' + cat;
+                        const cur = (this.items.find(r => (r.name+'||'+(r.category||'—')) === key));
+                        if (cur) cur.category = cur.category || cat;
+                        const cm = catMap.get(cat) || { category: cat, totalSold: 0, aspd: 0, trend: 'stagnant', items: [] };
+                        cm.totalSold += qty;
+                        catMap.set(cat, cm);
+                      }
+                    }
+                    const days = this.days || 1;
+                    const withCat = this.items.map(r => ({ ...r, category: r.category || '—', trend: r.trend || 'stagnant' }));
+                    this.items = withCat;
+                    this.categories = Array.from(catMap.values()).map(c => ({ ...c, aspd: c.totalSold / days }));
+                  } catch(_) {}
+                }
               }
             } catch (_) { this.items = []; this.categories = []; this.days = 0; }
             finally { this.loading = false; }

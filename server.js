@@ -1344,12 +1344,26 @@ app.get("/api/sales/recent", async (req, res) => {
     const mapped = arr.map((s) => {
       const cart = Array.isArray(s.cart) ? s.cart : [];
       const itemCount = cart.reduce((a, i) => a + Number(i?.quantity || 0), 0);
-      const empName = empMap.get(String(s.employee_id || "")) || null;
+      const empName = empMap.get(String(s.employee_id || "")) || (s && s.meta && s.meta.employee_name) || null;
+      // Derive customer info (type and medical card if provided)
+      let customer = s.customer || null;
+      let customer_type = '';
+      let customer_info = null;
+      try {
+        if (customer && typeof customer === 'object') {
+          customer_type = String(customer.type || customer.customerType || '').toLowerCase();
+          customer_info = {
+            medical_card_number: customer.medical_card_number || customer.medical_card || customer.patient_card_number || null,
+          };
+        }
+      } catch(_) {}
       return {
         id: s.id,
         sale_number: s.sale_number || String(s.id),
         created_at: s.created_at,
-        customer: s.customer || null,
+        customer,
+        customer_type,
+        customer_info,
         employee: empName ? { name: empName } : null,
         item_count: itemCount,
         sale_items: cart.map((i) => ({
@@ -1358,6 +1372,7 @@ app.get("/api/sales/recent", async (req, res) => {
           quantity: Number(i?.quantity || 1),
           unit_price: Number(i?.price || 0),
           total_price: Number(i?.price || 0) * Number(i?.quantity || 1),
+          category: i?.category || i?.product_category || (i?.product && i?.product.category) || null,
         })),
         subtotal: Number(s.subtotal || 0),
         tax_amount: Number(s.tax || 0),
@@ -1366,6 +1381,7 @@ app.get("/api/sales/recent", async (req, res) => {
         payment_method: s.payment_method || "cash",
         payment_reference: s.payment_reference || s.card_last_four || null,
         status: s.status || "completed",
+        meta: s.meta || null,
       };
     });
     res.json(mapped);

@@ -1385,7 +1385,7 @@ function cannabisPOS() {
       const discounts = discountAmt > 0 ? [{ id: `order-${s.id}`, type: "Order", amount: discountAmt }] : [];
       const paymentRef = s.payment_reference || s.card_last_four || null;
       const customerType = String(s.customer_type || '').toLowerCase();
-      const medicalCard = s.customer?.medical_card_number || s.customer_info?.medical_card_number || s.customer?.medical_card || s.customer_info?.medical_card || null;
+      const medicalCard = s.customer?.medical_card_number || s.customer_info?.medical_card_number || s.customer?.medical_card || s.customer_info?.medical_card || s.customer?.patient_card_number || null;
       const customerLabel = customerType === 'medical'
         ? 'Medical Customer'
         : 'Recreational Customer';
