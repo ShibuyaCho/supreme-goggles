@@ -306,9 +306,14 @@ export default function Deals() {
   };
 
   const toggleDealStatus = async (dealId: string) => {
-    setDeals(prev => prev.map(deal => 
-      deal.id === dealId ? { ...deal, isActive: !deal.isActive } : deal
-    ));
+    const target = deals.find(d => d.id === dealId);
+    if (!target) return;
+    try {
+      const res = await fetch(`/api/deals/${dealId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ ...mapUiToApi(target), is_active: !target.isActive }) });
+      if (res.ok) {
+        setDeals(prev => prev.map(deal => deal.id === dealId ? { ...deal, isActive: !deal.isActive } : deal));
+      }
+    } catch {}
   };
 
   const deleteDeal = (dealId: string) => {
