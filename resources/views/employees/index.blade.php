@@ -638,9 +638,16 @@ function applyFilters() {
     window.location.href = `{{ route('employees.index') }}?${params.toString()}`;
 }
 
-function showAddEmployeeModal() {
-    document.getElementById('add-employee-modal').classList.remove('hidden');
-    document.getElementById('add-employee-modal').classList.add('flex');
+async function showAddEmployeeModal() {
+    const modal = document.getElementById('add-employee-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+    try {
+        const res = await (window.axios||axios).get('/api/employees/next-id', { headers: { 'Accept': 'application/json' }});
+        const nextId = res?.data?.next_id || '';
+        const input = modal.querySelector('input[name="employee_id"]');
+        if (input && nextId) input.value = nextId;
+    } catch (e) { /* ignore and let server generate */ }
 }
 
 function viewEmployee(employeeId) {
