@@ -71,7 +71,7 @@ const sampleProducts = [
 const mockDeals: Deal[] = [];
 
 export default function Deals() {
-  const [deals, setDeals] = useState<Deal[]>(mockDeals);
+  const [deals, setDeals] = useState<Deal[]>([]);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
