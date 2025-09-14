@@ -19222,44 +19222,48 @@
                   </div>
 
                   <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2"
-                      >Applicable Categories</label
-                    >
-                    <div
-                      class="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3"
-                    >
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Categories</label>
+                    <div class="space-y-2 max-h-32 overflow-y-auto border border-gray-300 rounded-lg p-3">
                       <label class="flex items-center">
-                        <input
-                          id="all-categories"
-                          name="all-categories"
-                          type="checkbox"
-                          value=""
-                          x-model="dealForm.allCategories"
-                          @change="toggleAllCategories()"
-                          class="mr-2"
-                          aria-describedby="all-categories-help"
-                        />
+                        <input id="all-categories" name="all-categories" type="checkbox" value="" x-model="dealForm.allCategories" @change="toggleAllCategories()" class="mr-2" aria-describedby="all-categories-help" />
                         <span class="text-sm font-medium">All Categories</span>
                       </label>
-                      <template
-                        x-for="category in getUniqueCategories()"
-                        :key="category"
-                      >
+                      <template x-for="category in getUniqueCategories()" :key="category">
                         <label class="flex items-center">
-                          <input
-                            :id="`category-${category}`"
-                            :name="`category-${category}`"
-                            type="checkbox"
-                            :value="category"
-                            x-model="dealForm.applicableCategories"
-                            :disabled="dealForm.allCategories"
-                            class="mr-2"
-                            :aria-describedby="`category-${category}-help`"
-                          />
+                          <input :id="`category-${category}`" :name="`category-${category}`" type="checkbox" :value="category" x-model="dealForm.applicableCategories" :disabled="dealForm.allCategories" class="mr-2" :aria-describedby="`category-${category}-help`" />
                           <span class="text-sm" x-text="category"></span>
                         </label>
                       </template>
                     </div>
+                  </div>
+
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Items (active in POS)</label>
+                    <div class="flex gap-2 mb-2">
+                      <input type="text" x-model.debounce.300ms="dealProductSearch" placeholder="Search products by name or SKU" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    </div>
+                    <div class="border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                      <template x-if="getDealSelectableProducts().length === 0">
+                        <div class="p-3 text-sm text-gray-500">No products found</div>
+                      </template>
+                      <template x-for="p in getDealSelectableProducts()" :key="p.id">
+                        <label class="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50">
+                          <div class="flex items-center gap-3">
+                            <input type="checkbox" :value="p.id" x-model.number="dealForm.applicableProducts" class="h-4 w-4" />
+                            <div>
+                              <div class="text-sm font-medium" x-text="p.name"></div>
+                              <div class="text-xs text-gray-500"><span x-text="p.sku ? ('SKU: ' + p.sku + ' • ') : ''"></span><span x-text="p.category || ''"></span></div>
+                            </div>
+                          </div>
+                          <span class="text-xs text-gray-400" x-text="'#' + p.id"></span>
+                        </label>
+                      </template>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-600">
+                      <span x-text="(dealForm.applicableProducts || []).length"></span> selected
+                      <button type="button" class="ml-2 underline" @click="dealForm.applicableProducts = []">Clear</button>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
                   </div>
                 </div>
               </div>
