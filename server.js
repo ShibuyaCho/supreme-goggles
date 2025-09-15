@@ -1343,8 +1343,11 @@ app.post("/api/loyalty-members", async (req, res) => {
   try {
     const b = req.body || {};
     const nameRaw = (b.name || "").toString().trim();
-    const fallbackName = [b.email, b.phone].filter(Boolean).join(" ") || "Member";
-    const join = (b.join_date || new Date().toISOString().slice(0, 10)).toString().slice(0, 10);
+    const fallbackName =
+      [b.email, b.phone].filter(Boolean).join(" ") || "Member";
+    const join = (b.join_date || new Date().toISOString().slice(0, 10))
+      .toString()
+      .slice(0, 10);
     const custId = b.customer_id != null ? Number(b.customer_id) : null;
     const pts = Number(b.starting_points ?? b.points_balance ?? 0) || 0;
 
@@ -1371,12 +1374,16 @@ app.post("/api/loyalty-members", async (req, res) => {
     });
     if (!r.ok) {
       const err = await r.json().catch(() => ({}));
-      return res.status(400).json({ success: false, error: err || "Insert failed" });
+      return res
+        .status(400)
+        .json({ success: false, error: err || "Insert failed" });
     }
     const payload = await r.json();
     const created = Array.isArray(payload) ? payload[0] : payload;
     if (!created || !created.id) {
-      return res.status(400).json({ success: false, error: "Insert returned no row" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Insert returned no row" });
     }
     if (row.points_earned > 0) {
       try {
