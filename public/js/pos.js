@@ -4241,10 +4241,21 @@ function cannabisPOS() {
       } catch (_) {}
     },
 
-    // Persist demo customers locally (fallback when not authenticated)
+    // Customers local persistence (per-user key with legacy fallback)
+    customersStorageKey() {
+      try {
+        const uid = posAuth?.getUser()?.id || "anon";
+        return `cannabisPOS-customers-${uid}`;
+      } catch (_) {
+        return "cannabisPOS-customers-anon";
+      }
+    },
     _saveCustomersLocal() {
       try {
         const list = Array.isArray(this.customers) ? this.customers : [];
+        // Write to user-scoped key
+        localStorage.setItem(this.customersStorageKey(), JSON.stringify(list));
+        // Maintain legacy key for backward compatibility
         localStorage.setItem("cannabisPOS-customers", JSON.stringify(list));
       } catch (e) {}
     },
