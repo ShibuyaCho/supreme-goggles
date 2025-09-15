@@ -4789,15 +4789,25 @@ function cannabisPOS() {
 
     loadCustomers() {
       try {
-        const saved = localStorage.getItem("cannabisPOS-customers");
-        if (saved) {
-          const savedCustomers = JSON.parse(saved);
-          savedCustomers.forEach((savedCustomer) => {
-            if (!this.customers.find((c) => c.id === savedCustomer.id)) {
-              this.customers.push(savedCustomer);
+        const out = Array.isArray(this.customers) ? this.customers.slice() : [];
+        const legacyRaw = localStorage.getItem("cannabisPOS-customers");
+        const userRaw = localStorage.getItem(this.customersStorageKey());
+        const legacy = legacyRaw ? JSON.parse(legacyRaw) : [];
+        const userScoped = userRaw ? JSON.parse(userRaw) : [];
+        const merged = [...out];
+        const seen = new Set(out.map((c) => String(c.id || c.email || c.phone || Math.random())));
+        const addAll = (arr) => {
+          (Array.isArray(arr) ? arr : []).forEach((c) => {
+            const key = String(c.id || c.email || c.phone || JSON.stringify(c));
+            if (!seen.has(key)) {
+              merged.push(c);
+              seen.add(key);
             }
           });
-        }
+        };
+        addAll(userScoped);
+        addAll(legacy);
+        this.customers = merged;
       } catch (error) {
         console.error("Error loading customers:", error);
       } finally {
