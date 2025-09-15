@@ -4408,6 +4408,70 @@ function cannabisPOS() {
       }
     },
 
+    viewCustomerDetails(customer) {
+      try {
+        if (!customer) return;
+        // Prefer existing customer in list for freshest fields
+        const idStr = String(customer.id || "");
+        const existing = (Array.isArray(this.customers) ? this.customers : []).find(c => String(c.id) === idStr) || customer;
+        this.viewCustomer(existing);
+      } catch (_) {
+        this.viewCustomer(customer);
+      }
+    },
+
+    openAdjustPointsModal(customer) {
+      if (!customer) return;
+      const points = Number(customer.loyaltyPoints ?? customer.loyalty_points ?? customer.points ?? 0) || 0;
+      const tier = customer.tier || "Bronze";
+      this.selectedLoyaltyCustomer = { ...customer, points, loyaltyPoints: points, tier };
+      this.pointsForm = { action: "add", type: "add", amount: 0, reason: "", customReason: "" };
+      this.showAdjustPointsModal = true;
+    },
+
+    async savePointsAdjustment() {
+      if (!this.selectedLoyaltyCustomer) return;
+      const id = this.selectedLoyaltyCustomer.id;
+      const amountNum = Number(this.pointsForm.amount || 0) || 0;
+      if (amountNum <= 0 && this.pointsForm.type !== 'set') return;
+
+      // Compute new total
+      let newTotal = this.selectedLoyaltyCustomer.points || 0;
+      if (this.pointsForm.type === 'set') newTotal = amountNum;
+      else if (this.pointsForm.type === 'add') newTotal = newTotal + amountNum;
+      else if (this.pointsForm.type === 'subtract') newTotal = Math.max(0, newTotal - amountNum);
+
+      // Best-effort API
+      try {
+        if (this.isAuthenticated && this.hasPermission("loyalty:manage") && id != null) {
+          const payload = {
+            points: this.pointsForm.type === 'set' ? newTotal : amountNum,
+            type: this.pointsForm.type === 'set' ? 'adjustment' : (this.pointsForm.type === 'add' ? 'earned' : 'redeemed'),
+            reason: this.pointsForm.customReason || this.pointsForm.reason || 'Adjustment',
+          };
+          await posAuth.apiRequest("post", `/loyalty/${id}/adjust-points`, payload);
+        }
+      } catch (_) {}
+
+      // Update local state
+      const idx = (Array.isArray(this.customers) ? this.customers : []).findIndex(c => String(c.id) === String(id));
+      if (idx !== -1) {
+        const current = this.customers[idx];
+        const lp = Number(current.loyaltyPoints ?? current.loyalty_points ?? current.points ?? 0) || 0;
+        const updatedPoints = this.pointsForm.type === 'set' ? newTotal : (this.pointsForm.type === 'add' ? lp + amountNum : Math.max(0, lp - amountNum));
+        this.customers[idx] = { ...current, loyaltyPoints: updatedPoints, points: updatedPoints };
+      }
+      if (this.selectedLoyaltyCustomer) {
+        this.selectedLoyaltyCustomer.loyaltyPoints = newTotal;
+        this.selectedLoyaltyCustomer.points = newTotal;
+      }
+      try { this._saveCustomersLocal(); } catch (_) {}
+      try { this.filterLoyaltyCustomers(); } catch (_) {}
+      this.showAdjustPointsModal = false;
+      this.pointsForm = { action: "add", type: "add", amount: 0, reason: "", customReason: "" };
+      this.showToast("Points updated", "success");
+    },
+
     // Sale flow functions
     selectCustomerType(type) {
       this.showNewSaleModal = false;
