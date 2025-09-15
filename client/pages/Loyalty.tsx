@@ -119,16 +119,24 @@ export default function Loyalty() {
   useEffect(() => {
     (async () => {
       try {
+        let list: any[] = [];
         const res = await fetch("/api/loyalty-members", {
           headers: { Accept: "application/json" },
         });
         if (res.ok) {
           const data = await res.json();
-          const list = Array.isArray(data?.members) ? data.members : [];
-          setCustomers(list.map(mapMember));
-        } else {
-          setCustomers([]);
+          list = Array.isArray(data?.members) ? data.members : [];
         }
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const res2 = await fetch("/node/loyalty-members", { headers: { Accept: "application/json" } });
+            if (res2.ok) {
+              const data2 = await res2.json();
+              list = Array.isArray(data2?.members) ? data2.members : [];
+            }
+          } catch (_) {}
+        }
+        setCustomers(Array.isArray(list) ? list.map(mapMember) : []);
       } catch (_) {
         setCustomers([]);
       }
@@ -271,17 +279,15 @@ export default function Loyalty() {
     }
 
     try {
-      await fetch(
-        `/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({ amount: points, reason: pointsReason }),
-        },
-      );
+      try {
+        let ok = false;
+        const r1 = await fetch(`/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ amount: points, reason: pointsReason }) });
+        if (r1.ok) ok = true;
+        if (!ok) {
+          const r2 = await fetch(`/node/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`, { method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ amount: points, reason: pointsReason }) });
+          if (r2.ok) ok = true;
+        }
+      } catch (_) {}
     } catch (_) {}
 
     setCustomers((prev) =>
@@ -326,6 +332,8 @@ export default function Loyalty() {
 
     let created: LoyaltyCustomer | null = null;
     try {
+      let ok = false;
+      let payload: any = null;
       const res = await fetch("/api/loyalty-members", {
         method: "POST",
         headers: {
@@ -335,20 +343,28 @@ export default function Loyalty() {
         body: JSON.stringify(body),
       });
       if (res.ok) {
-        const data = await res.json();
-        const m = data?.member || null;
-        if (m) created = mapMember(m);
+        ok = true;
+        payload = await res.json();
       } else {
         try {
-          const err = await res.json();
-          alert(
-            `Failed to enroll: ${err?.error ? JSON.stringify(err.error) : res.statusText}`,
-          );
-        } catch (_) {
-          alert(`Failed to enroll (status ${res.status})`);
-        }
+          const res2 = await fetch("/node/loyalty-members", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (res2.ok) {
+            ok = true;
+            payload = await res2.json();
+          }
+        } catch (_) {}
       }
-    } catch (_) {}
+      if (ok) {
+        const m = payload?.member || null;
+        if (m) created = mapMember(m);
+      } else {
+        alert("Failed to enroll customer in loyalty program");
+      }
+    } catch (_) { alert("Failed to enroll customer in loyalty program"); }
 
     if (!created) {
       return;
@@ -357,14 +373,22 @@ export default function Loyalty() {
     setCustomers((prev) => [...prev, created]);
     // Refresh from server to ensure persistence
     try {
-      const res2 = await fetch("/api/loyalty-members", {
-        headers: { Accept: "application/json" },
-      });
+      let list2: any[] = [];
+      const res2 = await fetch("/api/loyalty-members", { headers: { Accept: "application/json" } });
       if (res2.ok) {
         const data2 = await res2.json();
-        const list2 = Array.isArray(data2?.members) ? data2.members : [];
-        setCustomers(list2.map(mapMember));
+        list2 = Array.isArray(data2?.members) ? data2.members : [];
       }
+      if (!Array.isArray(list2) || list2.length === 0) {
+        try {
+          const r3 = await fetch("/node/loyalty-members", { headers: { Accept: "application/json" } });
+          if (r3.ok) {
+            const d3 = await r3.json();
+            list2 = Array.isArray(d3?.members) ? d3.members : [];
+          }
+        } catch (_) {}
+      }
+      setCustomers(Array.isArray(list2) ? list2.map(mapMember) : []);
     } catch (_) {}
 
     setShowSignupDialog(false);
@@ -387,10 +411,13 @@ export default function Loyalty() {
       )
     ) {
       try {
-        await fetch(`/api/loyalty-members/${customerId}`, {
-          method: "DELETE",
-          headers: { Accept: "application/json" },
-        });
+        let ok = false;
+        const r1 = await fetch(`/api/loyalty-members/${customerId}`, { method: "DELETE", headers: { Accept: "application/json" } });
+        if (r1.ok) ok = true;
+        if (!ok) {
+          const r2 = await fetch(`/node/loyalty-members/${customerId}`, { method: "DELETE", headers: { Accept: "application/json" } });
+          if (r2.ok) ok = true;
+        }
       } catch (_) {}
       setCustomers((prev) => prev.filter((c) => c.id !== customerId));
     }
