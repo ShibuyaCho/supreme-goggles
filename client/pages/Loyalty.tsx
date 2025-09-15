@@ -397,7 +397,7 @@ export default function Loyalty() {
       )
     ) {
       try {
-        await fetch(`/api/loyalty-members/${customerId}`, {
+        await fetch(`/node/loyalty-members/${customerId}`, {
           method: "DELETE",
           headers: { Accept: "application/json" },
         });
