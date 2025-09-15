@@ -1451,7 +1451,6 @@ function cannabisPOS() {
       if (start && end) {
         params.date_from = start;
         params.date_to = end;
-        this._serverFilteredDates = true;
         this._serverDateFromKey = start;
         this._serverDateToKey = end;
       }
@@ -1475,6 +1474,7 @@ function cannabisPOS() {
               const mapped = data.map((s) => this.mapSaleToSpa(s));
               if (mapped.length) {
                 list = mapped;
+                this._serverFilteredDates = !!(params.date_from && params.date_to);
                 break;
               } else {
                 list = [];
@@ -1492,7 +1492,10 @@ function cannabisPOS() {
           const cache = JSON.parse(
             localStorage.getItem("pos_sales_cache_v1") || "{}",
           );
-          if (Array.isArray(cache.list)) list = cache.list;
+          if (Array.isArray(cache.list)) {
+            list = cache.list;
+            this._serverFilteredDates = false;
+          }
         } catch (_) {
           list = [];
         }
