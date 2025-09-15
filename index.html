@@ -493,12 +493,12 @@
                 <div
                   x-show="showNavDropdown"
                   @click.outside="showNavDropdown = false"
-                  x-transition:enter="transition ease-out duration-200"
-                  x-transition:enter-start="opacity-0 scale-95"
-                  x-transition:enter-end="opacity-100 scale-100"
-                  x-transition:leave="transition ease-in duration-150"
-                  x-transition:leave-start="opacity-100 scale-100"
-                  x-transition:leave-end="opacity-0 scale-95"
+                  x-cloak:enter="transition ease-out duration-200"
+                  x-cloak:enter-start="opacity-0 scale-95"
+                  x-cloak:enter-end="opacity-100 scale-100"
+                  x-cloak:leave="transition ease-in duration-150"
+                  x-cloak:leave-start="opacity-100 scale-100"
+                  x-cloak:leave-end="opacity-0 scale-95"
                   class="absolute top-full left-0 mt-2 w-56 bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 z-50"
                 >
                   <div id="nav-dropdown-menu" class="py-1" role="menu">
@@ -2595,7 +2595,7 @@
         <div
           x-show="showNewSaleModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showNewSaleModal = false"
           @keydown.enter="selectCustomerType('recreational')"
           tabindex="0"
@@ -2688,7 +2688,7 @@
         <div
           x-show="showRegisterModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showRegisterModal = false"
           @keydown.enter="handleRegister()"
           x-init="showRegisterModal && $el.focus()"
@@ -2820,7 +2820,7 @@
         <div
           x-show="showRecreationalModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="cancelNewSale()"
           @keydown.enter="ageVerified ? confirmRecreationalSale() : null"
           x-init="showRecreationalModal && $el.focus()"
@@ -2919,7 +2919,7 @@
         <div
           x-show="showMedicalModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="cancelNewSale()"
           @keydown.enter="(!medicalData.cardNumber || !medicalData.type || !medicalData.issueDate || !medicalData.expirationDate || (medicalData.type === 'caregiver' && !medicalData.patientCardNumber)) ? null : confirmMedicalSale()"
           x-init="showMedicalModal && $el.focus()"
@@ -3200,7 +3200,7 @@
         <div
           x-show="showMetrcModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showMetrcModal = false"
           x-init="showMetrcModal && $el.focus()"
           tabindex="0"
@@ -3369,7 +3369,7 @@
         <div
           x-show="showTransferModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showTransferModal = false"
           @keydown.enter="(!transferData.destinationRoom || !transferData.quantity) ? null : executeTransfer()"
           x-init="showTransferModal && $el.focus()"
@@ -3594,7 +3594,7 @@
         <div
           x-show="showEditModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showEditModal = false"
           @keydown.enter="!editData.name ? null : saveProductEdit()"
           x-init="showEditModal && $el.focus()"
@@ -3945,7 +3945,7 @@
         <div
           x-show="showPrintModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center print-dialog"
-          x-transition
+          x-cloak
           @keydown.escape="showPrintModal = false"
           @keydown.enter="executePrint()"
           x-init="showPrintModal && $el.focus()"
@@ -4367,12 +4367,12 @@
           x-show="showPrintSettingsPreviewModal"
           x-cloak
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
+          x-cloak:enter="transition ease-out duration-300"
+          x-cloak:enter-start="opacity-0"
+          x-cloak:enter-end="opacity-100"
+          x-cloak:leave="transition ease-in duration-200"
+          x-cloak:leave-start="opacity-100"
+          x-cloak:leave-end="opacity-0"
           @keydown.escape="closePrintSettingsPreview()"
           @keydown.enter="printFromPreview()"
           tabindex="0"
@@ -4734,7 +4734,7 @@
         <div
           x-show="showCashModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showCashModal = false"
           @keydown.enter="(cashPayment.changeDue < 0 || !cashPayment.employeePin) ? null : completeCashPayment()"
           tabindex="0"
@@ -4841,7 +4841,7 @@
         <div
           x-show="showDebitModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showDebitModal = false"
           @keydown.enter="(debitPayment.changeDue < 0 || !debitPayment.employeePin || !debitPayment.lastFour) ? null : completeDebitPayment()"
           tabindex="0"
@@ -4973,7 +4973,7 @@
         <div
           x-show="showDiscountModal"
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition
+          x-cloak
           @keydown.escape="showDiscountModal = false"
           @keydown.enter="(!discountForm.value || discountForm.calculatedAmount <= 0 || !discountForm.reason || discountForm.reason.trim() === '') ? null : applyCartDiscount()"
           x-init="showDiscountModal && $el.focus()"
@@ -5109,12 +5109,12 @@
           x-show="showItemDiscountModal"
           x-cloak
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
+          x-cloak:enter="transition ease-out duration-300"
+          x-cloak:enter-start="opacity-0"
+          x-cloak:enter-end="opacity-100"
+          x-cloak:leave="transition ease-in duration-200"
+          x-cloak:leave-start="opacity-100"
+          x-cloak:leave-end="opacity-0"
           @keydown.escape="showItemDiscountModal = false"
           @keydown.enter="(!itemDiscountForm.value || itemDiscountForm.calculatedAmount <= 0 || !itemDiscountForm.reason || itemDiscountForm.reason.trim() === '') ? null : applyItemDiscount()"
           x-init="showItemDiscountModal && $el.focus()"
@@ -5142,7 +5142,7 @@
                   ></div>
                   <div class="text-sm text-gray-600">
                     <span
-                      x-text="`$${selectedCartItem?.price.toFixed(2)} ���� ${selectedCartItem?.quantity} = $${(selectedCartItem?.price * selectedCartItem?.quantity).toFixed(2)}`"
+                      x-text="`$${selectedCartItem?.price.toFixed(2)} �� ${selectedCartItem?.quantity} = $${(selectedCartItem?.price * selectedCartItem?.quantity).toFixed(2)}`"
                     ></span>
                   </div>
                 </div>
@@ -5252,12 +5252,12 @@
           x-show="showEnrollCustomerModal"
           x-cloak
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
+          x-cloak:enter="transition ease-out duration-300"
+          x-cloak:enter-start="opacity-0"
+          x-cloak:enter-end="opacity-100"
+          x-cloak:leave="transition ease-in duration-200"
+          x-cloak:leave-start="opacity-100"
+          x-cloak:leave-end="opacity-0"
           @keydown.escape="showEnrollCustomerModal = false"
           x-init="showEnrollCustomerModal && $el.focus()"
           tabindex="0"
@@ -5400,12 +5400,12 @@
           x-show="showAdjustPointsModal"
           x-cloak
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
+          x-cloak:enter="transition ease-out duration-300"
+          x-cloak:enter-start="opacity-0"
+          x-cloak:enter-end="opacity-100"
+          x-cloak:leave="transition ease-in duration-200"
+          x-cloak:leave-start="opacity-100"
+          x-cloak:leave-end="opacity-0"
           @keydown.escape="showAdjustPointsModal = false"
           x-init="showAdjustPointsModal && $el.focus()"
           tabindex="0"
@@ -5614,12 +5614,12 @@
           x-show="showAgingModal"
           x-cloak
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
+          x-cloak:enter="transition ease-out duration-300"
+          x-cloak:enter-start="opacity-0"
+          x-cloak:enter-end="opacity-100"
+          x-cloak:leave="transition ease-in duration-200"
+          x-cloak:leave-start="opacity-100"
+          x-cloak:leave-end="opacity-0"
           @keydown.escape="showAgingModal = false"
           x-init="showAgingModal && $el.focus()"
           tabindex="0"
@@ -5892,12 +5892,12 @@
           x-show="showPrintTypeModal"
           x-cloak
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
+          x-cloak:enter="transition ease-out duration-300"
+          x-cloak:enter-start="opacity-0"
+          x-cloak:enter-end="opacity-100"
+          x-cloak:leave="transition ease-in duration-200"
+          x-cloak:leave-start="opacity-100"
+          x-cloak:leave-end="opacity-0"
           @keydown.escape="showPrintTypeModal = false"
           @keydown.enter="selectPrintType('barcode')"
           x-init="showPrintTypeModal && $el.focus()"
@@ -6012,12 +6012,12 @@
           x-show="showPrintPreviewModal"
           x-cloak
           class="modal fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          x-transition:enter="transition ease-out duration-300"
-          x-transition:enter-start="opacity-0"
-          x-transition:enter-end="opacity-100"
-          x-transition:leave="transition ease-in duration-200"
-          x-transition:leave-start="opacity-100"
-          x-transition:leave-end="opacity-0"
+          x-cloak:enter="transition ease-out duration-300"
+          x-cloak:enter-start="opacity-0"
+          x-cloak:enter-end="opacity-100"
+          x-cloak:leave="transition ease-in duration-200"
+          x-cloak:leave-start="opacity-100"
+          x-cloak:leave-end="opacity-0"
           @keydown.escape="cancelPrintPreview()"
           @keydown.enter="proceedToPrint()"
           x-init="showPrintPreviewModal && $el.focus()"
@@ -10452,12 +10452,12 @@
                           <!-- Expanded Category Products -->
                           <div
                             x-show="expandedCategories.includes(categoryName)"
-                            x-transition:enter="transition ease-out duration-300"
-                            x-transition:enter-start="opacity-0 max-h-0"
-                            x-transition:enter-end="opacity-100 max-h-screen"
-                            x-transition:leave="transition ease-in duration-200"
-                            x-transition:leave-start="opacity-100 max-h-screen"
-                            x-transition:leave-end="opacity-0 max-h-0"
+                            x-cloak:enter="transition ease-out duration-300"
+                            x-cloak:enter-start="opacity-0 max-h-0"
+                            x-cloak:enter-end="opacity-100 max-h-screen"
+                            x-cloak:leave="transition ease-in duration-200"
+                            x-cloak:leave-start="opacity-100 max-h-screen"
+                            x-cloak:leave-end="opacity-0 max-h-0"
                             class="bg-gray-50 overflow-hidden"
                           >
                             <div class="px-6 py-4">
