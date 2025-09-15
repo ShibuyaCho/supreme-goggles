@@ -1624,8 +1624,10 @@ function cannabisPOS() {
       const meta = s.meta || null;
       const debitAmount =
         meta && meta.debit_amount != null ? Number(meta.debit_amount) : null;
+      const saleNumber = s.sale_number || s.saleNumber || null;
       return {
-        id: s.sale_number || String(s.id),
+        id: saleNumber || String(s.id),
+        saleNumber: saleNumber || null,
         numericId: s.id,
         date: s.created_at,
         customer: customerLabel,
