@@ -993,6 +993,33 @@ class SalesController extends Controller
             ->sortByDesc(function($r){ try { return \Carbon\Carbon::parse($r['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { return 0; } })
             ->take(max(1, min(1000, $limit)))
             ->values();
+        // Strict final guard: enforce requested date window by local day
+        try {
+            $startAt = $request->get('start_at');
+            $endAt = $request->get('end_at');
+            $dateFrom = $request->get('date_from');
+            $dateTo = $request->get('date_to');
+            $tz = $request->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
+            if ($startAt || $endAt) {
+                $from = $startAt ? Carbon::parse($startAt) : null;
+                $to = $endAt ? Carbon::parse($endAt) : null;
+                $final = $final->filter(function($r) use ($from, $to) {
+                    try { $c = Carbon::parse($r['created_at'] ?? null); } catch (\Throwable $e) { return true; }
+                    if ($from && $c->lt($from)) return false;
+                    if ($to && $c->gt($to)) return false;
+                    return true;
+                })->values();
+            } elseif ($dateFrom || $dateTo) {
+                $from = $dateFrom ? Carbon::parse($dateFrom, $tz)->startOfDay() : null;
+                $to = $dateTo ? Carbon::parse($dateTo, $tz)->endOfDay() : null;
+                $final = $final->filter(function($r) use ($from, $to, $tz) {
+                    try { $c = Carbon::parse($r['created_at'] ?? null)->setTimezone($tz); } catch (\Throwable $e) { return true; }
+                    if ($from && $c->lt($from)) return false;
+                    if ($to && $c->gt($to)) return false;
+                    return true;
+                })->values();
+            }
+        } catch (\Throwable $e) { /* ignore */ }
         return response()->json($final);
     }
 
