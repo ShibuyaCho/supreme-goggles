@@ -219,9 +219,17 @@ function cannabisPOS() {
     async loadCustomers() {
       try {
         const response = await axios.get("/api/customers");
-        this.customers = response.data;
+        const d = response?.data || [];
+        this.customers = Array.isArray(d)
+          ? d
+          : Array.isArray(d?.customers)
+            ? d.customers
+            : Array.isArray(d?.data)
+              ? d.data
+              : [];
       } catch (error) {
         console.error("Failed to load customers:", error);
+        this.customers = Array.isArray(this.customers) ? this.customers : [];
       }
     },
 
