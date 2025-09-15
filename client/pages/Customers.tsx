@@ -326,6 +326,7 @@ export default function Customers() {
   const saveCustomersLocal = (list: Customer[]) => {
     try {
       localStorage.setItem(customersFullKey(), JSON.stringify(list));
+      localStorage.setItem("cannabest-customers", JSON.stringify(list));
     } catch (_) {}
     try {
       const simplified = list.map((c) => ({
@@ -346,7 +347,17 @@ export default function Customers() {
     let loaded: Customer[] | null = null;
     try {
       const raw = localStorage.getItem(customersFullKey());
-      if (raw) loaded = JSON.parse(raw);
+      const rawGlobal = localStorage.getItem("cannabest-customers");
+      const a = raw ? JSON.parse(raw) : [];
+      const b = rawGlobal ? JSON.parse(rawGlobal) : [];
+      const seen = new Set<string>();
+      const mergedLocal = [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])].filter(c => {
+        const key = String(c?.id || c?.email || c?.phone || "");
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      if (mergedLocal.length) loaded = mergedLocal;
     } catch (_) {}
 
     try {
@@ -593,7 +604,9 @@ export default function Customers() {
     if (enrollInLoyalty) {
       try {
         const loyaltyListRaw = localStorage.getItem(loyaltyKey());
-        const list = loyaltyListRaw ? JSON.parse(loyaltyListRaw) : [];
+        const globalRaw = localStorage.getItem("cannabest-loyalty");
+        const listA = loyaltyListRaw ? JSON.parse(loyaltyListRaw) : [];
+        const listB = globalRaw ? JSON.parse(globalRaw) : [];
         const name = `${customer.firstName} ${customer.lastName || ""}`.trim();
         const entry = {
           id: String(customer.id),
@@ -613,13 +626,14 @@ export default function Customers() {
           isVeteran: !!customer.loyaltyProgram?.isVeteran,
         };
         const seen = new Set<string>();
-        const merged = [entry, ...(Array.isArray(list) ? list : [])].filter(c => {
+        const merged = [entry, ...(Array.isArray(listA) ? listA : []), ...(Array.isArray(listB) ? listB : [])].filter(c => {
           const key = String(c.id || c.email || c.phone || "");
           if (!key || seen.has(key)) return false;
           seen.add(key);
           return true;
         });
         localStorage.setItem(loyaltyKey(), JSON.stringify(merged));
+        localStorage.setItem("cannabest-loyalty", JSON.stringify(merged));
       } catch (_) {}
     }
 
@@ -974,6 +988,22 @@ export default function Customers() {
                       <p className="text-xs text-gray-600">
                         Customer consents to storing personal information and tracking sales history 
                         for compliance and future visits as required by Oregon state law.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <Checkbox
+                      id="enrollLoyalty"
+                      checked={enrollInLoyalty}
+                      onCheckedChange={(checked) => setEnrollInLoyalty(!!checked)}
+                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="enrollLoyalty" className="text-sm font-medium">
+                        Enroll in Loyalty Program
+                      </Label>
+                      <p className="text-xs text-gray-600">
+                        Adds this customer to the Loyalty page so you can track points and rewards.
                       </p>
                     </div>
                   </div>
