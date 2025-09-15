@@ -1326,6 +1326,18 @@ app.get("/api/loyalty-members", async (req, res) => {
     res.json({ success: true, members: [] });
   }
 });
+// Node alias
+app.get("/node/loyalty-members", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const sel = `loyalty_members?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
+    const r = await supaFetch(sel);
+    const payload = r.ok ? await r.json() : [];
+    res.json({ success: true, members: payload });
+  } catch (e) {
+    res.json({ success: true, members: [] });
+  }
+});
 
 app.post("/api/loyalty-members", async (req, res) => {
   try {
