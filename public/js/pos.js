@@ -4423,7 +4423,7 @@ function cannabisPOS() {
         });
         const list = res?.data?.tiers || [];
         if (Array.isArray(list)) {
-          this.priceTiers = list.map((t) => ({
+          const mapped = list.map((t) => ({
             id: t.id,
             name: t.name,
             isActive: t.is_active ?? true,
@@ -4437,12 +4437,15 @@ function cannabisPOS() {
             },
             customWeights: t.custom_weights || [],
           }));
-          try {
-            localStorage.setItem(
-              "cannabisPOS-priceTiers-backup",
-              JSON.stringify(this.priceTiers),
-            );
-          } catch (_) {}
+          this.priceTiers = mapped;
+          if (mapped.length > 0) {
+            try {
+              localStorage.setItem(
+                "cannabisPOS-priceTiers-backup",
+                JSON.stringify(mapped),
+              );
+            } catch (_) {}
+          }
         }
       } catch (e) {
         try {
