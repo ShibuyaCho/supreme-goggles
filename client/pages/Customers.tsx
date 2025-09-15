@@ -304,6 +304,7 @@ export default function Customers() {
     notes: "",
     dataRetentionConsent: false
   });
+  const [enrollInLoyalty, setEnrollInLoyalty] = useState(false);
 
   // Local persistence helpers (per-user scope + POS-compatible mirror)
   const getUserId = () => {
@@ -318,12 +319,13 @@ export default function Customers() {
       return "anon";
     }
   };
-  const storageFullKey = `cannabest-customers-${getUserId()}`;
-  const posCustomersKey = `cannabisPOS-customers-${getUserId()}`;
+  const customersFullKey = () => `cannabest-customers-${getUserId()}`;
+  const posCustomersKey = () => `cannabisPOS-customers-${getUserId()}`;
+  const loyaltyKey = () => `cannabest-loyalty-${getUserId()}`;
 
   const saveCustomersLocal = (list: Customer[]) => {
     try {
-      localStorage.setItem(storageFullKey, JSON.stringify(list));
+      localStorage.setItem(customersFullKey(), JSON.stringify(list));
     } catch (_) {}
     try {
       const simplified = list.map((c) => ({
@@ -334,7 +336,7 @@ export default function Customers() {
         isMedical: c.customerType === "medical",
         loyaltyPoints: c.loyaltyProgram?.pointsBalance || 0,
       }));
-      localStorage.setItem(posCustomersKey, JSON.stringify(simplified));
+      localStorage.setItem(posCustomersKey(), JSON.stringify(simplified));
       localStorage.setItem("cannabisPOS-customers", JSON.stringify(simplified));
     } catch (_) {}
   };
@@ -343,13 +345,13 @@ export default function Customers() {
   useEffect(() => {
     let loaded: Customer[] | null = null;
     try {
-      const raw = localStorage.getItem(storageFullKey);
+      const raw = localStorage.getItem(customersFullKey());
       if (raw) loaded = JSON.parse(raw);
     } catch (_) {}
 
     try {
       const rawPos =
-        localStorage.getItem(posCustomersKey) ||
+        localStorage.getItem(posCustomersKey()) ||
         localStorage.getItem("cannabisPOS-customers");
       if (rawPos) {
         const arr = JSON.parse(rawPos);
@@ -587,6 +589,40 @@ export default function Customers() {
     };
 
     setCustomers(prev => [...prev, customer]);
+
+    if (enrollInLoyalty) {
+      try {
+        const loyaltyListRaw = localStorage.getItem(loyaltyKey());
+        const list = loyaltyListRaw ? JSON.parse(loyaltyListRaw) : [];
+        const name = `${customer.firstName} ${customer.lastName || ""}`.trim();
+        const entry = {
+          id: String(customer.id),
+          name,
+          phone: customer.phone,
+          email: customer.email,
+          joinDate: new Date().toISOString().split('T')[0],
+          totalSpent: 0,
+          totalVisits: 0,
+          pointsBalance: customer.loyaltyProgram?.pointsBalance || 0,
+          pointsEarned: 0,
+          pointsRedeemed: 0,
+          tier: customer.loyaltyProgram?.tier || 'Bronze',
+          dataRetentionConsent: true,
+          salesHistory: [],
+          lastVisit: "",
+          isVeteran: !!customer.loyaltyProgram?.isVeteran,
+        };
+        const seen = new Set<string>();
+        const merged = [entry, ...(Array.isArray(list) ? list : [])].filter(c => {
+          const key = String(c.id || c.email || c.phone || "");
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        localStorage.setItem(loyaltyKey(), JSON.stringify(merged));
+      } catch (_) {}
+    }
+
     setShowAddDialog(false);
     setNewCustomer({
       firstName: "",
@@ -600,6 +636,7 @@ export default function Customers() {
       notes: "",
       dataRetentionConsent: false
     });
+    setEnrollInLoyalty(false);
   };
 
   const editCustomer = async () => {
@@ -941,9 +978,25 @@ export default function Customers() {
                     </div>
                   </div>
 
+                  <div className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <Checkbox
+                      id="enrollLoyalty"
+                      checked={enrollInLoyalty}
+                      onCheckedChange={(checked) => setEnrollInLoyalty(!!checked)}
+                    />
+                    <div className="space-y-2">
+                      <Label htmlFor="enrollLoyalty" className="text-sm font-medium">
+                        Enroll in Loyalty Program
+                      </Label>
+                      <p className="text-xs text-gray-600">
+                        Adds this customer to the Loyalty page so you can track points and rewards.
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="flex gap-2">
-                    <Button 
-                      onClick={addCustomer} 
+                    <Button
+                      onClick={addCustomer}
                       className="flex-1"
                       disabled={!newCustomer.firstName || !newCustomer.email || !newCustomer.phone || !newCustomer.dataRetentionConsent}
                     >
