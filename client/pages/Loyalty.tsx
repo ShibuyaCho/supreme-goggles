@@ -350,25 +350,11 @@ export default function Loyalty() {
       }
     } catch (_) {}
 
-    const customer: LoyaltyCustomer = created || {
-      id: Date.now().toString(),
-      name: newCustomer.name,
-      phone: newCustomer.phone,
-      email: newCustomer.email,
-      joinDate,
-      totalSpent: 0,
-      totalVisits: 0,
-      pointsBalance: 0,
-      pointsEarned: 0,
-      pointsRedeemed: 0,
-      tier: "Bronze",
-      dataRetentionConsent: newCustomer.dataRetentionConsent,
-      salesHistory: [],
-      lastVisit: "",
-      isVeteran: newCustomer.isVeteran,
-    };
+    if (!created) {
+      return;
+    }
 
-    setCustomers((prev) => [...prev, customer]);
+    setCustomers((prev) => [...prev, created]);
     // Refresh from server to ensure persistence
     try {
       const res2 = await fetch("/api/loyalty-members", {
