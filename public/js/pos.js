@@ -1445,6 +1445,7 @@ function cannabisPOS() {
         sort_by: "created_at",
         sort_order: "desc",
         limit: 500,
+        tz: (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || undefined,
       };
       if (start && end) {
         params.date_from = start;
@@ -1755,6 +1756,7 @@ function cannabisPOS() {
           limit: 1000,
           date_from: toLocalISO(first),
           date_to: toLocalISO(last),
+          tz: (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || undefined,
         };
         const endpoints = [
           "/sales/recent-json",
@@ -2610,11 +2612,13 @@ function cannabisPOS() {
       const now = new Date();
       let url = "/sales/report/daily";
       if (dr === "today") {
-        url = `/sales/report/daily?date=${toLocalISO(now)}&format=pdf`;
+        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        url = `/sales/report/daily?date=${toLocalISO(now)}&format=pdf&tz=${encodeURIComponent(tz)}`;
       } else if (dr === "yesterday") {
         const d = new Date();
         d.setDate(d.getDate() - 1);
-        url = `/sales/report/daily?date=${toLocalISO(d)}&format=pdf`;
+        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        url = `/sales/report/daily?date=${toLocalISO(d)}&format=pdf&tz=${encodeURIComponent(tz)}`;
       } else if (dr === "week" || dr === "custom") {
         let start = this.salesFilter.startDate,
           end = this.salesFilter.endDate;
@@ -2625,10 +2629,12 @@ function cannabisPOS() {
           start = toLocalISO(first);
           end = toLocalISO(d);
         }
-        url = `/sales/report/weekly?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}&format=pdf`;
+        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        url = `/sales/report/weekly?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}&format=pdf&tz=${encodeURIComponent(tz)}`;
       } else if (dr === "month") {
         const d = new Date();
-        url = `/sales/report/monthly?month=${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}&format=pdf`;
+        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        url = `/sales/report/monthly?month=${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}&format=pdf&tz=${encodeURIComponent(tz)}`;
       }
       window.open(url, "_blank");
       this.endOfDayReportGenerated = true;
