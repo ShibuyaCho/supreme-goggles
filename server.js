@@ -172,7 +172,7 @@ app.get("/", (_req, res) => {
           <div>• Oregon State Limits</div>
           <div>• Age Verification</div>
           <div>��� Tax Calculations</div>
-          <div>• Room Management</div>
+          <div>��� Room Management</div>
           <div>• Product Actions</div>
         </div>
       </div>
@@ -685,31 +685,48 @@ app.delete("/api/reports/templates/:id", (req, res) => {
   res.json({ message: "Template deleted" });
 });
 
-// Customers: enroll loyalty
-app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res, next) => {
-  // If POST to /api/customers with full payload, upsert; if /loyalty/enroll, map fields
+// Customers: create (and loyalty enroll when hitting /api/loyalty/enroll)
+app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res) => {
   try {
     const b = req.body || {};
-    const row =
-      b.name && b.email && b.phone
-        ? b
-        : {
-            name: b.name,
-            email: b.email,
-            phone: b.phone,
-            customer_type: b.tier ? "loyalty" : b.customer_type || "consumer",
-            loyalty_points: b.starting_points ?? 0,
-          };
-    const r = await supaFetch("customers", { method: "POST", body: [row] });
+    // Normalize payload from both Customers.tsx and Loyalty enroll
+    const first = b.first_name || b.firstName || "";
+    const last = b.last_name || b.lastName || "";
+    const fullName = (b.name || `${first} ${last}` || "").trim();
+    const addr = (() => {
+      const a = b.address;
+      if (!a) return null;
+      if (typeof a === "string") {
+        try { return JSON.parse(a); } catch { return { raw: a }; }
+      }
+      return a;
+    })();
+    const row = {
+      first_name: first || null,
+      last_name: last || null,
+      name: fullName || null,
+      email: b.email || null,
+      phone: b.phone || null,
+      date_of_birth: b.date_of_birth || null,
+      customer_type: b.customer_type || (b.tier ? "loyalty" : null),
+      address: addr,
+      is_active: b.is_active === false ? false : true,
+      notes: b.notes || null,
+      is_veteran: !!b.is_veteran,
+      data_retention_consent: b.data_retention_consent === true,
+      loyalty_member_id: b.loyalty_member_id || null,
+      loyalty_join_date: b.loyalty_join_date || null,
+      loyalty_points: typeof b.loyalty_points === "number" ? b.loyalty_points : (typeof b.starting_points === "number" ? b.starting_points : 0),
+      loyalty_tier: b.loyalty_tier || null,
+      total_spent: b.total_spent ?? null,
+      total_visits: b.total_visits ?? null,
+      last_visit: b.last_visit || null,
+    };
+    const r = await supaFetch("customers", { method: "POST", headers: { Prefer: "return=representation" }, body: [row] });
     const payload = r.ok ? await r.json() : null;
-    return res.status(201).json({
-      success: true,
-      customer: Array.isArray(payload) ? payload[0] : payload,
-    });
+    return res.status(201).json({ success: true, customer: Array.isArray(payload) ? payload[0] : payload });
   } catch (e) {
-    return res
-      .status(500)
-      .json({ success: false, error: "Failed to save customer" });
+    return res.status(500).json({ success: false, error: "Failed to save customer" });
   }
 });
 
@@ -1060,6 +1077,27 @@ app.get("/api/customers", async (req, res) => {
     res.json({ success: true, customers: payload });
   } catch (e) {
     res.json({ success: true, customers: [] });
+  }
+});
+
+// Customers: update
+app.put("/api/customers/:id", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    const b = req.body || {};
+    const upd = { ...b };
+    if (typeof upd.address === "string") {
+      try { upd.address = JSON.parse(upd.address); } catch {}
+    }
+    const r = await supaFetch(`customers?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      headers: { Prefer: "return=representation" },
+      body: upd,
+    });
+    const payload = r.ok ? await r.json() : null;
+    return res.json({ success: true, customer: Array.isArray(payload) ? payload[0] : payload });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: "Failed to update customer" });
   }
 });
 
