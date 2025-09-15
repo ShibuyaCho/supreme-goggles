@@ -1136,7 +1136,7 @@
                     >
                       <option value="">All Categories</option>
                       <option value="Flower">🌸 Flower</option>
-                      <option value="Pre-Rolls">����� Pre-Rolls</option>
+                      <option value="Pre-Rolls">���� Pre-Rolls</option>
                       <option value="Infused">
                         🔥 Infused (Joints/Blunts)
                       </option>
@@ -15682,6 +15682,28 @@
                         >Save customer data for future transactions and loyalty
                         program eligibility.</span
                       >
+                    </div>
+                  </div>
+                </label>
+              </div>
+
+              <!-- Loyalty Enrollment -->
+              <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <label class="flex items-start">
+                  <input
+                    id="customer-enroll-loyalty"
+                    name="customer-enroll-loyalty"
+                    type="checkbox"
+                    x-model="customerForm.enrollLoyalty"
+                    class="h-4 w-4 text-green-600 rounded focus:ring-green-600 mt-1"
+                    aria-describedby="enroll-loyalty-help"
+                  />
+                  <div class="ml-3">
+                    <div class="font-medium text-green-900">
+                      Enroll in Loyalty Program
+                    </div>
+                    <div class="text-sm text-green-700">
+                      If checked, this customer will be added to the Loyalty program and visible on the Loyalty page.
                     </div>
                   </div>
                 </label>
