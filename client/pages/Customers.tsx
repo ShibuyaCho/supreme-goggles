@@ -407,7 +407,8 @@ export default function Customers() {
         const token = localStorage.getItem("auth_token");
         const fullName =
           `${customer.firstName} ${customer.lastName || ""}`.trim();
-        await fetch("/node/loyalty-members", {
+        let ok = false;
+        let res = await fetch("/api/loyalty-members", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -426,6 +427,29 @@ export default function Customers() {
             is_veteran: !!newCustomer.loyaltyProgram?.isVeteran,
           }),
         });
+        ok = res.ok;
+        if (!ok) {
+          res = await fetch("/node/loyalty-members", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+            body: JSON.stringify({
+              customer_id: createdFromServer
+                ? Number(createdFromServer.id)
+                : undefined,
+              name: fullName,
+              email: customer.email,
+              phone: customer.phone,
+              starting_points: 0,
+              tier: "Bronze",
+              is_veteran: !!newCustomer.loyaltyProgram?.isVeteran,
+            }),
+          });
+          ok = res.ok;
+        }
       } catch (_) {}
     }
 
