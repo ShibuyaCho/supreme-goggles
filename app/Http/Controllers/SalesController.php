@@ -684,6 +684,18 @@ class SalesController extends Controller
                 'order' => 'created_at.desc',
                 'limit' => max(1, min(1000, $limit)),
             ];
+            if ($dateFrom || $dateTo) {
+                $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
+                $fromUtc = $dateFrom ? Carbon::parse($dateFrom, $tz)->startOfDay()->utc()->toISOString() : null;
+                $toUtc = $dateTo ? Carbon::parse($dateTo, $tz)->endOfDay()->utc()->toISOString() : null;
+                if ($fromUtc && $toUtc) {
+                    $params['and'] = '(created_at.gte.' . $fromUtc . ',created_at.lte.' . $toUtc . ')';
+                } elseif ($fromUtc) {
+                    $params['created_at'] = 'gte.' . $fromUtc;
+                } elseif ($toUtc) {
+                    $params['created_at'] = 'lte.' . $toUtc;
+                }
+            }
             $rows = [];
             try {
                 $resp = Http::withHeaders([
@@ -922,8 +934,11 @@ class SalesController extends Controller
                 }
             }
         }
-        $final = collect($out)->map(function($r){ if (is_array($r) && array_key_exists('source',$r)) unset($r['source']); return $r; })
-            ->take(max(1, min(1000, $limit)))->values();
+        $final = collect($out)
+            ->map(function($r){ if (is_array($r) && array_key_exists('source',$r)) unset($r['source']); return $r; })
+            ->sortByDesc(function($r){ try { return \Carbon\Carbon::parse($r['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { return 0; } })
+            ->take(max(1, min(1000, $limit)))
+            ->values();
         return response()->json($final);
     }
 
