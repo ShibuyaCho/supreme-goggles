@@ -1164,6 +1164,7 @@ function cannabisPOS() {
 
         // Load settings from API
         await this.loadApiSettings();
+        await this.loadPriceTiers();
 
         // Load saved report templates
         await this.fetchReportTemplates();
@@ -1196,6 +1197,11 @@ function cannabisPOS() {
           this.medicalTaxRate = result.data.medical_tax_rate || 0.0;
           // Merge other settings
           Object.assign(this.storeSettings, result.data);
+          // Load weight threshold if present
+          if (result.data.weight_threshold != null) {
+            const n = Number(result.data.weight_threshold);
+            if (isFinite(n)) this.weightThreshold = Math.max(0, Number(n.toFixed(2)));
+          }
         }
       } catch (error) {
         console.error("Failed to load API settings:", error);
@@ -4301,14 +4307,50 @@ function cannabisPOS() {
       }
     },
 
-    saveWeightThreshold() {
+    async saveWeightThreshold() {
       try {
         const n = Number(this.weightThreshold);
         this.weightThreshold = isFinite(n) ? Math.max(0, Number(n.toFixed(2))) : 0;
         localStorage.setItem("cannabisPOS-weightThreshold", String(this.weightThreshold));
+        // Persist to server POS settings (Supabase-backed)
+        try {
+          let settings = {};
+          try {
+            const getRes = await (window.posAuth ? posAuth.apiRequest("get", "/settings/pos") : (window.axios||axios).get("/api/settings/pos"));
+            settings = getRes?.data?.settings || getRes?.data || settings;
+          } catch(_) {}
+          settings = settings && typeof settings === 'object' ? settings : {};
+          settings.weight_threshold = this.weightThreshold;
+          const saveRes = await (window.posAuth ? posAuth.apiRequest("post", "/settings/pos", settings) : (window.axios||axios).post("/api/settings/pos", settings));
+          const ok = (saveRes?.success === true) || (saveRes?.data?.success === true) || (saveRes?.status && saveRes.status >= 200 && saveRes.status < 300);
+          if (!ok) throw new Error('save-failed');
+        } catch(_) {}
         if (typeof this.showToast === 'function') this.showToast("Weight threshold saved", "success");
       } catch(_) {
         if (typeof this.showToast === 'function') this.showToast("Failed to save threshold", "error");
+      }
+    },
+
+    async loadPriceTiers() {
+      try {
+        const res = await (window.axios||axios).get('/api/price-tiers', { headers: { Accept: 'application/json' } });
+        const list = res?.data?.tiers || [];
+        if (Array.isArray(list)) {
+          this.priceTiers = list.map(t => ({
+            id: t.id,
+            name: t.name,
+            isActive: t.is_active ?? true,
+            createdAt: t.created_at || new Date().toISOString(),
+            prices: t.prices || { weight_1g:0, weight_3_5g:0, weight_7g:0, weight_14g:0, weight_28g:0 },
+            customWeights: t.custom_weights || [],
+          }));
+          try { localStorage.setItem('cannabisPOS-priceTiers-backup', JSON.stringify(this.priceTiers)); } catch(_) {}
+        }
+      } catch (e) {
+        try {
+          const b = JSON.parse(localStorage.getItem('cannabisPOS-priceTiers-backup')||'[]');
+          if (Array.isArray(b)) this.priceTiers = b;
+        } catch(_) {}
       }
     },
 
@@ -7965,7 +8007,7 @@ function cannabisPOS() {
       };
     },
 
-    addPriceTier() {
+    async addPriceTier() {
       if (!this.tierForm.name || !this.hasAnyPrices()) {
         this.showToast(
           "Please enter tier name and at least one price",
@@ -7974,20 +8016,41 @@ function cannabisPOS() {
         return;
       }
 
-      const newTier = {
-        id: Math.max(...this.priceTiers.map((t) => t.id), 0) + 1,
+      const payload = {
         name: this.tierForm.name,
-        isActive: true,
-        createdAt: new Date().toISOString(),
-        prices: { ...this.tierForm.prices },
-        customWeights: [...(this.tierForm.customWeights || [])],
+        is_active: true,
+        prices: this.tierForm.prices,
+        custom_weights: this.tierForm.customWeights || [],
+        created_at: new Date().toISOString(),
       };
 
-      this.priceTiers.push(newTier);
-      this.showToast(
-        `Price tier "${newTier.name}" created successfully`,
-        "success",
-      );
+      try {
+        const res = await (window.axios||axios).post('/api/price-tiers', payload, { headers: { Accept: 'application/json' } });
+        const saved = (res?.data && (res.data.tier || res.data)) || null;
+        const newTier = {
+          id: saved?.id || (Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1),
+          name: saved?.name || payload.name,
+          isActive: saved?.is_active ?? true,
+          createdAt: saved?.created_at || payload.created_at,
+          prices: saved?.prices || payload.prices,
+          customWeights: saved?.custom_weights || payload.custom_weights,
+        };
+        this.priceTiers.push(newTier);
+        try { localStorage.setItem('cannabisPOS-priceTiers-backup', JSON.stringify(this.priceTiers)); } catch(_) {}
+        this.showToast(`Price tier "${newTier.name}" created successfully`, 'success');
+      } catch (e) {
+        // Fallback: local only
+        const fallback = {
+          id: Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1,
+          name: payload.name,
+          isActive: true,
+          createdAt: payload.created_at,
+          prices: payload.prices,
+          customWeights: payload.custom_weights,
+        };
+        this.priceTiers.push(fallback);
+        this.showToast(`Price tier "${fallback.name}" saved locally (offline)`, 'warning');
+      }
       this.closeTierModal();
     },
 
