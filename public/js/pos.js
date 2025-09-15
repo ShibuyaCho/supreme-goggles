@@ -1444,7 +1444,7 @@ function cannabisPOS() {
         status: "completed",
         sort_by: "created_at",
         sort_order: "desc",
-        limit: 500,
+        limit: 1000,
         tz: (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || undefined,
       };
       this._serverFilteredDates = false;
