@@ -927,16 +927,23 @@ class SalesController extends Controller
             $matched = false;
             for ($j = max(0, count($out) - 100); $j < count($out); $j++) {
                 $p = $out[$j];
-                // If existing row has a sale_number, do not collapse it with bucket logic
-                if (!empty($p['sale_number'])) { continue; }
                 $pd = null; try { $pd = \Carbon\Carbon::parse($p['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $pd = now(); }
                 $pts = $pd->timestamp;
                 $pamt = (float)($p['total_amount'] ?? ($p['total'] ?? 0));
                 $ppm = strtolower((string)($p['payment_method'] ?? ''));
                 if (abs($ts - $pts) <= 600 && abs($amt - $pamt) < 0.01 && $pm === $ppm) {
+                    $rHasSN = !empty($r['sale_number']);
+                    $pHasSN = !empty($p['sale_number']);
                     $rSource = strtolower((string)($r['source'] ?? ''));
                     $pSource = strtolower((string)($p['source'] ?? ''));
-                    if ($pSource !== 'local' && $rSource === 'local') { $out[$j] = $r; }
+                    // Prefer entries with a sale_number, otherwise prefer local source
+                    if ($pHasSN && !$rHasSN) {
+                        // keep existing $p
+                    } elseif ($rHasSN && !$pHasSN) {
+                        $out[$j] = $r;
+                    } else {
+                        if ($pSource !== 'local' && $rSource === 'local') { $out[$j] = $r; }
+                    }
                     $matched = true; break;
                 }
             }
