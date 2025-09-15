@@ -444,9 +444,17 @@ export default function Deals() {
           maxUses: newDeal.maxUses ?? base.maxUses,
         } as Deal;
         setDeals((prev) => {
-          const next = prev.map((d) => (d.id === full.id ? full : d));
-          saveDealsLocal(next);
-          return next;
+          const next = prev.map((d) => (String(d.id) === String(full.id) ? full : d));
+          // de-duplicate by id
+          const seen = new Set<string>();
+          const deduped = next.filter((d) => {
+            const k = String(d.id);
+            if (seen.has(k)) return false;
+            seen.add(k);
+            return true;
+          });
+          saveDealsLocal(deduped);
+          return deduped;
         });
         setShowEditDialog(false);
         setSelectedDeal(null);
