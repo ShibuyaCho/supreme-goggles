@@ -1537,23 +1537,39 @@ app.get("/api/sales/recent", async (req, res) => {
     if (status) q["status"] = `eq.${status}`;
     const df = req.query?.date_from ? String(req.query.date_from) : "";
     const dt = req.query?.date_to ? String(req.query.date_to) : "";
-    if (df && dt) {
-      const s = new Date(df);
-      const e = new Date(dt);
-      const startIso = new Date(
-        Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0),
-      ).toISOString();
-      const endIso = new Date(
-        Date.UTC(
-          e.getUTCFullYear(),
-          e.getUTCMonth(),
-          e.getUTCDate() + 1,
-          0,
-          0,
-          0,
-        ),
-      ).toISOString();
-      q["and"] = `(created_at.gte.${startIso},created_at.lt.${endIso})`;
+    const startAt = req.query?.start_at ? String(req.query.start_at) : "";
+    const endAt = req.query?.end_at ? String(req.query.end_at) : "";
+    if (startAt || endAt) {
+      try {
+        if (startAt && endAt) {
+          const s = new Date(startAt).toISOString();
+          const e = new Date(endAt).toISOString();
+          q["and"] = `(created_at.gte.${s},created_at.lte.${e})`;
+        } else if (startAt) {
+          const s = new Date(startAt).toISOString();
+          q["created_at"] = `gte.${s}`;
+        } else if (endAt) {
+          const e = new Date(endAt).toISOString();
+          q["created_at"] = `lte.${e}`;
+        }
+      } catch {
+        // fall through to df/dt handling
+      }
+    } else if (df || dt) {
+      // Interpret df/dt as LOCAL calendar days from client: build precise UTC window from local midnight bounds
+      try {
+        if (df && dt) {
+          const s = new Date(`${df}T00:00:00`);
+          const e = new Date(`${dt}T23:59:59.999`);
+          q["and"] = `(created_at.gte.${s.toISOString()},created_at.lte.${e.toISOString()})`;
+        } else if (df) {
+          const s = new Date(`${df}T00:00:00`);
+          q["created_at"] = `gte.${s.toISOString()}`;
+        } else if (dt) {
+          const e = new Date(`${dt}T23:59:59.999`);
+          q["created_at"] = `lte.${e.toISOString()}`;
+        }
+      } catch {}
     }
     const r = await supaFetch("sales", { method: "GET", query: q });
     const rows = r.ok ? await r.json() : [];
@@ -1561,11 +1577,12 @@ app.get("/api/sales/recent", async (req, res) => {
     // Optional strict day filtering by timezone if client provided tz and date_from/date_to
     try {
       const tz = String(req.query?.tz || "").trim();
-      const df = req.query?.date_from ? String(req.query.date_from) : "";
-      const dt = req.query?.date_to ? String(req.query.date_to) : "";
-      if (tz && (df || dt)) {
-        const startYmd = df ? new Date(df).toLocaleDateString("en-CA", { timeZone: tz }) : null;
-        const endYmd = dt ? new Date(dt).toLocaleDateString("en-CA", { timeZone: tz }) : null;
+      const df2 = req.query?.date_from ? String(req.query.date_from) : "";
+      const dt2 = req.query?.date_to ? String(req.query.date_to) : "";
+      const hasExact = !!(req.query?.start_at || req.query?.end_at);
+      if (!hasExact && tz && (df2 || dt2)) {
+        const startYmd = df2 ? new Date(df2).toLocaleDateString("en-CA", { timeZone: tz }) : null;
+        const endYmd = dt2 ? new Date(dt2).toLocaleDateString("en-CA", { timeZone: tz }) : null;
         arr = arr.filter((s) => {
           try {
             const ymd = new Date(s.created_at).toLocaleDateString("en-CA", { timeZone: tz });
