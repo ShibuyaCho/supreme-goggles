@@ -1678,40 +1678,16 @@ app.get("/api/sales/recent", async (req, res) => {
         meta: s.meta || null,
       };
     });
-    // Deduplicate by sale_number, then collapse near-identical transactions by cart signature within 2 minutes
+    // Deduplicate only by sale_number to avoid hiding legitimate same-cart sales
     const out = [];
-    const indexBySN = new Map();
+    const seen = new Set();
     for (const r of prelim) {
       const sn = String(r.sale_number || "");
       if (sn) {
-        if (indexBySN.has(sn)) continue;
-        indexBySN.set(sn, out.length);
-        out.push(r);
-        continue;
+        if (seen.has(sn)) continue;
+        seen.add(sn);
       }
-      // No sale_number: use cart signature matching
-      const dt = new Date(r.created_at);
-      const amt = Number(r.total_amount || r.total || 0);
-      const pm = String(r.payment_method || "").toLowerCase();
-      const parts = (Array.isArray(r.sale_items) ? r.sale_items : []).map(
-        (it) => `${String(it.product_name || "").toLowerCase().trim()}x${Number(it.quantity || 0)}@${Number(it.unit_price || 0).toFixed(2)}`,
-      ).sort();
-      const sig = parts.join("|");
-      let matched = false;
-      for (let j = Math.max(0, out.length - 200); j < out.length; j++) {
-        const p = out[j];
-        const pdt = new Date(p.created_at);
-        const pamt = Number(p.total_amount || p.total || 0);
-        const ppm = String(p.payment_method || "").toLowerCase();
-        const psig = (Array.isArray(p.sale_items) ? p.sale_items : [])
-          .map((it) => `${String(it.product_name || "").toLowerCase().trim()}x${Number(it.quantity || 0)}@${Number(it.unit_price || 0).toFixed(2)}`)
-          .sort()
-          .join("|");
-        if (Math.abs(dt - pdt) <= 120000 && Math.abs(amt - pamt) < 0.01 && pm === ppm && sig && psig && sig === psig) {
-          matched = true; break;
-        }
-      }
-      if (!matched) out.push(r);
+      out.push(r);
     }
     res.json(out);
   } catch (e) {
