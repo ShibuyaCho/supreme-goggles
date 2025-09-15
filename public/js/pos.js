@@ -605,6 +605,8 @@ function cannabisPOS() {
       },
     ],
 
+    weightThreshold: 0,
+
     printData: {
       product: null,
       type: "",
@@ -4274,6 +4276,14 @@ function cannabisPOS() {
       } catch (error) {
         console.error("Error loading settings:", error);
       }
+      // Load weight threshold
+      try {
+        const wt = localStorage.getItem("cannabisPOS-weightThreshold");
+        if (wt != null && wt !== "") {
+          const n = parseFloat(wt);
+          if (!isNaN(n) && isFinite(n)) this.weightThreshold = Math.max(0, n);
+        }
+      } catch(_) {}
     },
 
     saveSettings() {
@@ -4288,6 +4298,17 @@ function cannabisPOS() {
         localStorage.setItem("cannabest-pos-settings", json);
       } catch (error) {
         console.error("Error saving settings:", error);
+      }
+    },
+
+    saveWeightThreshold() {
+      try {
+        const n = Number(this.weightThreshold);
+        this.weightThreshold = isFinite(n) ? Math.max(0, Number(n.toFixed(2))) : 0;
+        localStorage.setItem("cannabisPOS-weightThreshold", String(this.weightThreshold));
+        if (typeof this.showToast === 'function') this.showToast("Weight threshold saved", "success");
+      } catch(_) {
+        if (typeof this.showToast === 'function') this.showToast("Failed to save threshold", "error");
       }
     },
 
