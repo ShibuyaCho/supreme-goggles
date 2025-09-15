@@ -772,6 +772,7 @@ class SalesController extends Controller
                     'payment_method' => $r['payment_method'] ?? 'cash',
                     'payment_reference' => $r['payment_reference'] ?? ($r['card_last_four'] ?? null),
                     'status' => $r['status'] ?? 'completed',
+                    'source' => 'supabase',
                 ];
             })->values();
 
@@ -843,6 +844,7 @@ class SalesController extends Controller
                 'payment_method' => $s->payment_method,
                 'payment_reference' => $s->payment_reference,
                 'status' => $s->status,
+                'source' => 'local',
             ];
         })->unique(function($r){ return $r['sale_number'] ?? ($r['id'] ?? null); })->values()->filter(function($r) use ($existingKeys){
             $k = (string)($r['sale_number'] ?? $r['id'] ?? '');
@@ -850,28 +852,49 @@ class SalesController extends Controller
         });
 
         $finalAll = $merged->merge($localMapped)->values();
-        $seen = [];
-        $dedup = [];
-        foreach ($finalAll as $r) {
-            $sn = is_array($r) ? ($r['sale_number'] ?? null) : (is_object($r) ? ($r->sale_number ?? null) : null);
-            if ($sn && $sn !== '') {
-                $k = 'sn:' . (string)$sn;
-            } else {
-                try {
-                    $dtStr = is_array($r) ? ($r['created_at'] ?? '') : ($r->created_at ?? '');
-                    $buck = \Carbon\Carbon::parse($dtStr)->setTimezone(config('app.timezone'))->format('Y-m-d H:i');
-                } catch (\Throwable $e) {
-                    $buck = substr((string)(is_array($r)?($r['created_at']??''):''), 0, 16);
+        $items = $finalAll->map(function($r){ return is_array($r) ? $r : (array)$r; })
+            ->sortBy(function($r){
+                try { return \Carbon\Carbon::parse($r['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { return 0; }
+            })->values()->all();
+        $out = [];
+        $indexBySN = [];
+        for ($i = 0; $i < count($items); $i++) {
+            $r = $items[$i];
+            $sn = (string)($r['sale_number'] ?? '');
+            if ($sn !== '') {
+                if (isset($indexBySN[$sn])) {
+                    $keepIdx = $indexBySN[$sn];
+                    $keep = $out[$keepIdx];
+                    $rSource = strtolower((string)($r['source'] ?? ''));
+                    $kSource = strtolower((string)($keep['source'] ?? ''));
+                    if ($kSource !== 'local' && $rSource === 'local') { $out[$keepIdx] = $r; }
+                    continue;
+                } else {
+                    $indexBySN[$sn] = count($out);
+                    $out[] = $r;
+                    continue;
                 }
-                $amt = (float) (is_array($r) ? ($r['total_amount'] ?? ($r['total'] ?? 0)) : ($r->total_amount ?? ($r->total ?? 0)));
-                $pm = strtolower((string)(is_array($r) ? ($r['payment_method'] ?? '') : ($r->payment_method ?? '')));
-                $k = $buck . '|' . number_format($amt, 2, '.', '') . '|' . $pm;
             }
-            if (isset($seen[$k])) continue;
-            $seen[$k] = true;
-            $dedup[] = $r;
+            $ts = 0; try { $ts = \Carbon\Carbon::parse($r['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { $ts = 0; }
+            $amt = (float)($r['total_amount'] ?? ($r['total'] ?? 0));
+            $pm = strtolower((string)($r['payment_method'] ?? ''));
+            $matched = false;
+            for ($j = max(0, count($out) - 30); $j < count($out); $j++) {
+                $p = $out[$j];
+                $pts = 0; try { $pts = \Carbon\Carbon::parse($p['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { $pts = 0; }
+                $pamt = (float)($p['total_amount'] ?? ($p['total'] ?? 0));
+                $ppm = strtolower((string)($p['payment_method'] ?? ''));
+                if (abs($ts - $pts) <= 600 && abs($amt - $pamt) < 0.01 && $pm === $ppm) {
+                    $rSource = strtolower((string)($r['source'] ?? ''));
+                    $pSource = strtolower((string)($p['source'] ?? ''));
+                    if ($pSource !== 'local' && $rSource === 'local') { $out[$j] = $r; }
+                    $matched = true; break;
+                }
+            }
+            if (!$matched) { $out[] = $r; }
         }
-        $final = collect($dedup)->take(max(1, min(1000, $limit)))->values();
+        $final = collect($out)->map(function($r){ if (is_array($r) && array_key_exists('source',$r)) unset($r['source']); return $r; })
+            ->take(max(1, min(1000, $limit)))->values();
         return response()->json($final);
     }
 
