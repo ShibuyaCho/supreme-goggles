@@ -1753,16 +1753,14 @@ function cannabisPOS() {
         const payOk = !pay || s.paymentMethod === pay;
         const amtOk = s.total >= min && s.total <= max;
         let dateOk = true;
-        if (!this._serverFilteredDates) {
-          try {
-            if (startKey && endKey) {
-              const startBound = new Date(`${startKey}T00:00:00`);
-              const endBound = new Date(`${endKey}T23:59:59.999`);
-              const dt = new Date(s.date);
-              dateOk = dt >= startBound && dt <= endBound;
-            }
-          } catch(_) { dateOk = true; }
-        }
+        try {
+          if (startKey && endKey) {
+            const startBound = new Date(`${startKey}T00:00:00`);
+            const endBound = new Date(`${endKey}T23:59:59.999`);
+            const dt = new Date(s.date);
+            dateOk = dt >= startBound && dt <= endBound;
+          }
+        } catch(_) { dateOk = true; }
         return nameOk && payOk && amtOk && dateOk;
       });
     },
