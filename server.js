@@ -1677,10 +1677,17 @@ app.get("/api/sales/recent", async (req, res) => {
         meta: s.meta || null,
       };
     });
+    // Apply status filtering after mapping to handle case variations; default excludes voided
+    let filtered = prelim;
+    if (status) {
+      filtered = prelim.filter((r) => String(r.status || '').toLowerCase() === String(status || '').toLowerCase());
+    } else {
+      filtered = prelim.filter((r) => String(r.status || '').toLowerCase() !== 'voided');
+    }
     // Deduplicate only by sale_number to avoid hiding legitimate same-cart sales
     const out = [];
     const seen = new Set();
-    for (const r of prelim) {
+    for (const r of filtered) {
       const sn = String(r.sale_number || "");
       if (sn) {
         if (seen.has(sn)) continue;
