@@ -1930,7 +1930,7 @@ app.post("/api/sales/diag/create", async (_req, res) => {
 });
 
 // Analytics: End of Day (Supabase-backed)
-app.get("/api/analytics/end-of-day", async (_req, res) => {
+app.get("/api/analytics/end-of-day", async (req, res) => {
   try {
     const today = new Date();
     const start = new Date(
