@@ -479,7 +479,7 @@ export default function Customers() {
         const token = localStorage.getItem("auth_token");
         const fullName =
           `${customer.firstName} ${customer.lastName || ""}`.trim();
-        await fetch("/api/loyalty-members", {
+        await fetch("/node/loyalty-members", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
