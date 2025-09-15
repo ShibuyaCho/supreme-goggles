@@ -12900,7 +12900,7 @@
                                       >
                                       <span
                                         class="font-semibold text-green-600"
-                                        x-text="'$' + customer.totalSpent.toFixed(2)"
+                                        x-text="'$' + Number(customer.totalSpent ?? 0).toFixed(2)"
                                       ></span>
                                     </p>
                                     <p>
