@@ -1318,30 +1318,43 @@ app.get("/api/loyalty-members", async (req, res) => {
 app.post("/api/loyalty-members", async (req, res) => {
   try {
     const b = req.body || {};
-    const name = String(b.name || "").trim();
+    const nameRaw = (b.name || "").toString().trim();
+    const fallbackName = [b.email, b.phone].filter(Boolean).join(" ") || "Member";
+    const join = (b.join_date || new Date().toISOString().slice(0, 10)).toString().slice(0, 10);
+    const custId = b.customer_id != null ? Number(b.customer_id) : null;
+    const pts = Number(b.starting_points ?? b.points_balance ?? 0) || 0;
+
     const row = {
-      customer_id: b.customer_id ?? null,
-      name,
+      customer_id: Number.isFinite(custId) ? custId : null,
+      name: nameRaw || fallbackName,
       email: b.email || null,
       phone: b.phone || null,
-      join_date: b.join_date || new Date().toISOString().slice(0, 10),
-      points_balance: Number(b.starting_points ?? b.points_balance ?? 0) || 0,
-      points_earned: Number(b.starting_points ?? b.points_earned ?? 0) || 0,
+      join_date: join,
+      points_balance: pts,
+      points_earned: pts,
       points_redeemed: 0,
       tier: b.tier || b.loyalty_tier || "Bronze",
       is_veteran: !!b.is_veteran,
       total_spent: Number(b.total_spent ?? 0) || 0,
       total_visits: Number(b.total_visits ?? 0) || 0,
       last_visit: b.last_visit || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     const r = await supaFetch("loyalty_members", {
       method: "POST",
       body: [row],
     });
-    const payload = r.ok ? await r.json() : null;
+    if (!r.ok) {
+      const err = await r.json().catch(() => ({}));
+      return res.status(400).json({ success: false, error: err || "Insert failed" });
+    }
+    const payload = await r.json();
     const created = Array.isArray(payload) ? payload[0] : payload;
-    // Log starting points if any
-    if (created && row.points_earned > 0) {
+    if (!created || !created.id) {
+      return res.status(400).json({ success: false, error: "Insert returned no row" });
+    }
+    if (row.points_earned > 0) {
       try {
         await supaFetch("loyalty_transactions", {
           method: "POST",
