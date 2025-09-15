@@ -122,6 +122,9 @@ class SalesController extends Controller
                 ];
             })->values();
 
+            // De-duplicate by sale_number to avoid duplicates
+            $mapped = $mapped->unique(function($r){ return $r->sale_number ?? ($r->id ?? null); })->values();
+
             // Pagination
             $page = max(1, (int)$request->get('page', 1));
             $perPage = 20;
