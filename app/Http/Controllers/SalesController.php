@@ -72,28 +72,19 @@ class SalesController extends Controller
             if ($filterEmployee !== 'all') {
                 $rows = $rows->where('employee_id', $filterEmployee);
             }
-            if ($dateFrom) {
-                $rows = $rows->filter(function($r) use ($dateFrom) {
+            if ($dateFrom || $dateTo) {
+                $rows = $rows->filter(function($r) use ($dateFrom, $dateTo) {
                     try {
-                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
-                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
-                        $dsUtc = $c->copy()->toDateString();
+                        $tz = config('app.timezone');
+                        $created = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone($tz);
+                        $from = $dateFrom ? \Carbon\Carbon::parse($dateFrom, $tz)->startOfDay() : null;
+                        $to = $dateTo ? \Carbon\Carbon::parse($dateTo, $tz)->endOfDay() : null;
                     } catch (\Throwable $e) {
-                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
+                        return true;
                     }
-                    return ($dsLocal >= $dateFrom) || ($dsUtc >= $dateFrom);
-                });
-            }
-            if ($dateTo) {
-                $rows = $rows->filter(function($r) use ($dateTo) {
-                    try {
-                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
-                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
-                        $dsUtc = $c->copy()->toDateString();
-                    } catch (\Throwable $e) {
-                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
-                    }
-                    return ($dsLocal <= $dateTo) || ($dsUtc <= $dateTo);
+                    if ($from && $created->lt($from)) return false;
+                    if ($to && $created->gt($to)) return false;
+                    return true;
                 });
             }
 
@@ -715,28 +706,19 @@ class SalesController extends Controller
             if ($employee && $employee !== 'all') {
                 $rows = $rows->where('employee_id', $employee);
             }
-            if ($dateFrom) {
-                $rows = $rows->filter(function($r) use ($dateFrom) {
+            if ($dateFrom || $dateTo) {
+                $rows = $rows->filter(function($r) use ($dateFrom, $dateTo) {
                     try {
-                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
-                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
-                        $dsUtc = $c->copy()->toDateString();
+                        $tz = config('app.timezone');
+                        $created = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone($tz);
+                        $from = $dateFrom ? \Carbon\Carbon::parse($dateFrom, $tz)->startOfDay() : null;
+                        $to = $dateTo ? \Carbon\Carbon::parse($dateTo, $tz)->endOfDay() : null;
                     } catch (\Throwable $e) {
-                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
+                        return true;
                     }
-                    return ($dsLocal >= $dateFrom) || ($dsUtc >= $dateFrom);
-                });
-            }
-            if ($dateTo) {
-                $rows = $rows->filter(function($r) use ($dateTo) {
-                    try {
-                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
-                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
-                        $dsUtc = $c->copy()->toDateString();
-                    } catch (\Throwable $e) {
-                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
-                    }
-                    return ($dsLocal <= $dateTo) || ($dsUtc <= $dateTo);
+                    if ($from && $created->lt($from)) return false;
+                    if ($to && $created->gt($to)) return false;
+                    return true;
                 });
             }
 
@@ -878,9 +860,16 @@ class SalesController extends Controller
             })->values()->all();
         $out = [];
         $indexBySN = [];
+        $seenBuckets = [];
         for ($i = 0; $i < count($items); $i++) {
             $r = $items[$i];
             $sn = (string)($r['sale_number'] ?? '');
+            $tz = config('app.timezone');
+            $dt = null; try { $dt = \Carbon\Carbon::parse($r['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $dt = now(); }
+            $amt = (float)($r['total_amount'] ?? ($r['total'] ?? 0));
+            $pm = strtolower((string)($r['payment_method'] ?? ''));
+            $bucketKey = $dt->format('Y-m-d H:i') . '|' . number_format($amt, 2, '.', '') . '|' . $pm;
+
             if ($sn !== '') {
                 if (isset($indexBySN[$sn])) {
                     $keepIdx = $indexBySN[$sn];
@@ -888,20 +877,25 @@ class SalesController extends Controller
                     $rSource = strtolower((string)($r['source'] ?? ''));
                     $kSource = strtolower((string)($keep['source'] ?? ''));
                     if ($kSource !== 'local' && $rSource === 'local') { $out[$keepIdx] = $r; }
+                    if (isset($seenBuckets[$bucketKey]) && $kSource !== 'local' && $rSource === 'local') {
+                        $seenBuckets[$bucketKey] = true;
+                    }
                     continue;
                 } else {
+                    if (isset($seenBuckets[$bucketKey])) { continue; }
                     $indexBySN[$sn] = count($out);
                     $out[] = $r;
+                    $seenBuckets[$bucketKey] = strtolower((string)($r['source'] ?? '')) === 'local';
                     continue;
                 }
             }
-            $ts = 0; try { $ts = \Carbon\Carbon::parse($r['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { $ts = 0; }
-            $amt = (float)($r['total_amount'] ?? ($r['total'] ?? 0));
-            $pm = strtolower((string)($r['payment_method'] ?? ''));
+
+            $ts = 0; try { $ts = $dt->timestamp; } catch (\Throwable $e) { $ts = 0; }
             $matched = false;
-            for ($j = max(0, count($out) - 30); $j < count($out); $j++) {
+            for ($j = max(0, count($out) - 100); $j < count($out); $j++) {
                 $p = $out[$j];
-                $pts = 0; try { $pts = \Carbon\Carbon::parse($p['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { $pts = 0; }
+                $pd = null; try { $pd = \Carbon\Carbon::parse($p['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $pd = now(); }
+                $pts = $pd->timestamp;
                 $pamt = (float)($p['total_amount'] ?? ($p['total'] ?? 0));
                 $ppm = strtolower((string)($p['payment_method'] ?? ''));
                 if (abs($ts - $pts) <= 600 && abs($amt - $pamt) < 0.01 && $pm === $ppm) {
@@ -911,7 +905,12 @@ class SalesController extends Controller
                     $matched = true; break;
                 }
             }
-            if (!$matched) { $out[] = $r; }
+            if (!$matched) {
+                if (!isset($seenBuckets[$bucketKey])) {
+                    $out[] = $r;
+                    $seenBuckets[$bucketKey] = strtolower((string)($r['source'] ?? '')) === 'local';
+                }
+            }
         }
         $final = collect($out)->map(function($r){ if (is_array($r) && array_key_exists('source',$r)) unset($r['source']); return $r; })
             ->take(max(1, min(1000, $limit)))->values();
