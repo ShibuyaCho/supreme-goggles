@@ -2407,7 +2407,7 @@ function cannabisPOS() {
         }
         return best && best.name ? best.name : "—";
       } catch (_) {
-        return "���";
+        return "—";
       }
     },
 
@@ -6595,7 +6595,7 @@ function cannabisPOS() {
       console.log("Update room functionality would be implemented here");
     },
 
-    addCustomer() {
+    async addCustomer() {
       // Validate required fields
       if (!this.customerForm.name) {
         this.showToast("Customer name is required", "error");
@@ -6650,25 +6650,44 @@ function cannabisPOS() {
         }
       }
 
-      // Add to customers array
-      this.customers.push(newCustomer);
-
-      // Save to localStorage for persistence
+      // Try to persist via API when authenticated and permitted
+      let savedCustomer = null;
       try {
-        const existingCustomers = JSON.parse(
-          localStorage.getItem("cannabisPOS-customers") || "[]",
-        );
-        existingCustomers.push(newCustomer);
-        localStorage.setItem(
-          "cannabisPOS-customers",
-          JSON.stringify(existingCustomers),
-        );
-      } catch (error) {
-        console.error("Error saving customer to localStorage:", error);
+        if (this.isAuthenticated && this.hasPermission("customers:write")) {
+          const [first, ...rest] = (newCustomer.name || "").split(" ");
+          const payload = {
+            first_name: first || newCustomer.name,
+            last_name: rest.join(" ") || null,
+            email: newCustomer.email,
+            phone: newCustomer.phone,
+            customer_type: newCustomer.isMedical ? "medical" : "recreational",
+            data_retention_consent: true,
+          };
+          const res = await posAuth.apiRequest("post", "/customers", payload);
+          if (res && res.success && res.data && (res.data.customer || res.data.data)) {
+            const srv = res.data.customer || res.data.data;
+            savedCustomer = {
+              ...newCustomer,
+              id: srv.id ?? newCustomer.id,
+              name: srv.first_name && srv.last_name ? `${srv.first_name} ${srv.last_name}` : (srv.first_name || newCustomer.name),
+              email: srv.email || newCustomer.email,
+              phone: srv.phone || newCustomer.phone,
+            };
+          }
+        }
+      } catch (e) {
+        // fall back to local only
       }
 
+      // Add to customers array
+      this.customers.push(savedCustomer || newCustomer);
+
+      // Save to localStorage for persistence (per-user + legacy)
+      try { this._saveCustomersLocal(); } catch (error) { console.error("Error saving customers:", error); }
+      try { this.filterLoyaltyCustomers(); } catch (_) {}
+
       this.showToast(
-        `Customer ${newCustomer.name} added successfully`,
+        `Customer ${(savedCustomer || newCustomer).name} added successfully`,
         "success",
       );
       this.closeAddCustomerModal();
