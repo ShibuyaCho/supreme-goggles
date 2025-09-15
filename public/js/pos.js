@@ -4275,8 +4275,8 @@ function cannabisPOS() {
         const [userKey, globalKey] = this.loyaltyStorageKeys();
         const listA = JSON.parse(localStorage.getItem(userKey) || "[]");
         const listB = JSON.parse(localStorage.getItem(globalKey) || "[]");
-        const today = new Date().toISOString().split('T')[0];
-        const normalized = { signupDate: today, joinDate: today, ...entry };
+        const nowIso = new Date().toISOString();
+        const normalized = { signupDate: nowIso, joinDate: nowIso, isActive: true, ...entry };
         const seen = new Set();
         const merged = [normalized, ...(Array.isArray(listA)?listA:[]), ...(Array.isArray(listB)?listB:[])].filter(c => {
           const key = String(c?.id || c?.email || c?.phone || "");
@@ -4346,7 +4346,7 @@ function cannabisPOS() {
         else this.customers = [];
       }
 
-      this.customers.push(enrolled);
+      this.customers.push({ ...enrolled, isActive: true });
       try {
         this._saveCustomersLocal();
       } catch (_) {}
@@ -4648,7 +4648,11 @@ function cannabisPOS() {
         }
         return dir === "asc" ? (av > bv ? 1 : -1) : av < bv ? 1 : -1;
       });
-      this.filteredLoyaltyCustomers = list;
+      // Ensure default active when not specified
+      this.filteredLoyaltyCustomers = list.map(c => ({
+        ...c,
+        isActive: c.isActive === undefined ? true : c.isActive,
+      }));
     },
     getLoyaltyStats() {
       const list = Array.isArray(this.customers) ? this.customers : [];
@@ -6767,6 +6771,7 @@ function cannabisPOS() {
         phone: this.customerForm.phone.trim(),
         isMedical: this.customerForm.type === "medical",
         loyaltyPoints: 0,
+        isActive: true,
         createdAt: new Date().toISOString(),
       };
 
