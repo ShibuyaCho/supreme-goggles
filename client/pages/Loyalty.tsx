@@ -119,7 +119,7 @@ export default function Loyalty() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/loyalty-members", {
+        const res = await fetch("/node/loyalty-members", {
           headers: { Accept: "application/json" },
         });
         if (res.ok) {
