@@ -865,6 +865,7 @@ function cannabisPOS() {
                 const now = new Date().toISOString();
                 const optimistic = {
                   id: saleNum || String(sid),
+                  saleNumber: saleNum || null,
                   numericId: Number(sid) || sid,
                   date: now,
                   customer: e?.detail?.customer || "Walk-in Customer",
@@ -4846,7 +4847,7 @@ function cannabisPOS() {
 
     getLabelSizeDisplay() {
       if (this.printData.labelSize === "custom") {
-        return `${this.printData.customWidth || 3}" �� ${this.printData.customHeight || 2}"`;
+        return `${this.printData.customWidth || 3}" × ${this.printData.customHeight || 2}"`;
       }
 
       const sizes = {
