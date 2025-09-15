@@ -1008,7 +1008,7 @@
                 <div
                   x-show="open"
                   @click.outside="open=false"
-                  x-transition
+                  x-cloak
                   class="absolute right-0 top-full mt-2 w-40 bg-white border border-gray-200 rounded-md shadow-lg z-50"
                 >
                   <button
@@ -5142,7 +5142,7 @@
                   ></div>
                   <div class="text-sm text-gray-600">
                     <span
-                      x-text="`$${selectedCartItem?.price.toFixed(2)} �� ${selectedCartItem?.quantity} = $${(selectedCartItem?.price * selectedCartItem?.quantity).toFixed(2)}`"
+                      x-text="`$${selectedCartItem?.price.toFixed(2)} ���� ${selectedCartItem?.quantity} = $${(selectedCartItem?.price * selectedCartItem?.quantity).toFixed(2)}`"
                     ></span>
                   </div>
                 </div>
@@ -7941,7 +7941,7 @@
                       >
                     </p>
                     <p class="text-sm text-gray-500 mt-1">
-                      �� Real-time METRC vendor shipment tracking with ETA
+                      ✅ Real-time METRC vendor shipment tracking with ETA
                       monitoring
                     </p>
                     <p class="text-sm text-gray-500">
