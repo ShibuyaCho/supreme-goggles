@@ -9952,3 +9952,33 @@ document.addEventListener("DOMContentLoaded", function () {
   // Also run shortly after script load
   try { setTimeout(scan, 50); } catch(_) {}
 })();
+
+// Global bridge for aspdTimeframe to prevent ReferenceErrors
+(function(){
+  try {
+    if (typeof window.aspdTimeframe === 'undefined') {
+      let __aspd_fallback = 'month';
+      Object.defineProperty(window, 'aspdTimeframe', {
+        configurable: true,
+        enumerable: true,
+        get() {
+          try {
+            const app = document.getElementById('app');
+            const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
+            if (scope && typeof scope.aspdTimeframe !== 'undefined') return scope.aspdTimeframe;
+          } catch(_) {}
+          return __aspd_fallback;
+        },
+        set(v) {
+          try {
+            const app = document.getElementById('app');
+            const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
+            if (scope) scope.aspdTimeframe = v;
+          } catch(_) {}
+          __aspd_fallback = v;
+          return true;
+        }
+      });
+    }
+  } catch(_) {}
+})();
