@@ -74,16 +74,26 @@ class SalesController extends Controller
             }
             if ($dateFrom) {
                 $rows = $rows->filter(function($r) use ($dateFrom) {
-                    try { $ds = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone(config('app.timezone'))->toDateString(); }
-                    catch (\Throwable $e) { $ds = substr((string)($r['created_at'] ?? ''),0,10); }
-                    return $ds >= $dateFrom;
+                    try {
+                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
+                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
+                        $dsUtc = $c->copy()->toDateString();
+                    } catch (\Throwable $e) {
+                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
+                    }
+                    return ($dsLocal >= $dateFrom) || ($dsUtc >= $dateFrom);
                 });
             }
             if ($dateTo) {
                 $rows = $rows->filter(function($r) use ($dateTo) {
-                    try { $ds = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone(config('app.timezone'))->toDateString(); }
-                    catch (\Throwable $e) { $ds = substr((string)($r['created_at'] ?? ''),0,10); }
-                    return $ds <= $dateTo;
+                    try {
+                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
+                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
+                        $dsUtc = $c->copy()->toDateString();
+                    } catch (\Throwable $e) {
+                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
+                    }
+                    return ($dsLocal <= $dateTo) || ($dsUtc <= $dateTo);
                 });
             }
 
@@ -707,16 +717,26 @@ class SalesController extends Controller
             }
             if ($dateFrom) {
                 $rows = $rows->filter(function($r) use ($dateFrom) {
-                    try { $ds = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone(config('app.timezone'))->toDateString(); }
-                    catch (\Throwable $e) { $ds = substr((string)($r['created_at'] ?? ''),0,10); }
-                    return $ds >= $dateFrom;
+                    try {
+                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
+                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
+                        $dsUtc = $c->copy()->toDateString();
+                    } catch (\Throwable $e) {
+                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
+                    }
+                    return ($dsLocal >= $dateFrom) || ($dsUtc >= $dateFrom);
                 });
             }
             if ($dateTo) {
                 $rows = $rows->filter(function($r) use ($dateTo) {
-                    try { $ds = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone(config('app.timezone'))->toDateString(); }
-                    catch (\Throwable $e) { $ds = substr((string)($r['created_at'] ?? ''),0,10); }
-                    return $ds <= $dateTo;
+                    try {
+                        $c = \Carbon\Carbon::parse($r['created_at'] ?? null);
+                        $dsLocal = $c->copy()->setTimezone(config('app.timezone'))->toDateString();
+                        $dsUtc = $c->copy()->toDateString();
+                    } catch (\Throwable $e) {
+                        $dsLocal = $dsUtc = substr((string)($r['created_at'] ?? ''),0,10);
+                    }
+                    return ($dsLocal <= $dateTo) || ($dsUtc <= $dateTo);
                 });
             }
 
