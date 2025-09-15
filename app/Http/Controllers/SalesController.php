@@ -959,13 +959,34 @@ class SalesController extends Controller
             $ts = 0; try { $ts = $dt->timestamp; } catch (\Throwable $e) { $ts = 0; }
             // Fallback de-dup only for records WITHOUT sale_number: merge near-duplicates
             $matched = false;
+            // Build cart signatures for robust matching
+            $cartSig = '';
+            try {
+                $items = isset($r['sale_items']) && is_array($r['sale_items']) ? $r['sale_items'] : [];
+                $sigParts = [];
+                foreach ($items as $it) {
+                    $sigParts[] = trim(strtolower((string)($it['product_name'] ?? ''))) . 'x' . (int)($it['quantity'] ?? 0) . '@' . number_format((float)($it['unit_price'] ?? 0), 2, '.', '');
+                }
+                sort($sigParts);
+                $cartSig = implode('|', $sigParts);
+            } catch (\Throwable $e) { $cartSig = ''; }
             for ($j = max(0, count($out) - 100); $j < count($out); $j++) {
                 $p = $out[$j];
                 $pd = null; try { $pd = \Carbon\Carbon::parse($p['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $pd = now(); }
                 $pts = $pd->timestamp;
                 $pamt = (float)($p['total_amount'] ?? ($p['total'] ?? 0));
                 $ppm = strtolower((string)($p['payment_method'] ?? ''));
-                if (abs($ts - $pts) <= 600 && abs($amt - $pamt) < 0.01 && $pm === $ppm) {
+                $pSig = '';
+                try {
+                    $pit = isset($p['sale_items']) && is_array($p['sale_items']) ? $p['sale_items'] : [];
+                    $pp = [];
+                    foreach ($pit as $it) {
+                        $pp[] = trim(strtolower((string)($it['product_name'] ?? ''))) . 'x' . (int)($it['quantity'] ?? 0) . '@' . number_format((float)($it['unit_price'] ?? 0), 2, '.', '');
+                    }
+                    sort($pp);
+                    $pSig = implode('|', $pp);
+                } catch (\Throwable $e) { $pSig = ''; }
+                if (abs($ts - $pts) <= 600 && abs($amt - $pamt) < 0.01 && $pm === $ppm && $cartSig !== '' && $pSig !== '' && $cartSig === $pSig) {
                     $rHasSN = !empty($r['sale_number']);
                     $pHasSN = !empty($p['sale_number']);
                     $rSource = strtolower((string)($r['source'] ?? ''));
@@ -988,9 +1009,60 @@ class SalesController extends Controller
                 }
             }
         }
-        $final = collect($out)
+        // Final collapse across sources: dedupe by strong fingerprint within 2 minutes
+        $collapsed = [];
+        $seenFP = [];
+        for ($i = 0; $i < count($out); $i++) {
+            $r = $out[$i];
+            $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
+            $dt = null; try { $dt = Carbon::parse($r['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $dt = now(); }
+            $amt = (float)($r['total_amount'] ?? ($r['total'] ?? 0));
+            $pm = strtolower((string)($r['payment_method'] ?? ''));
+            $sig = '';
+            try {
+                $items = isset($r['sale_items']) && is_array($r['sale_items']) ? $r['sale_items'] : [];
+                $parts = [];
+                foreach ($items as $it) {
+                    $parts[] = trim(strtolower((string)($it['product_name'] ?? ''))) . 'x' . (int)($it['quantity'] ?? 0) . '@' . number_format((float)($it['unit_price'] ?? 0), 2, '.', '');
+                }
+                sort($parts);
+                $sig = implode('|', $parts);
+            } catch (\Throwable $e) { $sig = ''; }
+            $fp = $dt->format('Y-m-d H:i:s') . '|' . number_format($amt, 2, '.', '') . '|' . $pm . '|' . $sig;
+            // Look for existing with same signature within 120s
+            $dupeIdx = -1; $preferCurrent = false;
+            for ($j = max(0, count($collapsed) - 200); $j < count($collapsed); $j++) {
+                $p = $collapsed[$j];
+                $pdt = null; try { $pdt = Carbon::parse($p['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $pdt = now(); }
+                $pamt = (float)($p['total_amount'] ?? ($p['total'] ?? 0));
+                $ppm = strtolower((string)($p['payment_method'] ?? ''));
+                $psig = '';
+                try {
+                    $pit = isset($p['sale_items']) && is_array($p['sale_items']) ? $p['sale_items'] : [];
+                    $pp = [];
+                    foreach ($pit as $it) { $pp[] = trim(strtolower((string)($it['product_name'] ?? ''))) . 'x' . (int)($it['quantity'] ?? 0) . '@' . number_format((float)($it['unit_price'] ?? 0), 2, '.', ''); }
+                    sort($pp);
+                    $psig = implode('|', $pp);
+                } catch (\Throwable $e) { $psig = ''; }
+                if (abs($dt->timestamp - $pdt->timestamp) <= 120 && abs($amt - $pamt) < 0.01 && $pm === $ppm && $sig !== '' && $psig !== '' && $sig === $psig) {
+                    $dupeIdx = $j;
+                    $pHasSN = !empty($p['sale_number']);
+                    $rHasSN = !empty($r['sale_number']);
+                    $pSource = strtolower((string)($p['source'] ?? ''));
+                    $rSource = strtolower((string)($r['source'] ?? ''));
+                    if (($rHasSN && !$pHasSN) || ($pSource !== 'local' && $rSource === 'local')) $preferCurrent = true;
+                    break;
+                }
+            }
+            if ($dupeIdx >= 0) {
+                if ($preferCurrent) $collapsed[$dupeIdx] = $r;
+            } else {
+                $collapsed[] = $r;
+            }
+        }
+        $final = collect($collapsed)
             ->map(function($r){ if (is_array($r) && array_key_exists('source',$r)) unset($r['source']); return $r; })
-            ->sortByDesc(function($r){ try { return \Carbon\Carbon::parse($r['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { return 0; } })
+            ->sortByDesc(function($r){ try { return Carbon::parse($r['created_at'] ?? now())->timestamp; } catch (\Throwable $e) { return 0; } })
             ->take(max(1, min(1000, $limit)))
             ->values();
         // Strict final guard: enforce requested date window by local day
