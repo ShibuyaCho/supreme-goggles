@@ -1447,9 +1447,13 @@ function cannabisPOS() {
         limit: 500,
         tz: (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || undefined,
       };
+      this._serverFilteredDates = false;
       if (start && end) {
         params.date_from = start;
         params.date_to = end;
+        this._serverFilteredDates = true;
+        this._serverDateFromKey = start;
+        this._serverDateToKey = end;
       }
 
       if (forceNetwork) {
@@ -1735,9 +1739,11 @@ function cannabisPOS() {
           (s.customerMedicalCard || "").toLowerCase().includes(q);
         const payOk = !pay || s.paymentMethod === pay;
         const amtOk = s.total >= min && s.total <= max;
-        const k = dateKey(s.date);
-        const dateOk =
-          !startKey || !endKey ? true : k >= startKey && k <= endKey;
+        let dateOk = true;
+        if (!this._serverFilteredDates) {
+          const k = dateKey(s.date);
+          dateOk = !startKey || !endKey ? true : k >= startKey && k <= endKey;
+        }
         return nameOk && payOk && amtOk && dateOk;
       });
     },
