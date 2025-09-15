@@ -135,7 +135,7 @@ const mockCustomers: LoyaltyCustomer[] = [
 ];
 
 export default function Loyalty() {
-  const [customers, setCustomers] = useState<LoyaltyCustomer[]>(mockCustomers);
+  const [customers, setCustomers] = useState<LoyaltyCustomer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
   const getUserId = () => {
@@ -165,8 +165,10 @@ export default function Loyalty() {
         seen.add(key);
         return true;
       });
-      if (merged.length) setCustomers(merged);
-    } catch (_) {}
+      setCustomers(merged);
+    } catch (_) {
+      setCustomers([]);
+    }
   }, []);
 
   useEffect(() => {
