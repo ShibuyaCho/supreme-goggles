@@ -330,9 +330,8 @@ export default function Customers() {
   const fetchServerCustomers = async (): Promise<Customer[]> => {
     const results: Customer[] = [];
     try {
-      const res = await fetch("/customers", {
+      const res = await fetch("/node/customers", {
         headers: { Accept: "application/json" },
-        credentials: "same-origin",
       });
       if (res.ok) {
         const data = await res.json();
