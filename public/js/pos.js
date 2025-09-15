@@ -3589,8 +3589,17 @@ function cannabisPOS() {
       if (newQuantity <= 0) {
         this.removeFromCart(index);
       } else {
-        const q = Number(newQuantity);
-        this.cart[index].quantity = isFinite(q) ? Number(q.toFixed(2)) : 0;
+        const item = this.cart[index];
+        const prev = Number(item.quantity || 0);
+        const incoming = Number(newQuantity);
+        let next = incoming;
+        if (item && item._unit === 'g') {
+          const step = 0.25;
+          const delta = incoming - prev;
+          next = prev + (delta >= 0 ? step : -step);
+        }
+        const q = Number(next);
+        item.quantity = isFinite(q) ? Math.max(0.01, Number(q.toFixed(2))) : 0.01;
         this.calculateTotals();
       }
     },
