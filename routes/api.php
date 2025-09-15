@@ -200,6 +200,83 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
     }
 });
 
+// Loyalty members API (public for SPA compatibility)
+Route::get('/loyalty-members', function () {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = ['select' => '*'];
+            if (request()->has('search')) {
+                $q = trim((string)request()->get('search'));
+                if ($q !== '') {
+                    $params['or'] = sprintf(
+                        '(name.ilike.*%1$s*,email.ilike.*%1$s*,phone.ilike.*%1$s*)',
+                        $q
+                    );
+                }
+            }
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', $params);
+            if ($resp->ok()) {
+                return response()->json([
+                    'success' => true,
+                    'members' => $resp->json() ?? [],
+                ]);
+            }
+        } catch (\Throwable $e) { /* fall through */ }
+    }
+    return response()->json(['success' => true, 'members' => []]);
+});
+Route::post('/loyalty-members', function (\Illuminate\Http\Request $request) {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) {
+        return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
+    }
+    try {
+        $b = $request->all();
+        $name = trim((string)($b['name'] ?? ''));
+        $fallback = (($b['email'] ?? null) ?: ($b['phone'] ?? null) ?: 'Member');
+        $join = substr((string)($b['join_date'] ?? now()->toDateString()), 0, 10);
+        $pts = (int)($b['starting_points'] ?? $b['points_balance'] ?? 0);
+        $row = [
+            'customer_id' => isset($b['customer_id']) ? (int)$b['customer_id'] : null,
+            'name' => $name !== '' ? $name : $fallback,
+            'email' => $b['email'] ?? null,
+            'phone' => $b['phone'] ?? null,
+            'join_date' => $join,
+            'points_balance' => $pts,
+            'points_earned' => $pts,
+            'points_redeemed' => 0,
+            'tier' => $b['tier'] ?? ($b['loyalty_tier'] ?? 'Bronze'),
+            'is_veteran' => (bool)($b['is_veteran'] ?? false),
+            'total_spent' => (float)($b['total_spent'] ?? 0),
+            'total_visits' => (int)($b['total_visits'] ?? 0),
+            'last_visit' => $b['last_visit'] ?? null,
+            'created_at' => now()->toIso8601String(),
+            'updated_at' => now()->toIso8601String(),
+        ];
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'return=representation',
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', [ $row ]);
+        if ($resp->successful()) {
+            $arr = $resp->json();
+            $created = is_array($arr) && isset($arr[0]) ? $arr[0] : $arr;
+            return response()->json(['success' => true, 'member' => $created], 201);
+        }
+        return response()->json(['success' => false, 'error' => $resp->body()], 400);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+
 // Price tiers API (public for POS compatibility)
 Route::get('/price-tiers', function () {
     $supabaseUrl = env('SUPABASE_URL');
