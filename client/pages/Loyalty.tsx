@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -78,97 +78,6 @@ const tierColors = {
   Platinum: "bg-purple-100 text-purple-800",
 };
 
-const mockCustomers: LoyaltyCustomer[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    phone: "(555) 123-4567",
-    email: "john.doe@email.com",
-    joinDate: "2024-01-15",
-    totalSpent: 1250.75,
-    totalVisits: 18,
-    pointsBalance: 45,
-    pointsEarned: 125,
-    pointsRedeemed: 80,
-    tier: "Silver",
-    dataRetentionConsent: true,
-    lastVisit: "2024-01-14",
-    isVeteran: false,
-    salesHistory: [
-      {
-        id: "p1",
-        date: "2024-01-14",
-        total: 85.5,
-        pointsEarned: 8,
-        items: ["Blue Dream", "Edible Gummies"],
-      },
-      {
-        id: "p2",
-        date: "2024-01-10",
-        total: 120.25,
-        pointsEarned: 12,
-        items: ["OG Kush", "Pre-Rolls"],
-      },
-    ],
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    phone: "(555) 987-6543",
-    email: "jane.smith@email.com",
-    joinDate: "2023-11-20",
-    totalSpent: 2850.4,
-    totalVisits: 42,
-    pointsBalance: 156,
-    pointsEarned: 285,
-    pointsRedeemed: 129,
-    tier: "Gold",
-    dataRetentionConsent: true,
-    lastVisit: "2024-01-13",
-    isVeteran: true,
-    salesHistory: [
-      {
-        id: "p3",
-        date: "2024-01-13",
-        total: 95.0,
-        pointsEarned: 9,
-        items: ["Live Resin Cart", "Flower"],
-      },
-      {
-        id: "p4",
-        date: "2024-01-08",
-        total: 150.75,
-        pointsEarned: 15,
-        items: ["Premium Flower", "Concentrates"],
-      },
-    ],
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    phone: "(555) 456-7890",
-    email: "mike.johnson@email.com",
-    joinDate: "2023-08-10",
-    totalSpent: 4200.9,
-    totalVisits: 68,
-    pointsBalance: 328,
-    pointsEarned: 420,
-    pointsRedeemed: 92,
-    tier: "Platinum",
-    dataRetentionConsent: true,
-    lastVisit: "2024-01-15",
-    isVeteran: true,
-    salesHistory: [
-      {
-        id: "p5",
-        date: "2024-01-15",
-        total: 200.5,
-        pointsEarned: 20,
-        items: ["Premium Products", "Accessories"],
-      },
-    ],
-  },
-];
 
 export default function Loyalty() {
   const [customers, setCustomers] = useState<LoyaltyCustomer[]>([]);
@@ -188,34 +97,40 @@ export default function Loyalty() {
   };
   const loyaltyKey = () => `cannabest-loyalty-${getUserId()}`;
 
-  useEffect(() => {
-    try {
-      const rawA = localStorage.getItem(loyaltyKey());
-      const rawB = localStorage.getItem("cannabest-loyalty");
-      const a = rawA ? JSON.parse(rawA) : [];
-      const b = rawB ? JSON.parse(rawB) : [];
-      const seen = new Set<string>();
-      const merged = [
-        ...(Array.isArray(a) ? a : []),
-        ...(Array.isArray(b) ? b : []),
-      ].filter((c) => {
-        const key = String(c?.id || c?.email || c?.phone || "");
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      setCustomers(merged);
-    } catch (_) {
-      setCustomers([]);
-    }
-  }, []);
+  const mapMember = (m: any): LoyaltyCustomer => ({
+    id: String(m.id),
+    name: m.name || "",
+    phone: m.phone || "",
+    email: m.email || "",
+    joinDate: (m.join_date || new Date().toISOString().split("T")[0]).toString(),
+    totalSpent: Number(m.total_spent || 0) || 0,
+    totalVisits: Number(m.total_visits || 0) || 0,
+    pointsBalance: Number(m.points_balance || 0) || 0,
+    pointsEarned: Number(m.points_earned || 0) || 0,
+    pointsRedeemed: Number(m.points_redeemed || 0) || 0,
+    tier: (m.tier || "Bronze") as LoyaltyCustomer["tier"],
+    dataRetentionConsent: true,
+    salesHistory: [],
+    lastVisit: m.last_visit || "",
+    isVeteran: !!m.is_veteran,
+  });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(loyaltyKey(), JSON.stringify(customers));
-      localStorage.setItem("cannabest-loyalty", JSON.stringify(customers));
-    } catch (_) {}
-  }, [customers]);
+    (async () => {
+      try {
+        const res = await fetch("/api/loyalty-members", { headers: { Accept: "application/json" } });
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data?.members) ? data.members : [];
+          setCustomers(list.map(mapMember));
+        } else {
+          setCustomers([]);
+        }
+      } catch (_) {
+        setCustomers([]);
+      }
+    })();
+  }, []);
   const [showSignupDialog, setShowSignupDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] =
     useState<LoyaltyCustomer | null>(null);
@@ -340,7 +255,7 @@ export default function Loyalty() {
     setShowTierEditDialog(true);
   };
 
-  const addPointsManually = () => {
+  const addPointsManually = async () => {
     if (!selectedCustomerForPoints || !pointsToAdd || !pointsReason.trim()) {
       alert("Please fill in points amount and reason");
       return;
@@ -352,6 +267,14 @@ export default function Loyalty() {
       return;
     }
 
+    try {
+      await fetch(`/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ amount: points, reason: pointsReason }),
+      });
+    } catch (_) {}
+
     setCustomers((prev) =>
       prev.map((customer) =>
         customer.id === selectedCustomerForPoints.id
@@ -362,10 +285,6 @@ export default function Loyalty() {
             }
           : customer,
       ),
-    );
-
-    alert(
-      `Successfully added ${points} points to ${selectedCustomerForPoints.name} for: ${pointsReason}`,
     );
 
     setShowPointsDialog(false);
@@ -386,53 +305,48 @@ export default function Loyalty() {
     }
 
     const joinDate = new Date().toISOString().split("T")[0];
-    const payload = {
+    const body = {
       name: newCustomer.name,
       email: newCustomer.email,
       phone: newCustomer.phone,
-      customer_type: "loyalty",
-      data_retention_consent: true,
+      starting_points: 0,
+      tier: "Bronze",
       is_veteran: !!newCustomer.isVeteran,
-      loyalty_points: 0,
-      loyalty_tier: "Bronze",
-      loyalty_join_date: joinDate,
-      is_active: true,
+      join_date: joinDate,
     } as any;
 
-    let createdId = Date.now().toString();
+    let created: LoyaltyCustomer | null = null;
     try {
-      const res = await fetch("/api/customers", {
+      const res = await fetch("/api/loyalty-members", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(body),
       });
       if (res.ok) {
         const data = await res.json();
-        const srv = data?.customer || data?.data || null;
-        if (srv?.id != null) createdId = String(srv.id);
+        const m = data?.member || null;
+        if (m) created = mapMember(m);
       }
     } catch (_) {}
 
-    const customer: LoyaltyCustomer = {
-      id: createdId,
-      name: newCustomer.name,
-      phone: newCustomer.phone,
-      email: newCustomer.email,
-      joinDate,
-      totalSpent: 0,
-      totalVisits: 0,
-      pointsBalance: 0,
-      pointsEarned: 0,
-      pointsRedeemed: 0,
-      tier: "Bronze",
-      dataRetentionConsent: newCustomer.dataRetentionConsent,
-      salesHistory: [],
-      lastVisit: "",
-      isVeteran: newCustomer.isVeteran,
-    };
+    const customer: LoyaltyCustomer =
+      created || {
+        id: Date.now().toString(),
+        name: newCustomer.name,
+        phone: newCustomer.phone,
+        email: newCustomer.email,
+        joinDate,
+        totalSpent: 0,
+        totalVisits: 0,
+        pointsBalance: 0,
+        pointsEarned: 0,
+        pointsRedeemed: 0,
+        tier: "Bronze",
+        dataRetentionConsent: newCustomer.dataRetentionConsent,
+        salesHistory: [],
+        lastVisit: "",
+        isVeteran: newCustomer.isVeteran,
+      };
 
     setCustomers((prev) => [...prev, customer]);
     setShowSignupDialog(false);
@@ -443,12 +357,9 @@ export default function Loyalty() {
       dataRetentionConsent: false,
       isVeteran: false,
     });
-    alert(
-      `Welcome ${customer.name}! You've been enrolled in our loyalty program.`,
-    );
   };
 
-  const deleteCustomer = (customerId: string) => {
+  const deleteCustomer = async (customerId: string) => {
     const customer = customers.find((c) => c.id === customerId);
     if (!customer) return;
 
@@ -457,8 +368,10 @@ export default function Loyalty() {
         `Are you sure you want to delete ${customer.name} from the loyalty program? This action cannot be undone and will remove all their points and history.`,
       )
     ) {
+      try {
+        await fetch(`/api/loyalty-members/${customerId}`, { method: "DELETE", headers: { Accept: "application/json" } });
+      } catch (_) {}
       setCustomers((prev) => prev.filter((c) => c.id !== customerId));
-      alert(`${customer.name} has been removed from the loyalty program.`);
     }
   };
 
