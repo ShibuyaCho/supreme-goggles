@@ -423,7 +423,7 @@ class AnalyticsController extends Controller
                 'products.name',
                 'products.category',
                 DB::raw('SUM(sale_items.quantity) as totalSold'),
-                DB::raw('SUM(sale_items.total) as totalRevenue')
+                DB::raw('SUM(sale_items.total_price) as totalRevenue')
             )
             ->groupBy('products.id', 'products.name', 'products.category')
             ->get()
@@ -533,7 +533,7 @@ class AnalyticsController extends Controller
                     ->where('status', 'completed')
                     ->get();
         
-        $revenue = $sales->sum('total');
+        $revenue = $sales->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $transactions = $sales->count();
         $customers = $sales->whereNotNull('customer_id')->count();
         $avgOrderValue = $transactions > 0 ? $revenue / $transactions : 0;
