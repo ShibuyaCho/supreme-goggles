@@ -4633,8 +4633,6 @@ function cannabisPOS() {
         return (
           c.enrolledInLoyalty === true ||
           !!c.loyalty_member_id ||
-          !!c.loyaltyProgram ||
-          (!!c.tier && c.tier !== "") ||
           inRoster
         );
       });
