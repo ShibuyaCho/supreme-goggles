@@ -1513,6 +1513,9 @@ function cannabisPOS() {
       const pad = (n) => String(n).padStart(2, "0");
       const seenBuckets = new Set();
       const unique = uniqueById.filter((s) => {
+        // Only apply bucket-based de-dup when the record lacks a stable identifier
+        const hasStableId = !!(s.saleNumber || s.numericId || s.id);
+        if (hasStableId) return true;
         try {
           const dt = new Date(s.date);
           const bucket = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
