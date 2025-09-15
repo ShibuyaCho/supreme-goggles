@@ -1192,14 +1192,16 @@ function cannabisPOS() {
       try {
         const result = await posAuth.apiRequest("get", "/settings/pos");
         if (result.success) {
+          const payload = result.data || {};
+          const settings = payload.settings && typeof payload.settings === 'object' ? payload.settings : {};
           // Update local settings with API data
-          this.taxRate = result.data.tax_rate || 20.0;
-          this.medicalTaxRate = result.data.medical_tax_rate || 0.0;
-          // Merge other settings
-          Object.assign(this.storeSettings, result.data);
+          this.taxRate = payload.tax_rate != null ? payload.tax_rate : (settings.sales_tax != null ? settings.sales_tax : 20.0);
+          this.medicalTaxRate = payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
+          // Merge only the settings object into storeSettings
+          Object.assign(this.storeSettings, settings);
           // Load weight threshold if present
-          if (result.data.weight_threshold != null) {
-            const n = Number(result.data.weight_threshold);
+          if (settings.weight_threshold != null) {
+            const n = Number(settings.weight_threshold);
             if (isFinite(n)) this.weightThreshold = Math.max(0, Number(n.toFixed(2)));
           }
         }
@@ -4752,28 +4754,28 @@ function cannabisPOS() {
 
     // Flower deli-style functionality
     openFlowerDeliModal(product) {
-      // This would open a modal for selecting weight/quantity for flower products
       if (product.category === "Flower" && product.priceTier) {
         const tier = this.priceTiers.find((t) => t.id == product.priceTier);
-        if (tier) {
-          // Default to 1g when adding flower to cart
-          // In a real implementation, this would open a weight selection modal
-          const weight = 1;
-          const price = tier.prices.weight_1g;
-          this.addFlowerToCart(product, weight, price);
-          this.showToast(
-            `Deli-style: Added ${weight}g of ${product.name} from ${this.getFlowerTierName(product.priceTier)} tier`,
-            "success",
-          );
-        } else {
-          this.showToast(
-            "Price tier not found for this flower product",
-            "error",
-          );
+        if (!tier) {
+          this.showToast("Price tier not found for this flower product", "error");
+          return;
         }
-      } else {
-        this.addToCart(product);
+        const perGram = Number(tier.prices?.weight_1g || 0);
+        const defaultGrams = this.weightThreshold && this.weightThreshold > 0 ? this.weightThreshold : 1.0;
+        let gramsStr = null;
+        try {
+          gramsStr = prompt(`Enter grams for ${product.name} (e.g. 1.25)`, String(defaultGrams));
+        } catch(_) { gramsStr = String(defaultGrams); }
+        const grams = Number(parseFloat(gramsStr));
+        if (!isFinite(grams) || grams <= 0) {
+          this.showToast("Invalid grams amount", "error");
+          return;
+        }
+        const price = isFinite(perGram) && perGram > 0 ? perGram * grams : 0;
+        this.addFlowerToCart(product, grams, price);
+        return;
       }
+      this.addToCart(product);
     },
 
     // Helper functions
