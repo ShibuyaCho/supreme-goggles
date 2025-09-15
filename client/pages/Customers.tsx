@@ -415,6 +415,99 @@ export default function Customers() {
     saveCustomersLocal(customers);
   }, [customers]);
 
+  // Map server customer to local Customer shape
+  const mapServerToCustomer = (srv: any): Customer => {
+    const addressObj = (() => {
+      try {
+        if (!srv?.address) return { street: "", city: "", state: "OR", zipCode: "" };
+        const a = typeof srv.address === "string" ? JSON.parse(srv.address || "{}") : srv.address;
+        return {
+          street: a?.street || "",
+          city: a?.city || "",
+          state: a?.state || "OR",
+          zipCode: a?.zip_code || a?.zipCode || "",
+        };
+      } catch (_) {
+        return { street: "", city: "", state: "OR", zipCode: "" };
+      }
+    })();
+    const loyaltyPoints = Number(srv?.loyalty_points || 0) || 0;
+    const memberId = srv?.loyalty_member_id || (loyaltyPoints > 0 ? String(srv?.id || "") : "");
+    const tier = srv?.loyalty_tier || "Bronze";
+    return {
+      id: String(srv?.id ?? Date.now().toString()),
+      firstName: srv?.first_name || "",
+      lastName: srv?.last_name || "",
+      email: srv?.email || "",
+      phone: srv?.phone || "",
+      dateOfBirth: srv?.date_of_birth || "",
+      address: addressObj,
+      customerType: srv?.customer_type === "medical" ? "medical" : "recreational",
+      medicalCard: undefined,
+      loyaltyProgram: memberId
+        ? {
+            memberId,
+            joinDate: (srv?.loyalty_join_date || new Date().toISOString().split("T")[0]).toString(),
+            pointsBalance: loyaltyPoints,
+            tier: tier,
+            isVeteran: !!srv?.is_veteran,
+          }
+        : undefined,
+      isActive: srv?.is_active !== false,
+      lastVisit: srv?.last_visit || undefined,
+      totalSpent: Number(srv?.total_spent || 0) || 0,
+      totalVisits: Number(srv?.total_visits || 0) || 0,
+      preferredProducts: [],
+      notes: srv?.notes || "",
+      createdDate: (srv?.created_at || new Date().toISOString()).toString(),
+      dataRetentionConsent: !!srv?.data_retention_consent,
+      purchaseHistory: [],
+    };
+  };
+
+  const fetchServerCustomers = async (): Promise<Customer[]> => {
+    try {
+      const res = await fetch("/customers", { headers: { Accept: "application/json" }, credentials: "same-origin" });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        return list.map(mapServerToCustomer);
+      }
+    } catch (_) {}
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/customers", {
+        headers: {
+          Accept: "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data?.customers) ? data.customers : [];
+        return list.map(mapServerToCustomer);
+      }
+    } catch (_) {}
+    return [];
+  };
+
+  useEffect(() => {
+    (async () => {
+      const serverList = await fetchServerCustomers();
+      if (serverList.length) {
+        // Merge with any already-loaded local list (e.g., from localStorage effect in previous step)
+        const seen = new Set<string>();
+        const merged = [...serverList, ...customers].filter((c) => {
+          const key = String(c.id || c.email || c.phone || "");
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setCustomers(merged);
+      }
+    })();
+  }, []);
+
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = 
       customer.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -431,7 +524,7 @@ export default function Customers() {
     return matchesSearch && matchesType && matchesActive;
   });
 
-  const addCustomer = () => {
+  const addCustomer = async () => {
     if (!newCustomer.firstName || !newCustomer.email || !newCustomer.phone) {
       alert("Please fill in all required fields (First Name, Email, Phone)");
       return;
@@ -442,7 +535,40 @@ export default function Customers() {
       return;
     }
 
-    const customer: Customer = {
+    const payload = {
+      first_name: newCustomer.firstName!,
+      last_name: newCustomer.lastName || null,
+      email: newCustomer.email!,
+      phone: newCustomer.phone!,
+      date_of_birth: newCustomer.dateOfBirth || null,
+      customer_type: newCustomer.customerType || "recreational",
+      address: newCustomer.address || { street: "", city: "", state: "OR", zipCode: "" },
+      is_veteran: !!newCustomer.loyaltyProgram?.isVeteran,
+      notes: newCustomer.notes || "",
+      data_retention_consent: true,
+    } as any;
+
+    // Try persisting to server so all users can look them up
+    let createdFromServer: Customer | null = null;
+    try {
+      const token = localStorage.getItem("auth_token");
+      const res = await fetch("/api/customers", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const srv = data?.customer || data?.data || null;
+        if (srv) createdFromServer = mapServerToCustomer(srv);
+      }
+    } catch (_) {}
+
+    const customer: Customer = createdFromServer || {
       id: Date.now().toString(),
       firstName: newCustomer.firstName!,
       lastName: newCustomer.lastName!,
@@ -476,15 +602,42 @@ export default function Customers() {
     });
   };
 
-  const editCustomer = () => {
+  const editCustomer = async () => {
     if (!selectedCustomer || !newCustomer.firstName || !newCustomer.email || !newCustomer.phone) {
       alert("Please fill in all required fields (First Name, Email, Phone)");
       return;
     }
 
-    setCustomers(prev => prev.map(customer => 
-      customer.id === selectedCustomer.id 
-        ? { ...customer, ...newCustomer as Customer }
+    // Attempt server update first
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (token && selectedCustomer) {
+        const payload = {
+          first_name: newCustomer.firstName!,
+          last_name: newCustomer.lastName || null,
+          email: newCustomer.email!,
+          phone: newCustomer.phone!,
+          date_of_birth: newCustomer.dateOfBirth || null,
+          customer_type: newCustomer.customerType || "recreational",
+          address: newCustomer.address || { street: "", city: "", state: "OR", zipCode: "" },
+          is_veteran: !!newCustomer.loyaltyProgram?.isVeteran,
+          notes: newCustomer.notes || "",
+        } as any;
+        await fetch(`/api/customers/${selectedCustomer.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(payload),
+        });
+      }
+    } catch (_) {}
+
+    setCustomers(prev => prev.map(customer =>
+      customer.id === selectedCustomer!.id
+        ? { ...customer, ...(newCustomer as Customer) }
         : customer
     ));
     
@@ -493,8 +646,20 @@ export default function Customers() {
     setNewCustomer({});
   };
 
-  const deleteCustomer = (customerId: string) => {
+  const deleteCustomer = async (customerId: string) => {
     if (confirm("Are you sure you want to delete this customer? This action cannot be undone.")) {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (token) {
+          await fetch(`/api/customers/${customerId}`, {
+            method: "DELETE",
+            headers: {
+              Accept: "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          });
+        }
+      } catch (_) {}
       setCustomers(prev => prev.filter(customer => customer.id !== customerId));
     }
   };
