@@ -608,12 +608,14 @@ export default function Customers() {
         const listA = loyaltyListRaw ? JSON.parse(loyaltyListRaw) : [];
         const listB = globalRaw ? JSON.parse(globalRaw) : [];
         const name = `${customer.firstName} ${customer.lastName || ""}`.trim();
+        const today = new Date().toISOString().split('T')[0];
         const entry = {
           id: String(customer.id),
           name,
           phone: customer.phone,
           email: customer.email,
-          joinDate: new Date().toISOString().split('T')[0],
+          joinDate: today,
+          signupDate: today,
           totalSpent: 0,
           totalVisits: 0,
           pointsBalance: customer.loyaltyProgram?.pointsBalance || 0,
