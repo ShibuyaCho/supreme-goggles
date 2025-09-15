@@ -9374,3 +9374,12 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   } catch(_){ }
 })();
+
+// Bridge for Alpine bindings that expect component-scoped vars/methods
+(function(){
+  try {
+    if (typeof window.analyticsView === 'undefined') window.analyticsView = 'company';
+    if (typeof window.refreshAnalytics !== 'function') window.refreshAnalytics = function(){ try { window.refreshLandingAnalytics && window.refreshLandingAnalytics(); } catch(_){} };
+    if (typeof window.getTopDiscounts !== 'function') window.getTopDiscounts = function(){ return Array.isArray(window.__topDiscounts) ? window.__topDiscounts : []; };
+  } catch(_) {}
+})();
