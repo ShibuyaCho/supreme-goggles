@@ -104,7 +104,7 @@ export default function Deals() {
       const u = JSON.parse(
         localStorage.getItem("pos_user") ||
           localStorage.getItem("user_data") ||
-          "null"
+          "null",
       );
       return u?.id || "anon";
     } catch (_) {
@@ -274,7 +274,10 @@ export default function Deals() {
           localB = rawB ? JSON.parse(rawB) : [];
         } catch (_) {}
         const localMergedMap = new Map<string, Deal>();
-        [...(Array.isArray(localA) ? localA : []), ...(Array.isArray(localB) ? localB : [])].forEach((d) => {
+        [
+          ...(Array.isArray(localA) ? localA : []),
+          ...(Array.isArray(localB) ? localB : []),
+        ].forEach((d) => {
           if (!d) return;
           const id = String((d as any).id ?? "");
           if (!id) return;
@@ -295,36 +298,52 @@ export default function Deals() {
           return {
             ...d,
             description: local.description ?? d.description,
-            categories: local.categories?.length ? local.categories : d.categories,
-            specificItems: local.specificItems?.length ? local.specificItems : d.specificItems,
-            categoryDiscounts: Object.keys(local.categoryDiscounts || {}).length ? local.categoryDiscounts : d.categoryDiscounts,
-            itemDiscounts: Object.keys(local.itemDiscounts || {}).length ? local.itemDiscounts : d.itemDiscounts,
+            categories: local.categories?.length
+              ? local.categories
+              : d.categories,
+            specificItems: local.specificItems?.length
+              ? local.specificItems
+              : d.specificItems,
+            categoryDiscounts: Object.keys(local.categoryDiscounts || {}).length
+              ? local.categoryDiscounts
+              : d.categoryDiscounts,
+            itemDiscounts: Object.keys(local.itemDiscounts || {}).length
+              ? local.itemDiscounts
+              : d.itemDiscounts,
             startDate: local.startDate || d.startDate,
             endDate: local.endDate || d.endDate,
             frequency: local.frequency || d.frequency,
             dayOfWeek: local.dayOfWeek ?? d.dayOfWeek,
             dayOfMonth: local.dayOfMonth ?? d.dayOfMonth,
             minimumPurchase: local.minimumPurchase ?? d.minimumPurchase,
-            minimumPurchaseType: local.minimumPurchaseType || d.minimumPurchaseType,
+            minimumPurchaseType:
+              local.minimumPurchaseType || d.minimumPurchaseType,
             maxUses: local.maxUses ?? d.maxUses,
           } as Deal;
         });
 
         // Include any locally-saved deals not present in API
         const apiIds = new Set(overlayed.map((d) => String(d.id)));
-        const localsOnly = Array.from(localMergedMap.values()).filter((d) => !apiIds.has(String(d.id)));
+        const localsOnly = Array.from(localMergedMap.values()).filter(
+          (d) => !apiIds.has(String(d.id)),
+        );
         const mergedAll = [...overlayed, ...localsOnly];
         const seenAll = new Set<string>();
-        setDeals(mergedAll.filter((d) => {
-          const key = String(d.id);
-          if (seenAll.has(key)) return false;
-          seenAll.add(key);
-          return true;
-        }));
+        setDeals(
+          mergedAll.filter((d) => {
+            const key = String(d.id);
+            if (seenAll.has(key)) return false;
+            seenAll.add(key);
+            return true;
+          }),
+        );
       } catch {
         // Fallback to purely local
         try {
-          const raw = localStorage.getItem(dealsUserKey()) || localStorage.getItem(dealsGlobalKey()) || "[]";
+          const raw =
+            localStorage.getItem(dealsUserKey()) ||
+            localStorage.getItem(dealsGlobalKey()) ||
+            "[]";
           const arr = JSON.parse(raw);
           setDeals(Array.isArray(arr) ? arr : []);
         } catch (_) {
@@ -355,7 +374,8 @@ export default function Deals() {
           description: newDeal.description ?? base.description,
           categories: newDeal.categories || base.categories,
           specificItems: newDeal.specificItems || base.specificItems,
-          categoryDiscounts: newDeal.categoryDiscounts || base.categoryDiscounts,
+          categoryDiscounts:
+            newDeal.categoryDiscounts || base.categoryDiscounts,
           itemDiscounts: newDeal.itemDiscounts || base.itemDiscounts,
           startDate: newDeal.startDate || base.startDate,
           endDate: newDeal.endDate || base.endDate,
@@ -363,7 +383,8 @@ export default function Deals() {
           dayOfWeek: newDeal.dayOfWeek ?? base.dayOfWeek,
           dayOfMonth: newDeal.dayOfMonth ?? base.dayOfMonth,
           minimumPurchase: newDeal.minimumPurchase ?? base.minimumPurchase,
-          minimumPurchaseType: newDeal.minimumPurchaseType || base.minimumPurchaseType,
+          minimumPurchaseType:
+            newDeal.minimumPurchaseType || base.minimumPurchaseType,
           maxUses: newDeal.maxUses ?? base.maxUses,
         } as Deal;
         setDeals((prev) => {
@@ -438,7 +459,8 @@ export default function Deals() {
           description: newDeal.description ?? base.description,
           categories: newDeal.categories || base.categories,
           specificItems: newDeal.specificItems || base.specificItems,
-          categoryDiscounts: newDeal.categoryDiscounts || base.categoryDiscounts,
+          categoryDiscounts:
+            newDeal.categoryDiscounts || base.categoryDiscounts,
           itemDiscounts: newDeal.itemDiscounts || base.itemDiscounts,
           startDate: newDeal.startDate || base.startDate,
           endDate: newDeal.endDate || base.endDate,
@@ -446,11 +468,14 @@ export default function Deals() {
           dayOfWeek: newDeal.dayOfWeek ?? base.dayOfWeek,
           dayOfMonth: newDeal.dayOfMonth ?? base.dayOfMonth,
           minimumPurchase: newDeal.minimumPurchase ?? base.minimumPurchase,
-          minimumPurchaseType: newDeal.minimumPurchaseType || base.minimumPurchaseType,
+          minimumPurchaseType:
+            newDeal.minimumPurchaseType || base.minimumPurchaseType,
           maxUses: newDeal.maxUses ?? base.maxUses,
         } as Deal;
         setDeals((prev) => {
-          const next = prev.map((d) => (String(d.id) === String(full.id) ? full : d));
+          const next = prev.map((d) =>
+            String(d.id) === String(full.id) ? full : d,
+          );
           // de-duplicate by id
           const seen = new Set<string>();
           const deduped = next.filter((d) => {

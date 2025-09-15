@@ -15703,7 +15703,8 @@
                       Enroll in Loyalty Program
                     </div>
                     <div class="text-sm text-green-700">
-                      If checked, this customer will be added to the Loyalty program and visible on the Loyalty page.
+                      If checked, this customer will be added to the Loyalty
+                      program and visible on the Loyalty page.
                     </div>
                   </div>
                 </label>
@@ -21389,7 +21390,7 @@
     <script>
       function aspdPage() {
         return {
-          aspdTimeframe: 'month',
+          aspdTimeframe: "month",
           items: [],
           categories: [],
           expanded: [],
@@ -21406,7 +21407,7 @@
           async load() {
             this.loading = true;
             try {
-              const tfSel = document.getElementById('aspd-timeframe');
+              const tfSel = document.getElementById("aspd-timeframe");
               const tf = tfSel && tfSel.value ? tfSel.value : "month";
               let d = null;
               try {

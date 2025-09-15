@@ -225,17 +225,22 @@ function cannabisPOS() {
     },
 
     loadAspd() {
-      try { window.loadAspd && window.loadAspd(); } catch (_) {}
+      try {
+        window.loadAspd && window.loadAspd();
+      } catch (_) {}
     },
     exportAspd() {
-      try { window.exportAspd && window.exportAspd(); } catch (_) {}
+      try {
+        window.exportAspd && window.exportAspd();
+      } catch (_) {}
     },
 
     // Inventory evaluation helpers exposed to Alpine scope
     getInventoryEvaluation() {
       try {
         const list = Array.isArray(this.products) ? this.products : [];
-        let totalCost = 0, totalRetail = 0;
+        let totalCost = 0,
+          totalRetail = 0;
         for (let i = 0; i < list.length; i++) {
           const p = list[i] || {};
           const stock = Number(p.stock ?? p.quantity ?? 0);
@@ -245,10 +250,16 @@ function cannabisPOS() {
           if (isFinite(stock) && isFinite(price)) totalRetail += price * stock;
         }
         const totalProfit = totalRetail - totalCost;
-        const averageMargin = totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
+        const averageMargin =
+          totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
         return { totalCost, totalRetail, totalProfit, averageMargin };
       } catch (_) {
-        return { totalCost: 0, totalRetail: 0, totalProfit: 0, averageMargin: 0 };
+        return {
+          totalCost: 0,
+          totalRetail: 0,
+          totalProfit: 0,
+          averageMargin: 0,
+        };
       }
     },
     getCategoryBreakdown() {
@@ -257,31 +268,40 @@ function cannabisPOS() {
         const map = new Map();
         for (let i = 0; i < list.length; i++) {
           const p = list[i] || {};
-          const category = p.category || 'Uncategorized';
+          const category = p.category || "Uncategorized";
           const stock = Number(p.stock ?? p.quantity ?? 0);
           const price = Number(p.price ?? 0);
           const cost = Number(p.cost ?? p.unit_cost ?? p.costPerUnit ?? 0);
-          const entry = map.get(category) || { productCount: 0, totalCost: 0, totalRetail: 0, totalProfit: 0, averageMargin: 0, products: [] };
-          const lineCost = (isFinite(stock) && isFinite(cost)) ? cost * stock : 0;
-          const lineRetail = (isFinite(stock) && isFinite(price)) ? price * stock : 0;
+          const entry = map.get(category) || {
+            productCount: 0,
+            totalCost: 0,
+            totalRetail: 0,
+            totalProfit: 0,
+            averageMargin: 0,
+            products: [],
+          };
+          const lineCost = isFinite(stock) && isFinite(cost) ? cost * stock : 0;
+          const lineRetail =
+            isFinite(stock) && isFinite(price) ? price * stock : 0;
           entry.productCount += 1;
           entry.totalCost += lineCost;
           entry.totalRetail += lineRetail;
-          entry.totalProfit += (lineRetail - lineCost);
+          entry.totalProfit += lineRetail - lineCost;
           entry.products.push({
             id: p.id || p.sku || p.name,
-            name: p.name || 'Product',
+            name: p.name || "Product",
             sku: p.sku || null,
             category,
             stock: isFinite(stock) ? stock : 0,
             price: isFinite(price) ? price : 0,
-            cost: isFinite(cost) ? cost : 0
+            cost: isFinite(cost) ? cost : 0,
           });
           map.set(category, entry);
         }
         const out = {};
         map.forEach((v, k) => {
-          v.averageMargin = v.totalRetail > 0 ? (v.totalProfit / v.totalRetail) * 100 : 0;
+          v.averageMargin =
+            v.totalRetail > 0 ? (v.totalProfit / v.totalRetail) * 100 : 0;
           out[k] = v;
         });
         return out;
@@ -300,7 +320,9 @@ function cannabisPOS() {
         const q = (this.vendorSearchQuery || "").toLowerCase();
         const st = (this.vendorStatusFilter || "").toLowerCase();
         const eta = (this.vendorETAFilter || "").toLowerCase();
-        return (Array.isArray(this.incomingVendors) ? this.incomingVendors : []).filter((v) => {
+        return (
+          Array.isArray(this.incomingVendors) ? this.incomingVendors : []
+        ).filter((v) => {
           const name = (v.name || "").toLowerCase();
           const lic = (v.license || "").toLowerCase();
           const status = (v.status || "").toLowerCase();
@@ -317,39 +339,105 @@ function cannabisPOS() {
     async refreshVendorData() {
       try {
         const client = window.axios || axios;
-        const res = await client.get("/api/metrc/transfers/incoming", { headers: { Accept: "application/json" } });
-        const list = (res && res.data && (res.data.transfers || res.data.data || res.data)) || [];
-        const arr = Array.isArray(list) ? list : (Array.isArray(list.transfers) ? list.transfers : []);
+        const res = await client.get("/api/metrc/transfers/incoming", {
+          headers: { Accept: "application/json" },
+        });
+        const list =
+          (res &&
+            res.data &&
+            (res.data.transfers || res.data.data || res.data)) ||
+          [];
+        const arr = Array.isArray(list)
+          ? list
+          : Array.isArray(list.transfers)
+            ? list.transfers
+            : [];
         const normalized = arr.map((t, i) => {
-          const vendorName = t.vendor_name || t.vendor || t.supplier || t.name || `Vendor ${i + 1}`;
-          const license = t.vendor_license || t.license || t.license_number || "";
-          const packages = Array.isArray(t.packages) ? t.packages : (Array.isArray(t.items) ? t.items : []);
+          const vendorName =
+            t.vendor_name ||
+            t.vendor ||
+            t.supplier ||
+            t.name ||
+            `Vendor ${i + 1}`;
+          const license =
+            t.vendor_license || t.license || t.license_number || "";
+          const packages = Array.isArray(t.packages)
+            ? t.packages
+            : Array.isArray(t.items)
+              ? t.items
+              : [];
           const pList = (packages || []).map((p, j) => {
-            const qty = Number(p.quantity ?? p.qty ?? p.quantityShipped ?? p.shippedQuantity ?? 0);
-            const unitCost = Number(
-              p.unit_cost ?? p.unitCost ?? p.cost_per_unit ?? p.costPerUnit ?? p.price_per_unit ?? p.cost ?? 0
+            const qty = Number(
+              p.quantity ??
+                p.qty ??
+                p.quantityShipped ??
+                p.shippedQuantity ??
+                0,
             );
-            const computedTotal = (isFinite(unitCost) && isFinite(qty)) ? unitCost * qty : 0;
-            const totalValue = Number(p.total_value ?? p.totalValue ?? p.extended_cost ?? computedTotal);
-            const weightNum = p.weight != null ? (typeof p.weight === "number" ? p.weight : Number(p.weight)) : 0;
+            const unitCost = Number(
+              p.unit_cost ??
+                p.unitCost ??
+                p.cost_per_unit ??
+                p.costPerUnit ??
+                p.price_per_unit ??
+                p.cost ??
+                0,
+            );
+            const computedTotal =
+              isFinite(unitCost) && isFinite(qty) ? unitCost * qty : 0;
+            const totalValue = Number(
+              p.total_value ?? p.totalValue ?? p.extended_cost ?? computedTotal,
+            );
+            const weightNum =
+              p.weight != null
+                ? typeof p.weight === "number"
+                  ? p.weight
+                  : Number(p.weight)
+                : 0;
             return {
               id: p.id || p.package_id || p.tag || `${i}-${j}`,
-              metrcTag: p.tag || p.package_tag || p.packageNumber || p.PackageLabel || "",
-              productName: p.name || p.item || p.product || p.ProductName || "Package",
-              category: p.category || p.product_category || p.CategoryName || "Uncategorized",
+              metrcTag:
+                p.tag ||
+                p.package_tag ||
+                p.packageNumber ||
+                p.PackageLabel ||
+                "",
+              productName:
+                p.name || p.item || p.product || p.ProductName || "Package",
+              category:
+                p.category ||
+                p.product_category ||
+                p.CategoryName ||
+                "Uncategorized",
               quantity: isFinite(qty) ? qty : 0,
-              unit: p.unit || p.unit_of_measure || p.uom || p.UnitOfMeasureName || "",
+              unit:
+                p.unit ||
+                p.unit_of_measure ||
+                p.uom ||
+                p.UnitOfMeasureName ||
+                "",
               strain: p.strain || p.product_strain || p.StrainName || "",
               weight: isFinite(weightNum) ? weightNum : 0,
               thc: Number(p.thc ?? p.thc_percent ?? p.thcPercent ?? 0),
               cbd: Number(p.cbd ?? p.cbd_percent ?? p.cbdPercent ?? 0),
               unitCost: isFinite(unitCost) ? unitCost : 0,
               totalValue: isFinite(totalValue) ? totalValue : 0,
-              room: ((p.room || p.destination_room || p.roomName || "receiving") + "").toLowerCase(),
+              room: (
+                (p.room || p.destination_room || p.roomName || "receiving") + ""
+              ).toLowerCase(),
             };
           });
-          const totalValue = pList.reduce((s, p) => s + (Number(p.totalValue) || (Number(p.unitCost) || 0) * (Number(p.quantity) || 0)), 0);
-          const totalCost = pList.reduce((s, p) => s + (Number(p.unitCost) || 0) * (Number(p.quantity) || 0), 0);
+          const totalValue = pList.reduce(
+            (s, p) =>
+              s +
+              (Number(p.totalValue) ||
+                (Number(p.unitCost) || 0) * (Number(p.quantity) || 0)),
+            0,
+          );
+          const totalCost = pList.reduce(
+            (s, p) => s + (Number(p.unitCost) || 0) * (Number(p.quantity) || 0),
+            0,
+          );
           const etaRaw = t.eta || t.expected_at || t.expected_date || "";
           const etaDateObj = etaRaw ? new Date(etaRaw) : new Date();
           const today = new Date();
@@ -359,8 +447,10 @@ function cannabisPOS() {
           let etaBucket = "today";
           if (etaDateObj > endOfWeek) etaBucket = "next-week";
           else if (etaDateObj > today) etaBucket = "this-week";
-          const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-          const fmtTime = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+          const fmtDate = (d) =>
+            `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          const fmtTime = (d) =>
+            `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
           const status = (t.status || t.state || "in-transit").toLowerCase();
           return {
             id: t.id || t.transfer_id || `t-${i}`,
@@ -384,8 +474,10 @@ function cannabisPOS() {
           d.setDate(d.getDate() + n);
           return d;
         };
-        const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-        const fmtTime = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        const fmtDate = (d) =>
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const fmtTime = (d) =>
+          `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
         this.incomingVendors = [
           {
             id: "v-1",
@@ -1399,7 +1491,9 @@ function cannabisPOS() {
           else if (!Array.isArray(this.customers)) this.customers = [];
         }
         // Merge locally saved customers (per-user and legacy)
-        try { this.loadCustomers(); } catch (_) {}
+        try {
+          this.loadCustomers();
+        } catch (_) {}
         // Ensure collections remain arrays after API calls
         this.normalizeCollections();
 
@@ -3184,7 +3278,9 @@ function cannabisPOS() {
         }
       }
       if (page === "metrc-vendors") {
-        try { this.refreshVendorData(); } catch (_) {}
+        try {
+          this.refreshVendorData();
+        } catch (_) {}
       }
     },
 
@@ -4278,9 +4374,18 @@ function cannabisPOS() {
         const listA = JSON.parse(localStorage.getItem(userKey) || "[]");
         const listB = JSON.parse(localStorage.getItem(globalKey) || "[]");
         const nowIso = new Date().toISOString();
-        const normalized = { signupDate: nowIso, joinDate: nowIso, isActive: true, ...entry };
+        const normalized = {
+          signupDate: nowIso,
+          joinDate: nowIso,
+          isActive: true,
+          ...entry,
+        };
         const seen = new Set();
-        const merged = [normalized, ...(Array.isArray(listA)?listA:[]), ...(Array.isArray(listB)?listB:[])].filter(c => {
+        const merged = [
+          normalized,
+          ...(Array.isArray(listA) ? listA : []),
+          ...(Array.isArray(listB) ? listB : []),
+        ].filter((c) => {
           const key = String(c?.id || c?.email || c?.phone || "");
           if (!key || seen.has(key)) return false;
           seen.add(key);
@@ -4387,24 +4492,40 @@ function cannabisPOS() {
       try {
         if (!customer) return;
         const id = customer.id;
-        const idx = (Array.isArray(this.customers) ? this.customers : []).findIndex(c => String(c.id) === String(id));
+        const idx = (
+          Array.isArray(this.customers) ? this.customers : []
+        ).findIndex((c) => String(c.id) === String(id));
         if (idx === -1) return;
         const current = this.customers[idx];
         const nextActive = !(current.isActive === true);
 
         // Best-effort server update
         try {
-          if (this.isAuthenticated && this.hasPermission("customers:write") && id != null) {
+          if (
+            this.isAuthenticated &&
+            this.hasPermission("customers:write") &&
+            id != null
+          ) {
             const payload = { is_active: nextActive };
-            try { await posAuth.apiRequest("patch", `/customers/${id}`, payload); }
-            catch { await posAuth.apiRequest("put", `/customers/${id}`, payload); }
+            try {
+              await posAuth.apiRequest("patch", `/customers/${id}`, payload);
+            } catch {
+              await posAuth.apiRequest("put", `/customers/${id}`, payload);
+            }
           }
         } catch (_) {}
 
         this.customers[idx] = { ...current, isActive: nextActive };
-        try { this._saveCustomersLocal(); } catch (_) {}
-        try { this.filterLoyaltyCustomers(); } catch (_) {}
-        this.showToast(nextActive ? "Customer activated" : "Customer deactivated", "success");
+        try {
+          this._saveCustomersLocal();
+        } catch (_) {}
+        try {
+          this.filterLoyaltyCustomers();
+        } catch (_) {}
+        this.showToast(
+          nextActive ? "Customer activated" : "Customer deactivated",
+          "success",
+        );
       } catch (e) {
         this.showToast("Failed to toggle status", "error");
       }
@@ -4415,7 +4536,10 @@ function cannabisPOS() {
         if (!customer) return;
         // Prefer existing customer in list for freshest fields
         const idStr = String(customer.id || "");
-        const existing = (Array.isArray(this.customers) ? this.customers : []).find(c => String(c.id) === idStr) || customer;
+        const existing =
+          (Array.isArray(this.customers) ? this.customers : []).find(
+            (c) => String(c.id) === idStr,
+          ) || customer;
         this.viewCustomer(existing);
       } catch (_) {
         this.viewCustomer(customer);
@@ -4424,10 +4548,27 @@ function cannabisPOS() {
 
     openAdjustPointsModal(customer) {
       if (!customer) return;
-      const points = Number(customer.loyaltyPoints ?? customer.loyalty_points ?? customer.points ?? 0) || 0;
+      const points =
+        Number(
+          customer.loyaltyPoints ??
+            customer.loyalty_points ??
+            customer.points ??
+            0,
+        ) || 0;
       const tier = customer.tier || "Bronze";
-      this.selectedLoyaltyCustomer = { ...customer, points, loyaltyPoints: points, tier };
-      this.pointsForm = { action: "add", type: "add", amount: 0, reason: "", customReason: "" };
+      this.selectedLoyaltyCustomer = {
+        ...customer,
+        points,
+        loyaltyPoints: points,
+        tier,
+      };
+      this.pointsForm = {
+        action: "add",
+        type: "add",
+        amount: 0,
+        reason: "",
+        customReason: "",
+      };
       this.showAdjustPointsModal = true;
     },
 
@@ -4436,7 +4577,10 @@ function cannabisPOS() {
         if (!customer) return;
         // Prefer the record from our main list
         const idStr = String(customer.id || "");
-        const existing = (Array.isArray(this.customers) ? this.customers : []).find(c => String(c.id) === idStr) || customer;
+        const existing =
+          (Array.isArray(this.customers) ? this.customers : []).find(
+            (c) => String(c.id) === idStr,
+          ) || customer;
         this.editCustomer(existing);
       } catch (_) {
         this.editCustomer(customer);
@@ -4447,42 +4591,86 @@ function cannabisPOS() {
       if (!this.selectedLoyaltyCustomer) return;
       const id = this.selectedLoyaltyCustomer.id;
       const amountNum = Number(this.pointsForm.amount || 0) || 0;
-      if (amountNum <= 0 && this.pointsForm.type !== 'set') return;
+      if (amountNum <= 0 && this.pointsForm.type !== "set") return;
 
       // Compute new total
       let newTotal = this.selectedLoyaltyCustomer.points || 0;
-      if (this.pointsForm.type === 'set') newTotal = amountNum;
-      else if (this.pointsForm.type === 'add') newTotal = newTotal + amountNum;
-      else if (this.pointsForm.type === 'subtract') newTotal = Math.max(0, newTotal - amountNum);
+      if (this.pointsForm.type === "set") newTotal = amountNum;
+      else if (this.pointsForm.type === "add") newTotal = newTotal + amountNum;
+      else if (this.pointsForm.type === "subtract")
+        newTotal = Math.max(0, newTotal - amountNum);
 
       // Best-effort API
       try {
-        if (this.isAuthenticated && this.hasPermission("loyalty:manage") && id != null) {
+        if (
+          this.isAuthenticated &&
+          this.hasPermission("loyalty:manage") &&
+          id != null
+        ) {
           const payload = {
-            points: this.pointsForm.type === 'set' ? newTotal : amountNum,
-            type: this.pointsForm.type === 'set' ? 'adjustment' : (this.pointsForm.type === 'add' ? 'earned' : 'redeemed'),
-            reason: this.pointsForm.customReason || this.pointsForm.reason || 'Adjustment',
+            points: this.pointsForm.type === "set" ? newTotal : amountNum,
+            type:
+              this.pointsForm.type === "set"
+                ? "adjustment"
+                : this.pointsForm.type === "add"
+                  ? "earned"
+                  : "redeemed",
+            reason:
+              this.pointsForm.customReason ||
+              this.pointsForm.reason ||
+              "Adjustment",
           };
-          await posAuth.apiRequest("post", `/loyalty/${id}/adjust-points`, payload);
+          await posAuth.apiRequest(
+            "post",
+            `/loyalty/${id}/adjust-points`,
+            payload,
+          );
         }
       } catch (_) {}
 
       // Update local state
-      const idx = (Array.isArray(this.customers) ? this.customers : []).findIndex(c => String(c.id) === String(id));
+      const idx = (
+        Array.isArray(this.customers) ? this.customers : []
+      ).findIndex((c) => String(c.id) === String(id));
       if (idx !== -1) {
         const current = this.customers[idx];
-        const lp = Number(current.loyaltyPoints ?? current.loyalty_points ?? current.points ?? 0) || 0;
-        const updatedPoints = this.pointsForm.type === 'set' ? newTotal : (this.pointsForm.type === 'add' ? lp + amountNum : Math.max(0, lp - amountNum));
-        this.customers[idx] = { ...current, loyaltyPoints: updatedPoints, points: updatedPoints };
+        const lp =
+          Number(
+            current.loyaltyPoints ??
+              current.loyalty_points ??
+              current.points ??
+              0,
+          ) || 0;
+        const updatedPoints =
+          this.pointsForm.type === "set"
+            ? newTotal
+            : this.pointsForm.type === "add"
+              ? lp + amountNum
+              : Math.max(0, lp - amountNum);
+        this.customers[idx] = {
+          ...current,
+          loyaltyPoints: updatedPoints,
+          points: updatedPoints,
+        };
       }
       if (this.selectedLoyaltyCustomer) {
         this.selectedLoyaltyCustomer.loyaltyPoints = newTotal;
         this.selectedLoyaltyCustomer.points = newTotal;
       }
-      try { this._saveCustomersLocal(); } catch (_) {}
-      try { this.filterLoyaltyCustomers(); } catch (_) {}
+      try {
+        this._saveCustomersLocal();
+      } catch (_) {}
+      try {
+        this.filterLoyaltyCustomers();
+      } catch (_) {}
       this.showAdjustPointsModal = false;
-      this.pointsForm = { action: "add", type: "add", amount: 0, reason: "", customReason: "" };
+      this.pointsForm = {
+        action: "add",
+        type: "add",
+        amount: 0,
+        reason: "",
+        customReason: "",
+      };
       this.showToast("Points updated", "success");
     },
 
@@ -4618,22 +4806,25 @@ function cannabisPOS() {
         const [userKey, globalKey] = this.loyaltyStorageKeys();
         const a = JSON.parse(localStorage.getItem(userKey) || "[]");
         const b = JSON.parse(localStorage.getItem(globalKey) || "[]");
-        const add = (arr) => (Array.isArray(arr) ? arr : []).forEach((c) => {
-          const keys = [c.id, c.email, c.phone].map((v) => (v != null ? String(v) : ""));
-          keys.filter(Boolean).forEach((k) => roster.add(k));
-        });
+        const add = (arr) =>
+          (Array.isArray(arr) ? arr : []).forEach((c) => {
+            const keys = [c.id, c.email, c.phone].map((v) =>
+              v != null ? String(v) : "",
+            );
+            keys.filter(Boolean).forEach((k) => roster.add(k));
+          });
         add(a);
         add(b);
       } catch (_) {}
 
       // Keep only customers explicitly enrolled in loyalty
       list = list.filter((c) => {
-        const keys = [c.id, c.email, c.phone].map((v) => (v != null ? String(v) : ""));
+        const keys = [c.id, c.email, c.phone].map((v) =>
+          v != null ? String(v) : "",
+        );
         const inRoster = keys.some((k) => roster.has(k));
         return (
-          c.enrolledInLoyalty === true ||
-          !!c.loyalty_member_id ||
-          inRoster
+          c.enrolledInLoyalty === true || !!c.loyalty_member_id || inRoster
         );
       });
 
@@ -4679,7 +4870,7 @@ function cannabisPOS() {
         return dir === "asc" ? (av > bv ? 1 : -1) : av < bv ? 1 : -1;
       });
       // Ensure default active when not specified
-      this.filteredLoyaltyCustomers = list.map(c => ({
+      this.filteredLoyaltyCustomers = list.map((c) => ({
         ...c,
         isActive: c.isActive === undefined ? true : c.isActive,
       }));
@@ -4963,7 +5154,9 @@ function cannabisPOS() {
         const userScoped = userRaw ? JSON.parse(userRaw) : [];
         const best = bestRaw ? JSON.parse(bestRaw) : [];
         const merged = [...out];
-        const seen = new Set(out.map((c) => String(c.id || c.email || c.phone || Math.random())));
+        const seen = new Set(
+          out.map((c) => String(c.id || c.email || c.phone || Math.random())),
+        );
         const addAll = (arr) => {
           (Array.isArray(arr) ? arr : []).forEach((c) => {
             const key = String(c.id || c.email || c.phone || JSON.stringify(c));
@@ -4976,9 +5169,14 @@ function cannabisPOS() {
         addAll(userScoped);
         addAll(legacy);
         addAll(best);
-        this.customers = merged.map(c => ({ ...c, isActive: c.isActive === undefined ? true : c.isActive }));
+        this.customers = merged.map((c) => ({
+          ...c,
+          isActive: c.isActive === undefined ? true : c.isActive,
+        }));
         // Persist merged list to both scoped and legacy keys to survive session changes
-        try { this._saveCustomersLocal(); } catch (_) {}
+        try {
+          this._saveCustomersLocal();
+        } catch (_) {}
       } catch (error) {
         console.error("Error loading customers:", error);
       } finally {
@@ -6834,12 +7032,20 @@ function cannabisPOS() {
             data_retention_consent: true,
           };
           const res = await posAuth.apiRequest("post", "/customers", payload);
-          if (res && res.success && res.data && (res.data.customer || res.data.data)) {
+          if (
+            res &&
+            res.success &&
+            res.data &&
+            (res.data.customer || res.data.data)
+          ) {
             const srv = res.data.customer || res.data.data;
             savedCustomer = {
               ...newCustomer,
               id: srv.id ?? newCustomer.id,
-              name: srv.first_name && srv.last_name ? `${srv.first_name} ${srv.last_name}` : (srv.first_name || newCustomer.name),
+              name:
+                srv.first_name && srv.last_name
+                  ? `${srv.first_name} ${srv.last_name}`
+                  : srv.first_name || newCustomer.name,
               email: srv.email || newCustomer.email,
               phone: srv.phone || newCustomer.phone,
             };
@@ -6854,8 +7060,14 @@ function cannabisPOS() {
       this.customers.push(finalCustomer);
 
       // Save to localStorage for persistence (per-user + legacy)
-      try { this._saveCustomersLocal(); } catch (error) { console.error("Error saving customers:", error); }
-      try { this.filterLoyaltyCustomers(); } catch (_) {}
+      try {
+        this._saveCustomersLocal();
+      } catch (error) {
+        console.error("Error saving customers:", error);
+      }
+      try {
+        this.filterLoyaltyCustomers();
+      } catch (_) {}
 
       // Optional: enroll in loyalty if requested
       if (this.customerForm.enrollLoyalty) {
@@ -6877,13 +7089,13 @@ function cannabisPOS() {
           name: finalCustomer.name,
           phone: finalCustomer.phone,
           email: finalCustomer.email,
-          joinDate: new Date().toISOString().split('T')[0],
+          joinDate: new Date().toISOString().split("T")[0],
           totalSpent: 0,
           totalVisits: 0,
           pointsBalance: 0,
           pointsEarned: 0,
           pointsRedeemed: 0,
-          tier: 'Bronze',
+          tier: "Bronze",
           dataRetentionConsent: true,
           salesHistory: [],
           lastVisit: "",
@@ -6891,8 +7103,14 @@ function cannabisPOS() {
         });
         // Mark the just-added customer as enrolled to aid filtering
         try {
-          const idx = (Array.isArray(this.customers) ? this.customers : []).findIndex(c => String(c.id) === String(finalCustomer.id));
-          if (idx !== -1) this.customers[idx] = { ...this.customers[idx], enrolledInLoyalty: true };
+          const idx = (
+            Array.isArray(this.customers) ? this.customers : []
+          ).findIndex((c) => String(c.id) === String(finalCustomer.id));
+          if (idx !== -1)
+            this.customers[idx] = {
+              ...this.customers[idx],
+              enrolledInLoyalty: true,
+            };
         } catch (_) {}
       }
 
@@ -8605,7 +8823,11 @@ function cannabisPOS() {
 
         // Try API update when authenticated and permitted
         try {
-          if (this.isAuthenticated && this.hasPermission("customers:write") && current.id) {
+          if (
+            this.isAuthenticated &&
+            this.hasPermission("customers:write") &&
+            current.id
+          ) {
             const [first, ...rest] = (updated.name || "").split(" ");
             const payload = {
               first_name: first || updated.name,
@@ -8614,16 +8836,28 @@ function cannabisPOS() {
               phone: updated.phone,
               customer_type: updated.isMedical ? "medical" : "recreational",
             };
-            const res = await posAuth.apiRequest("patch", `/customers/${current.id}`, payload);
+            const res = await posAuth.apiRequest(
+              "patch",
+              `/customers/${current.id}`,
+              payload,
+            );
             if (!(res && res.success)) {
-              await posAuth.apiRequest("put", `/customers/${current.id}`, payload);
+              await posAuth.apiRequest(
+                "put",
+                `/customers/${current.id}`,
+                payload,
+              );
             }
           }
         } catch (_) {}
 
         this.customers[customerIndex] = updated;
-        try { this._saveCustomersLocal(); } catch (_) {}
-        try { this.filterLoyaltyCustomers(); } catch (_) {}
+        try {
+          this._saveCustomersLocal();
+        } catch (_) {}
+        try {
+          this.filterLoyaltyCustomers();
+        } catch (_) {}
 
         this.showToast(
           `Customer "${this.editCustomerForm.name}" updated successfully`,
@@ -8636,15 +8870,26 @@ function cannabisPOS() {
     deleteCustomer(customer) {
       const id = customer && customer.id != null ? customer.id : null;
       const before = Array.isArray(this.customers) ? this.customers.length : 0;
-      this.customers = (Array.isArray(this.customers) ? this.customers : []).filter(c => String(c.id) !== String(id));
-      const changed = Array.isArray(this.customers) && this.customers.length !== before;
+      this.customers = (
+        Array.isArray(this.customers) ? this.customers : []
+      ).filter((c) => String(c.id) !== String(id));
+      const changed =
+        Array.isArray(this.customers) && this.customers.length !== before;
       if (changed) {
-        try { this._saveCustomersLocal(); } catch (_) {}
-        try { this.filterLoyaltyCustomers(); } catch (_) {}
+        try {
+          this._saveCustomersLocal();
+        } catch (_) {}
+        try {
+          this.filterLoyaltyCustomers();
+        } catch (_) {}
       }
       // Best-effort server delete
       try {
-        if (this.isAuthenticated && this.hasPermission("customers:write") && id) {
+        if (
+          this.isAuthenticated &&
+          this.hasPermission("customers:write") &&
+          id
+        ) {
           posAuth.apiRequest("delete", `/customers/${id}`);
         }
       } catch (_) {}
@@ -8657,9 +8902,9 @@ function cannabisPOS() {
           this.selectedCustomer = customer;
         } else if (customer != null) {
           const idStr = String(customer);
-          const found = (Array.isArray(this.customers) ? this.customers : []).find(
-            (c) => String(c.id) === idStr,
-          );
+          const found = (
+            Array.isArray(this.customers) ? this.customers : []
+          ).find((c) => String(c.id) === idStr);
           this.selectedCustomer = found || null;
         } else {
           this.selectedCustomer = null;
@@ -10253,61 +10498,84 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 
 // Global inventory evaluation helpers for Alpine bindings
-(function(){
+(function () {
   function getProducts() {
     try {
-      const app = document.getElementById('app');
+      const app = document.getElementById("app");
       const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
-      if (scope && Array.isArray(scope.products) && scope.products.length) return scope.products;
-    } catch(_) {}
+      if (scope && Array.isArray(scope.products) && scope.products.length)
+        return scope.products;
+    } catch (_) {}
     try {
-      const saved = localStorage.getItem('cannabisPOS-products');
+      const saved = localStorage.getItem("cannabisPOS-products");
       if (saved) {
         const parsed = JSON.parse(saved);
-        const arr = Array.isArray(parsed?.data) ? parsed.data : (Array.isArray(parsed) ? parsed : []);
+        const arr = Array.isArray(parsed?.data)
+          ? parsed.data
+          : Array.isArray(parsed)
+            ? parsed
+            : [];
         return arr;
       }
-    } catch(_) {}
+    } catch (_) {}
     return [];
   }
-  function normalize(p){
+  function normalize(p) {
     const stock = Number(p.stock ?? p.quantity ?? 0);
     const price = Number(p.price ?? 0);
     const cost = Number(p.cost ?? p.unit_cost ?? p.costPerUnit ?? 0);
-    const category = p.category || 'Uncategorized';
-    return { id: p.id || p.sku || p.name, name: p.name || 'Product', sku: p.sku || null, category, stock: isFinite(stock)?stock:0, price: isFinite(price)?price:0, cost: isFinite(cost)?cost:0 };
+    const category = p.category || "Uncategorized";
+    return {
+      id: p.id || p.sku || p.name,
+      name: p.name || "Product",
+      sku: p.sku || null,
+      category,
+      stock: isFinite(stock) ? stock : 0,
+      price: isFinite(price) ? price : 0,
+      cost: isFinite(cost) ? cost : 0,
+    };
   }
-  window.getInventoryEvaluation = function(){
+  window.getInventoryEvaluation = function () {
     const items = getProducts().map(normalize);
-    let totalCost = 0, totalRetail = 0;
-    for (const it of items){
+    let totalCost = 0,
+      totalRetail = 0;
+    for (const it of items) {
       totalCost += (it.cost || 0) * (it.stock || 0);
       totalRetail += (it.price || 0) * (it.stock || 0);
     }
     const totalProfit = totalRetail - totalCost;
-    const averageMargin = totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
+    const averageMargin =
+      totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
     return { totalCost, totalRetail, totalProfit, averageMargin };
   };
-  window.getCategoryBreakdown = function(){
+  window.getCategoryBreakdown = function () {
     const items = getProducts().map(normalize);
     const map = new Map();
-    for (const it of items){
-      const key = it.category || 'Uncategorized';
-      const cur = map.get(key) || { productCount:0, totalCost:0, totalRetail:0, totalProfit:0, averageMargin:0, products:[] };
+    for (const it of items) {
+      const key = it.category || "Uncategorized";
+      const cur = map.get(key) || {
+        productCount: 0,
+        totalCost: 0,
+        totalRetail: 0,
+        totalProfit: 0,
+        averageMargin: 0,
+        products: [],
+      };
       cur.productCount += 1;
-      const lineCost = (it.cost||0) * (it.stock||0);
-      const lineRetail = (it.price||0) * (it.stock||0);
+      const lineCost = (it.cost || 0) * (it.stock || 0);
+      const lineRetail = (it.price || 0) * (it.stock || 0);
       cur.totalCost += lineCost;
       cur.totalRetail += lineRetail;
-      cur.totalProfit += (lineRetail - lineCost);
+      cur.totalProfit += lineRetail - lineCost;
       cur.products.push(it);
       map.set(key, cur);
     }
-    for (const [k, v] of map.entries()){
-      v.averageMargin = v.totalRetail > 0 ? (v.totalProfit / v.totalRetail) * 100 : 0;
+    for (const [k, v] of map.entries()) {
+      v.averageMargin =
+        v.totalRetail > 0 ? (v.totalProfit / v.totalRetail) * 100 : 0;
     }
     const obj = {};
-    for (const [k,v] of map.entries()) obj[k] = v;
+    for (const [k, v] of map.entries()) obj[k] = v;
     return obj;
   };
 })();
@@ -10376,7 +10644,12 @@ document.addEventListener("DOMContentLoaded", function () {
                   return window.getInventoryEvaluation();
                 }
               } catch (_) {}
-              return { totalCost: 0, totalRetail: 0, totalProfit: 0, averageMargin: 0 };
+              return {
+                totalCost: 0,
+                totalRetail: 0,
+                totalProfit: 0,
+                averageMargin: 0,
+              };
             };
           if (typeof scope.getCategoryBreakdown !== "function")
             scope.getCategoryBreakdown = function () {
@@ -10387,8 +10660,10 @@ document.addEventListener("DOMContentLoaded", function () {
               } catch (_) {}
               return {};
             };
-          if (typeof scope.aspdTimeframe === "undefined") scope.aspdTimeframe = "month";
-          if (typeof scope.expandedCategories === "undefined") scope.expandedCategories = [];
+          if (typeof scope.aspdTimeframe === "undefined")
+            scope.aspdTimeframe = "month";
+          if (typeof scope.expandedCategories === "undefined")
+            scope.expandedCategories = [];
           if (typeof scope.toggleCategoryExpansion !== "function")
             scope.toggleCategoryExpansion = function (name) {
               try {
@@ -10397,8 +10672,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 else this.expandedCategories.push(name);
               } catch (_) {}
             };
-          if (typeof scope.loadAspd !== "function") scope.loadAspd = function(){ try { window.loadAspd && window.loadAspd(); } catch (_) {} };
-          if (typeof scope.exportAspd !== "function") scope.exportAspd = function(){ try { window.exportAspd && window.exportAspd(); } catch (_) {} };
+          if (typeof scope.loadAspd !== "function")
+            scope.loadAspd = function () {
+              try {
+                window.loadAspd && window.loadAspd();
+              } catch (_) {}
+            };
+          if (typeof scope.exportAspd !== "function")
+            scope.exportAspd = function () {
+              try {
+                window.exportAspd && window.exportAspd();
+              } catch (_) {}
+            };
         }
       } catch (_) {}
     });
@@ -10406,58 +10691,78 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 
 // Auto-bind aspdTimeframe to any Alpine component that uses it
-(function(){
-  function ensureAspdOnClosestComponent(el){
+(function () {
+  function ensureAspdOnClosestComponent(el) {
     try {
       let node = el;
       while (node && !node.__x) node = node.parentElement;
       if (node && node.__x && node.__x.$data) {
         const data = node.__x.$data;
-        if (typeof data.aspdTimeframe === 'undefined') data.aspdTimeframe = 'month';
-        if (typeof data.loadAspd !== 'function') data.loadAspd = function(){ try{ window.loadAspd && window.loadAspd(); } catch(_){} };
-        if (typeof data.exportAspd !== 'function') data.exportAspd = function(){ try{ window.exportAspd && window.exportAspd(); } catch(_){} };
+        if (typeof data.aspdTimeframe === "undefined")
+          data.aspdTimeframe = "month";
+        if (typeof data.loadAspd !== "function")
+          data.loadAspd = function () {
+            try {
+              window.loadAspd && window.loadAspd();
+            } catch (_) {}
+          };
+        if (typeof data.exportAspd !== "function")
+          data.exportAspd = function () {
+            try {
+              window.exportAspd && window.exportAspd();
+            } catch (_) {}
+          };
       }
-    } catch(_){}
+    } catch (_) {}
   }
-  function scan(){
+  function scan() {
     try {
-      const els = document.querySelectorAll('select[x-model="aspdTimeframe"], [x-model="aspdTimeframe"]');
+      const els = document.querySelectorAll(
+        'select[x-model="aspdTimeframe"], [x-model="aspdTimeframe"]',
+      );
       els.forEach(ensureAspdOnClosestComponent);
-    } catch(_){}
+    } catch (_) {}
   }
-  document.addEventListener('alpine:init', scan);
-  document.addEventListener('alpine:initialized', scan);
-  document.addEventListener('DOMContentLoaded', function(){ setTimeout(scan, 0); });
+  document.addEventListener("alpine:init", scan);
+  document.addEventListener("alpine:initialized", scan);
+  document.addEventListener("DOMContentLoaded", function () {
+    setTimeout(scan, 0);
+  });
   // Also run shortly after script load
-  try { setTimeout(scan, 50); } catch(_) {}
+  try {
+    setTimeout(scan, 50);
+  } catch (_) {}
 })();
 
 // Global bridge for aspdTimeframe to prevent ReferenceErrors
-(function(){
+(function () {
   try {
-    if (typeof window.aspdTimeframe === 'undefined') {
-      let __aspd_fallback = 'month';
-      Object.defineProperty(window, 'aspdTimeframe', {
+    if (typeof window.aspdTimeframe === "undefined") {
+      let __aspd_fallback = "month";
+      Object.defineProperty(window, "aspdTimeframe", {
         configurable: true,
         enumerable: true,
         get() {
           try {
-            const app = document.getElementById('app');
-            const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
-            if (scope && typeof scope.aspdTimeframe !== 'undefined') return scope.aspdTimeframe;
-          } catch(_) {}
+            const app = document.getElementById("app");
+            const scope =
+              app && app.__x && app.__x.$data ? app.__x.$data : null;
+            if (scope && typeof scope.aspdTimeframe !== "undefined")
+              return scope.aspdTimeframe;
+          } catch (_) {}
           return __aspd_fallback;
         },
         set(v) {
           try {
-            const app = document.getElementById('app');
-            const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
+            const app = document.getElementById("app");
+            const scope =
+              app && app.__x && app.__x.$data ? app.__x.$data : null;
             if (scope) scope.aspdTimeframe = v;
-          } catch(_) {}
+          } catch (_) {}
           __aspd_fallback = v;
           return true;
-        }
+        },
       });
     }
-  } catch(_) {}
+  } catch (_) {}
 })();

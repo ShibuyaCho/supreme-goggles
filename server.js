@@ -697,7 +697,11 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res) => {
       const a = b.address;
       if (!a) return null;
       if (typeof a === "string") {
-        try { return JSON.parse(a); } catch { return { raw: a }; }
+        try {
+          return JSON.parse(a);
+        } catch {
+          return { raw: a };
+        }
       }
       return a;
     })();
@@ -716,17 +720,33 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res) => {
       data_retention_consent: b.data_retention_consent === true,
       loyalty_member_id: b.loyalty_member_id || null,
       loyalty_join_date: b.loyalty_join_date || null,
-      loyalty_points: typeof b.loyalty_points === "number" ? b.loyalty_points : (typeof b.starting_points === "number" ? b.starting_points : 0),
+      loyalty_points:
+        typeof b.loyalty_points === "number"
+          ? b.loyalty_points
+          : typeof b.starting_points === "number"
+            ? b.starting_points
+            : 0,
       loyalty_tier: b.loyalty_tier || null,
       total_spent: b.total_spent ?? null,
       total_visits: b.total_visits ?? null,
       last_visit: b.last_visit || null,
     };
-    const r = await supaFetch("customers", { method: "POST", headers: { Prefer: "return=representation" }, body: [row] });
+    const r = await supaFetch("customers", {
+      method: "POST",
+      headers: { Prefer: "return=representation" },
+      body: [row],
+    });
     const payload = r.ok ? await r.json() : null;
-    return res.status(201).json({ success: true, customer: Array.isArray(payload) ? payload[0] : payload });
+    return res
+      .status(201)
+      .json({
+        success: true,
+        customer: Array.isArray(payload) ? payload[0] : payload,
+      });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to save customer" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to save customer" });
   }
 });
 
@@ -1087,7 +1107,9 @@ app.put("/api/customers/:id", async (req, res) => {
     const b = req.body || {};
     const upd = { ...b };
     if (typeof upd.address === "string") {
-      try { upd.address = JSON.parse(upd.address); } catch {}
+      try {
+        upd.address = JSON.parse(upd.address);
+      } catch {}
     }
     const r = await supaFetch(`customers?id=eq.${encodeURIComponent(id)}`, {
       method: "PATCH",
@@ -1095,9 +1117,14 @@ app.put("/api/customers/:id", async (req, res) => {
       body: upd,
     });
     const payload = r.ok ? await r.json() : null;
-    return res.json({ success: true, customer: Array.isArray(payload) ? payload[0] : payload });
+    return res.json({
+      success: true,
+      customer: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to update customer" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to update customer" });
   }
 });
 
@@ -1498,15 +1525,13 @@ async function handleProcessPayment(req, res) {
     const arr0 = r0.ok ? await r0.json() : [];
     const found = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
     if (found) {
-      return res
-        .status(200)
-        .json({
-          success: true,
-          sale_id: found.id,
-          sale_number: found.sale_number || String(found.id),
-          sale: found,
-          deduped: true,
-        });
+      return res.status(200).json({
+        success: true,
+        sale_id: found.id,
+        sale_number: found.sale_number || String(found.id),
+        sale: found,
+        deduped: true,
+      });
     }
   } catch (_) {}
   // Idempotency guard: prevent duplicate inserts within 10s for same employee, method, total, and item count
@@ -1531,15 +1556,13 @@ async function handleProcessPayment(req, res) {
       const arr0 = r0.ok ? await r0.json() : [];
       const found = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
       if (found) {
-        return res
-          .status(200)
-          .json({
-            success: true,
-            sale_id: found.id,
-            sale_number: found.sale_number || String(found.id),
-            sale: found,
-            deduped: true,
-          });
+        return res.status(200).json({
+          success: true,
+          sale_id: found.id,
+          sale_number: found.sale_number || String(found.id),
+          sale: found,
+          deduped: true,
+        });
       }
     }
   } catch (_) {}
@@ -1577,15 +1600,13 @@ async function handleProcessPayment(req, res) {
             const arr1 = await r1.json();
             const found = Array.isArray(arr1) && arr1[0] ? arr1[0] : null;
             if (found) {
-              return res
-                .status(200)
-                .json({
-                  success: true,
-                  sale_id: found.id,
-                  sale_number: found.sale_number || String(found.id),
-                  sale: found,
-                  deduped: true,
-                });
+              return res.status(200).json({
+                success: true,
+                sale_id: found.id,
+                sale_number: found.sale_number || String(found.id),
+                sale: found,
+                deduped: true,
+              });
             }
           }
         }

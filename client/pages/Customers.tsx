@@ -3,10 +3,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Users,
@@ -27,7 +39,7 @@ import {
   UserPlus,
   ShoppingCart,
   Package,
-  Printer
+  Printer,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -66,7 +78,7 @@ interface Customer {
     state: string;
     zipCode: string;
   };
-  customerType: 'recreational' | 'medical';
+  customerType: "recreational" | "medical";
   medicalCard?: {
     number: string;
     issueDate: string;
@@ -79,7 +91,7 @@ interface Customer {
     memberId: string;
     joinDate: string;
     pointsBalance: number;
-    tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+    tier: "Bronze" | "Silver" | "Gold" | "Platinum";
     isVeteran: boolean;
   };
   isActive: boolean;
@@ -105,7 +117,7 @@ const sampleCustomers: Customer[] = [
       street: "123 Main St",
       city: "Portland",
       state: "OR",
-      zipCode: "97201"
+      zipCode: "97201",
     },
     customerType: "recreational",
     loyaltyProgram: {
@@ -113,7 +125,7 @@ const sampleCustomers: Customer[] = [
       joinDate: "2024-01-15",
       pointsBalance: 45,
       tier: "Silver",
-      isVeteran: false
+      isVeteran: false,
     },
     isActive: true,
     lastVisit: "2024-01-14",
@@ -128,44 +140,84 @@ const sampleCustomers: Customer[] = [
         id: "TXN-20240114-001",
         date: "2024-01-14T15:30:00Z",
         items: [
-          { id: "1", name: "Blue Dream", category: "Flower", quantity: 2, unitPrice: 7.00, total: 14.00, metrcTag: "1A4000000000022000000126" },
-          { id: "2", name: "OG Kush", category: "Flower", quantity: 1, unitPrice: 12.00, total: 12.00, metrcTag: "1A4000000000022000000127" }
+          {
+            id: "1",
+            name: "Blue Dream",
+            category: "Flower",
+            quantity: 2,
+            unitPrice: 7.0,
+            total: 14.0,
+            metrcTag: "1A4000000000022000000126",
+          },
+          {
+            id: "2",
+            name: "OG Kush",
+            category: "Flower",
+            quantity: 1,
+            unitPrice: 12.0,
+            total: 12.0,
+            metrcTag: "1A4000000000022000000127",
+          },
         ],
-        subtotal: 26.00,
+        subtotal: 26.0,
         tax: 2.08,
         total: 28.08,
         paymentMethod: "card",
         loyaltyPointsEarned: 28,
-        employee: "Sarah Johnson"
+        employee: "Sarah Johnson",
       },
       {
         id: "TXN-20240110-003",
         date: "2024-01-10T12:15:00Z",
         items: [
-          { id: "3", name: "Gummy Bears", category: "Edibles", quantity: 1, unitPrice: 25.00, total: 25.00, metrcTag: "1A4000000000022000000143" }
+          {
+            id: "3",
+            name: "Gummy Bears",
+            category: "Edibles",
+            quantity: 1,
+            unitPrice: 25.0,
+            total: 25.0,
+            metrcTag: "1A4000000000022000000143",
+          },
         ],
-        subtotal: 25.00,
-        tax: 2.00,
-        total: 27.00,
+        subtotal: 25.0,
+        tax: 2.0,
+        total: 27.0,
         paymentMethod: "cash",
         loyaltyPointsEarned: 27,
-        employee: "Mike Chen"
+        employee: "Mike Chen",
       },
       {
         id: "TXN-20240105-002",
         date: "2024-01-05T14:45:00Z",
         items: [
-          { id: "4", name: "Pre-Roll Pack", category: "Pre-Rolls", quantity: 2, unitPrice: 20.00, total: 40.00, metrcTag: "1A4000000000022000000134" },
-          { id: "5", name: "CBD Tincture", category: "Tinctures", quantity: 1, unitPrice: 45.00, total: 45.00, metrcTag: "1A4000000000022000000157" }
+          {
+            id: "4",
+            name: "Pre-Roll Pack",
+            category: "Pre-Rolls",
+            quantity: 2,
+            unitPrice: 20.0,
+            total: 40.0,
+            metrcTag: "1A4000000000022000000134",
+          },
+          {
+            id: "5",
+            name: "CBD Tincture",
+            category: "Tinctures",
+            quantity: 1,
+            unitPrice: 45.0,
+            total: 45.0,
+            metrcTag: "1A4000000000022000000157",
+          },
         ],
-        subtotal: 85.00,
-        tax: 6.80,
-        total: 91.80,
+        subtotal: 85.0,
+        tax: 6.8,
+        total: 91.8,
         paymentMethod: "card",
         loyaltyPointsEarned: 91,
-        employee: "Emma Rodriguez"
-      }
-    ]
+        employee: "Emma Rodriguez",
+      },
+    ],
   },
   {
     id: "2",
@@ -178,7 +230,7 @@ const sampleCustomers: Customer[] = [
       street: "456 Oak Ave",
       city: "Eugene",
       state: "OR",
-      zipCode: "97401"
+      zipCode: "97401",
     },
     customerType: "medical",
     medicalCard: {
@@ -187,18 +239,18 @@ const sampleCustomers: Customer[] = [
       expirationDate: "2024-12-31",
       isPatient: true,
       physicianName: "Dr. Sarah Johnson",
-      notes: "Chronic pain management"
+      notes: "Chronic pain management",
     },
     loyaltyProgram: {
       memberId: "LOY002",
       joinDate: "2023-11-20",
       pointsBalance: 156,
       tier: "Gold",
-      isVeteran: true
+      isVeteran: true,
     },
     isActive: true,
     lastVisit: "2024-01-13",
-    totalSpent: 2850.40,
+    totalSpent: 2850.4,
     totalVisits: 42,
     preferredProducts: ["CBD Tincture", "High CBD Flower"],
     notes: "Medical patient - needs high CBD products",
@@ -209,16 +261,32 @@ const sampleCustomers: Customer[] = [
         id: "TXN-20240113-004",
         date: "2024-01-13T16:20:00Z",
         items: [
-          { id: "6", name: "High CBD Flower", category: "Flower", quantity: 1, unitPrice: 15.00, total: 15.00, metrcTag: "1A4000000000022000000178" },
-          { id: "7", name: "CBD Tincture", category: "Tinctures", quantity: 2, unitPrice: 45.00, total: 90.00, metrcTag: "1A4000000000022000000157" }
+          {
+            id: "6",
+            name: "High CBD Flower",
+            category: "Flower",
+            quantity: 1,
+            unitPrice: 15.0,
+            total: 15.0,
+            metrcTag: "1A4000000000022000000178",
+          },
+          {
+            id: "7",
+            name: "CBD Tincture",
+            category: "Tinctures",
+            quantity: 2,
+            unitPrice: 45.0,
+            total: 90.0,
+            metrcTag: "1A4000000000022000000157",
+          },
         ],
-        subtotal: 105.00,
-        tax: 0.00,
-        total: 105.00,
+        subtotal: 105.0,
+        tax: 0.0,
+        total: 105.0,
         paymentMethod: "cash",
-        employee: "Mike Chen"
-      }
-    ]
+        employee: "Mike Chen",
+      },
+    ],
   },
   {
     id: "3",
@@ -231,7 +299,7 @@ const sampleCustomers: Customer[] = [
       street: "789 Pine Rd",
       city: "Salem",
       state: "OR",
-      zipCode: "97301"
+      zipCode: "97301",
     },
     customerType: "recreational",
     loyaltyProgram: {
@@ -239,11 +307,11 @@ const sampleCustomers: Customer[] = [
       joinDate: "2023-08-10",
       pointsBalance: 328,
       tier: "Platinum",
-      isVeteran: true
+      isVeteran: true,
     },
     isActive: true,
     lastVisit: "2024-01-15",
-    totalSpent: 4200.90,
+    totalSpent: 4200.9,
     totalVisits: 68,
     preferredProducts: ["Premium Concentrates", "Live Resin"],
     notes: "VIP customer - veteran discount applied",
@@ -254,32 +322,55 @@ const sampleCustomers: Customer[] = [
         id: "TXN-20240115-005",
         date: "2024-01-15T11:30:00Z",
         items: [
-          { id: "8", name: "Live Resin", category: "Concentrates", quantity: 1, unitPrice: 50.00, total: 50.00, metrcTag: "1A4000000000022000000189" },
-          { id: "9", name: "Premium Hash", category: "Concentrates", quantity: 1, unitPrice: 95.00, total: 95.00, metrcTag: "1A4000000000022000000205" }
+          {
+            id: "8",
+            name: "Live Resin",
+            category: "Concentrates",
+            quantity: 1,
+            unitPrice: 50.0,
+            total: 50.0,
+            metrcTag: "1A4000000000022000000189",
+          },
+          {
+            id: "9",
+            name: "Premium Hash",
+            category: "Concentrates",
+            quantity: 1,
+            unitPrice: 95.0,
+            total: 95.0,
+            metrcTag: "1A4000000000022000000205",
+          },
         ],
-        subtotal: 145.00,
-        tax: 11.60,
-        total: 156.60,
+        subtotal: 145.0,
+        tax: 11.6,
+        total: 156.6,
         paymentMethod: "card",
         loyaltyPointsEarned: 156,
-        employee: "Sarah Johnson"
-      }
-    ]
-  }
+        employee: "Sarah Johnson",
+      },
+    ],
+  },
 ];
 
 export default function Customers() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"all" | "recreational" | "medical">("all");
-  const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
+  const [filterType, setFilterType] = useState<
+    "all" | "recreational" | "medical"
+  >("all");
+  const [filterActive, setFilterActive] = useState<
+    "all" | "active" | "inactive"
+  >("all");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [showViewDialog, setShowViewDialog] = useState(false);
-  const [showPurchaseHistoryDialog, setShowPurchaseHistoryDialog] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  
+  const [showPurchaseHistoryDialog, setShowPurchaseHistoryDialog] =
+    useState(false);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(
+    null,
+  );
+
   const [newCustomer, setNewCustomer] = useState<Partial<Customer>>({
     firstName: "",
     lastName: "",
@@ -290,12 +381,12 @@ export default function Customers() {
       street: "",
       city: "",
       state: "OR",
-      zipCode: ""
+      zipCode: "",
     },
     customerType: "recreational",
     isActive: true,
     notes: "",
-    dataRetentionConsent: false
+    dataRetentionConsent: false,
   });
   const [enrollInLoyalty, setEnrollInLoyalty] = useState(false);
 
@@ -305,7 +396,7 @@ export default function Customers() {
       const u = JSON.parse(
         localStorage.getItem("pos_user") ||
           localStorage.getItem("user_data") ||
-          "null"
+          "null",
       );
       return u?.id || "anon";
     } catch (_) {
@@ -344,7 +435,10 @@ export default function Customers() {
       const a = raw ? JSON.parse(raw) : [];
       const b = rawGlobal ? JSON.parse(rawGlobal) : [];
       const seen = new Set<string>();
-      const mergedLocal = [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])].filter(c => {
+      const mergedLocal = [
+        ...(Array.isArray(a) ? a : []),
+        ...(Array.isArray(b) ? b : []),
+      ].filter((c) => {
         const key = String(c?.id || c?.email || c?.phone || "");
         if (!key || seen.has(key)) return false;
         seen.add(key);
@@ -425,8 +519,12 @@ export default function Customers() {
   const mapServerToCustomer = (srv: any): Customer => {
     const addressObj = (() => {
       try {
-        if (!srv?.address) return { street: "", city: "", state: "OR", zipCode: "" };
-        const a = typeof srv.address === "string" ? JSON.parse(srv.address || "{}") : srv.address;
+        if (!srv?.address)
+          return { street: "", city: "", state: "OR", zipCode: "" };
+        const a =
+          typeof srv.address === "string"
+            ? JSON.parse(srv.address || "{}")
+            : srv.address;
         return {
           street: a?.street || "",
           city: a?.city || "",
@@ -438,7 +536,9 @@ export default function Customers() {
       }
     })();
     const loyaltyPoints = Number(srv?.loyalty_points || 0) || 0;
-    const memberId = srv?.loyalty_member_id || (loyaltyPoints > 0 ? String(srv?.id || "") : "");
+    const memberId =
+      srv?.loyalty_member_id ||
+      (loyaltyPoints > 0 ? String(srv?.id || "") : "");
     const tier = srv?.loyalty_tier || "Bronze";
     return {
       id: String(srv?.id ?? Date.now().toString()),
@@ -448,12 +548,15 @@ export default function Customers() {
       phone: srv?.phone || "",
       dateOfBirth: srv?.date_of_birth || "",
       address: addressObj,
-      customerType: srv?.customer_type === "medical" ? "medical" : "recreational",
+      customerType:
+        srv?.customer_type === "medical" ? "medical" : "recreational",
       medicalCard: undefined,
       loyaltyProgram: memberId
         ? {
             memberId,
-            joinDate: (srv?.loyalty_join_date || new Date().toISOString().split("T")[0]).toString(),
+            joinDate: (
+              srv?.loyalty_join_date || new Date().toISOString().split("T")[0]
+            ).toString(),
             pointsBalance: loyaltyPoints,
             tier: tier,
             isVeteran: !!srv?.is_veteran,
@@ -474,10 +577,17 @@ export default function Customers() {
   const fetchServerCustomers = async (): Promise<Customer[]> => {
     const results: Customer[] = [];
     try {
-      const res = await fetch("/customers", { headers: { Accept: "application/json" }, credentials: "same-origin" });
+      const res = await fetch("/customers", {
+        headers: { Accept: "application/json" },
+        credentials: "same-origin",
+      });
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
+        const list = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data)
+            ? data
+            : [];
         results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
@@ -491,7 +601,11 @@ export default function Customers() {
       });
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data?.data) ? data.data : Array.isArray(data?.customers) ? data.customers : [];
+        const list = Array.isArray(data?.data)
+          ? data.data
+          : Array.isArray(data?.customers)
+            ? data.customers
+            : [];
         results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
@@ -521,19 +635,23 @@ export default function Customers() {
     })();
   }, []);
 
-  const filteredCustomers = customers.filter(customer => {
-    const matchesSearch = 
+  const filteredCustomers = customers.filter((customer) => {
+    const matchesSearch =
       customer.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.lastName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       customer.phone.includes(searchQuery) ||
-      customer.loyaltyProgram?.memberId.toLowerCase().includes(searchQuery.toLowerCase());
-    
-    const matchesType = filterType === "all" || customer.customerType === filterType;
-    const matchesActive = filterActive === "all" || 
+      customer.loyaltyProgram?.memberId
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+    const matchesType =
+      filterType === "all" || customer.customerType === filterType;
+    const matchesActive =
+      filterActive === "all" ||
       (filterActive === "active" && customer.isActive) ||
       (filterActive === "inactive" && !customer.isActive);
-    
+
     return matchesSearch && matchesType && matchesActive;
   });
 
@@ -555,7 +673,12 @@ export default function Customers() {
       phone: newCustomer.phone!,
       date_of_birth: newCustomer.dateOfBirth || null,
       customer_type: newCustomer.customerType || "recreational",
-      address: newCustomer.address || { street: "", city: "", state: "OR", zipCode: "" },
+      address: newCustomer.address || {
+        street: "",
+        city: "",
+        state: "OR",
+        zipCode: "",
+      },
       is_veteran: !!newCustomer.loyaltyProgram?.isVeteran,
       notes: newCustomer.notes || "",
       data_retention_consent: true,
@@ -588,18 +711,23 @@ export default function Customers() {
       email: newCustomer.email!,
       phone: newCustomer.phone!,
       dateOfBirth: newCustomer.dateOfBirth || "",
-      address: newCustomer.address || { street: "", city: "", state: "OR", zipCode: "" },
+      address: newCustomer.address || {
+        street: "",
+        city: "",
+        state: "OR",
+        zipCode: "",
+      },
       customerType: newCustomer.customerType || "recreational",
       isActive: true,
       totalSpent: 0,
       totalVisits: 0,
       preferredProducts: [],
       notes: newCustomer.notes || "",
-      createdDate: new Date().toISOString().split('T')[0],
-      dataRetentionConsent: newCustomer.dataRetentionConsent
+      createdDate: new Date().toISOString().split("T")[0],
+      dataRetentionConsent: newCustomer.dataRetentionConsent,
     };
 
-    setCustomers(prev => [...prev, customer]);
+    setCustomers((prev) => [...prev, customer]);
 
     if (enrollInLoyalty) {
       try {
@@ -608,7 +736,7 @@ export default function Customers() {
         const listA = loyaltyListRaw ? JSON.parse(loyaltyListRaw) : [];
         const listB = globalRaw ? JSON.parse(globalRaw) : [];
         const name = `${customer.firstName} ${customer.lastName || ""}`.trim();
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toISOString().split("T")[0];
         const entry = {
           id: String(customer.id),
           name,
@@ -621,14 +749,18 @@ export default function Customers() {
           pointsBalance: customer.loyaltyProgram?.pointsBalance || 0,
           pointsEarned: 0,
           pointsRedeemed: 0,
-          tier: customer.loyaltyProgram?.tier || 'Bronze',
+          tier: customer.loyaltyProgram?.tier || "Bronze",
           dataRetentionConsent: true,
           salesHistory: [],
           lastVisit: "",
           isVeteran: !!customer.loyaltyProgram?.isVeteran,
         };
         const seen = new Set<string>();
-        const merged = [entry, ...(Array.isArray(listA) ? listA : []), ...(Array.isArray(listB) ? listB : [])].filter(c => {
+        const merged = [
+          entry,
+          ...(Array.isArray(listA) ? listA : []),
+          ...(Array.isArray(listB) ? listB : []),
+        ].filter((c) => {
           const key = String(c.id || c.email || c.phone || "");
           if (!key || seen.has(key)) return false;
           seen.add(key);
@@ -650,13 +782,18 @@ export default function Customers() {
       customerType: "recreational",
       isActive: true,
       notes: "",
-      dataRetentionConsent: false
+      dataRetentionConsent: false,
     });
     setEnrollInLoyalty(false);
   };
 
   const editCustomer = async () => {
-    if (!selectedCustomer || !newCustomer.firstName || !newCustomer.email || !newCustomer.phone) {
+    if (
+      !selectedCustomer ||
+      !newCustomer.firstName ||
+      !newCustomer.email ||
+      !newCustomer.phone
+    ) {
       alert("Please fill in all required fields (First Name, Email, Phone)");
       return;
     }
@@ -672,7 +809,12 @@ export default function Customers() {
           phone: newCustomer.phone!,
           date_of_birth: newCustomer.dateOfBirth || null,
           customer_type: newCustomer.customerType || "recreational",
-          address: newCustomer.address || { street: "", city: "", state: "OR", zipCode: "" },
+          address: newCustomer.address || {
+            street: "",
+            city: "",
+            state: "OR",
+            zipCode: "",
+          },
           is_veteran: !!newCustomer.loyaltyProgram?.isVeteran,
           notes: newCustomer.notes || "",
         } as any;
@@ -688,19 +830,25 @@ export default function Customers() {
       }
     } catch (_) {}
 
-    setCustomers(prev => prev.map(customer =>
-      customer.id === selectedCustomer!.id
-        ? { ...customer, ...(newCustomer as Customer) }
-        : customer
-    ));
-    
+    setCustomers((prev) =>
+      prev.map((customer) =>
+        customer.id === selectedCustomer!.id
+          ? { ...customer, ...(newCustomer as Customer) }
+          : customer,
+      ),
+    );
+
     setShowEditDialog(false);
     setSelectedCustomer(null);
     setNewCustomer({});
   };
 
   const deleteCustomer = async (customerId: string) => {
-    if (confirm("Are you sure you want to delete this customer? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to delete this customer? This action cannot be undone.",
+      )
+    ) {
       try {
         const token = localStorage.getItem("auth_token");
         if (token) {
@@ -713,61 +861,72 @@ export default function Customers() {
           });
         }
       } catch (_) {}
-      setCustomers(prev => prev.filter(customer => customer.id !== customerId));
+      setCustomers((prev) =>
+        prev.filter((customer) => customer.id !== customerId),
+      );
     }
   };
 
   const deactivateCustomer = (customerId: string) => {
-    setCustomers(prev => prev.map(customer => 
-      customer.id === customerId 
-        ? { ...customer, isActive: false }
-        : customer
-    ));
+    setCustomers((prev) =>
+      prev.map((customer) =>
+        customer.id === customerId
+          ? { ...customer, isActive: false }
+          : customer,
+      ),
+    );
   };
 
   const activateCustomer = (customerId: string) => {
-    setCustomers(prev => prev.map(customer =>
-      customer.id === customerId
-        ? { ...customer, isActive: true }
-        : customer
-    ));
+    setCustomers((prev) =>
+      prev.map((customer) =>
+        customer.id === customerId ? { ...customer, isActive: true } : customer,
+      ),
+    );
   };
 
   const startSaleForCustomer = (customer: Customer) => {
     // Store customer information for the POS system
     const customerData = {
       id: customer.id,
-      name: `${customer.firstName} ${customer.lastName || ''}`.trim(),
+      name: `${customer.firstName} ${customer.lastName || ""}`.trim(),
       phone: customer.phone,
       email: customer.email,
       customerType: customer.customerType,
-      medicalCard: customer.medicalCard?.number || '',
+      medicalCard: customer.medicalCard?.number || "",
       loyaltyProgram: customer.loyaltyProgram,
       isVeteran: customer.loyaltyProgram?.isVeteran || false,
-      dataRetentionConsent: customer.dataRetentionConsent
+      dataRetentionConsent: customer.dataRetentionConsent,
     };
 
     // Store in localStorage for the POS system to pick up
-    localStorage.setItem('selectedCustomerForSale', JSON.stringify(customerData));
+    localStorage.setItem(
+      "selectedCustomerForSale",
+      JSON.stringify(customerData),
+    );
 
     // Navigate to POS system
-    navigate('/');
+    navigate("/");
   };
 
   const exportCustomers = () => {
     const csvContent = [
       "First Name,Last Name,Email,Phone,Customer Type,Total Spent,Total Visits,Last Visit,Created Date",
-      ...filteredCustomers.map(customer => 
-        `${customer.firstName},${customer.lastName || ""},${customer.email},${customer.phone},${customer.customerType},${customer.totalSpent},${customer.totalVisits},${customer.lastVisit || 'Never'},${customer.createdDate}`
-      )
-    ].join('\n');
+      ...filteredCustomers.map(
+        (customer) =>
+          `${customer.firstName},${customer.lastName || ""},${customer.email},${customer.phone},${customer.customerType},${customer.totalSpent},${customer.totalVisits},${customer.lastVisit || "Never"},${customer.createdDate}`,
+      ),
+    ].join("\n");
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const link = document.createElement("a");
     const url = URL.createObjectURL(blob);
     link.setAttribute("href", url);
-    link.setAttribute("download", `customers_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
+    link.setAttribute(
+      "download",
+      `customers_${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    link.style.visibility = "hidden";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -775,12 +934,13 @@ export default function Customers() {
 
   const stats = {
     total: customers.length,
-    active: customers.filter(c => c.isActive).length,
-    inactive: customers.filter(c => !c.isActive).length,
-    recreational: customers.filter(c => c.customerType === 'recreational').length,
-    medical: customers.filter(c => c.customerType === 'medical').length,
-    loyaltyMembers: customers.filter(c => c.loyaltyProgram).length,
-    veterans: customers.filter(c => c.loyaltyProgram?.isVeteran).length
+    active: customers.filter((c) => c.isActive).length,
+    inactive: customers.filter((c) => !c.isActive).length,
+    recreational: customers.filter((c) => c.customerType === "recreational")
+      .length,
+    medical: customers.filter((c) => c.customerType === "medical").length,
+    loyaltyMembers: customers.filter((c) => c.loyaltyProgram).length,
+    veterans: customers.filter((c) => c.loyaltyProgram?.isVeteran).length,
   };
 
   return (
@@ -790,10 +950,16 @@ export default function Customers() {
         <div className="px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">Customer Management</h1>
-            <p className="text-sm opacity-80">Manage customer profiles and information</p>
+            <p className="text-sm opacity-80">
+              Manage customer profiles and information
+            </p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" className="header-button-visible" onClick={exportCustomers}>
+            <Button
+              variant="outline"
+              className="header-button-visible"
+              onClick={exportCustomers}
+            >
               <Download className="w-4 h-4 mr-2" />
               Export CSV
             </Button>
@@ -815,7 +981,12 @@ export default function Customers() {
                       <Input
                         id="firstName"
                         value={newCustomer.firstName || ""}
-                        onChange={(e) => setNewCustomer(prev => ({...prev, firstName: e.target.value}))}
+                        onChange={(e) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            firstName: e.target.value,
+                          }))
+                        }
                         placeholder="Enter first name"
                       />
                     </div>
@@ -824,7 +995,12 @@ export default function Customers() {
                       <Input
                         id="lastName"
                         value={newCustomer.lastName || ""}
-                        onChange={(e) => setNewCustomer(prev => ({...prev, lastName: e.target.value}))}
+                        onChange={(e) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            lastName: e.target.value,
+                          }))
+                        }
                         placeholder="Enter last name (optional)"
                       />
                     </div>
@@ -837,7 +1013,12 @@ export default function Customers() {
                         id="email"
                         type="email"
                         value={newCustomer.email || ""}
-                        onChange={(e) => setNewCustomer(prev => ({...prev, email: e.target.value}))}
+                        onChange={(e) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
                         placeholder="customer@email.com"
                       />
                     </div>
@@ -846,7 +1027,12 @@ export default function Customers() {
                       <Input
                         id="phone"
                         value={newCustomer.phone || ""}
-                        onChange={(e) => setNewCustomer(prev => ({...prev, phone: e.target.value}))}
+                        onChange={(e) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
                         placeholder="(555) 123-4567"
                       />
                     </div>
@@ -859,20 +1045,32 @@ export default function Customers() {
                         id="dateOfBirth"
                         type="date"
                         value={newCustomer.dateOfBirth || ""}
-                        onChange={(e) => setNewCustomer(prev => ({...prev, dateOfBirth: e.target.value}))}
+                        onChange={(e) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            dateOfBirth: e.target.value,
+                          }))
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="customerType">Customer Type *</Label>
-                      <Select 
-                        value={newCustomer.customerType || "recreational"} 
-                        onValueChange={(value) => setNewCustomer(prev => ({...prev, customerType: value as "recreational" | "medical"}))}
+                      <Select
+                        value={newCustomer.customerType || "recreational"}
+                        onValueChange={(value) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            customerType: value as "recreational" | "medical",
+                          }))
+                        }
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="recreational">Recreational</SelectItem>
+                          <SelectItem value="recreational">
+                            Recreational
+                          </SelectItem>
                           <SelectItem value="medical">Medical</SelectItem>
                         </SelectContent>
                       </Select>
@@ -885,17 +1083,25 @@ export default function Customers() {
                       <Checkbox
                         id="veteranStatus"
                         checked={(newCustomer as any).isVeteran || false}
-                        onCheckedChange={(checked) => setNewCustomer(prev => ({
-                          ...prev,
-                          ...(checked ? { isVeteran: true } : { isVeteran: false }) as any,
-                        }))}
+                        onCheckedChange={(checked) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            ...((checked
+                              ? { isVeteran: true }
+                              : { isVeteran: false }) as any),
+                          }))
+                        }
                       />
                       <div>
-                        <Label htmlFor="veteranStatus" className="text-sm font-medium">
+                        <Label
+                          htmlFor="veteranStatus"
+                          className="text-sm font-medium"
+                        >
                           U.S. Military Veteran
                         </Label>
                         <p className="text-xs text-gray-600">
-                          Eligible for 10% veteran discount on all purchases (including GLS items)
+                          Eligible for 10% veteran discount on all purchases
+                          (including GLS items)
                         </p>
                       </div>
                     </div>
@@ -908,10 +1114,15 @@ export default function Customers() {
                       <Input
                         id="street"
                         value={newCustomer.address?.street || ""}
-                        onChange={(e) => setNewCustomer(prev => ({
-                          ...prev, 
-                          address: { ...prev.address!, street: e.target.value }
-                        }))}
+                        onChange={(e) =>
+                          setNewCustomer((prev) => ({
+                            ...prev,
+                            address: {
+                              ...prev.address!,
+                              street: e.target.value,
+                            },
+                          }))
+                        }
                         placeholder="123 Main St"
                       />
                     </div>
@@ -921,21 +1132,28 @@ export default function Customers() {
                         <Input
                           id="city"
                           value={newCustomer.address?.city || ""}
-                          onChange={(e) => setNewCustomer(prev => ({
-                            ...prev, 
-                            address: { ...prev.address!, city: e.target.value }
-                          }))}
+                          onChange={(e) =>
+                            setNewCustomer((prev) => ({
+                              ...prev,
+                              address: {
+                                ...prev.address!,
+                                city: e.target.value,
+                              },
+                            }))
+                          }
                           placeholder="Portland"
                         />
                       </div>
                       <div>
                         <Label htmlFor="state">State</Label>
-                        <Select 
-                          value={newCustomer.address?.state || "OR"} 
-                          onValueChange={(value) => setNewCustomer(prev => ({
-                            ...prev, 
-                            address: { ...prev.address!, state: value }
-                          }))}
+                        <Select
+                          value={newCustomer.address?.state || "OR"}
+                          onValueChange={(value) =>
+                            setNewCustomer((prev) => ({
+                              ...prev,
+                              address: { ...prev.address!, state: value },
+                            }))
+                          }
                         >
                           <SelectTrigger>
                             <SelectValue />
@@ -952,10 +1170,15 @@ export default function Customers() {
                         <Input
                           id="zipCode"
                           value={newCustomer.address?.zipCode || ""}
-                          onChange={(e) => setNewCustomer(prev => ({
-                            ...prev, 
-                            address: { ...prev.address!, zipCode: e.target.value }
-                          }))}
+                          onChange={(e) =>
+                            setNewCustomer((prev) => ({
+                              ...prev,
+                              address: {
+                                ...prev.address!,
+                                zipCode: e.target.value,
+                              },
+                            }))
+                          }
                           placeholder="97201"
                         />
                       </div>
@@ -967,7 +1190,12 @@ export default function Customers() {
                     <textarea
                       id="notes"
                       value={newCustomer.notes || ""}
-                      onChange={(e) => setNewCustomer(prev => ({...prev, notes: e.target.value}))}
+                      onChange={(e) =>
+                        setNewCustomer((prev) => ({
+                          ...prev,
+                          notes: e.target.value,
+                        }))
+                      }
                       placeholder="Add any notes about this customer..."
                       className="w-full p-2 border rounded-md text-sm"
                       rows={3}
@@ -978,15 +1206,24 @@ export default function Customers() {
                     <Checkbox
                       id="dataConsent"
                       checked={newCustomer.dataRetentionConsent || false}
-                      onCheckedChange={(checked) => setNewCustomer(prev => ({...prev, dataRetentionConsent: checked as boolean}))}
+                      onCheckedChange={(checked) =>
+                        setNewCustomer((prev) => ({
+                          ...prev,
+                          dataRetentionConsent: checked as boolean,
+                        }))
+                      }
                     />
                     <div className="space-y-2">
-                      <Label htmlFor="dataConsent" className="text-sm font-medium">
+                      <Label
+                        htmlFor="dataConsent"
+                        className="text-sm font-medium"
+                      >
                         Data Retention Consent *
                       </Label>
                       <p className="text-xs text-gray-600">
-                        Customer consents to storing personal information and tracking sales history 
-                        for compliance and future visits as required by Oregon state law.
+                        Customer consents to storing personal information and
+                        tracking sales history for compliance and future visits
+                        as required by Oregon state law.
                       </p>
                     </div>
                   </div>
@@ -995,14 +1232,20 @@ export default function Customers() {
                     <Checkbox
                       id="enrollLoyalty"
                       checked={enrollInLoyalty}
-                      onCheckedChange={(checked) => setEnrollInLoyalty(!!checked)}
+                      onCheckedChange={(checked) =>
+                        setEnrollInLoyalty(!!checked)
+                      }
                     />
                     <div className="space-y-2">
-                      <Label htmlFor="enrollLoyalty" className="text-sm font-medium">
+                      <Label
+                        htmlFor="enrollLoyalty"
+                        className="text-sm font-medium"
+                      >
                         Enroll in Loyalty Program
                       </Label>
                       <p className="text-xs text-gray-600">
-                        Adds this customer to the Loyalty page so you can track points and rewards.
+                        Adds this customer to the Loyalty page so you can track
+                        points and rewards.
                       </p>
                     </div>
                   </div>
@@ -1011,14 +1254,20 @@ export default function Customers() {
                     <Checkbox
                       id="enrollLoyalty"
                       checked={enrollInLoyalty}
-                      onCheckedChange={(checked) => setEnrollInLoyalty(!!checked)}
+                      onCheckedChange={(checked) =>
+                        setEnrollInLoyalty(!!checked)
+                      }
                     />
                     <div className="space-y-2">
-                      <Label htmlFor="enrollLoyalty" className="text-sm font-medium">
+                      <Label
+                        htmlFor="enrollLoyalty"
+                        className="text-sm font-medium"
+                      >
                         Enroll in Loyalty Program
                       </Label>
                       <p className="text-xs text-gray-600">
-                        Adds this customer to the Loyalty page so you can track points and rewards.
+                        Adds this customer to the Loyalty page so you can track
+                        points and rewards.
                       </p>
                     </div>
                   </div>
@@ -1027,11 +1276,20 @@ export default function Customers() {
                     <Button
                       onClick={addCustomer}
                       className="flex-1"
-                      disabled={!newCustomer.firstName || !newCustomer.email || !newCustomer.phone || !newCustomer.dataRetentionConsent}
+                      disabled={
+                        !newCustomer.firstName ||
+                        !newCustomer.email ||
+                        !newCustomer.phone ||
+                        !newCustomer.dataRetentionConsent
+                      }
                     >
                       Add Customer
                     </Button>
-                    <Button variant="outline" onClick={() => setShowAddDialog(false)} className="flex-1">
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowAddDialog(false)}
+                      className="flex-1"
+                    >
                       Cancel
                     </Button>
                   </div>
@@ -1061,7 +1319,10 @@ export default function Customers() {
                   className="pl-10"
                 />
               </div>
-              <Select value={filterType} onValueChange={(value) => setFilterType(value as any)}>
+              <Select
+                value={filterType}
+                onValueChange={(value) => setFilterType(value as any)}
+              >
                 <SelectTrigger className="w-48">
                   <Filter className="w-4 h-4 mr-2" />
                   <SelectValue />
@@ -1072,7 +1333,10 @@ export default function Customers() {
                   <SelectItem value="medical">Medical</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={filterActive} onValueChange={(value) => setFilterActive(value as any)}>
+              <Select
+                value={filterActive}
+                onValueChange={(value) => setFilterActive(value as any)}
+              >
                 <SelectTrigger className="w-48">
                   <SelectValue />
                 </SelectTrigger>
@@ -1086,23 +1350,38 @@ export default function Customers() {
 
             {/* Customer Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredCustomers.map(customer => (
-                <Card key={customer.id} className={`hover:shadow-md transition-shadow ${!customer.isActive ? 'opacity-60' : ''}`}>
+              {filteredCustomers.map((customer) => (
+                <Card
+                  key={customer.id}
+                  className={`hover:shadow-md transition-shadow ${!customer.isActive ? "opacity-60" : ""}`}
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-semibold">{customer.firstName} {customer.lastName || ""}</h3>
-                        <p className="text-sm text-muted-foreground">{customer.email}</p>
+                        <h3 className="font-semibold">
+                          {customer.firstName} {customer.lastName || ""}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {customer.email}
+                        </p>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <Badge variant={customer.customerType === 'medical' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            customer.customerType === "medical"
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
                           {customer.customerType}
                         </Badge>
                         {!customer.isActive && (
                           <Badge variant="destructive">Inactive</Badge>
                         )}
                         {customer.loyaltyProgram?.isVeteran && (
-                          <Badge variant="outline" className="text-xs">Veteran</Badge>
+                          <Badge variant="outline" className="text-xs">
+                            Veteran
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -1115,12 +1394,17 @@ export default function Customers() {
                       </div>
                       <div className="flex items-center gap-2">
                         <MapPin className="w-4 h-4 text-muted-foreground" />
-                        <span>{customer.address.city}, {customer.address.state}</span>
+                        <span>
+                          {customer.address.city}, {customer.address.state}
+                        </span>
                       </div>
                       {customer.loyaltyProgram && (
                         <div className="flex items-center gap-2">
                           <Star className="w-4 h-4 text-muted-foreground" />
-                          <span>{customer.loyaltyProgram.tier} - {customer.loyaltyProgram.pointsBalance} pts</span>
+                          <span>
+                            {customer.loyaltyProgram.tier} -{" "}
+                            {customer.loyaltyProgram.pointsBalance} pts
+                          </span>
                         </div>
                       )}
                       <div className="flex items-center gap-2">
@@ -1212,7 +1496,9 @@ export default function Customers() {
             {filteredCustomers.length === 0 && (
               <div className="text-center py-12">
                 <Users className="mx-auto h-12 w-12 text-gray-400" />
-                <h3 className="mt-2 text-sm font-medium text-gray-900">No customers found</h3>
+                <h3 className="mt-2 text-sm font-medium text-gray-900">
+                  No customers found
+                </h3>
                 <p className="mt-1 text-sm text-gray-500">
                   Try adjusting your search or filter criteria.
                 </p>
@@ -1225,26 +1511,42 @@ export default function Customers() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{stats.total}</div>
-                  <div className="text-sm text-muted-foreground">Total Customers</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {stats.total}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Customers
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600">{stats.active}</div>
-                  <div className="text-sm text-muted-foreground">Active Customers</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {stats.active}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Active Customers
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-600">{stats.medical}</div>
-                  <div className="text-sm text-muted-foreground">Medical Patients</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {stats.medical}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Medical Patients
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-orange-600">{stats.loyaltyMembers}</div>
-                  <div className="text-sm text-muted-foreground">Loyalty Members</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {stats.loyaltyMembers}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Loyalty Members
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -1258,11 +1560,18 @@ export default function Customers() {
                   <div className="space-y-3">
                     <div className="flex justify-between items-center">
                       <span>Recreational</span>
-                      <span className="font-medium">{stats.recreational} ({((stats.recreational / stats.total) * 100).toFixed(1)}%)</span>
+                      <span className="font-medium">
+                        {stats.recreational} (
+                        {((stats.recreational / stats.total) * 100).toFixed(1)}
+                        %)
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span>Medical</span>
-                      <span className="font-medium">{stats.medical} ({((stats.medical / stats.total) * 100).toFixed(1)}%)</span>
+                      <span className="font-medium">
+                        {stats.medical} (
+                        {((stats.medical / stats.total) * 100).toFixed(1)}%)
+                      </span>
                     </div>
                   </div>
                 </CardContent>
@@ -1299,11 +1608,22 @@ export default function Customers() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">{selectedCustomer.firstName} {selectedCustomer.lastName || ""}</h2>
-                    <p className="text-muted-foreground">{selectedCustomer.email}</p>
+                    <h2 className="text-xl font-semibold">
+                      {selectedCustomer.firstName}{" "}
+                      {selectedCustomer.lastName || ""}
+                    </h2>
+                    <p className="text-muted-foreground">
+                      {selectedCustomer.email}
+                    </p>
                   </div>
                   <div className="flex flex-col gap-2">
-                    <Badge variant={selectedCustomer.customerType === 'medical' ? 'default' : 'secondary'}>
+                    <Badge
+                      variant={
+                        selectedCustomer.customerType === "medical"
+                          ? "default"
+                          : "secondary"
+                      }
+                    >
                       {selectedCustomer.customerType}
                     </Badge>
                     {selectedCustomer.loyaltyProgram?.isVeteran && (
@@ -1315,7 +1635,9 @@ export default function Customers() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-base font-medium">Contact Information</Label>
+                      <Label className="text-base font-medium">
+                        Contact Information
+                      </Label>
                       <div className="space-y-2 mt-2 text-sm">
                         <div className="flex items-center gap-2">
                           <Phone className="w-4 h-4 text-muted-foreground" />
@@ -1328,8 +1650,11 @@ export default function Customers() {
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-muted-foreground" />
                           <span>
-                            {selectedCustomer.address.street}<br />
-                            {selectedCustomer.address.city}, {selectedCustomer.address.state} {selectedCustomer.address.zipCode}
+                            {selectedCustomer.address.street}
+                            <br />
+                            {selectedCustomer.address.city},{" "}
+                            {selectedCustomer.address.state}{" "}
+                            {selectedCustomer.address.zipCode}
                           </span>
                         </div>
                       </div>
@@ -1337,14 +1662,36 @@ export default function Customers() {
 
                     {selectedCustomer.medicalCard && (
                       <div>
-                        <Label className="text-base font-medium">Medical Information</Label>
+                        <Label className="text-base font-medium">
+                          Medical Information
+                        </Label>
                         <div className="space-y-2 mt-2 text-sm">
-                          <div>Card Number: {selectedCustomer.medicalCard.number}</div>
-                          <div>Issue Date: {new Date(selectedCustomer.medicalCard.issueDate).toLocaleDateString()}</div>
-                          <div>Expiration: {new Date(selectedCustomer.medicalCard.expirationDate).toLocaleDateString()}</div>
-                          <div>Type: {selectedCustomer.medicalCard.isPatient ? 'Patient' : 'Caregiver'}</div>
+                          <div>
+                            Card Number: {selectedCustomer.medicalCard.number}
+                          </div>
+                          <div>
+                            Issue Date:{" "}
+                            {new Date(
+                              selectedCustomer.medicalCard.issueDate,
+                            ).toLocaleDateString()}
+                          </div>
+                          <div>
+                            Expiration:{" "}
+                            {new Date(
+                              selectedCustomer.medicalCard.expirationDate,
+                            ).toLocaleDateString()}
+                          </div>
+                          <div>
+                            Type:{" "}
+                            {selectedCustomer.medicalCard.isPatient
+                              ? "Patient"
+                              : "Caregiver"}
+                          </div>
                           {selectedCustomer.medicalCard.physicianName && (
-                            <div>Physician: {selectedCustomer.medicalCard.physicianName}</div>
+                            <div>
+                              Physician:{" "}
+                              {selectedCustomer.medicalCard.physicianName}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1353,24 +1700,53 @@ export default function Customers() {
 
                   <div className="space-y-4">
                     <div>
-                      <Label className="text-base font-medium">Purchase History</Label>
+                      <Label className="text-base font-medium">
+                        Purchase History
+                      </Label>
                       <div className="space-y-2 mt-2 text-sm">
-                        <div>Total Spent: ${selectedCustomer.totalSpent.toFixed(2)}</div>
+                        <div>
+                          Total Spent: ${selectedCustomer.totalSpent.toFixed(2)}
+                        </div>
                         <div>Total Visits: {selectedCustomer.totalVisits}</div>
-                        <div>Last Visit: {selectedCustomer.lastVisit ? new Date(selectedCustomer.lastVisit).toLocaleDateString() : 'Never'}</div>
-                        <div>Customer Since: {new Date(selectedCustomer.createdDate).toLocaleDateString()}</div>
+                        <div>
+                          Last Visit:{" "}
+                          {selectedCustomer.lastVisit
+                            ? new Date(
+                                selectedCustomer.lastVisit,
+                              ).toLocaleDateString()
+                            : "Never"}
+                        </div>
+                        <div>
+                          Customer Since:{" "}
+                          {new Date(
+                            selectedCustomer.createdDate,
+                          ).toLocaleDateString()}
+                        </div>
                       </div>
                     </div>
 
                     {selectedCustomer.loyaltyProgram && (
                       <div>
-                        <Label className="text-base font-medium">Loyalty Program</Label>
+                        <Label className="text-base font-medium">
+                          Loyalty Program
+                        </Label>
                         <div className="bg-green-50 p-4 rounded-lg mt-2">
-                          <div className="text-lg font-bold text-green-800">{selectedCustomer.loyaltyProgram.tier}</div>
-                          <div className="text-sm text-green-700">Member ID: {selectedCustomer.loyaltyProgram.memberId}</div>
-                          <div className="text-sm text-green-700">Points: {selectedCustomer.loyaltyProgram.pointsBalance}</div>
+                          <div className="text-lg font-bold text-green-800">
+                            {selectedCustomer.loyaltyProgram.tier}
+                          </div>
+                          <div className="text-sm text-green-700">
+                            Member ID:{" "}
+                            {selectedCustomer.loyaltyProgram.memberId}
+                          </div>
+                          <div className="text-sm text-green-700">
+                            Points:{" "}
+                            {selectedCustomer.loyaltyProgram.pointsBalance}
+                          </div>
                           <div className="text-xs text-green-600 mt-1">
-                            Joined: {new Date(selectedCustomer.loyaltyProgram.joinDate).toLocaleDateString()}
+                            Joined:{" "}
+                            {new Date(
+                              selectedCustomer.loyaltyProgram.joinDate,
+                            ).toLocaleDateString()}
                           </div>
                         </div>
                       </div>
@@ -1389,11 +1765,17 @@ export default function Customers() {
 
                 {selectedCustomer.preferredProducts.length > 0 && (
                   <div>
-                    <Label className="text-base font-medium">Preferred Products</Label>
+                    <Label className="text-base font-medium">
+                      Preferred Products
+                    </Label>
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {selectedCustomer.preferredProducts.map((product, index) => (
-                        <Badge key={index} variant="outline">{product}</Badge>
-                      ))}
+                      {selectedCustomer.preferredProducts.map(
+                        (product, index) => (
+                          <Badge key={index} variant="outline">
+                            {product}
+                          </Badge>
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -1415,7 +1797,12 @@ export default function Customers() {
                   <Input
                     id="editFirstName"
                     value={newCustomer.firstName || ""}
-                    onChange={(e) => setNewCustomer(prev => ({...prev, firstName: e.target.value}))}
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        firstName: e.target.value,
+                      }))
+                    }
                     placeholder="Enter first name"
                   />
                 </div>
@@ -1424,7 +1811,12 @@ export default function Customers() {
                   <Input
                     id="editLastName"
                     value={newCustomer.lastName || ""}
-                    onChange={(e) => setNewCustomer(prev => ({...prev, lastName: e.target.value}))}
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        lastName: e.target.value,
+                      }))
+                    }
                     placeholder="Enter last name (optional)"
                   />
                 </div>
@@ -1437,7 +1829,12 @@ export default function Customers() {
                     id="editEmail"
                     type="email"
                     value={newCustomer.email || ""}
-                    onChange={(e) => setNewCustomer(prev => ({...prev, email: e.target.value}))}
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
                     placeholder="customer@email.com"
                   />
                 </div>
@@ -1446,7 +1843,12 @@ export default function Customers() {
                   <Input
                     id="editPhone"
                     value={newCustomer.phone || ""}
-                    onChange={(e) => setNewCustomer(prev => ({...prev, phone: e.target.value}))}
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -1457,7 +1859,12 @@ export default function Customers() {
                 <textarea
                   id="editNotes"
                   value={newCustomer.notes || ""}
-                  onChange={(e) => setNewCustomer(prev => ({...prev, notes: e.target.value}))}
+                  onChange={(e) =>
+                    setNewCustomer((prev) => ({
+                      ...prev,
+                      notes: e.target.value,
+                    }))
+                  }
                   placeholder="Add any notes about this customer..."
                   className="w-full p-2 border rounded-md text-sm"
                   rows={3}
@@ -1465,20 +1872,24 @@ export default function Customers() {
               </div>
 
               <div className="flex gap-2">
-                <Button 
-                  onClick={editCustomer} 
+                <Button
+                  onClick={editCustomer}
                   className="flex-1"
-                  disabled={!newCustomer.firstName || !newCustomer.email || !newCustomer.phone}
+                  disabled={
+                    !newCustomer.firstName ||
+                    !newCustomer.email ||
+                    !newCustomer.phone
+                  }
                 >
                   Save Changes
                 </Button>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   onClick={() => {
                     setShowEditDialog(false);
                     setSelectedCustomer(null);
                     setNewCustomer({});
-                  }} 
+                  }}
                   className="flex-1"
                 >
                   Cancel
@@ -1489,11 +1900,15 @@ export default function Customers() {
         </Dialog>
 
         {/* Purchase History Dialog */}
-        <Dialog open={showPurchaseHistoryDialog} onOpenChange={setShowPurchaseHistoryDialog}>
+        <Dialog
+          open={showPurchaseHistoryDialog}
+          onOpenChange={setShowPurchaseHistoryDialog}
+        >
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>
-                Purchase History - {selectedCustomer?.firstName} {selectedCustomer?.lastName}
+                Purchase History - {selectedCustomer?.firstName}{" "}
+                {selectedCustomer?.lastName}
                 {selectedCustomer?.loyaltyProgram && (
                   <Badge className="ml-2" variant="outline">
                     {selectedCustomer.loyaltyProgram.tier} Member
@@ -1507,18 +1922,24 @@ export default function Customers() {
                 {/* Summary Stats */}
                 <div className="grid grid-cols-3 gap-4 mb-6">
                   <div className="text-center p-4 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{selectedCustomer.totalVisits}</div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {selectedCustomer.totalVisits}
+                    </div>
                     <div className="text-sm text-blue-700">Total Visits</div>
                   </div>
                   <div className="text-center p-4 bg-green-50 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">${selectedCustomer.totalSpent.toFixed(2)}</div>
+                    <div className="text-2xl font-bold text-green-600">
+                      ${selectedCustomer.totalSpent.toFixed(2)}
+                    </div>
                     <div className="text-sm text-green-700">Total Spent</div>
                   </div>
                   <div className="text-center p-4 bg-purple-50 rounded-lg">
                     <div className="text-2xl font-bold text-purple-600">
                       {selectedCustomer.loyaltyProgram?.pointsBalance || 0}
                     </div>
-                    <div className="text-sm text-purple-700">Loyalty Points</div>
+                    <div className="text-sm text-purple-700">
+                      Loyalty Points
+                    </div>
                   </div>
                 </div>
 
@@ -1526,41 +1947,62 @@ export default function Customers() {
                 <div>
                   <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
                     <ShoppingCart className="w-5 h-5" />
-                    {selectedCustomer.customerType === 'medical'
-                      ? 'Complete Purchase History (All Transactions)'
-                      : 'Recent Purchases (Last 10 Visits)'}
+                    {selectedCustomer.customerType === "medical"
+                      ? "Complete Purchase History (All Transactions)"
+                      : "Recent Purchases (Last 10 Visits)"}
                   </h3>
 
-                  {selectedCustomer.purchaseHistory && selectedCustomer.purchaseHistory.length > 0 ? (
+                  {selectedCustomer.purchaseHistory &&
+                  selectedCustomer.purchaseHistory.length > 0 ? (
                     <div className="space-y-3">
                       {selectedCustomer.purchaseHistory
-                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                        .slice(0, selectedCustomer.customerType === 'medical' ? undefined : 10)
+                        .sort(
+                          (a, b) =>
+                            new Date(b.date).getTime() -
+                            new Date(a.date).getTime(),
+                        )
+                        .slice(
+                          0,
+                          selectedCustomer.customerType === "medical"
+                            ? undefined
+                            : 10,
+                        )
                         .map((purchase) => (
-                        <div key={purchase.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <div className="font-medium">{purchase.id}</div>
-                              <div className="text-sm text-gray-600">
-                                {new Date(purchase.date).toLocaleDateString()} at {new Date(purchase.date).toLocaleTimeString()}
+                          <div
+                            key={purchase.id}
+                            className="border rounded-lg p-4 hover:bg-gray-50"
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <div className="font-medium">{purchase.id}</div>
+                                <div className="text-sm text-gray-600">
+                                  {new Date(purchase.date).toLocaleDateString()}{" "}
+                                  at{" "}
+                                  {new Date(purchase.date).toLocaleTimeString()}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  Cashier: {purchase.employee}
+                                </div>
                               </div>
-                              <div className="text-sm text-gray-600">
-                                Cashier: {purchase.employee}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-lg font-bold">${purchase.total.toFixed(2)}</div>
-                              <div className="text-sm text-gray-600">{purchase.paymentMethod}</div>
-                              {purchase.loyaltyPointsEarned && (
-                                <div className="text-sm text-green-600">+{purchase.loyaltyPointsEarned} pts</div>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="mt-2"
-                                onClick={() => {
-                                  // Generate and print receipt
-                                  const receiptContent = `
+                              <div className="text-right">
+                                <div className="text-lg font-bold">
+                                  ${purchase.total.toFixed(2)}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {purchase.paymentMethod}
+                                </div>
+                                {purchase.loyaltyPointsEarned && (
+                                  <div className="text-sm text-green-600">
+                                    +{purchase.loyaltyPointsEarned} pts
+                                  </div>
+                                )}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="mt-2"
+                                  onClick={() => {
+                                    // Generate and print receipt
+                                    const receiptContent = `
 CANNABEST DISPENSARY
 Receipt Re-Print
 Transaction: ${purchase.id}
@@ -1568,21 +2010,24 @@ Date: ${new Date(purchase.date).toLocaleString()}
 Cashier: ${purchase.employee}
 
 ITEMS:
-${purchase.items.map(item => `${item.quantity}x ${item.name} - $${item.total.toFixed(2)}`).join('\n')}
+${purchase.items.map((item) => `${item.quantity}x ${item.name} - $${item.total.toFixed(2)}`).join("\n")}
 
 Subtotal: $${purchase.subtotal.toFixed(2)}
 Tax: $${purchase.tax.toFixed(2)}
 TOTAL: $${purchase.total.toFixed(2)}
 
 Payment: ${purchase.paymentMethod}
-${purchase.loyaltyPointsEarned ? `Loyalty Points Earned: ${purchase.loyaltyPointsEarned}` : ''}
+${purchase.loyaltyPointsEarned ? `Loyalty Points Earned: ${purchase.loyaltyPointsEarned}` : ""}
 
 Thank you for shopping with us!
                                   `.trim();
 
-                                  const printWindow = window.open('', '_blank');
-                                  if (printWindow) {
-                                    printWindow.document.write(`
+                                    const printWindow = window.open(
+                                      "",
+                                      "_blank",
+                                    );
+                                    if (printWindow) {
+                                      printWindow.document.write(`
                                       <html>
                                         <head>
                                           <title>Receipt - ${purchase.id}</title>
@@ -1597,45 +2042,65 @@ Thank you for shopping with us!
                                         </body>
                                       </html>
                                     `);
-                                    printWindow.document.close();
-                                  }
-                                }}
-                              >
-                                <Printer className="w-3 h-3 mr-1" />
-                                Re-print Receipt
-                              </Button>
+                                      printWindow.document.close();
+                                    }
+                                  }}
+                                >
+                                  <Printer className="w-3 h-3 mr-1" />
+                                  Re-print Receipt
+                                </Button>
+                              </div>
                             </div>
-                          </div>
 
-                          <div className="space-y-2">
-                            <div className="text-sm font-medium text-gray-700">Items Purchased:</div>
-                            {purchase.items.map((item) => (
-                              <div key={item.id} className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded">
-                                <div className="flex items-center gap-2">
-                                  <Package className="w-4 h-4 text-gray-500" />
-                                  <div>
-                                    <span className="font-medium">{item.name}</span>
-                                    <span className="text-gray-600 ml-2">({item.category})</span>
-                                    {item.metrcTag && (
-                                      <span className="text-xs text-gray-500 ml-2">[...{item.metrcTag.slice(-5)}]</span>
-                                    )}
+                            <div className="space-y-2">
+                              <div className="text-sm font-medium text-gray-700">
+                                Items Purchased:
+                              </div>
+                              {purchase.items.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className="flex justify-between items-center text-sm bg-gray-50 p-2 rounded"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <Package className="w-4 h-4 text-gray-500" />
+                                    <div>
+                                      <span className="font-medium">
+                                        {item.name}
+                                      </span>
+                                      <span className="text-gray-600 ml-2">
+                                        ({item.category})
+                                      </span>
+                                      {item.metrcTag && (
+                                        <span className="text-xs text-gray-500 ml-2">
+                                          [...{item.metrcTag.slice(-5)}]
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="text-right">
+                                    <div>
+                                      {item.quantity}x $
+                                      {item.unitPrice.toFixed(2)}
+                                    </div>
+                                    <div className="font-medium">
+                                      ${item.total.toFixed(2)}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div>{item.quantity}x ${item.unitPrice.toFixed(2)}</div>
-                                  <div className="font-medium">${item.total.toFixed(2)}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                              ))}
+                            </div>
 
-                          <div className="flex justify-between text-sm mt-3 pt-3 border-t">
-                            <span>Subtotal: ${purchase.subtotal.toFixed(2)}</span>
-                            <span>Tax: ${purchase.tax.toFixed(2)}</span>
-                            <span className="font-medium">Total: ${purchase.total.toFixed(2)}</span>
+                            <div className="flex justify-between text-sm mt-3 pt-3 border-t">
+                              <span>
+                                Subtotal: ${purchase.subtotal.toFixed(2)}
+                              </span>
+                              <span>Tax: ${purchase.tax.toFixed(2)}</span>
+                              <span className="font-medium">
+                                Total: ${purchase.total.toFixed(2)}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))}
                     </div>
                   ) : (
                     <div className="text-center py-8 text-gray-500">
