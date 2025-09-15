@@ -66,11 +66,12 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
                             </svg>
                         </button>
-                        <input 
-                            type="number" 
-                            class="quantity-input w-12 text-center text-sm border-0 focus:ring-0" 
-                            value="{{ $item['quantity'] }}" 
-                            min="1" 
+                        <input
+                            type="number"
+                            step="0.01"
+                            class="quantity-input w-12 text-center text-sm border-0 focus:ring-0"
+                            value="{{ $item['quantity'] }}"
+                            min="0.01"
                             max="{{ $item['stock'] ?? 999 }}"
                             data-item-id="{{ $item['id'] }}"
                         >
