@@ -1494,14 +1494,32 @@ function cannabisPOS() {
       }
 
       const rawList = Array.isArray(list) ? list : [];
+      // Primary: de-dup by sale number/id
       const seen = new Set();
-      const unique = rawList.filter((s) => {
+      const uniqueById = rawList.filter((s) => {
         const key = s.saleNumber || s.sale_number || s.id || s.numericId;
         if (key == null) return true;
         const k = String(key);
         if (seen.has(k)) return false;
         seen.add(k);
         return true;
+      });
+      // Secondary: de-dup by minute-bucket + amount + payment method
+      const pad = (n) => String(n).padStart(2, "0");
+      const seenBuckets = new Set();
+      const unique = uniqueById.filter((s) => {
+        try {
+          const dt = new Date(s.date);
+          const bucket = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())} ${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+          const amt = Number(s.total || 0).toFixed(2);
+          const pm = String(s.paymentMethod || "").toLowerCase();
+          const k = `${bucket}|${amt}|${pm}`;
+          if (seenBuckets.has(k)) return false;
+          seenBuckets.add(k);
+          return true;
+        } catch (_) {
+          return true;
+        }
       });
       this.sales = unique;
       this.filterSales();
