@@ -1397,6 +1397,8 @@ function cannabisPOS() {
           if (Array.isArray(c)) this.customers = c;
           else if (!Array.isArray(this.customers)) this.customers = [];
         }
+        // Merge locally saved customers (per-user and legacy)
+        try { this.loadCustomers(); } catch (_) {}
         // Ensure collections remain arrays after API calls
         this.normalizeCollections();
 
@@ -2405,7 +2407,7 @@ function cannabisPOS() {
         }
         return best && best.name ? best.name : "—";
       } catch (_) {
-        return "—";
+        return "���";
       }
     },
 
