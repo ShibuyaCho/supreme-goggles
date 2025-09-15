@@ -119,7 +119,7 @@ export default function Loyalty() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/node/loyalty-members", {
+        const res = await fetch("/api/loyalty-members", {
           headers: { Accept: "application/json" },
         });
         if (res.ok) {
@@ -272,7 +272,7 @@ export default function Loyalty() {
 
     try {
       await fetch(
-        `/node/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
+        `/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
         {
           method: "POST",
           headers: {
@@ -326,7 +326,7 @@ export default function Loyalty() {
 
     let created: LoyaltyCustomer | null = null;
     try {
-      const res = await fetch("/node/loyalty-members", {
+      const res = await fetch("/api/loyalty-members", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -369,7 +369,7 @@ export default function Loyalty() {
     setCustomers((prev) => [...prev, customer]);
     // Refresh from server to ensure persistence
     try {
-      const res2 = await fetch("/node/loyalty-members", { headers: { Accept: "application/json" } });
+      const res2 = await fetch("/api/loyalty-members", { headers: { Accept: "application/json" } });
       if (res2.ok) {
         const data2 = await res2.json();
         const list2 = Array.isArray(data2?.members) ? data2.members : [];
@@ -397,7 +397,7 @@ export default function Loyalty() {
       )
     ) {
       try {
-        await fetch(`/node/loyalty-members/${customerId}`, {
+        await fetch(`/api/loyalty-members/${customerId}`, {
           method: "DELETE",
           headers: { Accept: "application/json" },
         });
