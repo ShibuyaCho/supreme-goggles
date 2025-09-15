@@ -1407,7 +1407,6 @@ app.post("/node/loyalty-members", async (req, res) => {
 app.delete("/api/loyalty-members/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    // Optionally null out FK from transactions
     try {
       await supaFetch(
         `loyalty_transactions?loyalty_member_id=eq.${encodeURIComponent(id)}`,
@@ -1423,6 +1422,23 @@ app.delete("/api/loyalty-members/:id", async (req, res) => {
   } catch (e) {
     res.status(500).json({ success: false, error: "Failed" });
   }
+});
+// Node aliases
+app.delete("/node/loyalty-members/:id", async (req, res) => {
+  req.url = `/api/loyalty-members/${req.params.id}`;
+  return app._router.handle(req, res);
+});
+app.post("/node/loyalty-members/:id/adjust-points", async (req, res) => {
+  req.url = `/api/loyalty-members/${req.params.id}/adjust-points`;
+  return app._router.handle(req, res);
+});
+app.post("/node/loyalty-members/:id/earn-points", async (req, res) => {
+  req.url = `/api/loyalty-members/${req.params.id}/earn-points`;
+  return app._router.handle(req, res);
+});
+app.post("/node/loyalty-members/:id/redeem-points", async (req, res) => {
+  req.url = `/api/loyalty-members/${req.params.id}/redeem-points`;
+  return app._router.handle(req, res);
 });
 
 app.post("/api/loyalty-members/:id/adjust-points", async (req, res) => {
