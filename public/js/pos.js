@@ -9925,3 +9925,27 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   } catch (_) {}
 })();
+
+// Auto-bind aspdTimeframe to any Alpine component that uses it
+(function(){
+  function ensureAspdOnClosestComponent(el){
+    try {
+      let node = el;
+      while (node && !node.__x) node = node.parentElement;
+      if (node && node.__x && node.__x.$data) {
+        const data = node.__x.$data;
+        if (typeof data.aspdTimeframe === 'undefined') data.aspdTimeframe = 'month';
+        if (typeof data.loadAspd !== 'function') data.loadAspd = function(){ try{ window.loadAspd && window.loadAspd(); } catch(_){} };
+        if (typeof data.exportAspd !== 'function') data.exportAspd = function(){ try{ window.exportAspd && window.exportAspd(); } catch(_){} };
+      }
+    } catch(_){}
+  }
+  function scan(){
+    try {
+      const els = document.querySelectorAll('select[x-model="aspdTimeframe"], [x-model="aspdTimeframe"]');
+      els.forEach(ensureAspdOnClosestComponent);
+    } catch(_){}
+  }
+  document.addEventListener('alpine:initialized', scan);
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(scan, 0); });
+})();
