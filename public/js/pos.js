@@ -4429,6 +4429,18 @@ function cannabisPOS() {
       this.showAdjustPointsModal = true;
     },
 
+    editLoyaltyCustomer(customer) {
+      try {
+        if (!customer) return;
+        // Prefer the record from our main list
+        const idStr = String(customer.id || "");
+        const existing = (Array.isArray(this.customers) ? this.customers : []).find(c => String(c.id) === idStr) || customer;
+        this.editCustomer(existing);
+      } catch (_) {
+        this.editCustomer(customer);
+      }
+    },
+
     async savePointsAdjustment() {
       if (!this.selectedLoyaltyCustomer) return;
       const id = this.selectedLoyaltyCustomer.id;
