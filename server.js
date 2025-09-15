@@ -1398,6 +1398,11 @@ app.post("/api/loyalty-members", async (req, res) => {
     res.status(500).json({ success: false, error: "Failed to create member" });
   }
 });
+// Node alias (POST)
+app.post("/node/loyalty-members", async (req, res) => {
+  req.url = "/api/loyalty-members";
+  return app._router.handle(req, res);
+});
 
 app.delete("/api/loyalty-members/:id", async (req, res) => {
   try {
