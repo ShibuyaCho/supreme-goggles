@@ -1919,7 +1919,20 @@ app.get("/api/analytics/end-of-day", async (_req, res) => {
       },
     });
     const rows = r.ok ? await r.json() : [];
-    const list = Array.isArray(rows) ? rows : [];
+    let list = Array.isArray(rows) ? rows : [];
+    // Post-filter by client timezone day to avoid UTC boundary drift
+    try {
+      const tz = String(req.query?.tz || "").trim();
+      if (tz) {
+        const todayYmd = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+        list = list.filter((s) => {
+          try {
+            const ymd = new Date(s.created_at).toLocaleDateString("en-CA", { timeZone: tz });
+            return ymd === todayYmd;
+          } catch { return true; }
+        });
+      }
+    } catch (_) {}
 
     const totalSales = list.reduce((a, s) => a + Number(s.total || 0), 0);
     const totalTax = list.reduce((a, s) => a + Number(s.tax || 0), 0);
