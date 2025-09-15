@@ -1097,6 +1097,18 @@ app.get("/api/customers", async (req, res) => {
     res.json({ success: true, customers: [] });
   }
 });
+// Node alias to avoid Laravel /api collisions
+app.get("/node/customers", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const base = `customers?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
+    const r = await supaFetch(base);
+    const payload = r.ok ? await r.json() : [];
+    res.json({ success: true, customers: payload });
+  } catch (e) {
+    res.json({ success: true, customers: [] });
+  }
+});
 
 // Customers: update
 app.put("/api/customers/:id", async (req, res) => {
