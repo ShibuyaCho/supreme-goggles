@@ -843,8 +843,20 @@ function cannabisPOS() {
         }
         // Real-time append when other modules complete a sale
         try {
+          this._saleSeenKeys = this._saleSeenKeys || new Map();
+          const seenRecently = (k) => {
+            if (!k) return false;
+            const now = Date.now();
+            const last = this._saleSeenKeys.get(k) || 0;
+            if (now - last < 10000) return true;
+            this._saleSeenKeys.set(k, now);
+            return false;
+          };
           document.addEventListener("pos-sale-completed", async (e) => {
+            const saleNum = e?.detail?.sale_number ? String(e.detail.sale_number) : null;
             const sid = e?.detail?.sale_id || e?.detail?.id;
+            const key = saleNum || (sid != null ? String(sid) : null);
+            if (seenRecently(key)) return;
             if (sid) {
               try {
                 await this.appendSaleById(sid);
@@ -852,7 +864,7 @@ function cannabisPOS() {
                 // Optimistic fallback if API fetch fails
                 const now = new Date().toISOString();
                 const optimistic = {
-                  id: e?.detail?.sale_number || String(sid),
+                  id: saleNum || String(sid),
                   numericId: Number(sid) || sid,
                   date: now,
                   customer: e?.detail?.customer || "Walk-in Customer",
