@@ -824,13 +824,19 @@ class SalesController extends Controller
         if ($employee && $employee !== 'all') {
             $query->where('employee_id', $employee);
         }
-        // Apply date filters (convert local day to UTC boundaries)
+        // Apply date filters (prefer explicit UTC window when provided)
         $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
-        if ($dateFrom) {
+        $startAt = request()->get('start_at');
+        $endAt = request()->get('end_at');
+        if ($startAt) {
+            try { $query->where('created_at', '>=', Carbon::parse($startAt)->setTimezone('UTC')); } catch (\Throwable $e) {}
+        } elseif ($dateFrom) {
             $startUtc = Carbon::parse($dateFrom, $tz)->startOfDay()->setTimezone('UTC');
             $query->where('created_at', '>=', $startUtc);
         }
-        if ($dateTo) {
+        if ($endAt) {
+            try { $query->where('created_at', '<=', Carbon::parse($endAt)->setTimezone('UTC')); } catch (\Throwable $e) {}
+        } elseif ($dateTo) {
             $endUtc = Carbon::parse($dateTo, $tz)->endOfDay()->setTimezone('UTC');
             $query->where('created_at', '<=', $endUtc);
         }
