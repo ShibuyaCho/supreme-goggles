@@ -1648,7 +1648,7 @@ function cannabisPOS() {
         id: saleNumber || String(s.id),
         saleNumber: saleNumber || null,
         numericId: s.id,
-        date: s.created_at,
+        date: typeof s.created_at === "string" ? s.created_at : (s.created_at && s.created_at.toISOString ? s.created_at.toISOString() : String(s.created_at || "")),
         customer: customerLabel,
         customerType,
         customerMedicalCard: medicalCard,
