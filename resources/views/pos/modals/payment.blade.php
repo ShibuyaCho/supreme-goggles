@@ -318,15 +318,14 @@ async function processPayment() {
         const pin = prompt('Enter employee PIN to confirm payment');
         if (pin) paymentData.employeePin = String(pin);
 
-        // Prefer open API (no CSRF/auth) so it always hits our Supabase handler
+        // Prefer authenticated API to avoid duplicate writes; fallback to open only if needed
         let result;
         try {
-            ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment-open', paymentData, { headers: { 'Accept': 'application/json' } }));
-        } catch (openErr) {
-            // Auth API fallback
+            ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment', paymentData, { headers: { 'Accept': 'application/json' } }));
+        } catch (apiErr) {
             try {
-                ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment', paymentData, { headers: { 'Accept': 'application/json' } }));
-            } catch (apiErr) {
+                ({ data: result } = await (window.axios || axios).post('/api/pos/process-payment-open', paymentData, { headers: { 'Accept': 'application/json' } }));
+            } catch (openErr) {
                 // Web fallback
                 if (!pin) throw apiErr;
                 const webPayload = {
