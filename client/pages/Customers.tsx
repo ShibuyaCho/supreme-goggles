@@ -105,252 +105,6 @@ interface Customer {
   purchaseHistory: Purchase[];
 }
 
-const sampleCustomers: Customer[] = [
-  {
-    id: "1",
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@email.com",
-    phone: "(555) 123-4567",
-    dateOfBirth: "1985-06-15",
-    address: {
-      street: "123 Main St",
-      city: "Portland",
-      state: "OR",
-      zipCode: "97201",
-    },
-    customerType: "recreational",
-    loyaltyProgram: {
-      memberId: "LOY001",
-      joinDate: "2024-01-15",
-      pointsBalance: 45,
-      tier: "Silver",
-      isVeteran: false,
-    },
-    isActive: true,
-    lastVisit: "2024-01-14",
-    totalSpent: 1250.75,
-    totalVisits: 18,
-    preferredProducts: ["Blue Dream", "OG Kush"],
-    notes: "Prefers indica strains",
-    createdDate: "2024-01-15",
-    dataRetentionConsent: true,
-    purchaseHistory: [
-      {
-        id: "TXN-20240114-001",
-        date: "2024-01-14T15:30:00Z",
-        items: [
-          {
-            id: "1",
-            name: "Blue Dream",
-            category: "Flower",
-            quantity: 2,
-            unitPrice: 7.0,
-            total: 14.0,
-            metrcTag: "1A4000000000022000000126",
-          },
-          {
-            id: "2",
-            name: "OG Kush",
-            category: "Flower",
-            quantity: 1,
-            unitPrice: 12.0,
-            total: 12.0,
-            metrcTag: "1A4000000000022000000127",
-          },
-        ],
-        subtotal: 26.0,
-        tax: 2.08,
-        total: 28.08,
-        paymentMethod: "card",
-        loyaltyPointsEarned: 28,
-        employee: "Sarah Johnson",
-      },
-      {
-        id: "TXN-20240110-003",
-        date: "2024-01-10T12:15:00Z",
-        items: [
-          {
-            id: "3",
-            name: "Gummy Bears",
-            category: "Edibles",
-            quantity: 1,
-            unitPrice: 25.0,
-            total: 25.0,
-            metrcTag: "1A4000000000022000000143",
-          },
-        ],
-        subtotal: 25.0,
-        tax: 2.0,
-        total: 27.0,
-        paymentMethod: "cash",
-        loyaltyPointsEarned: 27,
-        employee: "Mike Chen",
-      },
-      {
-        id: "TXN-20240105-002",
-        date: "2024-01-05T14:45:00Z",
-        items: [
-          {
-            id: "4",
-            name: "Pre-Roll Pack",
-            category: "Pre-Rolls",
-            quantity: 2,
-            unitPrice: 20.0,
-            total: 40.0,
-            metrcTag: "1A4000000000022000000134",
-          },
-          {
-            id: "5",
-            name: "CBD Tincture",
-            category: "Tinctures",
-            quantity: 1,
-            unitPrice: 45.0,
-            total: 45.0,
-            metrcTag: "1A4000000000022000000157",
-          },
-        ],
-        subtotal: 85.0,
-        tax: 6.8,
-        total: 91.8,
-        paymentMethod: "card",
-        loyaltyPointsEarned: 91,
-        employee: "Emma Rodriguez",
-      },
-    ],
-  },
-  {
-    id: "2",
-    firstName: "Jane",
-    lastName: "Smith",
-    email: "jane.smith@email.com",
-    phone: "(555) 987-6543",
-    dateOfBirth: "1992-03-22",
-    address: {
-      street: "456 Oak Ave",
-      city: "Eugene",
-      state: "OR",
-      zipCode: "97401",
-    },
-    customerType: "medical",
-    medicalCard: {
-      number: "MMJ123456",
-      issueDate: "2023-01-01",
-      expirationDate: "2024-12-31",
-      isPatient: true,
-      physicianName: "Dr. Sarah Johnson",
-      notes: "Chronic pain management",
-    },
-    loyaltyProgram: {
-      memberId: "LOY002",
-      joinDate: "2023-11-20",
-      pointsBalance: 156,
-      tier: "Gold",
-      isVeteran: true,
-    },
-    isActive: true,
-    lastVisit: "2024-01-13",
-    totalSpent: 2850.4,
-    totalVisits: 42,
-    preferredProducts: ["CBD Tincture", "High CBD Flower"],
-    notes: "Medical patient - needs high CBD products",
-    createdDate: "2023-11-20",
-    dataRetentionConsent: true,
-    purchaseHistory: [
-      {
-        id: "TXN-20240113-004",
-        date: "2024-01-13T16:20:00Z",
-        items: [
-          {
-            id: "6",
-            name: "High CBD Flower",
-            category: "Flower",
-            quantity: 1,
-            unitPrice: 15.0,
-            total: 15.0,
-            metrcTag: "1A4000000000022000000178",
-          },
-          {
-            id: "7",
-            name: "CBD Tincture",
-            category: "Tinctures",
-            quantity: 2,
-            unitPrice: 45.0,
-            total: 90.0,
-            metrcTag: "1A4000000000022000000157",
-          },
-        ],
-        subtotal: 105.0,
-        tax: 0.0,
-        total: 105.0,
-        paymentMethod: "cash",
-        employee: "Mike Chen",
-      },
-    ],
-  },
-  {
-    id: "3",
-    firstName: "Mike",
-    lastName: "Johnson",
-    email: "mike.johnson@email.com",
-    phone: "(555) 456-7890",
-    dateOfBirth: "1978-11-08",
-    address: {
-      street: "789 Pine Rd",
-      city: "Salem",
-      state: "OR",
-      zipCode: "97301",
-    },
-    customerType: "recreational",
-    loyaltyProgram: {
-      memberId: "LOY003",
-      joinDate: "2023-08-10",
-      pointsBalance: 328,
-      tier: "Platinum",
-      isVeteran: true,
-    },
-    isActive: true,
-    lastVisit: "2024-01-15",
-    totalSpent: 4200.9,
-    totalVisits: 68,
-    preferredProducts: ["Premium Concentrates", "Live Resin"],
-    notes: "VIP customer - veteran discount applied",
-    createdDate: "2023-08-10",
-    dataRetentionConsent: true,
-    purchaseHistory: [
-      {
-        id: "TXN-20240115-005",
-        date: "2024-01-15T11:30:00Z",
-        items: [
-          {
-            id: "8",
-            name: "Live Resin",
-            category: "Concentrates",
-            quantity: 1,
-            unitPrice: 50.0,
-            total: 50.0,
-            metrcTag: "1A4000000000022000000189",
-          },
-          {
-            id: "9",
-            name: "Premium Hash",
-            category: "Concentrates",
-            quantity: 1,
-            unitPrice: 95.0,
-            total: 95.0,
-            metrcTag: "1A4000000000022000000205",
-          },
-        ],
-        subtotal: 145.0,
-        tax: 11.6,
-        total: 156.6,
-        paymentMethod: "card",
-        loyaltyPointsEarned: 156,
-        employee: "Sarah Johnson",
-      },
-    ],
-  },
-];
 
 export default function Customers() {
   const navigate = useNavigate();
@@ -622,15 +376,8 @@ export default function Customers() {
     (async () => {
       const serverList = await fetchServerCustomers();
       if (serverList.length) {
-        setCustomers((prev) => {
-          const seen = new Set<string>();
-          return [...serverList, ...prev].filter((c) => {
-            const key = String(c.id || c.email || c.phone || "");
-            if (!key || seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-        });
+        setCustomers(serverList);
+        return;
       }
     })();
   }, []);
@@ -731,43 +478,25 @@ export default function Customers() {
 
     if (enrollInLoyalty) {
       try {
-        const loyaltyListRaw = localStorage.getItem(loyaltyKey());
-        const globalRaw = localStorage.getItem("cannabest-loyalty");
-        const listA = loyaltyListRaw ? JSON.parse(loyaltyListRaw) : [];
-        const listB = globalRaw ? JSON.parse(globalRaw) : [];
-        const name = `${customer.firstName} ${customer.lastName || ""}`.trim();
-        const today = new Date().toISOString().split("T")[0];
-        const entry = {
-          id: String(customer.id),
-          name,
-          phone: customer.phone,
-          email: customer.email,
-          joinDate: today,
-          signupDate: today,
-          totalSpent: 0,
-          totalVisits: 0,
-          pointsBalance: customer.loyaltyProgram?.pointsBalance || 0,
-          pointsEarned: 0,
-          pointsRedeemed: 0,
-          tier: customer.loyaltyProgram?.tier || "Bronze",
-          dataRetentionConsent: true,
-          salesHistory: [],
-          lastVisit: "",
-          isVeteran: !!customer.loyaltyProgram?.isVeteran,
-        };
-        const seen = new Set<string>();
-        const merged = [
-          entry,
-          ...(Array.isArray(listA) ? listA : []),
-          ...(Array.isArray(listB) ? listB : []),
-        ].filter((c) => {
-          const key = String(c.id || c.email || c.phone || "");
-          if (!key || seen.has(key)) return false;
-          seen.add(key);
-          return true;
+        const token = localStorage.getItem("auth_token");
+        const fullName = `${customer.firstName} ${customer.lastName || ""}`.trim();
+        await fetch("/api/loyalty-members", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
+          body: JSON.stringify({
+            customer_id: createdFromServer ? Number(createdFromServer.id) : undefined,
+            name: fullName,
+            email: customer.email,
+            phone: customer.phone,
+            starting_points: 0,
+            tier: "Bronze",
+            is_veteran: !!newCustomer.loyaltyProgram?.isVeteran,
+          }),
         });
-        localStorage.setItem(loyaltyKey(), JSON.stringify(merged));
-        localStorage.setItem("cannabest-loyalty", JSON.stringify(merged));
       } catch (_) {}
     }
 
@@ -1224,28 +953,6 @@ export default function Customers() {
                         Customer consents to storing personal information and
                         tracking sales history for compliance and future visits
                         as required by Oregon state law.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <Checkbox
-                      id="enrollLoyalty"
-                      checked={enrollInLoyalty}
-                      onCheckedChange={(checked) =>
-                        setEnrollInLoyalty(!!checked)
-                      }
-                    />
-                    <div className="space-y-2">
-                      <Label
-                        htmlFor="enrollLoyalty"
-                        className="text-sm font-medium"
-                      >
-                        Enroll in Loyalty Program
-                      </Label>
-                      <p className="text-xs text-gray-600">
-                        Adds this customer to the Loyalty page so you can track
-                        points and rewards.
                       </p>
                     </div>
                   </div>
