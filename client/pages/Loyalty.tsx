@@ -338,6 +338,13 @@ export default function Loyalty() {
         const data = await res.json();
         const m = data?.member || null;
         if (m) created = mapMember(m);
+      } else {
+        try {
+          const err = await res.json();
+          alert(`Failed to enroll: ${err?.error ? JSON.stringify(err.error) : res.statusText}`);
+        } catch (_) {
+          alert(`Failed to enroll (status ${res.status})`);
+        }
       }
     } catch (_) {}
 
