@@ -1734,7 +1734,7 @@
                                       >
                                       <span
                                         x-show="product.category === 'Topicals'"
-                                        >🧴 Topical - Showing mg content</span
+                                        >�� Topical - Showing mg content</span
                                       >
                                       <span
                                         x-show="product.category === 'Infused'"
@@ -7197,7 +7197,7 @@
                       compliance requirements
                     </p>
                     <p class="text-sm text-gray-500">
-                      �� Full CRUD operations with role-based permissions and
+                      ��� Full CRUD operations with role-based permissions and
                       data retention
                     </p>
                     <p class="text-sm text-gray-500">
@@ -12848,7 +12848,7 @@
                                         >Signed Up:</span
                                       >
                                       <span
-                                        x-text="new Date(customer.signupDate).toLocaleDateString()"
+                                        x-text="(d => isNaN(d.getTime()) ? new Date().toLocaleDateString() : d.toLocaleDateString())(new Date(customer.signupDate || customer.joinDate || customer.createdAt || customer.created_at || Date.now()))"
                                       ></span>
                                     </p>
                                   </div>
