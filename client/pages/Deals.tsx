@@ -314,7 +314,13 @@ export default function Deals() {
         const apiIds = new Set(overlayed.map((d) => String(d.id)));
         const localsOnly = Array.from(localMergedMap.values()).filter((d) => !apiIds.has(String(d.id)));
         const mergedAll = [...overlayed, ...localsOnly];
-        setDeals(mergedAll);
+        const seenAll = new Set<string>();
+        setDeals(mergedAll.filter((d) => {
+          const key = String(d.id);
+          if (seenAll.has(key)) return false;
+          seenAll.add(key);
+          return true;
+        }));
       } catch {
         // Fallback to purely local
         try {
