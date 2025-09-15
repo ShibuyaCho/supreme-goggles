@@ -4609,12 +4609,42 @@ function cannabisPOS() {
     filterLoyaltyCustomers() {
       this.normalizeCollections();
       let list = Array.isArray(this.customers) ? this.customers.slice() : [];
+
+      // Build roster from local loyalty storage and server fields
+      const roster = new Set();
+      try {
+        const [userKey, globalKey] = this.loyaltyStorageKeys();
+        const a = JSON.parse(localStorage.getItem(userKey) || "[]");
+        const b = JSON.parse(localStorage.getItem(globalKey) || "[]");
+        const add = (arr) => (Array.isArray(arr) ? arr : []).forEach((c) => {
+          const keys = [c.id, c.email, c.phone].map((v) => (v != null ? String(v) : ""));
+          keys.filter(Boolean).forEach((k) => roster.add(k));
+        });
+        add(a);
+        add(b);
+      } catch (_) {}
+
+      // Keep only customers explicitly enrolled in loyalty
+      list = list.filter((c) => {
+        const keys = [c.id, c.email, c.phone].map((v) => (v != null ? String(v) : ""));
+        const inRoster = keys.some((k) => roster.has(k));
+        return (
+          c.enrolledInLoyalty === true ||
+          !!c.loyalty_member_id ||
+          !!c.loyaltyProgram ||
+          (!!c.tier && c.tier !== "") ||
+          inRoster
+        );
+      });
+
+      // Normalize fields for UI
       list = list.map((c) => ({
         tier: c.tier || "Bronze",
         loyaltyPoints:
           typeof c.loyaltyPoints === "number"
             ? c.loyaltyPoints
-            : Number(c.loyalty_points || 0) || 0,
+            : Number(c.loyalty_points || c.points || 0) || 0,
+        isActive: c.isActive === undefined ? true : c.isActive,
         ...c,
       }));
       const q = (this.loyaltyFilter.search || "").toLowerCase();
@@ -6856,6 +6886,11 @@ function cannabisPOS() {
           lastVisit: "",
           isVeteran: false,
         });
+        // Mark the just-added customer as enrolled to aid filtering
+        try {
+          const idx = (Array.isArray(this.customers) ? this.customers : []).findIndex(c => String(c.id) === String(finalCustomer.id));
+          if (idx !== -1) this.customers[idx] = { ...this.customers[idx], enrolledInLoyalty: true };
+        } catch (_) {}
       }
 
       this.showToast(
