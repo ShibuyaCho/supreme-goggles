@@ -4379,6 +4379,33 @@ function cannabisPOS() {
       }
     },
 
+    async toggleCustomerStatus(customer) {
+      try {
+        if (!customer) return;
+        const id = customer.id;
+        const idx = (Array.isArray(this.customers) ? this.customers : []).findIndex(c => String(c.id) === String(id));
+        if (idx === -1) return;
+        const current = this.customers[idx];
+        const nextActive = !(current.isActive === true);
+
+        // Best-effort server update
+        try {
+          if (this.isAuthenticated && this.hasPermission("customers:write") && id != null) {
+            const payload = { is_active: nextActive };
+            try { await posAuth.apiRequest("patch", `/customers/${id}`, payload); }
+            catch { await posAuth.apiRequest("put", `/customers/${id}`, payload); }
+          }
+        } catch (_) {}
+
+        this.customers[idx] = { ...current, isActive: nextActive };
+        try { this._saveCustomersLocal(); } catch (_) {}
+        try { this.filterLoyaltyCustomers(); } catch (_) {}
+        this.showToast(nextActive ? "Customer activated" : "Customer deactivated", "success");
+      } catch (e) {
+        this.showToast("Failed to toggle status", "error");
+      }
+    },
+
     // Sale flow functions
     selectCustomerType(type) {
       this.showNewSaleModal = false;
