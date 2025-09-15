@@ -75,7 +75,7 @@ class SalesController extends Controller
             if ($dateFrom || $dateTo) {
                 $rows = $rows->filter(function($r) use ($dateFrom, $dateTo) {
                     try {
-                        $tz = config('app.timezone');
+                        $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
                         $created = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone($tz);
                         $from = $dateFrom ? \Carbon\Carbon::parse($dateFrom, $tz)->startOfDay() : null;
                         $to = $dateTo ? \Carbon\Carbon::parse($dateTo, $tz)->endOfDay() : null;
@@ -205,12 +205,15 @@ class SalesController extends Controller
             $query->where('employee_id', $filterEmployee);
         }
 
-        // Apply date filters
+        // Apply date filters (convert local day to UTC boundaries)
+        $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
         if ($dateFrom) {
-            $query->whereDate('created_at', '>=', $dateFrom);
+            $startUtc = Carbon::parse($dateFrom, $tz)->startOfDay()->setTimezone('UTC');
+            $query->where('created_at', '>=', $startUtc);
         }
         if ($dateTo) {
-            $query->whereDate('created_at', '<=', $dateTo);
+            $endUtc = Carbon::parse($dateTo, $tz)->endOfDay()->setTimezone('UTC');
+            $query->where('created_at', '<=', $endUtc);
         }
 
         // Apply sorting
@@ -471,9 +474,12 @@ class SalesController extends Controller
     public function dailyReport(Request $request)
     {
         $date = $request->get('date', Carbon::today()->format('Y-m-d'));
-        
+        $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
+        $startUtc = Carbon::parse($date, $tz)->startOfDay()->setTimezone('UTC');
+        $endUtc = Carbon::parse($date, $tz)->endOfDay()->setTimezone('UTC');
+
         $sales = Sale::with(['employee', 'saleItems'])
-            ->whereDate('created_at', $date)
+            ->whereBetween('created_at', [$startUtc, $endUtc])
             ->where('status', 'completed')
             ->get();
         
@@ -709,7 +715,7 @@ class SalesController extends Controller
             if ($dateFrom || $dateTo) {
                 $rows = $rows->filter(function($r) use ($dateFrom, $dateTo) {
                     try {
-                        $tz = config('app.timezone');
+                        $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
                         $created = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone($tz);
                         $from = $dateFrom ? \Carbon\Carbon::parse($dateFrom, $tz)->startOfDay() : null;
                         $to = $dateTo ? \Carbon\Carbon::parse($dateTo, $tz)->endOfDay() : null;
@@ -806,11 +812,15 @@ class SalesController extends Controller
         if ($employee && $employee !== 'all') {
             $query->where('employee_id', $employee);
         }
+        // Apply date filters (convert local day to UTC boundaries)
+        $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
         if ($dateFrom) {
-            $query->whereDate('created_at', '>=', $dateFrom);
+            $startUtc = Carbon::parse($dateFrom, $tz)->startOfDay()->setTimezone('UTC');
+            $query->where('created_at', '>=', $startUtc);
         }
         if ($dateTo) {
-            $query->whereDate('created_at', '<=', $dateTo);
+            $endUtc = Carbon::parse($dateTo, $tz)->endOfDay()->setTimezone('UTC');
+            $query->where('created_at', '<=', $endUtc);
         }
         $query->orderBy('created_at', 'desc');
         $localRows = $query->limit(max(1, min(1000, $limit)))->get();
@@ -864,7 +874,7 @@ class SalesController extends Controller
         for ($i = 0; $i < count($items); $i++) {
             $r = $items[$i];
             $sn = (string)($r['sale_number'] ?? '');
-            $tz = config('app.timezone');
+            $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
             $dt = null; try { $dt = \Carbon\Carbon::parse($r['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $dt = now(); }
             $amt = (float)($r['total_amount'] ?? ($r['total'] ?? 0));
             $pm = strtolower((string)($r['payment_method'] ?? ''));
@@ -934,8 +944,11 @@ class SalesController extends Controller
         // Default Eloquent analytics
         $dateFrom = $request->get('date_from', Carbon::today()->format('Y-m-d'));
         $dateTo = $request->get('date_to', Carbon::today()->format('Y-m-d'));
+        $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
+        $startUtc = Carbon::parse($dateFrom, $tz)->startOfDay()->setTimezone('UTC');
+        $endUtc = Carbon::parse($dateTo, $tz)->endOfDay()->setTimezone('UTC');
 
-        $sales = Sale::whereBetween('created_at', [$dateFrom, $dateTo])
+        $sales = Sale::whereBetween('created_at', [$startUtc, $endUtc])
             ->where('status', 'completed');
 
         return [
