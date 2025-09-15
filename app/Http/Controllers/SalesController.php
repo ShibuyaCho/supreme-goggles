@@ -716,7 +716,10 @@ class SalesController extends Controller
                 });
             }
             if ($status && $status !== 'all') {
-                $rows = $rows->where('status', $status);
+                $rows = $rows->filter(function($r) use ($status){
+                    $v = strtolower((string)($r['status'] ?? ''));
+                    return $v === strtolower($status);
+                });
             }
             if ($payment && $payment !== 'all') {
                 $rows = $rows->where('payment_method', $payment);
@@ -824,7 +827,11 @@ class SalesController extends Controller
             });
         }
         if ($status && $status !== 'all') {
-            $query->where('status', $status);
+            try {
+                $query->whereRaw('LOWER(status) = ?', [ strtolower($status) ]);
+            } catch (\Throwable $e) {
+                $query->where('status', $status);
+            }
         }
         if ($payment && $payment !== 'all') {
             $query->where('payment_method', $payment);
