@@ -9284,3 +9284,93 @@ function cannabisPOS() {
 document.addEventListener("DOMContentLoaded", function () {
   // Cannabis POS System ready - initialization handled by Alpine's init() function
 });
+
+// Global analytics helpers for Alpine bindings on landing/analytics sections
+(function(){
+  const defaults = {
+    customerCount: 0,
+    customerGrowth: 0,
+    avgTransaction: 0,
+    avgItems: 0,
+    overallGrowth: 0,
+    totalDiscounts: 0,
+    discountPercentage: 0,
+    retentionRate: 0,
+    inventoryTurnover: 0,
+    profitMargin: 0,
+  };
+  if (!window.__analyticsData) window.__analyticsData = { ...defaults };
+  window.getAnalyticsData = function(){ return window.__analyticsData; };
+  window.getTopProducts = function(){ return Array.isArray(window.__topProducts) ? window.__topProducts : []; };
+  window.getTopVendors = function(){ return Array.isArray(window.__topVendors) ? window.__topVendors : []; };
+  window.getStoreComparison = function(){ return Array.isArray(window.__storeComparison) ? window.__storeComparison : []; };
+  window.getAgingAnalysis = function(){ return window.__agingAnalysis || { fresh: 0, slow: 0, stale: 0 }; };
+
+  async function refreshLandingAnalytics(){
+    try {
+      const tf = 'today';
+      const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+      const res = await (window.axios||axios).get('/api/analytics/overview', { params: { timeframe: tf, tz } });
+      const d = res?.data || {};
+      const sales = d.sales || {};
+      window.__analyticsData.customerCount = Number(sales.customers || d.customers || 0);
+      window.__analyticsData.customerGrowth = Number((d.customers && d.customers.growth) || 0);
+      window.__analyticsData.avgTransaction = Number(sales.avgOrderValue || d.avgOrderValue || 0);
+      window.__analyticsData.avgItems = Number(d.avgItems || 0);
+      window.__analyticsData.overallGrowth = Number((d.growth && d.growth.overall) || 0);
+      window.__analyticsData.totalDiscounts = Number(sales.totalDiscounts || (d.discounts && d.discounts.total) || 0);
+      window.__analyticsData.discountPercentage = Number((d.discounts && d.discounts.pctOfSales) || 0);
+      window.__analyticsData.retentionRate = Number((d.customers && d.customers.retentionRate) || 0);
+      window.__analyticsData.inventoryTurnover = Number((d.inventory && d.inventory.turnover) || 0);
+      window.__analyticsData.profitMargin = Number((d.profit && d.profit.margin) || 0);
+      window.__topProducts = Array.isArray(d.topProducts) ? d.topProducts : [];
+      window.__topVendors = Array.isArray(d.topVendors) ? d.topVendors : [];
+      window.__storeComparison = (d.company && Array.isArray(d.company.stores)) ? d.company.stores : [];
+      window.__agingAnalysis = (d.inventory && d.inventory.aging) ? d.inventory.aging : (window.__agingAnalysis || { fresh: 0, slow: 0, stale: 0 });
+    } catch (err) {
+      try {
+        // Fallback: compute minimal metrics from today's recent sales
+        const now = new Date();
+        const toISO = (dt)=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+        const start = toISO(now), end = toISO(now);
+        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        const r = await (window.axios||axios).get('/api/sales/recent', { params: { status: 'completed', limit: 500, date_from: start, date_to: end, tz }, headers: { Accept: 'application/json' } });
+        const list = Array.isArray(r?.data) ? r.data : (Array.isArray(r?.data?.data) ? r.data.data : []);
+        let revenue = 0, tx = 0, items = 0, discounts = 0;
+        const prodMap = new Map();
+        for (const s of list) {
+          const amt = Number(s.total_amount ?? s.total ?? 0);
+          revenue += isFinite(amt) ? amt : 0; tx++;
+          const saleItems = Array.isArray(s.sale_items) ? s.sale_items : [];
+          items += saleItems.reduce((a,i)=>a+Number(i.quantity||0),0);
+          for (const it of saleItems) {
+            const name = it.product_name || it.name || 'Product';
+            const category = it.category || it.product_category || '';
+            const key = name + '|' + category;
+            const rec = prodMap.get(key) || { name, category, revenue: 0, units: 0 };
+            const line = Number(it.total_price || (it.unit_price||0) * (it.quantity||0));
+            rec.revenue += isFinite(line) ? line : 0;
+            rec.units += Number(it.quantity||0);
+            prodMap.set(key, rec);
+          }
+        }
+        window.__analyticsData.customerCount = tx;
+        window.__analyticsData.avgTransaction = tx ? (revenue/tx) : 0;
+        window.__analyticsData.avgItems = tx ? (items/tx) : 0;
+        window.__analyticsData.totalDiscounts = discounts;
+        window.__analyticsData.discountPercentage = revenue>0 ? (discounts/revenue)*100 : 0;
+        window.__topProducts = Array.from(prodMap.values()).sort((a,b)=>b.revenue-a.revenue).slice(0,5);
+        window.__topVendors = [];
+        window.__storeComparison = [];
+      } catch (_) {}
+    }
+  }
+  window.refreshLandingAnalytics = refreshLandingAnalytics;
+  try {
+    document.addEventListener('DOMContentLoaded', function(){
+      refreshLandingAnalytics();
+      try { if (window.__landingAnalyticsTimer) clearInterval(window.__landingAnalyticsTimer); } catch(_){ }
+      window.__landingAnalyticsTimer = setInterval(refreshLandingAnalytics, 15000);
+    });
+  } catch(_){ }
+})();
