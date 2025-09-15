@@ -270,7 +270,7 @@ const sampleCustomers: Customer[] = [
 
 export default function Customers() {
   const navigate = useNavigate();
-  const [customers, setCustomers] = useState<Customer[]>(sampleCustomers);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterType, setFilterType] = useState<"all" | "recreational" | "medical">("all");
   const [filterActive, setFilterActive] = useState<"all" | "active" | "inactive">("all");
@@ -508,15 +508,15 @@ export default function Customers() {
     (async () => {
       const serverList = await fetchServerCustomers();
       if (serverList.length) {
-        // Merge with any already-loaded local list (e.g., from localStorage effect in previous step)
-        const seen = new Set<string>();
-        const merged = [...serverList, ...customers].filter((c) => {
-          const key = String(c.id || c.email || c.phone || "");
-          if (!key || seen.has(key)) return false;
-          seen.add(key);
-          return true;
+        setCustomers((prev) => {
+          const seen = new Set<string>();
+          return [...serverList, ...prev].filter((c) => {
+            const key = String(c.id || c.email || c.phone || "");
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
         });
-        setCustomers(merged);
       }
     })();
   }, []);
