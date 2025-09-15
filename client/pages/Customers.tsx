@@ -256,21 +256,16 @@ export default function Customers() {
 
   const fetchServerCustomers = async (): Promise<Customer[]> => {
     const results: Customer[] = [];
+    // 1) Primary: Node alias -> Supabase
     try {
-      const res = await fetch("/customers", {
-        headers: { Accept: "application/json" },
-        credentials: "same-origin",
-      });
+      const res = await fetch("/node/customers", { headers: { Accept: "application/json" } });
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data?.data)
-          ? data.data
-          : Array.isArray(data)
-            ? data
-            : [];
+        const list = Array.isArray(data?.customers) ? data.customers : [];
         results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
+    // 2) Fallback: /api/customers (could be Node or Laravel depending on server)
     try {
       const token = localStorage.getItem("auth_token");
       const res = await fetch("/api/customers", {
@@ -281,14 +276,30 @@ export default function Customers() {
       });
       if (res.ok) {
         const data = await res.json();
+        const list = Array.isArray(data?.customers)
+          ? data.customers
+          : Array.isArray(data?.data)
+            ? data.data
+            : Array.isArray(data)
+              ? data
+              : [];
+        results.push(...list.map(mapServerToCustomer));
+      }
+    } catch (_) {}
+    // 3) Last resort: Laravel web route JSON (if configured to respond with JSON)
+    try {
+      const res = await fetch("/customers", { headers: { Accept: "application/json" }, credentials: "same-origin" });
+      if (res.ok) {
+        const data = await res.json();
         const list = Array.isArray(data?.data)
           ? data.data
-          : Array.isArray(data?.customers)
-            ? data.customers
+          : Array.isArray(data)
+            ? data
             : [];
         results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
+
     const seen = new Set<string>();
     return results.filter((c) => {
       const key = String(c.id || c.email || c.phone || "");
