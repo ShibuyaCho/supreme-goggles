@@ -818,7 +818,7 @@ class SalesController extends Controller
             ];
         })->filter(function($r) use ($existingKeys){
             $k = (string)($r['sale_number'] ?? $r['id'] ?? '');
-            return $k !== '' && !$existingKeys->contains($k);
+            return $k !== '' && !in_array($k, $existingKeys, true);
         });
 
         $final = $merged->merge($localMapped)->take(max(1, min(1000, $limit)))->values();
