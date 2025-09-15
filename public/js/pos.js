@@ -1451,6 +1451,13 @@ function cannabisPOS() {
       if (start && end) {
         params.date_from = start;
         params.date_to = end;
+        // Also send exact UTC boundaries to avoid TZ ambiguity
+        try {
+          const startBoundLocal = new Date(`${start}T00:00:00`);
+          const endBoundLocal = new Date(`${end}T23:59:59.999`);
+          params.start_at = startBoundLocal.toISOString();
+          params.end_at = endBoundLocal.toISOString();
+        } catch(_) {}
         this._serverDateFromKey = start;
         this._serverDateToKey = end;
       }
@@ -1747,8 +1754,14 @@ function cannabisPOS() {
         const amtOk = s.total >= min && s.total <= max;
         let dateOk = true;
         if (!this._serverFilteredDates) {
-          const k = dateKey(s.date);
-          dateOk = !startKey || !endKey ? true : k >= startKey && k <= endKey;
+          try {
+            if (startKey && endKey) {
+              const startBound = new Date(`${startKey}T00:00:00`);
+              const endBound = new Date(`${endKey}T23:59:59.999`);
+              const dt = new Date(s.date);
+              dateOk = dt >= startBound && dt <= endBound;
+            }
+          } catch(_) { dateOk = true; }
         }
         return nameOk && payOk && amtOk && dateOk;
       });
