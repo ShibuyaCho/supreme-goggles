@@ -27,16 +27,64 @@ class LoyaltyController extends Controller
 
     public function index()
     {
-        $loyaltyMembers = Customer::whereNotNull('loyalty_member_id')
-                                ->with(['loyaltyTransactions' => function($query) {
-                                    $query->orderBy('created_at', 'desc')->take(5);
-                                }])
-                                ->orderBy('loyalty_points', 'desc')
-                                ->get();
+        $local = Customer::whereNotNull('loyalty_member_id')
+            ->with(['loyaltyTransactions' => function($query) { $query->orderBy('created_at', 'desc')->take(5); }])
+            ->orderBy('loyalty_points', 'desc')
+            ->get();
 
-        $stats = $this->calculateLoyaltyStats($loyaltyMembers);
+        $supabaseMembers = collect();
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/customers', [
+                    'select' => '*',
+                    'not.is' => 'loyalty_member_id.null'
+                ]);
+                if ($resp->ok()) {
+                    $rows = $resp->json();
+                    $supabaseMembers = collect(is_array($rows) ? $rows : [])->map(function($r) {
+                        $attrs = [
+                            'id' => $r['id'] ?? null,
+                            'name' => $r['name'] ?? (($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? '')),
+                            'first_name' => $r['first_name'] ?? null,
+                            'last_name' => $r['last_name'] ?? null,
+                            'email' => $r['email'] ?? null,
+                            'phone' => $r['phone'] ?? null,
+                            'customer_type' => $r['customer_type'] ?? 'recreational',
+                            'is_active' => array_key_exists('is_active',$r) ? (bool)$r['is_active'] : true,
+                            'is_veteran' => (bool)($r['is_veteran'] ?? false),
+                            'loyalty_member_id' => $r['loyalty_member_id'] ?? null,
+                            'loyalty_points' => $r['loyalty_points'] ?? 0,
+                            'points_earned' => $r['points_earned'] ?? 0,
+                            'points_redeemed' => $r['points_redeemed'] ?? 0,
+                            'loyalty_tier' => $r['loyalty_tier'] ?? ($r['tier'] ?? 'Bronze'),
+                            'total_spent' => $r['total_spent'] ?? 0,
+                            'total_visits' => $r['total_visits'] ?? 0,
+                            'last_visit' => $r['last_visit'] ?? null,
+                        ];
+                        return new Customer($attrs);
+                    });
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
 
-        return view('loyalty.index', compact('loyaltyMembers', 'stats'));
+        $merged = $supabaseMembers->concat($local);
+        $seen = [];
+        $merged = $merged->filter(function($c) use (&$seen) {
+            $key = ($c->id ?: '') . '|' . ($c->email ?: '') . '|' . ($c->phone ?: '');
+            if (isset($seen[$key])) return false;
+            $seen[$key] = true;
+            return true;
+        })->values();
+
+        $stats = $this->calculateLoyaltyStats($merged);
+
+        return view('loyalty.index', ['loyaltyMembers' => $merged, 'stats' => $stats]);
     }
 
     public function enroll(Request $request)
