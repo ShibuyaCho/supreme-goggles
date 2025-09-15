@@ -369,7 +369,7 @@ export default function Loyalty() {
     setCustomers((prev) => [...prev, customer]);
     // Refresh from server to ensure persistence
     try {
-      const res2 = await fetch("/api/loyalty-members", { headers: { Accept: "application/json" } });
+      const res2 = await fetch("/node/loyalty-members", { headers: { Accept: "application/json" } });
       if (res2.ok) {
         const data2 = await res2.json();
         const list2 = Array.isArray(data2?.members) ? data2.members : [];
