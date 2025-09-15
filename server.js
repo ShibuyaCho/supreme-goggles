@@ -1540,8 +1540,7 @@ app.get("/api/sales/recent", async (req, res) => {
       Math.min(1000, parseInt(String(req.query?.limit || "200"), 10) || 200),
     );
     const q = { select: "*", order: "created_at.desc", limit: String(limit) };
-    const status = String(req.query?.status || "").toLowerCase();
-    if (status) q["status"] = `eq.${status}`;
+    const status = String(req.query?.status || "");
     const df = req.query?.date_from ? String(req.query.date_from) : "";
     const dt = req.query?.date_to ? String(req.query.date_to) : "";
     const startAt = req.query?.start_at ? String(req.query.start_at) : "";
