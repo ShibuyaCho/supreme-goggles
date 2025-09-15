@@ -150,32 +150,30 @@ class AnalyticsController extends Controller
     
     private function getDateRange($timeframe, $request)
     {
+        $tz = $request->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
         switch ($timeframe) {
             case 'today':
-                return [
-                    'start' => Carbon::today(),
-                    'end' => Carbon::today()->endOfDay()
-                ];
+                $start = Carbon::now($tz)->startOfDay();
+                $end = (clone $start)->endOfDay();
+                return [ 'start' => $start, 'end' => $end ];
             case 'week':
                 return [
-                    'start' => Carbon::now()->startOfWeek(),
-                    'end' => Carbon::now()->endOfWeek()
+                    'start' => Carbon::now($tz)->startOfWeek(),
+                    'end' => Carbon::now($tz)->endOfWeek()
                 ];
             case 'month':
                 return [
-                    'start' => Carbon::now()->startOfMonth(),
-                    'end' => Carbon::now()->endOfMonth()
+                    'start' => Carbon::now($tz)->startOfMonth(),
+                    'end' => Carbon::now($tz)->endOfMonth()
                 ];
             case 'custom':
-                return [
-                    'start' => Carbon::parse($request->get('start_date', Carbon::today())),
-                    'end' => Carbon::parse($request->get('end_date', Carbon::today()))
-                ];
+                $s = Carbon::parse($request->get('start_date', Carbon::now($tz)), $tz)->startOfDay();
+                $e = Carbon::parse($request->get('end_date', Carbon::now($tz)), $tz)->endOfDay();
+                return [ 'start' => $s, 'end' => $e ];
             default:
-                return [
-                    'start' => Carbon::today(),
-                    'end' => Carbon::today()->endOfDay()
-                ];
+                $start = Carbon::now($tz)->startOfDay();
+                $end = (clone $start)->endOfDay();
+                return [ 'start' => $start, 'end' => $end ];
         }
     }
     
