@@ -849,7 +849,29 @@ class SalesController extends Controller
             return $k !== '' && !in_array($k, $existingKeys, true);
         });
 
-        $final = $merged->merge($localMapped)->take(max(1, min(1000, $limit)))->values();
+        $finalAll = $merged->merge($localMapped)->values();
+        $seen = [];
+        $dedup = [];
+        foreach ($finalAll as $r) {
+            $sn = is_array($r) ? ($r['sale_number'] ?? null) : (is_object($r) ? ($r->sale_number ?? null) : null);
+            if ($sn && $sn !== '') {
+                $k = 'sn:' . (string)$sn;
+            } else {
+                try {
+                    $dtStr = is_array($r) ? ($r['created_at'] ?? '') : ($r->created_at ?? '');
+                    $buck = \Carbon\Carbon::parse($dtStr)->setTimezone(config('app.timezone'))->format('Y-m-d H:i');
+                } catch (\Throwable $e) {
+                    $buck = substr((string)(is_array($r)?($r['created_at']??''):''), 0, 16);
+                }
+                $amt = (float) (is_array($r) ? ($r['total_amount'] ?? ($r['total'] ?? 0)) : ($r->total_amount ?? ($r->total ?? 0)));
+                $pm = strtolower((string)(is_array($r) ? ($r['payment_method'] ?? '') : ($r->payment_method ?? '')));
+                $k = $buck . '|' . number_format($amt, 2, '.', '') . '|' . $pm;
+            }
+            if (isset($seen[$k])) continue;
+            $seen[$k] = true;
+            $dedup[] = $r;
+        }
+        $final = collect($dedup)->take(max(1, min(1000, $limit)))->values();
         return response()->json($final);
     }
 
