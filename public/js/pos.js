@@ -210,6 +210,27 @@ function cannabisPOS() {
     cartExpanded: true,
     cartViewMode: "narrow", // 'narrow' or 'wide'
 
+    // Analytics/ASPD controls expected by Alpine bindings
+    aspdTimeframe: "month",
+
+    // Inventory breakdown UI state
+    expandedCategories: [],
+
+    toggleCategoryExpansion(name) {
+      try {
+        const i = this.expandedCategories.indexOf(name);
+        if (i >= 0) this.expandedCategories.splice(i, 1);
+        else this.expandedCategories.push(name);
+      } catch (_) {}
+    },
+
+    loadAspd() {
+      try { window.loadAspd && window.loadAspd(); } catch (_) {}
+    },
+    exportAspd() {
+      try { window.exportAspd && window.exportAspd(); } catch (_) {}
+    },
+
     // Pagination state
     currentProductPage: 1,
     itemsPerPageCard: 12,
