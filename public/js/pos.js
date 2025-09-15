@@ -9714,6 +9714,66 @@ document.addEventListener("DOMContentLoaded", function () {
   } catch (_) {}
 })();
 
+// Global inventory evaluation helpers for Alpine bindings
+(function(){
+  function getProducts() {
+    try {
+      const app = document.getElementById('app');
+      const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
+      if (scope && Array.isArray(scope.products) && scope.products.length) return scope.products;
+    } catch(_) {}
+    try {
+      const saved = localStorage.getItem('cannabisPOS-products');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        const arr = Array.isArray(parsed?.data) ? parsed.data : (Array.isArray(parsed) ? parsed : []);
+        return arr;
+      }
+    } catch(_) {}
+    return [];
+  }
+  function normalize(p){
+    const stock = Number(p.stock ?? p.quantity ?? 0);
+    const price = Number(p.price ?? 0);
+    const cost = Number(p.cost ?? p.unit_cost ?? p.costPerUnit ?? 0);
+    const category = p.category || 'Uncategorized';
+    return { id: p.id || p.sku || p.name, name: p.name || 'Product', sku: p.sku || null, category, stock: isFinite(stock)?stock:0, price: isFinite(price)?price:0, cost: isFinite(cost)?cost:0 };
+  }
+  window.getInventoryEvaluation = function(){
+    const items = getProducts().map(normalize);
+    let totalCost = 0, totalRetail = 0;
+    for (const it of items){
+      totalCost += (it.cost || 0) * (it.stock || 0);
+      totalRetail += (it.price || 0) * (it.stock || 0);
+    }
+    const totalProfit = totalRetail - totalCost;
+    const averageMargin = totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
+    return { totalCost, totalRetail, totalProfit, averageMargin };
+  };
+  window.getCategoryBreakdown = function(){
+    const items = getProducts().map(normalize);
+    const map = new Map();
+    for (const it of items){
+      const key = it.category || 'Uncategorized';
+      const cur = map.get(key) || { productCount:0, totalCost:0, totalRetail:0, totalProfit:0, averageMargin:0, products:[] };
+      cur.productCount += 1;
+      const lineCost = (it.cost||0) * (it.stock||0);
+      const lineRetail = (it.price||0) * (it.stock||0);
+      cur.totalCost += lineCost;
+      cur.totalRetail += lineRetail;
+      cur.totalProfit += (lineRetail - lineCost);
+      cur.products.push(it);
+      map.set(key, cur);
+    }
+    for (const [k, v] of map.entries()){
+      v.averageMargin = v.totalRetail > 0 ? (v.totalProfit / v.totalRetail) * 100 : 0;
+    }
+    const obj = {};
+    for (const [k,v] of map.entries()) obj[k] = v;
+    return obj;
+  };
+})();
+
 // Bridge for Alpine bindings that expect component-scoped vars/methods
 (function () {
   try {
