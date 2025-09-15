@@ -4275,8 +4275,10 @@ function cannabisPOS() {
         const [userKey, globalKey] = this.loyaltyStorageKeys();
         const listA = JSON.parse(localStorage.getItem(userKey) || "[]");
         const listB = JSON.parse(localStorage.getItem(globalKey) || "[]");
+        const today = new Date().toISOString().split('T')[0];
+        const normalized = { signupDate: today, joinDate: today, ...entry };
         const seen = new Set();
-        const merged = [entry, ...(Array.isArray(listA)?listA:[]), ...(Array.isArray(listB)?listB:[])].filter(c => {
+        const merged = [normalized, ...(Array.isArray(listA)?listA:[]), ...(Array.isArray(listB)?listB:[])].filter(c => {
           const key = String(c?.id || c?.email || c?.phone || "");
           if (!key || seen.has(key)) return false;
           seen.add(key);
@@ -4862,6 +4864,8 @@ function cannabisPOS() {
         addAll(userScoped);
         addAll(legacy);
         this.customers = merged;
+        // Persist merged list to both scoped and legacy keys to survive session changes
+        try { this._saveCustomersLocal(); } catch (_) {}
       } catch (error) {
         console.error("Error loading customers:", error);
       } finally {
