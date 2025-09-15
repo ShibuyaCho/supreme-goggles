@@ -724,19 +724,27 @@ class SalesController extends Controller
             if ($employee && $employee !== 'all') {
                 $rows = $rows->where('employee_id', $employee);
             }
-            if ($dateFrom || $dateTo) {
-                $rows = $rows->filter(function($r) use ($dateFrom, $dateTo) {
+            if ($request->filled('start_at') || $request->filled('end_at') || $dateFrom || $dateTo) {
+                $rows = $rows->filter(function($r) use ($request, $dateFrom, $dateTo) {
                     try {
+                        $startAt = $request->get('start_at');
+                        $endAt = $request->get('end_at');
+                        if ($startAt || $endAt) {
+                            $created = \Carbon\Carbon::parse($r['created_at'] ?? null);
+                            $from = $startAt ? \Carbon\Carbon::parse($startAt) : null;
+                            $to = $endAt ? \Carbon\Carbon::parse($endAt) : null;
+                            if ($from && $created->lt($from)) return false;
+                            if ($to && $created->gt($to)) return false;
+                            return true;
+                        }
                         $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
                         $created = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone($tz);
                         $from = $dateFrom ? \Carbon\Carbon::parse($dateFrom, $tz)->startOfDay() : null;
                         $to = $dateTo ? \Carbon\Carbon::parse($dateTo, $tz)->endOfDay() : null;
-                    } catch (\Throwable $e) {
+                        if ($from && $created->lt($from)) return false;
+                        if ($to && $created->gt($to)) return false;
                         return true;
-                    }
-                    if ($from && $created->lt($from)) return false;
-                    if ($to && $created->gt($to)) return false;
-                    return true;
+                    } catch (\Throwable $e) { return true; }
                 });
             }
 
