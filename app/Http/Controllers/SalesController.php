@@ -828,7 +828,7 @@ class SalesController extends Controller
                 'payment_reference' => $s->payment_reference,
                 'status' => $s->status,
             ];
-        })->filter(function($r) use ($existingKeys){
+        })->unique(function($r){ return $r['sale_number'] ?? ($r['id'] ?? null); })->values()->filter(function($r) use ($existingKeys){
             $k = (string)($r['sale_number'] ?? $r['id'] ?? '');
             return $k !== '' && !in_array($k, $existingKeys, true);
         });
