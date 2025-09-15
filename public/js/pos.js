@@ -3539,30 +3539,43 @@ function cannabisPOS() {
       });
     },
 
-    // Add flower to cart with specific weight and price
+    // Add flower to cart by grams with per-gram pricing and decimal support
     addFlowerToCart(product, weight, price) {
+      const w = Number(weight);
+      const grams = isFinite(w) && w > 0 ? Number(w.toFixed(2)) : 1.0;
+      const p = Number(price);
+      const unitPrice = isFinite(p) && grams > 0 ? p / grams : p;
+
+      // Merge by product and gram unit
       const existingItem = this.cart.find(
-        (item) => item.id === product.id && item.selectedWeight === weight,
+        (item) => item.id === product.id && item.category === "Flower" && item._unit === "g",
       );
 
       if (existingItem) {
-        existingItem.quantity += 1;
+        const next = Number(existingItem.quantity || 0) + grams;
+        existingItem.quantity = Number(next.toFixed(2));
+        // Ensure per-gram price sticks if a different selection was used
+        if (unitPrice && isFinite(unitPrice)) existingItem.price = unitPrice;
+        existingItem.selectedWeight = 1;
+        existingItem.weight = "1g";
       } else {
         this.cart.push({
           ...product,
-          quantity: 1,
-          selectedWeight: weight,
-          price: price,
-          displayName: `${product.name} (${weight}g)`,
+          // Treat quantity as grams for Flower when selling deli-style
+          quantity: grams,
+          selectedWeight: 1,
+          weight: "1g",
+          price: unitPrice,
+          _unit: "g",
+          displayName: `${product.name} (by gram)`,
           discount: { amount: 0, type: "fixed", value: 0, reason: "" },
         });
       }
 
       this.calculateTotals();
-      this.showToast(
-        `${product.name} (${weight}g) added to cart for $${price.toFixed(2)}`,
-        "success",
-      );
+      const line = isFinite(unitPrice) ? (unitPrice * grams) : p;
+      const msg = `${product.name} (${grams}g) added to cart for $${Number(line).toFixed(2)}`;
+      this.showToast(msg, "success");
     },
 
     removeFromCart(index) {
