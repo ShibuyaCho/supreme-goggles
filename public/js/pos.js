@@ -1495,7 +1495,7 @@ function cannabisPOS() {
       const rawList = Array.isArray(list) ? list : [];
       const seen = new Set();
       const unique = rawList.filter((s) => {
-        const key = s.id || s.sale_number || s.numericId;
+        const key = s.saleNumber || s.sale_number || s.id || s.numericId;
         if (key == null) return true;
         const k = String(key);
         if (seen.has(k)) return false;
@@ -4846,7 +4846,7 @@ function cannabisPOS() {
 
     getLabelSizeDisplay() {
       if (this.printData.labelSize === "custom") {
-        return `${this.printData.customWidth || 3}" × ${this.printData.customHeight || 2}"`;
+        return `${this.printData.customWidth || 3}" �� ${this.printData.customHeight || 2}"`;
       }
 
       const sizes = {
