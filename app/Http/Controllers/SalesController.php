@@ -648,6 +648,8 @@ class SalesController extends Controller
         $supabaseKey = env('SUPABASE_ANON_KEY');
         $useSupabase = !empty($supabaseUrl) && !empty($supabaseKey);
 
+        $merged = collect();
+
         if ($useSupabase) {
             // Fetch from Supabase REST and apply filters in PHP
             $params = [
@@ -711,7 +713,7 @@ class SalesController extends Controller
                 }
             } catch (\Throwable $e) { /* ignore */ }
 
-            // Normalize for SPA mapper expectations
+            // Normalize Supabase rows
             $normalized = $rows->map(function($r) use ($empMap){
                 $cart = is_array($r['cart'] ?? null) ? $r['cart'] : [];
                 $itemCount = collect($cart)->sum(function($i){ return (int)($i['quantity'] ?? 1); });
@@ -743,13 +745,12 @@ class SalesController extends Controller
                     'payment_reference' => $r['payment_reference'] ?? ($r['card_last_four'] ?? null),
                     'status' => $r['status'] ?? 'completed',
                 ];
-            })->values()->all();
+            })->values();
 
-            if (count($normalized) > 0) return response()->json($normalized);
-            // Fallback to Eloquent below if Supabase had no rows
+            $merged = $normalized;
         }
 
-        // Default: Eloquent
+        // Always include local DB as a safety net, merging by sale_number/id to avoid duplicates
         $query = Sale::with(['customer', 'employee', 'saleItems.product']);
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
@@ -780,11 +781,48 @@ class SalesController extends Controller
         if ($dateTo) {
             $query->whereDate('created_at', '<=', $dateTo);
         }
-
         $query->orderBy('created_at', 'desc');
-        $sales = $query->limit(max(1, min(1000, $limit)))->get();
+        $localRows = $query->limit(max(1, min(1000, $limit)))->get();
 
-        return response()->json($sales);
+        $existingKeys = $merged->map(function($r){ return (string)($r['sale_number'] ?? $r['id'] ?? ''); })->filter()->toSet();
+        $localMapped = collect($localRows)->map(function($s){
+            $itemCount = $s->saleItems->sum('quantity');
+            $saleItems = $s->saleItems->map(function($i){
+                return [
+                    'product_id' => $i->product_id,
+                    'product_name' => $i->product->name ?? $i->product_name,
+                    'quantity' => (int)$i->quantity,
+                    'unit_price' => (float)($i->unit_price ?? 0),
+                    'total_price' => (float)($i->total_price ?? 0),
+                ];
+            })->values()->all();
+            $empName = $s->employee ? ($s->employee->full_name ?? (($s->employee->first_name ?? '') . ' ' . ($s->employee->last_name ?? ''))) : null;
+            $customer = $s->customer ? [ 'full_name' => $s->customer->full_name ] : null;
+            return [
+                'id' => $s->id,
+                'sale_number' => $s->sale_number,
+                'created_at' => $s->created_at->toIso8601String(),
+                'customer' => $customer,
+                'customer_type' => $s->customer_type,
+                'employee' => $empName ? [ 'name' => trim($empName) ] : null,
+                'employee_name' => $empName ? trim($empName) : null,
+                'item_count' => $itemCount,
+                'sale_items' => $saleItems,
+                'subtotal' => (float)$s->subtotal,
+                'tax_amount' => (float)$s->tax_amount,
+                'discount_amount' => (float)$s->discount_amount,
+                'total_amount' => (float)$s->total_amount,
+                'payment_method' => $s->payment_method,
+                'payment_reference' => $s->payment_reference,
+                'status' => $s->status,
+            ];
+        })->filter(function($r) use ($existingKeys){
+            $k = (string)($r['sale_number'] ?? $r['id'] ?? '');
+            return $k !== '' && !$existingKeys->contains($k);
+        });
+
+        $final = $merged->merge($localMapped)->take(max(1, min(1000, $limit)))->values();
+        return response()->json($final);
     }
 
     private function verifyEmployeePin($pin)
