@@ -1557,7 +1557,25 @@ app.get("/api/sales/recent", async (req, res) => {
     }
     const r = await supaFetch("sales", { method: "GET", query: q });
     const rows = r.ok ? await r.json() : [];
-    const arr = Array.isArray(rows) ? rows : [];
+    let arr = Array.isArray(rows) ? rows : [];
+    // Optional strict day filtering by timezone if client provided tz and date_from/date_to
+    try {
+      const tz = String(req.query?.tz || "").trim();
+      const df = req.query?.date_from ? String(req.query.date_from) : "";
+      const dt = req.query?.date_to ? String(req.query.date_to) : "";
+      if (tz && (df || dt)) {
+        const startYmd = df ? new Date(df).toLocaleDateString("en-CA", { timeZone: tz }) : null;
+        const endYmd = dt ? new Date(dt).toLocaleDateString("en-CA", { timeZone: tz }) : null;
+        arr = arr.filter((s) => {
+          try {
+            const ymd = new Date(s.created_at).toLocaleDateString("en-CA", { timeZone: tz });
+            const ge = !startYmd || ymd >= startYmd;
+            const le = !endYmd || ymd <= endYmd;
+            return ge && le;
+          } catch { return true; }
+        });
+      }
+    } catch (_) {}
     // Build employee lookup
     const empIds = Array.from(
       new Set(arr.map((x) => x.employee_id).filter(Boolean)),
