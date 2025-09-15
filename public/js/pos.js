@@ -1485,7 +1485,9 @@ function cannabisPOS() {
         if (customersResult.success) {
           const c =
             (customersResult.data &&
-              (customersResult.data.customers || customersResult.data.data || customersResult.data)) ||
+              (customersResult.data.customers ||
+                customersResult.data.data ||
+                customersResult.data)) ||
             [];
           if (Array.isArray(c)) this.customers = c;
           else if (!Array.isArray(this.customers)) this.customers = [];

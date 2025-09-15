@@ -105,7 +105,6 @@ interface Customer {
   purchaseHistory: Purchase[];
 }
 
-
 export default function Customers() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -479,7 +478,8 @@ export default function Customers() {
     if (enrollInLoyalty) {
       try {
         const token = localStorage.getItem("auth_token");
-        const fullName = `${customer.firstName} ${customer.lastName || ""}`.trim();
+        const fullName =
+          `${customer.firstName} ${customer.lastName || ""}`.trim();
         await fetch("/api/loyalty-members", {
           method: "POST",
           headers: {
@@ -488,7 +488,9 @@ export default function Customers() {
             Authorization: token ? `Bearer ${token}` : "",
           },
           body: JSON.stringify({
-            customer_id: createdFromServer ? Number(createdFromServer.id) : undefined,
+            customer_id: createdFromServer
+              ? Number(createdFromServer.id)
+              : undefined,
             name: fullName,
             email: customer.email,
             phone: customer.phone,

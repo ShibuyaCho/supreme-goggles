@@ -78,7 +78,6 @@ const tierColors = {
   Platinum: "bg-purple-100 text-purple-800",
 };
 
-
 export default function Loyalty() {
   const [customers, setCustomers] = useState<LoyaltyCustomer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -102,7 +101,9 @@ export default function Loyalty() {
     name: m.name || "",
     phone: m.phone || "",
     email: m.email || "",
-    joinDate: (m.join_date || new Date().toISOString().split("T")[0]).toString(),
+    joinDate: (
+      m.join_date || new Date().toISOString().split("T")[0]
+    ).toString(),
     totalSpent: Number(m.total_spent || 0) || 0,
     totalVisits: Number(m.total_visits || 0) || 0,
     pointsBalance: Number(m.points_balance || 0) || 0,
@@ -118,7 +119,9 @@ export default function Loyalty() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/loyalty-members", { headers: { Accept: "application/json" } });
+        const res = await fetch("/api/loyalty-members", {
+          headers: { Accept: "application/json" },
+        });
         if (res.ok) {
           const data = await res.json();
           const list = Array.isArray(data?.members) ? data.members : [];
@@ -268,11 +271,17 @@ export default function Loyalty() {
     }
 
     try {
-      await fetch(`/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ amount: points, reason: pointsReason }),
-      });
+      await fetch(
+        `/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ amount: points, reason: pointsReason }),
+        },
+      );
     } catch (_) {}
 
     setCustomers((prev) =>
@@ -319,7 +328,10 @@ export default function Loyalty() {
     try {
       const res = await fetch("/api/loyalty-members", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify(body),
       });
       if (res.ok) {
@@ -329,24 +341,23 @@ export default function Loyalty() {
       }
     } catch (_) {}
 
-    const customer: LoyaltyCustomer =
-      created || {
-        id: Date.now().toString(),
-        name: newCustomer.name,
-        phone: newCustomer.phone,
-        email: newCustomer.email,
-        joinDate,
-        totalSpent: 0,
-        totalVisits: 0,
-        pointsBalance: 0,
-        pointsEarned: 0,
-        pointsRedeemed: 0,
-        tier: "Bronze",
-        dataRetentionConsent: newCustomer.dataRetentionConsent,
-        salesHistory: [],
-        lastVisit: "",
-        isVeteran: newCustomer.isVeteran,
-      };
+    const customer: LoyaltyCustomer = created || {
+      id: Date.now().toString(),
+      name: newCustomer.name,
+      phone: newCustomer.phone,
+      email: newCustomer.email,
+      joinDate,
+      totalSpent: 0,
+      totalVisits: 0,
+      pointsBalance: 0,
+      pointsEarned: 0,
+      pointsRedeemed: 0,
+      tier: "Bronze",
+      dataRetentionConsent: newCustomer.dataRetentionConsent,
+      salesHistory: [],
+      lastVisit: "",
+      isVeteran: newCustomer.isVeteran,
+    };
 
     setCustomers((prev) => [...prev, customer]);
     setShowSignupDialog(false);
@@ -369,7 +380,10 @@ export default function Loyalty() {
       )
     ) {
       try {
-        await fetch(`/api/loyalty-members/${customerId}`, { method: "DELETE", headers: { Accept: "application/json" } });
+        await fetch(`/api/loyalty-members/${customerId}`, {
+          method: "DELETE",
+          headers: { Accept: "application/json" },
+        });
       } catch (_) {}
       setCustomers((prev) => prev.filter((c) => c.id !== customerId));
     }

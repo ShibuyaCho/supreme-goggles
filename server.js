@@ -737,12 +737,10 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res) => {
       body: [row],
     });
     const payload = r.ok ? await r.json() : null;
-    return res
-      .status(201)
-      .json({
-        success: true,
-        customer: Array.isArray(payload) ? payload[0] : payload,
-      });
+    return res.status(201).json({
+      success: true,
+      customer: Array.isArray(payload) ? payload[0] : payload,
+    });
   } catch (e) {
     return res
       .status(500)
@@ -1369,9 +1367,15 @@ app.delete("/api/loyalty-members/:id", async (req, res) => {
     const id = Number(req.params.id);
     // Optionally null out FK from transactions
     try {
-      await supaFetch(`loyalty_transactions?loyalty_member_id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: { loyalty_member_id: null } });
+      await supaFetch(
+        `loyalty_transactions?loyalty_member_id=eq.${encodeURIComponent(id)}`,
+        { method: "PATCH", body: { loyalty_member_id: null } },
+      );
     } catch (_) {}
-    const d = await supaFetch(`loyalty_members?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    const d = await supaFetch(
+      `loyalty_members?id=eq.${encodeURIComponent(id)}`,
+      { method: "DELETE" },
+    );
     if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
     res.json({ success: true });
   } catch (e) {
@@ -1384,10 +1388,26 @@ app.post("/api/loyalty-members/:id/adjust-points", async (req, res) => {
     const id = Number(req.params.id);
     const amt = Number(req.body?.amount || req.body?.points || 0);
     const reason = req.body?.reason || "adjust";
-    if (!Number.isFinite(amt) || amt === 0) return res.status(422).json({ success: false, error: "Invalid amount" });
-    const op = amt > 0 ? { points_balance: { increment: amt }, points_earned: { increment: amt } } : { points_balance: { decrement: Math.abs(amt) }, points_redeemed: { increment: Math.abs(amt) } };
-    await supaFetch(`loyalty_members?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: op });
-    await supaFetch("loyalty_transactions", { method: "POST", body: [{ loyalty_member_id: id, points: amt, type: "adjust", reason }] });
+    if (!Number.isFinite(amt) || amt === 0)
+      return res.status(422).json({ success: false, error: "Invalid amount" });
+    const op =
+      amt > 0
+        ? {
+            points_balance: { increment: amt },
+            points_earned: { increment: amt },
+          }
+        : {
+            points_balance: { decrement: Math.abs(amt) },
+            points_redeemed: { increment: Math.abs(amt) },
+          };
+    await supaFetch(`loyalty_members?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: op,
+    });
+    await supaFetch("loyalty_transactions", {
+      method: "POST",
+      body: [{ loyalty_member_id: id, points: amt, type: "adjust", reason }],
+    });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, error: "Failed" });
@@ -1399,8 +1419,17 @@ app.post("/api/loyalty-members/:id/earn-points", async (req, res) => {
     const id = Number(req.params.id);
     const pts = Number(req.body?.points || 0);
     const reason = req.body?.reason || "earn";
-    await supaFetch(`loyalty_members?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: { points_balance: { increment: pts }, points_earned: { increment: pts } } });
-    await supaFetch("loyalty_transactions", { method: "POST", body: [{ loyalty_member_id: id, points: pts, type: "earn", reason }] });
+    await supaFetch(`loyalty_members?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: {
+        points_balance: { increment: pts },
+        points_earned: { increment: pts },
+      },
+    });
+    await supaFetch("loyalty_transactions", {
+      method: "POST",
+      body: [{ loyalty_member_id: id, points: pts, type: "earn", reason }],
+    });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, error: "Failed" });
@@ -1412,8 +1441,17 @@ app.post("/api/loyalty-members/:id/redeem-points", async (req, res) => {
     const id = Number(req.params.id);
     const pts = Number(req.body?.points || 0);
     const reason = req.body?.reason || "redeem";
-    await supaFetch(`loyalty_members?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: { points_balance: { decrement: pts }, points_redeemed: { increment: pts } } });
-    await supaFetch("loyalty_transactions", { method: "POST", body: [{ loyalty_member_id: id, points: -pts, type: "redeem", reason }] });
+    await supaFetch(`loyalty_members?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: {
+        points_balance: { decrement: pts },
+        points_redeemed: { increment: pts },
+      },
+    });
+    await supaFetch("loyalty_transactions", {
+      method: "POST",
+      body: [{ loyalty_member_id: id, points: -pts, type: "redeem", reason }],
+    });
     res.json({ success: true });
   } catch (e) {
     res.status(500).json({ success: false, error: "Failed" });
