@@ -293,13 +293,6 @@ export default function Customers() {
       zipCode: ""
     },
     customerType: "recreational",
-    loyaltyProgram: {
-      memberId: "",
-      joinDate: "",
-      pointsBalance: 0,
-      tier: "Bronze",
-      isVeteran: false
-    },
     isActive: true,
     notes: "",
     dataRetentionConsent: false
@@ -479,12 +472,13 @@ export default function Customers() {
   };
 
   const fetchServerCustomers = async (): Promise<Customer[]> => {
+    const results: Customer[] = [];
     try {
       const res = await fetch("/customers", { headers: { Accept: "application/json" }, credentials: "same-origin" });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data?.data) ? data.data : Array.isArray(data) ? data : [];
-        return list.map(mapServerToCustomer);
+        results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
     try {
@@ -498,10 +492,16 @@ export default function Customers() {
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data?.data) ? data.data : Array.isArray(data?.customers) ? data.customers : [];
-        return list.map(mapServerToCustomer);
+        results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
-    return [];
+    const seen = new Set<string>();
+    return results.filter((c) => {
+      const key = String(c.id || c.email || c.phone || "");
+      if (!key || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   };
 
   useEffect(() => {
@@ -884,13 +884,10 @@ export default function Customers() {
                     <div className="flex items-center space-x-3">
                       <Checkbox
                         id="veteranStatus"
-                        checked={newCustomer.loyaltyProgram?.isVeteran || false}
+                        checked={(newCustomer as any).isVeteran || false}
                         onCheckedChange={(checked) => setNewCustomer(prev => ({
                           ...prev,
-                          loyaltyProgram: {
-                            ...prev.loyaltyProgram!,
-                            isVeteran: checked as boolean
-                          }
+                          ...(checked ? { isVeteran: true } : { isVeteran: false }) as any,
                         }))}
                       />
                       <div>
