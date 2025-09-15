@@ -290,6 +290,98 @@ function cannabisPOS() {
       }
     },
 
+    // METRC Vendors state and helpers
+    incomingVendors: [],
+    vendorSearchQuery: "",
+    vendorStatusFilter: "",
+    vendorETAFilter: "",
+    get filteredVendors() {
+      try {
+        const q = (this.vendorSearchQuery || "").toLowerCase();
+        const st = (this.vendorStatusFilter || "").toLowerCase();
+        const eta = (this.vendorETAFilter || "").toLowerCase();
+        return (Array.isArray(this.incomingVendors) ? this.incomingVendors : []).filter((v) => {
+          const name = (v.name || "").toLowerCase();
+          const lic = (v.license || "").toLowerCase();
+          const status = (v.status || "").toLowerCase();
+          const veta = (v.eta || "").toLowerCase();
+          const matchQ = !q || name.includes(q) || lic.includes(q);
+          const matchS = !st || status === st;
+          const matchE = !eta || veta === eta;
+          return matchQ && matchS && matchE;
+        });
+      } catch (_) {
+        return [];
+      }
+    },
+    async refreshVendorData() {
+      try {
+        const client = window.axios || axios;
+        const res = await client.get("/api/metrc/transfers/incoming", { headers: { Accept: "application/json" } });
+        const list = (res && res.data && (res.data.transfers || res.data.data || res.data)) || [];
+        const arr = Array.isArray(list) ? list : (Array.isArray(list.transfers) ? list.transfers : []);
+        const normalized = arr.map((t, i) => {
+          const vendorName = t.vendor_name || t.vendor || t.supplier || t.name || `Vendor ${i + 1}`;
+          const license = t.vendor_license || t.license || t.license_number || "";
+          const packages = Array.isArray(t.packages) ? t.packages : (Array.isArray(t.items) ? t.items : []);
+          const pList = packages.map((p, j) => ({
+            id: p.id || p.package_id || p.tag || `${i}-${j}`,
+            tag: p.tag || p.package_tag || "",
+            name: p.name || p.item || p.product || "Package",
+            quantity: Number(p.quantity || p.qty || 0),
+            unit: p.unit || p.unit_of_measure || p.uom || "",
+            strain: p.strain || p.product_strain || "",
+            weight: Number(p.weight || 0),
+          }));
+          const totalValue = pList.reduce((s, p) => s + Number(p.value || p.price || 0) * (Number(p.quantity) || 0), 0);
+          const totalCost = pList.reduce((s, p) => s + Number(p.cost || 0) * (Number(p.quantity) || 0), 0);
+          const etaRaw = t.eta || t.expected_at || t.expected_date || "";
+          const etaDateObj = etaRaw ? new Date(etaRaw) : new Date();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const endOfWeek = new Date(today);
+          endOfWeek.setDate(today.getDate() + (7 - today.getDay()));
+          let etaBucket = "today";
+          if (etaDateObj > endOfWeek) etaBucket = "next-week";
+          else if (etaDateObj > today) etaBucket = "this-week";
+          const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          const fmtTime = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+          const status = (t.status || t.state || "in-transit").toLowerCase();
+          return {
+            id: t.id || t.transfer_id || `t-${i}`,
+            metrcId: t.metrc_id || t.id || null,
+            name: vendorName,
+            license,
+            eta: etaBucket,
+            etaDate: fmtDate(etaDateObj),
+            etaTime: fmtTime(etaDateObj),
+            packages: pList,
+            totalValue: isFinite(totalValue) ? totalValue : 0,
+            totalCost: isFinite(totalCost) ? totalCost : 0,
+            status,
+          };
+        });
+        this.incomingVendors = normalized;
+      } catch (e) {
+        const now = new Date();
+        const plusDays = (n) => {
+          const d = new Date(now);
+          d.setDate(d.getDate() + n);
+          return d;
+        };
+        const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const fmtTime = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+        this.incomingVendors = [
+          { id: "v-1", metrcId: null, name: "GreenLeaf Farms", license: "OR-XYZ-1234", eta: "today", etaDate: fmtDate(now), etaTime: fmtTime(now), packages: [{ id: "p1", tag: "1A4060...", name: "Blue Dream 1/8", quantity: 200, unit: "ea", strain: "Blue Dream" }], totalValue: 7000, totalCost: 5000, status: "ready-to-import" },
+          { id: "v-2", metrcId: null, name: "Pine State Extracts", license: "OR-ABC-5678", eta: "this-week", etaDate: fmtDate(plusDays(3)), etaTime: fmtTime(plusDays(3)), packages: [{ id: "p2", tag: "1A4061...", name: "Live Resin 1g", quantity: 120, unit: "ea", strain: "OG Kush" }], totalValue: 5400, totalCost: 3600, status: "in-transit" },
+        ];
+      }
+    },
+    viewVendorPackages(vendor) {
+      this.selectedVendor = vendor;
+      this.showVendorPackagesModal = true;
+    },
+
     // Pagination state
     currentProductPage: 1,
     itemsPerPageCard: 12,
@@ -3016,6 +3108,9 @@ function cannabisPOS() {
         if (typeof this.loadRolePermissions === "function") {
           this.loadRolePermissions();
         }
+      }
+      if (page === "metrc-vendors") {
+        try { this.refreshVendorData(); } catch (_) {}
       }
     },
 
