@@ -594,6 +594,7 @@ function cannabisPOS() {
       medicalCardType: "patient",
       patientCardNumber: "",
       saveData: false,
+      enrollLoyalty: false,
     },
     productForm: {
       name: "",
@@ -2397,7 +2398,7 @@ function cannabisPOS() {
     getMostPopularDeal() {
       try {
         const list = Array.isArray(this.deals) ? this.deals : [];
-        if (!list.length) return "—";
+        if (!list.length) return "���";
         let best = list[0];
         for (const d of list) {
           const cu = Number(d?.currentUses ?? d?.current_uses ?? 0) || 0;
@@ -4260,6 +4261,30 @@ function cannabisPOS() {
         // Maintain legacy key for backward compatibility
         localStorage.setItem("cannabisPOS-customers", JSON.stringify(list));
       } catch (e) {}
+    },
+    loyaltyStorageKeys() {
+      try {
+        const uid = posAuth?.getUser()?.id || "anon";
+        return [`cannabest-loyalty-${uid}`, "cannabest-loyalty"];
+      } catch (_) {
+        return ["cannabest-loyalty-anon", "cannabest-loyalty"];
+      }
+    },
+    _addToLoyaltyLocal(entry) {
+      try {
+        const [userKey, globalKey] = this.loyaltyStorageKeys();
+        const listA = JSON.parse(localStorage.getItem(userKey) || "[]");
+        const listB = JSON.parse(localStorage.getItem(globalKey) || "[]");
+        const seen = new Set();
+        const merged = [entry, ...(Array.isArray(listA)?listA:[]), ...(Array.isArray(listB)?listB:[])].filter(c => {
+          const key = String(c?.id || c?.email || c?.phone || "");
+          if (!key || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        localStorage.setItem(userKey, JSON.stringify(merged));
+        localStorage.setItem(globalKey, JSON.stringify(merged));
+      } catch (_) {}
     },
 
     selectCustomer(customer) {
@@ -6680,14 +6705,49 @@ function cannabisPOS() {
       }
 
       // Add to customers array
-      this.customers.push(savedCustomer || newCustomer);
+      const finalCustomer = savedCustomer || newCustomer;
+      this.customers.push(finalCustomer);
 
       // Save to localStorage for persistence (per-user + legacy)
       try { this._saveCustomersLocal(); } catch (error) { console.error("Error saving customers:", error); }
       try { this.filterLoyaltyCustomers(); } catch (_) {}
 
+      // Optional: enroll in loyalty if requested
+      if (this.customerForm.enrollLoyalty) {
+        try {
+          // Try API first
+          if (this.isAuthenticated && this.hasPermission("loyalty:enroll")) {
+            await posAuth.apiRequest("post", "/loyalty/enroll", {
+              name: finalCustomer.name,
+              email: finalCustomer.email,
+              phone: finalCustomer.phone,
+              tier: "Bronze",
+              starting_points: 0,
+            });
+          }
+        } catch (_) {}
+        // Always ensure local enrollment as fallback
+        this._addToLoyaltyLocal({
+          id: String(finalCustomer.id),
+          name: finalCustomer.name,
+          phone: finalCustomer.phone,
+          email: finalCustomer.email,
+          joinDate: new Date().toISOString().split('T')[0],
+          totalSpent: 0,
+          totalVisits: 0,
+          pointsBalance: 0,
+          pointsEarned: 0,
+          pointsRedeemed: 0,
+          tier: 'Bronze',
+          dataRetentionConsent: true,
+          salesHistory: [],
+          lastVisit: "",
+          isVeteran: false,
+        });
+      }
+
       this.showToast(
-        `Customer ${(savedCustomer || newCustomer).name} added successfully`,
+        `Customer ${finalCustomer.name} added successfully`,
         "success",
       );
       this.closeAddCustomerModal();
@@ -6709,6 +6769,7 @@ function cannabisPOS() {
         medicalCardType: "patient",
         patientCardNumber: "",
         saveData: false,
+        enrollLoyalty: false,
       };
     },
 
