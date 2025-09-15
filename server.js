@@ -1466,24 +1466,31 @@ async function handleProcessPayment(req, res) {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     if (!r.ok) {
       let errDetail = null;
+      try { errDetail = await r.json(); } catch (_) { try { errDetail = await r.text(); } catch (_) {} }
+      // If unique violation on idempotency key, return the existing record instead of failing
       try {
-        errDetail = await r.json();
-      } catch (_) {
-        try {
-          errDetail = await r.text();
-        } catch (_) {}
-      }
-      __lastPayment = {
-        ts: new Date().toISOString(),
-        path: req.path,
-        row,
-        ok: false,
-        status: r.status,
-        error: errDetail,
-      };
-      return res
-        .status(500)
-        .json({ success: false, error: errDetail || "Failed to record sale" });
+        const msg = typeof errDetail === 'string' ? errDetail : (errDetail?.message || errDetail?.hint || '');
+        if (String(msg).toLowerCase().includes('duplicate key') || String(errDetail?.code || '').toString() === '23505') {
+          const sinceIso = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+          const q = {
+            select: "*",
+            order: "created_at.desc",
+            limit: "1",
+            ["meta->>idempotency_key"]: `eq.${idemKey}`,
+            and: `(created_at.gte.${sinceIso})`,
+          };
+          const r1 = await supaFetch("sales", { method: "GET", query: q });
+          if (r1.ok) {
+            const arr1 = await r1.json();
+            const found = Array.isArray(arr1) && arr1[0] ? arr1[0] : null;
+            if (found) {
+              return res.status(200).json({ success: true, sale_id: found.id, sale_number: found.sale_number || String(found.id), sale: found, deduped: true });
+            }
+          }
+        }
+      } catch (_) {}
+      __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: false, status: r.status, error: errDetail };
+      return res.status(500).json({ success: false, error: errDetail || "Failed to record sale" });
     }
     const payload = await r.json();
     const created = Array.isArray(payload) ? payload[0] : payload;
