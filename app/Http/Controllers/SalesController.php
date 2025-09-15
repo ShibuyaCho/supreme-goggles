@@ -784,7 +784,7 @@ class SalesController extends Controller
         $query->orderBy('created_at', 'desc');
         $localRows = $query->limit(max(1, min(1000, $limit)))->get();
 
-        $existingKeys = $merged->map(function($r){ return (string)($r['sale_number'] ?? $r['id'] ?? ''); })->filter()->toSet();
+        $existingKeys = $merged->map(function($r){ return (string)($r['sale_number'] ?? $r['id'] ?? ''); })->filter()->values()->all();
         $localMapped = collect($localRows)->map(function($s){
             $itemCount = $s->saleItems->sum('quantity');
             $saleItems = $s->saleItems->map(function($i){
