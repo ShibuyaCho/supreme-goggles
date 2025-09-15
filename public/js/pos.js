@@ -855,7 +855,9 @@ function cannabisPOS() {
             return false;
           };
           document.addEventListener("pos-sale-completed", async (e) => {
-            const saleNum = e?.detail?.sale_number ? String(e.detail.sale_number) : null;
+            const saleNum = e?.detail?.sale_number
+              ? String(e.detail.sale_number)
+              : null;
             const sid = e?.detail?.sale_id || e?.detail?.id;
             const key = saleNum || (sid != null ? String(sid) : null);
             if (seenRecently(key)) return;
@@ -886,7 +888,9 @@ function cannabisPOS() {
                 const ok = String(optimistic.id || optimistic.numericId);
                 this.sales = [
                   optimistic,
-                  ...this.sales.filter((x) => String(x.id || x.numericId) !== ok),
+                  ...this.sales.filter(
+                    (x) => String(x.id || x.numericId) !== ok,
+                  ),
                 ];
                 this.filterSales();
                 try {
@@ -1193,16 +1197,26 @@ function cannabisPOS() {
         const result = await posAuth.apiRequest("get", "/settings/pos");
         if (result.success) {
           const payload = result.data || {};
-          const settings = payload.settings && typeof payload.settings === 'object' ? payload.settings : {};
+          const settings =
+            payload.settings && typeof payload.settings === "object"
+              ? payload.settings
+              : {};
           // Update local settings with API data
-          this.taxRate = payload.tax_rate != null ? payload.tax_rate : (settings.sales_tax != null ? settings.sales_tax : 20.0);
-          this.medicalTaxRate = payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
+          this.taxRate =
+            payload.tax_rate != null
+              ? payload.tax_rate
+              : settings.sales_tax != null
+                ? settings.sales_tax
+                : 20.0;
+          this.medicalTaxRate =
+            payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
           // Merge only the settings object into storeSettings
           Object.assign(this.storeSettings, settings);
           // Load weight threshold if present
           if (settings.weight_threshold != null) {
             const n = Number(settings.weight_threshold);
-            if (isFinite(n)) this.weightThreshold = Math.max(0, Number(n.toFixed(2)));
+            if (isFinite(n))
+              this.weightThreshold = Math.max(0, Number(n.toFixed(2)));
           }
         }
       } catch (error) {
@@ -1455,7 +1469,10 @@ function cannabisPOS() {
         sort_by: "created_at",
         sort_order: "desc",
         limit: 1000,
-        tz: (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || undefined,
+        tz:
+          (Intl.DateTimeFormat &&
+            Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+          undefined,
       };
       this._serverFilteredDates = false;
       if (start && end) {
@@ -1467,7 +1484,7 @@ function cannabisPOS() {
           const endBoundLocal = new Date(`${end}T23:59:59.999`);
           params.start_at = startBoundLocal.toISOString();
           params.end_at = endBoundLocal.toISOString();
-        } catch(_) {}
+        } catch (_) {}
         this._serverDateFromKey = start;
         this._serverDateToKey = end;
       }
@@ -1491,7 +1508,9 @@ function cannabisPOS() {
               const mapped = data.map((s) => this.mapSaleToSpa(s));
               if (mapped.length) {
                 list = mapped;
-                this._serverFilteredDates = !!(params.date_from && params.date_to);
+                this._serverFilteredDates = !!(
+                  params.date_from && params.date_to
+                );
                 break;
               } else {
                 list = [];
@@ -1676,7 +1695,12 @@ function cannabisPOS() {
         id: saleNumber || String(s.id),
         saleNumber: saleNumber || null,
         numericId: s.id,
-        date: typeof s.created_at === "string" ? s.created_at : (s.created_at && s.created_at.toISOString ? s.created_at.toISOString() : String(s.created_at || "")),
+        date:
+          typeof s.created_at === "string"
+            ? s.created_at
+            : s.created_at && s.created_at.toISOString
+              ? s.created_at.toISOString()
+              : String(s.created_at || ""),
         customer: customerLabel,
         customerType,
         customerMedicalCard: medicalCard,
@@ -1770,7 +1794,9 @@ function cannabisPOS() {
             const dt = new Date(s.date);
             dateOk = dt >= startBound && dt <= endBound;
           }
-        } catch(_) { dateOk = true; }
+        } catch (_) {
+          dateOk = true;
+        }
         return nameOk && payOk && amtOk && dateOk;
       });
     },
@@ -1789,7 +1815,10 @@ function cannabisPOS() {
           limit: 1000,
           date_from: toLocalISO(first),
           date_to: toLocalISO(last),
-          tz: (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || undefined,
+          tz:
+            (Intl.DateTimeFormat &&
+              Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+            undefined,
         };
         const endpoints = [
           "/sales/recent-json",
@@ -2645,12 +2674,18 @@ function cannabisPOS() {
       const now = new Date();
       let url = "/sales/report/daily";
       if (dr === "today") {
-        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        const tz =
+          (Intl.DateTimeFormat &&
+            Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+          "";
         url = `/sales/report/daily?date=${toLocalISO(now)}&format=pdf&tz=${encodeURIComponent(tz)}`;
       } else if (dr === "yesterday") {
         const d = new Date();
         d.setDate(d.getDate() - 1);
-        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        const tz =
+          (Intl.DateTimeFormat &&
+            Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+          "";
         url = `/sales/report/daily?date=${toLocalISO(d)}&format=pdf&tz=${encodeURIComponent(tz)}`;
       } else if (dr === "week" || dr === "custom") {
         let start = this.salesFilter.startDate,
@@ -2662,11 +2697,17 @@ function cannabisPOS() {
           start = toLocalISO(first);
           end = toLocalISO(d);
         }
-        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        const tz =
+          (Intl.DateTimeFormat &&
+            Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+          "";
         url = `/sales/report/weekly?start_date=${encodeURIComponent(start)}&end_date=${encodeURIComponent(end)}&format=pdf&tz=${encodeURIComponent(tz)}`;
       } else if (dr === "month") {
         const d = new Date();
-        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+        const tz =
+          (Intl.DateTimeFormat &&
+            Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+          "";
         url = `/sales/report/monthly?month=${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}&format=pdf&tz=${encodeURIComponent(tz)}`;
       }
       window.open(url, "_blank");
@@ -3550,7 +3591,10 @@ function cannabisPOS() {
 
       // Merge by product and gram unit
       const existingItem = this.cart.find(
-        (item) => item.id === product.id && item.category === "Flower" && item._unit === "g",
+        (item) =>
+          item.id === product.id &&
+          item.category === "Flower" &&
+          item._unit === "g",
       );
 
       if (existingItem) {
@@ -3575,7 +3619,7 @@ function cannabisPOS() {
       }
 
       this.calculateTotals();
-      const line = isFinite(unitPrice) ? (unitPrice * grams) : p;
+      const line = isFinite(unitPrice) ? unitPrice * grams : p;
       const msg = `${product.name} (${grams}g) added to cart for $${Number(line).toFixed(2)}`;
       this.showToast(msg, "success");
     },
@@ -3593,13 +3637,15 @@ function cannabisPOS() {
         const prev = Number(item.quantity || 0);
         const incoming = Number(newQuantity);
         let next = incoming;
-        if (item && item._unit === 'g') {
+        if (item && item._unit === "g") {
           const step = 0.25;
           const delta = incoming - prev;
           next = prev + (delta >= 0 ? step : -step);
         }
         const q = Number(next);
-        item.quantity = isFinite(q) ? Math.max(0.01, Number(q.toFixed(2))) : 0.01;
+        item.quantity = isFinite(q)
+          ? Math.max(0.01, Number(q.toFixed(2)))
+          : 0.01;
         this.calculateTotals();
       }
     },
@@ -4314,7 +4360,7 @@ function cannabisPOS() {
           const n = parseFloat(wt);
           if (!isNaN(n) && isFinite(n)) this.weightThreshold = Math.max(0, n);
         }
-      } catch(_) {}
+      } catch (_) {}
     },
 
     saveSettings() {
@@ -4335,47 +4381,76 @@ function cannabisPOS() {
     async saveWeightThreshold() {
       try {
         const n = Number(this.weightThreshold);
-        this.weightThreshold = isFinite(n) ? Math.max(0, Number(n.toFixed(2))) : 0;
-        localStorage.setItem("cannabisPOS-weightThreshold", String(this.weightThreshold));
+        this.weightThreshold = isFinite(n)
+          ? Math.max(0, Number(n.toFixed(2)))
+          : 0;
+        localStorage.setItem(
+          "cannabisPOS-weightThreshold",
+          String(this.weightThreshold),
+        );
         // Persist to server POS settings (Supabase-backed)
         try {
           let settings = {};
           try {
-            const getRes = await (window.posAuth ? posAuth.apiRequest("get", "/settings/pos") : (window.axios||axios).get("/api/settings/pos"));
+            const getRes = await (window.posAuth
+              ? posAuth.apiRequest("get", "/settings/pos")
+              : (window.axios || axios).get("/api/settings/pos"));
             settings = getRes?.data?.settings || getRes?.data || settings;
-          } catch(_) {}
-          settings = settings && typeof settings === 'object' ? settings : {};
+          } catch (_) {}
+          settings = settings && typeof settings === "object" ? settings : {};
           settings.weight_threshold = this.weightThreshold;
-          const saveRes = await (window.posAuth ? posAuth.apiRequest("post", "/settings/pos", settings) : (window.axios||axios).post("/api/settings/pos", settings));
-          const ok = (saveRes?.success === true) || (saveRes?.data?.success === true) || (saveRes?.status && saveRes.status >= 200 && saveRes.status < 300);
-          if (!ok) throw new Error('save-failed');
-        } catch(_) {}
-        if (typeof this.showToast === 'function') this.showToast("Weight threshold saved", "success");
-      } catch(_) {
-        if (typeof this.showToast === 'function') this.showToast("Failed to save threshold", "error");
+          const saveRes = await (window.posAuth
+            ? posAuth.apiRequest("post", "/settings/pos", settings)
+            : (window.axios || axios).post("/api/settings/pos", settings));
+          const ok =
+            saveRes?.success === true ||
+            saveRes?.data?.success === true ||
+            (saveRes?.status && saveRes.status >= 200 && saveRes.status < 300);
+          if (!ok) throw new Error("save-failed");
+        } catch (_) {}
+        if (typeof this.showToast === "function")
+          this.showToast("Weight threshold saved", "success");
+      } catch (_) {
+        if (typeof this.showToast === "function")
+          this.showToast("Failed to save threshold", "error");
       }
     },
 
     async loadPriceTiers() {
       try {
-        const res = await (window.axios||axios).get('/api/price-tiers', { headers: { Accept: 'application/json' } });
+        const res = await (window.axios || axios).get("/api/price-tiers", {
+          headers: { Accept: "application/json" },
+        });
         const list = res?.data?.tiers || [];
         if (Array.isArray(list)) {
-          this.priceTiers = list.map(t => ({
+          this.priceTiers = list.map((t) => ({
             id: t.id,
             name: t.name,
             isActive: t.is_active ?? true,
             createdAt: t.created_at || new Date().toISOString(),
-            prices: t.prices || { weight_1g:0, weight_3_5g:0, weight_7g:0, weight_14g:0, weight_28g:0 },
+            prices: t.prices || {
+              weight_1g: 0,
+              weight_3_5g: 0,
+              weight_7g: 0,
+              weight_14g: 0,
+              weight_28g: 0,
+            },
             customWeights: t.custom_weights || [],
           }));
-          try { localStorage.setItem('cannabisPOS-priceTiers-backup', JSON.stringify(this.priceTiers)); } catch(_) {}
+          try {
+            localStorage.setItem(
+              "cannabisPOS-priceTiers-backup",
+              JSON.stringify(this.priceTiers),
+            );
+          } catch (_) {}
         }
       } catch (e) {
         try {
-          const b = JSON.parse(localStorage.getItem('cannabisPOS-priceTiers-backup')||'[]');
+          const b = JSON.parse(
+            localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]",
+          );
           if (Array.isArray(b)) this.priceTiers = b;
-        } catch(_) {}
+        } catch (_) {}
       }
     },
 
@@ -4766,15 +4841,26 @@ function cannabisPOS() {
       if (product.category === "Flower" && product.priceTier) {
         const tier = this.priceTiers.find((t) => t.id == product.priceTier);
         if (!tier) {
-          this.showToast("Price tier not found for this flower product", "error");
+          this.showToast(
+            "Price tier not found for this flower product",
+            "error",
+          );
           return;
         }
         const perGram = Number(tier.prices?.weight_1g || 0);
-        const defaultGrams = this.weightThreshold && this.weightThreshold > 0 ? this.weightThreshold : 1.0;
+        const defaultGrams =
+          this.weightThreshold && this.weightThreshold > 0
+            ? this.weightThreshold
+            : 1.0;
         let gramsStr = null;
         try {
-          gramsStr = prompt(`Enter grams for ${product.name} (e.g. 1.25)`, String(defaultGrams));
-        } catch(_) { gramsStr = String(defaultGrams); }
+          gramsStr = prompt(
+            `Enter grams for ${product.name} (e.g. 1.25)`,
+            String(defaultGrams),
+          );
+        } catch (_) {
+          gramsStr = String(defaultGrams);
+        }
         const grams = Number(parseFloat(gramsStr));
         if (!isFinite(grams) || grams <= 0) {
           this.showToast("Invalid grams amount", "error");
@@ -5785,11 +5871,24 @@ function cannabisPOS() {
             total: this.total,
             paymentMethod: "debit",
             paymentReference: String(this.debitPayment.lastFour || "") || null,
-            itemCount: items.reduce((a,b)=>a + Number(b.quantity||0), 0),
+            itemCount: items.reduce((a, b) => a + Number(b.quantity || 0), 0),
           };
-          document.dispatchEvent(new CustomEvent("pos-sale-completed", { detail }));
-          try { localStorage.setItem("pos_last_sale_event", JSON.stringify({ ...detail, ts: Date.now() })); } catch(_) {}
-          try { if (detail.sale_id != null) localStorage.setItem("pos_last_sale_id", `${detail.sale_id}:${Date.now()}`); } catch(_) {}
+          document.dispatchEvent(
+            new CustomEvent("pos-sale-completed", { detail }),
+          );
+          try {
+            localStorage.setItem(
+              "pos_last_sale_event",
+              JSON.stringify({ ...detail, ts: Date.now() }),
+            );
+          } catch (_) {}
+          try {
+            if (detail.sale_id != null)
+              localStorage.setItem(
+                "pos_last_sale_id",
+                `${detail.sale_id}:${Date.now()}`,
+              );
+          } catch (_) {}
         } catch (_) {}
       } catch (e) {
         this.showToast("Failed to persist sale", "error");
@@ -5867,11 +5966,24 @@ function cannabisPOS() {
             total: this.total,
             paymentMethod: "cash",
             paymentReference: null,
-            itemCount: items.reduce((a,b)=>a + Number(b.quantity||0), 0),
+            itemCount: items.reduce((a, b) => a + Number(b.quantity || 0), 0),
           };
-          document.dispatchEvent(new CustomEvent("pos-sale-completed", { detail }));
-          try { localStorage.setItem("pos_last_sale_event", JSON.stringify({ ...detail, ts: Date.now() })); } catch(_) {}
-          try { if (detail.sale_id != null) localStorage.setItem("pos_last_sale_id", `${detail.sale_id}:${Date.now()}`); } catch(_) {}
+          document.dispatchEvent(
+            new CustomEvent("pos-sale-completed", { detail }),
+          );
+          try {
+            localStorage.setItem(
+              "pos_last_sale_event",
+              JSON.stringify({ ...detail, ts: Date.now() }),
+            );
+          } catch (_) {}
+          try {
+            if (detail.sale_id != null)
+              localStorage.setItem(
+                "pos_last_sale_id",
+                `${detail.sale_id}:${Date.now()}`,
+              );
+          } catch (_) {}
         } catch (_) {}
       } catch (e) {
         this.showToast("Failed to persist sale", "error");
@@ -8050,10 +8162,16 @@ function cannabisPOS() {
       };
 
       try {
-        const res = await (window.axios||axios).post('/api/price-tiers', payload, { headers: { Accept: 'application/json' } });
+        const res = await (window.axios || axios).post(
+          "/api/price-tiers",
+          payload,
+          { headers: { Accept: "application/json" } },
+        );
         const saved = (res?.data && (res.data.tier || res.data)) || null;
         const newTier = {
-          id: saved?.id || (Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1),
+          id:
+            saved?.id ||
+            Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1,
           name: saved?.name || payload.name,
           isActive: saved?.is_active ?? true,
           createdAt: saved?.created_at || payload.created_at,
@@ -8061,8 +8179,16 @@ function cannabisPOS() {
           customWeights: saved?.custom_weights || payload.custom_weights,
         };
         this.priceTiers.push(newTier);
-        try { localStorage.setItem('cannabisPOS-priceTiers-backup', JSON.stringify(this.priceTiers)); } catch(_) {}
-        this.showToast(`Price tier "${newTier.name}" created successfully`, 'success');
+        try {
+          localStorage.setItem(
+            "cannabisPOS-priceTiers-backup",
+            JSON.stringify(this.priceTiers),
+          );
+        } catch (_) {}
+        this.showToast(
+          `Price tier "${newTier.name}" created successfully`,
+          "success",
+        );
       } catch (e) {
         // Fallback: local only
         const fallback = {
@@ -8074,7 +8200,10 @@ function cannabisPOS() {
           customWeights: payload.custom_weights,
         };
         this.priceTiers.push(fallback);
-        this.showToast(`Price tier "${fallback.name}" saved locally (offline)`, 'warning');
+        this.showToast(
+          `Price tier "${fallback.name}" saved locally (offline)`,
+          "warning",
+        );
       }
       this.closeTierModal();
     },
@@ -9395,7 +9524,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 // Global analytics helpers for Alpine bindings on landing/analytics sections
-(function(){
+(function () {
   const defaults = {
     customerCount: 0,
     customerGrowth: 0,
@@ -9409,66 +9538,137 @@ document.addEventListener("DOMContentLoaded", function () {
     profitMargin: 0,
   };
   if (!window.__analyticsData) window.__analyticsData = { ...defaults };
-  window.getAnalyticsData = function(){ return window.__analyticsData; };
-  window.getTopProducts = function(){ return Array.isArray(window.__topProducts) ? window.__topProducts : []; };
-  window.getTopVendors = function(){ return Array.isArray(window.__topVendors) ? window.__topVendors : []; };
-  window.getStoreComparison = function(){ return Array.isArray(window.__storeComparison) ? window.__storeComparison : []; };
-  window.getAgingAnalysis = function(){ return window.__agingAnalysis || { fresh: 0, slow: 0, stale: 0 }; };
+  window.getAnalyticsData = function () {
+    return window.__analyticsData;
+  };
+  window.getTopProducts = function () {
+    return Array.isArray(window.__topProducts) ? window.__topProducts : [];
+  };
+  window.getTopVendors = function () {
+    return Array.isArray(window.__topVendors) ? window.__topVendors : [];
+  };
+  window.getStoreComparison = function () {
+    return Array.isArray(window.__storeComparison)
+      ? window.__storeComparison
+      : [];
+  };
+  window.getAgingAnalysis = function () {
+    return window.__agingAnalysis || { fresh: 0, slow: 0, stale: 0 };
+  };
 
-  async function refreshLandingAnalytics(){
+  async function refreshLandingAnalytics() {
     try {
-      const tf = 'today';
-      const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
-      const res = await (window.axios||axios).get('/api/analytics/overview', { params: { timeframe: tf, tz } });
+      const tf = "today";
+      const tz =
+        (Intl.DateTimeFormat &&
+          Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+        "";
+      const res = await (window.axios || axios).get("/api/analytics/overview", {
+        params: { timeframe: tf, tz },
+      });
       const d = res?.data || {};
       const sales = d.sales || {};
-      window.__analyticsData.customerCount = Number(sales.customers || d.customers || 0);
-      window.__analyticsData.customerGrowth = Number((d.customers && d.customers.growth) || 0);
-      window.__analyticsData.avgTransaction = Number(sales.avgOrderValue || d.avgOrderValue || 0);
+      window.__analyticsData.customerCount = Number(
+        sales.customers || d.customers || 0,
+      );
+      window.__analyticsData.customerGrowth = Number(
+        (d.customers && d.customers.growth) || 0,
+      );
+      window.__analyticsData.avgTransaction = Number(
+        sales.avgOrderValue || d.avgOrderValue || 0,
+      );
       window.__analyticsData.avgItems = Number(d.avgItems || 0);
-      window.__analyticsData.overallGrowth = Number((d.growth && d.growth.overall) || 0);
-      window.__analyticsData.totalDiscounts = Number(sales.totalDiscounts || (d.discounts && d.discounts.total) || 0);
-      window.__analyticsData.discountPercentage = Number((d.discounts && d.discounts.pctOfSales) || 0);
-      window.__analyticsData.retentionRate = Number((d.customers && d.customers.retentionRate) || 0);
-      window.__analyticsData.inventoryTurnover = Number((d.inventory && d.inventory.turnover) || 0);
-      window.__analyticsData.profitMargin = Number((d.profit && d.profit.margin) || 0);
+      window.__analyticsData.overallGrowth = Number(
+        (d.growth && d.growth.overall) || 0,
+      );
+      window.__analyticsData.totalDiscounts = Number(
+        sales.totalDiscounts || (d.discounts && d.discounts.total) || 0,
+      );
+      window.__analyticsData.discountPercentage = Number(
+        (d.discounts && d.discounts.pctOfSales) || 0,
+      );
+      window.__analyticsData.retentionRate = Number(
+        (d.customers && d.customers.retentionRate) || 0,
+      );
+      window.__analyticsData.inventoryTurnover = Number(
+        (d.inventory && d.inventory.turnover) || 0,
+      );
+      window.__analyticsData.profitMargin = Number(
+        (d.profit && d.profit.margin) || 0,
+      );
       window.__topProducts = Array.isArray(d.topProducts) ? d.topProducts : [];
       window.__topVendors = Array.isArray(d.topVendors) ? d.topVendors : [];
-      window.__storeComparison = (d.company && Array.isArray(d.company.stores)) ? d.company.stores : [];
-      window.__agingAnalysis = (d.inventory && d.inventory.aging) ? d.inventory.aging : (window.__agingAnalysis || { fresh: 0, slow: 0, stale: 0 });
+      window.__storeComparison =
+        d.company && Array.isArray(d.company.stores) ? d.company.stores : [];
+      window.__agingAnalysis =
+        d.inventory && d.inventory.aging
+          ? d.inventory.aging
+          : window.__agingAnalysis || { fresh: 0, slow: 0, stale: 0 };
     } catch (err) {
       try {
         // Fallback: compute minimal metrics from today's recent sales
         const now = new Date();
-        const toISO = (dt)=>`${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-        const start = toISO(now), end = toISO(now);
-        const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
-        const r = await (window.axios||axios).get('/api/sales/recent', { params: { status: 'completed', limit: 500, date_from: start, date_to: end, tz }, headers: { Accept: 'application/json' } });
-        const list = Array.isArray(r?.data) ? r.data : (Array.isArray(r?.data?.data) ? r.data.data : []);
-        let revenue = 0, tx = 0, items = 0, discounts = 0;
+        const toISO = (dt) =>
+          `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+        const start = toISO(now),
+          end = toISO(now);
+        const tz =
+          (Intl.DateTimeFormat &&
+            Intl.DateTimeFormat().resolvedOptions().timeZone) ||
+          "";
+        const r = await (window.axios || axios).get("/api/sales/recent", {
+          params: {
+            status: "completed",
+            limit: 500,
+            date_from: start,
+            date_to: end,
+            tz,
+          },
+          headers: { Accept: "application/json" },
+        });
+        const list = Array.isArray(r?.data)
+          ? r.data
+          : Array.isArray(r?.data?.data)
+            ? r.data.data
+            : [];
+        let revenue = 0,
+          tx = 0,
+          items = 0,
+          discounts = 0;
         const prodMap = new Map();
         for (const s of list) {
           const amt = Number(s.total_amount ?? s.total ?? 0);
-          revenue += isFinite(amt) ? amt : 0; tx++;
+          revenue += isFinite(amt) ? amt : 0;
+          tx++;
           const saleItems = Array.isArray(s.sale_items) ? s.sale_items : [];
-          items += saleItems.reduce((a,i)=>a+Number(i.quantity||0),0);
+          items += saleItems.reduce((a, i) => a + Number(i.quantity || 0), 0);
           for (const it of saleItems) {
-            const name = it.product_name || it.name || 'Product';
-            const category = it.category || it.product_category || '';
-            const key = name + '|' + category;
-            const rec = prodMap.get(key) || { name, category, revenue: 0, units: 0 };
-            const line = Number(it.total_price || (it.unit_price||0) * (it.quantity||0));
+            const name = it.product_name || it.name || "Product";
+            const category = it.category || it.product_category || "";
+            const key = name + "|" + category;
+            const rec = prodMap.get(key) || {
+              name,
+              category,
+              revenue: 0,
+              units: 0,
+            };
+            const line = Number(
+              it.total_price || (it.unit_price || 0) * (it.quantity || 0),
+            );
             rec.revenue += isFinite(line) ? line : 0;
-            rec.units += Number(it.quantity||0);
+            rec.units += Number(it.quantity || 0);
             prodMap.set(key, rec);
           }
         }
         window.__analyticsData.customerCount = tx;
-        window.__analyticsData.avgTransaction = tx ? (revenue/tx) : 0;
-        window.__analyticsData.avgItems = tx ? (items/tx) : 0;
+        window.__analyticsData.avgTransaction = tx ? revenue / tx : 0;
+        window.__analyticsData.avgItems = tx ? items / tx : 0;
         window.__analyticsData.totalDiscounts = discounts;
-        window.__analyticsData.discountPercentage = revenue>0 ? (discounts/revenue)*100 : 0;
-        window.__topProducts = Array.from(prodMap.values()).sort((a,b)=>b.revenue-a.revenue).slice(0,5);
+        window.__analyticsData.discountPercentage =
+          revenue > 0 ? (discounts / revenue) * 100 : 0;
+        window.__topProducts = Array.from(prodMap.values())
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 5);
         window.__topVendors = [];
         window.__storeComparison = [];
       } catch (_) {}
@@ -9476,35 +9676,78 @@ document.addEventListener("DOMContentLoaded", function () {
   }
   window.refreshLandingAnalytics = refreshLandingAnalytics;
   try {
-    document.addEventListener('DOMContentLoaded', function(){
+    document.addEventListener("DOMContentLoaded", function () {
       refreshLandingAnalytics();
-      try { if (window.__landingAnalyticsTimer) clearInterval(window.__landingAnalyticsTimer); } catch(_){ }
-      window.__landingAnalyticsTimer = setInterval(refreshLandingAnalytics, 15000);
+      try {
+        if (window.__landingAnalyticsTimer)
+          clearInterval(window.__landingAnalyticsTimer);
+      } catch (_) {}
+      window.__landingAnalyticsTimer = setInterval(
+        refreshLandingAnalytics,
+        15000,
+      );
     });
-  } catch(_){ }
+  } catch (_) {}
 })();
 
 // Bridge for Alpine bindings that expect component-scoped vars/methods
-(function(){
+(function () {
   try {
-    if (typeof window.analyticsView === 'undefined') window.analyticsView = 'company';
-    if (typeof window.refreshAnalytics !== 'function') window.refreshAnalytics = function(){ try { window.refreshLandingAnalytics && window.refreshLandingAnalytics(); } catch(_){} };
-    if (typeof window.getTopDiscounts !== 'function') window.getTopDiscounts = function(){ return Array.isArray(window.__topDiscounts) ? window.__topDiscounts : []; };
+    if (typeof window.analyticsView === "undefined")
+      window.analyticsView = "company";
+    if (typeof window.refreshAnalytics !== "function")
+      window.refreshAnalytics = function () {
+        try {
+          window.refreshLandingAnalytics && window.refreshLandingAnalytics();
+        } catch (_) {}
+      };
+    if (typeof window.getTopDiscounts !== "function")
+      window.getTopDiscounts = function () {
+        return Array.isArray(window.__topDiscounts)
+          ? window.__topDiscounts
+          : [];
+      };
     // Attempt to hydrate the root Alpine component with expected bindings
-    document.addEventListener('DOMContentLoaded', function(){
+    document.addEventListener("DOMContentLoaded", function () {
       try {
-        const app = document.getElementById('app');
+        const app = document.getElementById("app");
         const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
         if (scope) {
-          if (typeof scope.analyticsView === 'undefined') scope.analyticsView = window.analyticsView || 'company';
-          if (typeof scope.refreshAnalytics !== 'function') scope.refreshAnalytics = function(){ try { window.refreshLandingAnalytics && window.refreshLandingAnalytics(); } catch(_){} };
-          if (typeof scope.getTopDiscounts !== 'function') scope.getTopDiscounts = function(){ return window.getTopDiscounts ? window.getTopDiscounts() : []; };
-          if (typeof scope.getTopProducts !== 'function') scope.getTopProducts = function(){ return window.getTopProducts ? window.getTopProducts() : []; };
-          if (typeof scope.getTopVendors !== 'function') scope.getTopVendors = function(){ return window.getTopVendors ? window.getTopVendors() : []; };
-          if (typeof scope.getStoreComparison !== 'function') scope.getStoreComparison = function(){ return window.getStoreComparison ? window.getStoreComparison() : []; };
-          if (typeof scope.getAgingAnalysis !== 'function') scope.getAgingAnalysis = function(){ return window.getAgingAnalysis ? window.getAgingAnalysis() : {fresh:0,slow:0,stale:0}; };
+          if (typeof scope.analyticsView === "undefined")
+            scope.analyticsView = window.analyticsView || "company";
+          if (typeof scope.refreshAnalytics !== "function")
+            scope.refreshAnalytics = function () {
+              try {
+                window.refreshLandingAnalytics &&
+                  window.refreshLandingAnalytics();
+              } catch (_) {}
+            };
+          if (typeof scope.getTopDiscounts !== "function")
+            scope.getTopDiscounts = function () {
+              return window.getTopDiscounts ? window.getTopDiscounts() : [];
+            };
+          if (typeof scope.getTopProducts !== "function")
+            scope.getTopProducts = function () {
+              return window.getTopProducts ? window.getTopProducts() : [];
+            };
+          if (typeof scope.getTopVendors !== "function")
+            scope.getTopVendors = function () {
+              return window.getTopVendors ? window.getTopVendors() : [];
+            };
+          if (typeof scope.getStoreComparison !== "function")
+            scope.getStoreComparison = function () {
+              return window.getStoreComparison
+                ? window.getStoreComparison()
+                : [];
+            };
+          if (typeof scope.getAgingAnalysis !== "function")
+            scope.getAgingAnalysis = function () {
+              return window.getAgingAnalysis
+                ? window.getAgingAnalysis()
+                : { fresh: 0, slow: 0, stale: 0 };
+            };
         }
-      } catch(_) {}
+      } catch (_) {}
     });
-  } catch(_) {}
+  } catch (_) {}
 })();

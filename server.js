@@ -1316,14 +1316,36 @@ async function handleProcessPayment(req, res) {
     0,
   );
   // Build idempotency fingerprint using normalized cart
-  const cartNorm = (items || []).map((i) => ({ name: i?.name || "", price: Number(i?.price || 0), quantity: Number(i?.quantity || 1) }));
+  const cartNorm = (items || []).map((i) => ({
+    name: i?.name || "",
+    price: Number(i?.price || 0),
+    quantity: Number(i?.quantity || 1),
+  }));
   const idemKey = crypto
     .createHash("sha256")
     .update(
       [
-        String(body.employeePin || user?.employee_id || user?.employee?.employee_id || ""),
-        String(body.method || (body.amountGiven != null ? "cash" : body.lastFour ? "debit" : "unknown")),
-        String(Number(body.total != null ? body.total : computedSubtotal + (body.taxAmount ?? body.tax ?? 0) || 0)),
+        String(
+          body.employeePin ||
+            user?.employee_id ||
+            user?.employee?.employee_id ||
+            "",
+        ),
+        String(
+          body.method ||
+            (body.amountGiven != null
+              ? "cash"
+              : body.lastFour
+                ? "debit"
+                : "unknown"),
+        ),
+        String(
+          Number(
+            body.total != null
+              ? body.total
+              : computedSubtotal + (body.taxAmount ?? body.tax ?? 0) || 0,
+          ),
+        ),
         String(cartNorm.length),
         JSON.stringify(cartNorm),
       ].join("|"),
@@ -1438,7 +1460,15 @@ async function handleProcessPayment(req, res) {
     const arr0 = r0.ok ? await r0.json() : [];
     const found = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
     if (found) {
-      return res.status(200).json({ success: true, sale_id: found.id, sale_number: found.sale_number || String(found.id), sale: found, deduped: true });
+      return res
+        .status(200)
+        .json({
+          success: true,
+          sale_id: found.id,
+          sale_number: found.sale_number || String(found.id),
+          sale: found,
+          deduped: true,
+        });
     }
   } catch (_) {}
   // Idempotency guard: prevent duplicate inserts within 10s for same employee, method, total, and item count
@@ -1446,7 +1476,12 @@ async function handleProcessPayment(req, res) {
     const fp = `${row.employee_id || ""}|${row.payment_method}|${Number(row.total || 0)}|${(row.cart || []).length}`;
     const last = __lastPayment;
     const lastTs = last && last.ts ? Date.parse(last.ts) : 0;
-    if (last && last.row && last.rowFingerprint === fp && Date.now() - lastTs < 10000) {
+    if (
+      last &&
+      last.row &&
+      last.rowFingerprint === fp &&
+      Date.now() - lastTs < 10000
+    ) {
       const sinceIso = new Date(Date.now() - 60000).toISOString();
       const q = {
         select: "*",
@@ -1458,7 +1493,15 @@ async function handleProcessPayment(req, res) {
       const arr0 = r0.ok ? await r0.json() : [];
       const found = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
       if (found) {
-        return res.status(200).json({ success: true, sale_id: found.id, sale_number: found.sale_number || String(found.id), sale: found, deduped: true });
+        return res
+          .status(200)
+          .json({
+            success: true,
+            sale_id: found.id,
+            sale_number: found.sale_number || String(found.id),
+            sale: found,
+            deduped: true,
+          });
       }
     }
   } catch (_) {}
@@ -1466,11 +1509,23 @@ async function handleProcessPayment(req, res) {
     const r = await supaFetch("sales", { method: "POST", body: [row] });
     if (!r.ok) {
       let errDetail = null;
-      try { errDetail = await r.json(); } catch (_) { try { errDetail = await r.text(); } catch (_) {} }
+      try {
+        errDetail = await r.json();
+      } catch (_) {
+        try {
+          errDetail = await r.text();
+        } catch (_) {}
+      }
       // If unique violation on idempotency key, return the existing record instead of failing
       try {
-        const msg = typeof errDetail === 'string' ? errDetail : (errDetail?.message || errDetail?.hint || '');
-        if (String(msg).toLowerCase().includes('duplicate key') || String(errDetail?.code || '').toString() === '23505') {
+        const msg =
+          typeof errDetail === "string"
+            ? errDetail
+            : errDetail?.message || errDetail?.hint || "";
+        if (
+          String(msg).toLowerCase().includes("duplicate key") ||
+          String(errDetail?.code || "").toString() === "23505"
+        ) {
           const sinceIso = new Date(Date.now() - 5 * 60 * 1000).toISOString();
           const q = {
             select: "*",
@@ -1484,13 +1539,30 @@ async function handleProcessPayment(req, res) {
             const arr1 = await r1.json();
             const found = Array.isArray(arr1) && arr1[0] ? arr1[0] : null;
             if (found) {
-              return res.status(200).json({ success: true, sale_id: found.id, sale_number: found.sale_number || String(found.id), sale: found, deduped: true });
+              return res
+                .status(200)
+                .json({
+                  success: true,
+                  sale_id: found.id,
+                  sale_number: found.sale_number || String(found.id),
+                  sale: found,
+                  deduped: true,
+                });
             }
           }
         }
       } catch (_) {}
-      __lastPayment = { ts: new Date().toISOString(), path: req.path, row, ok: false, status: r.status, error: errDetail };
-      return res.status(500).json({ success: false, error: errDetail || "Failed to record sale" });
+      __lastPayment = {
+        ts: new Date().toISOString(),
+        path: req.path,
+        row,
+        ok: false,
+        status: r.status,
+        error: errDetail,
+      };
+      return res
+        .status(500)
+        .json({ success: false, error: errDetail || "Failed to record sale" });
     }
     const payload = await r.json();
     const created = Array.isArray(payload) ? payload[0] : payload;
@@ -1504,7 +1576,9 @@ async function handleProcessPayment(req, res) {
     return res.status(200).json({
       success: true,
       sale_id: created?.id,
-      sale_number: created?.sale_number || (created?.id != null ? String(created.id) : undefined),
+      sale_number:
+        created?.sale_number ||
+        (created?.id != null ? String(created.id) : undefined),
       sale: created,
     });
   } catch (e) {
@@ -1522,10 +1596,7 @@ async function handleProcessPayment(req, res) {
 }
 
 // POS: process payment -> persist sale to Supabase (aliases)
-app.post(
-  "/api/pos/process-payment-open",
-  handleProcessPayment,
-);
+app.post("/api/pos/process-payment-open", handleProcessPayment);
 
 // Diagnostics: last payment payload
 app.get("/api/diag/last-payment", (_req, res) => {
@@ -1567,7 +1638,8 @@ app.get("/api/sales/recent", async (req, res) => {
         if (df && dt) {
           const s = new Date(`${df}T00:00:00`);
           const e = new Date(`${dt}T23:59:59.999`);
-          q["and"] = `(created_at.gte.${s.toISOString()},created_at.lte.${e.toISOString()})`;
+          q["and"] =
+            `(created_at.gte.${s.toISOString()},created_at.lte.${e.toISOString()})`;
         } else if (df) {
           const s = new Date(`${df}T00:00:00`);
           q["created_at"] = `gte.${s.toISOString()}`;
@@ -1587,15 +1659,23 @@ app.get("/api/sales/recent", async (req, res) => {
       const dt2 = req.query?.date_to ? String(req.query.date_to) : "";
       const hasExact = !!(req.query?.start_at || req.query?.end_at);
       if (!hasExact && tz && (df2 || dt2)) {
-        const startYmd = df2 ? new Date(df2).toLocaleDateString("en-CA", { timeZone: tz }) : null;
-        const endYmd = dt2 ? new Date(dt2).toLocaleDateString("en-CA", { timeZone: tz }) : null;
+        const startYmd = df2
+          ? new Date(df2).toLocaleDateString("en-CA", { timeZone: tz })
+          : null;
+        const endYmd = dt2
+          ? new Date(dt2).toLocaleDateString("en-CA", { timeZone: tz })
+          : null;
         arr = arr.filter((s) => {
           try {
-            const ymd = new Date(s.created_at).toLocaleDateString("en-CA", { timeZone: tz });
+            const ymd = new Date(s.created_at).toLocaleDateString("en-CA", {
+              timeZone: tz,
+            });
             const ge = !startYmd || ymd >= startYmd;
             const le = !endYmd || ymd <= endYmd;
             return ge && le;
-          } catch { return true; }
+          } catch {
+            return true;
+          }
         });
       }
     } catch (_) {}
@@ -1680,9 +1760,15 @@ app.get("/api/sales/recent", async (req, res) => {
     // Apply status filtering after mapping to handle case variations; default excludes voided
     let filtered = prelim;
     if (status) {
-      filtered = prelim.filter((r) => String(r.status || '').toLowerCase() === String(status || '').toLowerCase());
+      filtered = prelim.filter(
+        (r) =>
+          String(r.status || "").toLowerCase() ===
+          String(status || "").toLowerCase(),
+      );
     } else {
-      filtered = prelim.filter((r) => String(r.status || '').toLowerCase() !== 'voided');
+      filtered = prelim.filter(
+        (r) => String(r.status || "").toLowerCase() !== "voided",
+      );
     }
     // Deduplicate only by sale_number to avoid hiding legitimate same-cart sales
     const out = [];
@@ -1964,12 +2050,18 @@ app.get("/api/analytics/end-of-day", async (req, res) => {
     try {
       const tz = String(req.query?.tz || "").trim();
       if (tz) {
-        const todayYmd = new Date().toLocaleDateString("en-CA", { timeZone: tz });
+        const todayYmd = new Date().toLocaleDateString("en-CA", {
+          timeZone: tz,
+        });
         list = list.filter((s) => {
           try {
-            const ymd = new Date(s.created_at).toLocaleDateString("en-CA", { timeZone: tz });
+            const ymd = new Date(s.created_at).toLocaleDateString("en-CA", {
+              timeZone: tz,
+            });
             return ymd === todayYmd;
-          } catch { return true; }
+          } catch {
+            return true;
+          }
         });
       }
     } catch (_) {}
