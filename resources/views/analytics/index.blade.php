@@ -476,7 +476,8 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch(err) {
           // Fallback: derive minimal metrics from recent sales endpoint
           try {
-            const res2 = await (window.axios||axios).get('/api/sales/recent', { params: { status:'completed', limit: 200 }, headers:{Accept:'application/json'} });
+            const http = (window.axios||axios);
+            const res2 = await http.get('/api/sales/recent', { params: { status:'completed', limit: 200 }, headers:{Accept:'application/json'} });
             let list = Array.isArray(res2?.data) ? res2.data : (Array.isArray(res2?.data?.data) ? res2.data.data : []);
             let revenue = 0, tx = 0, customers = new Set();
             list.forEach(s=>{ const amt = Number(s.total_amount ?? s.total ?? 0); revenue += amt; tx += 1; if (s.customer_id) customers.add(s.customer_id); });
@@ -484,7 +485,21 @@ document.addEventListener('DOMContentLoaded', function() {
             setText('metric-transactions', tx.toLocaleString());
             setText('metric-customers', customers.size.toLocaleString());
             setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
-          } catch(_) {}
+          } catch(_1) {
+            try {
+              const res3 = await fetch('/sales/recent-json?status=completed&limit=200', { headers: { 'Accept': 'application/json' } });
+              if (res3.ok) {
+                const data3 = await res3.json();
+                const list = Array.isArray(data3) ? data3 : (Array.isArray(data3?.data) ? data3.data : []);
+                let revenue = 0, tx = 0, customers = new Set();
+                list.forEach(s=>{ const amt = Number(s.total_amount ?? s.total ?? 0); revenue += amt; tx += 1; });
+                setText('metric-revenue', fmtMoney(revenue));
+                setText('metric-transactions', tx.toLocaleString());
+                setText('metric-customers', customers.size.toLocaleString());
+                setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
+              }
+            } catch(_2) {}
+          }
         }
       }
       try { if (window.__analyticsTimer) clearInterval(window.__analyticsTimer); } catch(_) {}
