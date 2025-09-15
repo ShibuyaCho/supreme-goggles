@@ -9946,6 +9946,9 @@ document.addEventListener("DOMContentLoaded", function () {
       els.forEach(ensureAspdOnClosestComponent);
     } catch(_){}
   }
+  document.addEventListener('alpine:init', scan);
   document.addEventListener('alpine:initialized', scan);
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(scan, 0); });
+  // Also run shortly after script load
+  try { setTimeout(scan, 50); } catch(_) {}
 })();
