@@ -759,7 +759,7 @@ class SalesController extends Controller
                 ];
             })->values();
 
-            $merged = $normalized;
+            $merged = $normalized->unique(function($r){ return $r['sale_number'] ?? ($r['id'] ?? null); })->values();
         }
 
         // Always include local DB as a safety net, merging by sale_number/id to avoid duplicates
