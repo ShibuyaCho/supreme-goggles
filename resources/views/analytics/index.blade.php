@@ -493,7 +493,13 @@ document.addEventListener('DOMContentLoaded', function() {
             setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
           } catch(_1) {
             try {
-              const res3 = await fetch('/sales/recent-json?status=completed&limit=200', { headers: { 'Accept': 'application/json' } });
+              const tf2 = document.getElementById('timeframe-selector').value || 'today';
+              const now2 = new Date();
+              const toISO2 = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              let start2 = toISO2(now2), end2 = toISO2(now2);
+              if (tf2 === 'week') { const first=new Date(now2); first.setDate(now2.getDate()-6); start2=toISO2(first); }
+              if (tf2 === 'month') { const first=new Date(now2.getFullYear(),now2.getMonth(),1); const last=new Date(now2.getFullYear(),now2.getMonth()+1,0); start2=toISO2(first); end2=toISO2(last); }
+              const res3 = await fetch(`/sales/recent-json?status=completed&limit=500&date_from=${start2}&date_to=${end2}` , { headers: { 'Accept': 'application/json' } });
               if (res3.ok) {
                 const data3 = await res3.json();
                 const list = Array.isArray(data3) ? data3 : (Array.isArray(data3?.data) ? data3.data : []);
