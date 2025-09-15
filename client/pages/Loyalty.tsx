@@ -154,16 +154,26 @@ export default function Loyalty() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(loyaltyKey());
-      if (raw) {
-        const list = JSON.parse(raw);
-        if (Array.isArray(list) && list.length) setCustomers(list);
-      }
+      const rawA = localStorage.getItem(loyaltyKey());
+      const rawB = localStorage.getItem("cannabest-loyalty");
+      const a = rawA ? JSON.parse(rawA) : [];
+      const b = rawB ? JSON.parse(rawB) : [];
+      const seen = new Set<string>();
+      const merged = [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])].filter(c => {
+        const key = String(c?.id || c?.email || c?.phone || "");
+        if (!key || seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      if (merged.length) setCustomers(merged);
     } catch (_) {}
   }, []);
 
   useEffect(() => {
-    try { localStorage.setItem(loyaltyKey(), JSON.stringify(customers)); } catch (_) {}
+    try {
+      localStorage.setItem(loyaltyKey(), JSON.stringify(customers));
+      localStorage.setItem("cannabest-loyalty", JSON.stringify(customers));
+    } catch (_) {}
   }, [customers]);
   const [showSignupDialog, setShowSignupDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<LoyaltyCustomer | null>(null);
