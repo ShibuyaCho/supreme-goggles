@@ -324,17 +324,32 @@ function cannabisPOS() {
           const vendorName = t.vendor_name || t.vendor || t.supplier || t.name || `Vendor ${i + 1}`;
           const license = t.vendor_license || t.license || t.license_number || "";
           const packages = Array.isArray(t.packages) ? t.packages : (Array.isArray(t.items) ? t.items : []);
-          const pList = packages.map((p, j) => ({
-            id: p.id || p.package_id || p.tag || `${i}-${j}`,
-            tag: p.tag || p.package_tag || "",
-            name: p.name || p.item || p.product || "Package",
-            quantity: Number(p.quantity || p.qty || 0),
-            unit: p.unit || p.unit_of_measure || p.uom || "",
-            strain: p.strain || p.product_strain || "",
-            weight: Number(p.weight || 0),
-          }));
-          const totalValue = pList.reduce((s, p) => s + Number(p.value || p.price || 0) * (Number(p.quantity) || 0), 0);
-          const totalCost = pList.reduce((s, p) => s + Number(p.cost || 0) * (Number(p.quantity) || 0), 0);
+          const pList = (packages || []).map((p, j) => {
+            const qty = Number(p.quantity ?? p.qty ?? p.quantityShipped ?? p.shippedQuantity ?? 0);
+            const unitCost = Number(
+              p.unit_cost ?? p.unitCost ?? p.cost_per_unit ?? p.costPerUnit ?? p.price_per_unit ?? p.cost ?? 0
+            );
+            const computedTotal = (isFinite(unitCost) && isFinite(qty)) ? unitCost * qty : 0;
+            const totalValue = Number(p.total_value ?? p.totalValue ?? p.extended_cost ?? computedTotal);
+            const weightNum = p.weight != null ? (typeof p.weight === "number" ? p.weight : Number(p.weight)) : 0;
+            return {
+              id: p.id || p.package_id || p.tag || `${i}-${j}`,
+              metrcTag: p.tag || p.package_tag || p.packageNumber || p.PackageLabel || "",
+              productName: p.name || p.item || p.product || p.ProductName || "Package",
+              category: p.category || p.product_category || p.CategoryName || "Uncategorized",
+              quantity: isFinite(qty) ? qty : 0,
+              unit: p.unit || p.unit_of_measure || p.uom || p.UnitOfMeasureName || "",
+              strain: p.strain || p.product_strain || p.StrainName || "",
+              weight: isFinite(weightNum) ? weightNum : 0,
+              thc: Number(p.thc ?? p.thc_percent ?? p.thcPercent ?? 0),
+              cbd: Number(p.cbd ?? p.cbd_percent ?? p.cbdPercent ?? 0),
+              unitCost: isFinite(unitCost) ? unitCost : 0,
+              totalValue: isFinite(totalValue) ? totalValue : 0,
+              room: ((p.room || p.destination_room || p.roomName || "receiving") + "").toLowerCase(),
+            };
+          });
+          const totalValue = pList.reduce((s, p) => s + (Number(p.totalValue) || (Number(p.unitCost) || 0) * (Number(p.quantity) || 0)), 0);
+          const totalCost = pList.reduce((s, p) => s + (Number(p.unitCost) || 0) * (Number(p.quantity) || 0), 0);
           const etaRaw = t.eta || t.expected_at || t.expected_date || "";
           const etaDateObj = etaRaw ? new Date(etaRaw) : new Date();
           const today = new Date();
@@ -372,8 +387,64 @@ function cannabisPOS() {
         const fmtDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         const fmtTime = (d) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
         this.incomingVendors = [
-          { id: "v-1", metrcId: null, name: "GreenLeaf Farms", license: "OR-XYZ-1234", eta: "today", etaDate: fmtDate(now), etaTime: fmtTime(now), packages: [{ id: "p1", tag: "1A4060...", name: "Blue Dream 1/8", quantity: 200, unit: "ea", strain: "Blue Dream" }], totalValue: 7000, totalCost: 5000, status: "ready-to-import" },
-          { id: "v-2", metrcId: null, name: "Pine State Extracts", license: "OR-ABC-5678", eta: "this-week", etaDate: fmtDate(plusDays(3)), etaTime: fmtTime(plusDays(3)), packages: [{ id: "p2", tag: "1A4061...", name: "Live Resin 1g", quantity: 120, unit: "ea", strain: "OG Kush" }], totalValue: 5400, totalCost: 3600, status: "in-transit" },
+          {
+            id: "v-1",
+            metrcId: null,
+            name: "GreenLeaf Farms",
+            license: "OR-XYZ-1234",
+            eta: "today",
+            etaDate: fmtDate(now),
+            etaTime: fmtTime(now),
+            packages: [
+              {
+                id: "p1",
+                metrcTag: "1A4060...",
+                productName: "Blue Dream 1/8",
+                category: "Flower",
+                quantity: 200,
+                unit: "ea",
+                strain: "Blue Dream",
+                weight: 3.5,
+                thc: 24,
+                cbd: 0.1,
+                unitCost: 25,
+                totalValue: 5000,
+                room: "receiving",
+              },
+            ],
+            totalValue: 5000,
+            totalCost: 5000,
+            status: "ready-to-import",
+          },
+          {
+            id: "v-2",
+            metrcId: null,
+            name: "Pine State Extracts",
+            license: "OR-ABC-5678",
+            eta: "this-week",
+            etaDate: fmtDate(plusDays(3)),
+            etaTime: fmtTime(plusDays(3)),
+            packages: [
+              {
+                id: "p2",
+                metrcTag: "1A4061...",
+                productName: "Live Resin 1g",
+                category: "Concentrates",
+                quantity: 120,
+                unit: "ea",
+                strain: "OG Kush",
+                weight: 1,
+                thc: 72,
+                cbd: 0,
+                unitCost: 30,
+                totalValue: 3600,
+                room: "receiving",
+              },
+            ],
+            totalValue: 3600,
+            totalCost: 3600,
+            status: "in-transit",
+          },
         ];
       }
     },
