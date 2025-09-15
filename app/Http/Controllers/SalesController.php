@@ -684,10 +684,10 @@ class SalesController extends Controller
                 'order' => 'created_at.desc',
                 'limit' => max(1, min(1000, $limit)),
             ];
-            if ($dateFrom || $dateTo) {
+            if ($request->filled('start_at') || $request->filled('end_at') || $dateFrom || $dateTo) {
                 $tz = request()->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
-                $fromUtc = $dateFrom ? Carbon::parse($dateFrom, $tz)->startOfDay()->utc()->toISOString() : null;
-                $toUtc = $dateTo ? Carbon::parse($dateTo, $tz)->endOfDay()->utc()->toISOString() : null;
+                $fromUtc = $request->filled('start_at') ? Carbon::parse($request->get('start_at'))->utc()->toISOString() : ($dateFrom ? Carbon::parse($dateFrom, $tz)->startOfDay()->utc()->toISOString() : null);
+                $toUtc = $request->filled('end_at') ? Carbon::parse($request->get('end_at'))->utc()->toISOString() : ($dateTo ? Carbon::parse($dateTo, $tz)->endOfDay()->utc()->toISOString() : null);
                 if ($fromUtc && $toUtc) {
                     $params['and'] = '(created_at.gte.' . $fromUtc . ',created_at.lte.' . $toUtc . ')';
                 } elseif ($fromUtc) {
