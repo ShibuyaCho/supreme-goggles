@@ -272,7 +272,7 @@ export default function Loyalty() {
 
     try {
       await fetch(
-        `/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
+        `/node/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
         {
           method: "POST",
           headers: {
