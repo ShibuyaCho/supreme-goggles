@@ -916,8 +916,42 @@ class SalesController extends Controller
                     if ($kSource !== 'local' && $rSource === 'local') { $out[$keepIdx] = $r; }
                     continue;
                 } else {
-                    $indexBySN[$sn] = count($out);
-                    $out[] = $r;
+                    // Before inserting new sale_number entry, collapse any near-duplicate already present (different sale_number but same txn)
+                    $matchedExisting = false;
+                    $ts = 0; try { $ts = $dt->timestamp; } catch (\Throwable $e) { $ts = 0; }
+                    for ($j = max(0, count($out) - 100); $j < count($out); $j++) {
+                        $p = $out[$j];
+                        try {
+                            $pd = \Carbon\Carbon::parse($p['created_at'] ?? now())->setTimezone($tz);
+                        } catch (\Throwable $e) { $pd = now(); }
+                        $pts = $pd->timestamp;
+                        $pamt = (float)($p['total_amount'] ?? ($p['total'] ?? 0));
+                        $ppm = strtolower((string)($p['payment_method'] ?? ''));
+                        if (abs($ts - $pts) <= 600 && abs($amt - $pamt) < 0.01 && $pm === $ppm) {
+                            $pHasSN = !empty($p['sale_number']);
+                            $rHasSN = !empty($r['sale_number']);
+                            $pSource = strtolower((string)($p['source'] ?? ''));
+                            $rSource = strtolower((string)($r['source'] ?? ''));
+                            // Choose best record: prefer one with non-numeric sale_number; otherwise prefer local source
+                            $pSN = (string)($p['sale_number'] ?? '');
+                            $rSN = (string)($r['sale_number'] ?? '');
+                            $pNumeric = ($pSN !== '') && preg_match('/^\d+$/', $pSN) === 1;
+                            $rNumeric = ($rSN !== '') && preg_match('/^\d+$/', $rSN) === 1;
+                            $replace = false;
+                            if ($rHasSN && !$pHasSN) { $replace = true; }
+                            elseif ($pHasSN && !$rHasSN) { $replace = false; }
+                            elseif ($pNumeric && !$rNumeric) { $replace = true; }
+                            elseif ($rNumeric && !$pNumeric) { $replace = false; }
+                            elseif ($pSource !== 'local' && $rSource === 'local') { $replace = true; }
+                            if ($replace) { $out[$j] = $r; }
+                            $matchedExisting = true;
+                            break;
+                        }
+                    }
+                    if (!$matchedExisting) {
+                        $indexBySN[$sn] = count($out);
+                        $out[] = $r;
+                    }
                     continue;
                 }
             }
