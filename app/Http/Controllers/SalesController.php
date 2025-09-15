@@ -932,20 +932,24 @@ class SalesController extends Controller
                             $rHasSN = !empty($r['sale_number']);
                             $pSource = strtolower((string)($p['source'] ?? ''));
                             $rSource = strtolower((string)($r['source'] ?? ''));
-                            // Choose best record: prefer one with non-numeric sale_number; otherwise prefer local source
-                            $pSN = (string)($p['sale_number'] ?? '');
-                            $rSN = (string)($r['sale_number'] ?? '');
-                            $pNumeric = ($pSN !== '') && preg_match('/^\d+$/', $pSN) === 1;
-                            $rNumeric = ($rSN !== '') && preg_match('/^\d+$/', $rSN) === 1;
-                            $replace = false;
-                            if ($rHasSN && !$pHasSN) { $replace = true; }
-                            elseif ($pHasSN && !$rHasSN) { $replace = false; }
-                            elseif ($pNumeric && !$rNumeric) { $replace = true; }
-                            elseif ($rNumeric && !$pNumeric) { $replace = false; }
-                            elseif ($pSource !== 'local' && $rSource === 'local') { $replace = true; }
-                            if ($replace) { $out[$j] = $r; }
-                            $matchedExisting = true;
-                            break;
+                            $sameSN = $pHasSN && $rHasSN && ((string)$p['sale_number'] === (string)$r['sale_number']);
+                            // Only collapse if same sale_number OR cross-source duplicate
+                            if ($sameSN || ($pSource !== '' && $rSource !== '' && $pSource !== $rSource)) {
+                                // Choose best record: prefer one with non-numeric sale_number; otherwise prefer local source
+                                $pSN = (string)($p['sale_number'] ?? '');
+                                $rSN = (string)($r['sale_number'] ?? '');
+                                $pNumeric = ($pSN !== '') && preg_match('/^\d+$/', $pSN) === 1;
+                                $rNumeric = ($rSN !== '') && preg_match('/^\d+$/', $rSN) === 1;
+                                $replace = false;
+                                if ($rHasSN && !$pHasSN) { $replace = true; }
+                                elseif ($pHasSN && !$rHasSN) { $replace = false; }
+                                elseif ($pNumeric && !$rNumeric) { $replace = true; }
+                                elseif ($rNumeric && !$pNumeric) { $replace = false; }
+                                elseif ($pSource !== 'local' && $rSource === 'local') { $replace = true; }
+                                if ($replace) { $out[$j] = $r; }
+                                $matchedExisting = true;
+                                break;
+                            }
                         }
                     }
                     if (!$matchedExisting) {
@@ -991,15 +995,19 @@ class SalesController extends Controller
                     $pHasSN = !empty($p['sale_number']);
                     $rSource = strtolower((string)($r['source'] ?? ''));
                     $pSource = strtolower((string)($p['source'] ?? ''));
-                    // Prefer entries with a sale_number, otherwise prefer local source
-                    if ($pHasSN && !$rHasSN) {
-                        // keep existing $p
-                    } elseif ($rHasSN && !$pHasSN) {
-                        $out[$j] = $r;
-                    } else {
-                        if ($pSource !== 'local' && $rSource === 'local') { $out[$j] = $r; }
+                    $sameSN = $pHasSN && $rHasSN && ((string)$p['sale_number'] === (string)$r['sale_number']);
+                    // Only collapse if same sale_number OR cross-source
+                    if ($sameSN || ($pSource !== '' && $rSource !== '' && $pSource !== $rSource)) {
+                        // Prefer entries with a sale_number, otherwise prefer local source
+                        if ($pHasSN && !$rHasSN) {
+                            // keep existing $p
+                        } elseif ($rHasSN && !$pHasSN) {
+                            $out[$j] = $r;
+                        } else {
+                            if ($pSource !== 'local' && $rSource === 'local') { $out[$j] = $r; }
+                        }
+                        $matched = true; break;
                     }
-                    $matched = true; break;
                 }
             }
             if (!$matched) {
@@ -1044,14 +1052,18 @@ class SalesController extends Controller
                     sort($pp);
                     $psig = implode('|', $pp);
                 } catch (\Throwable $e) { $psig = ''; }
-                if (abs($dt->timestamp - $pdt->timestamp) <= 120 && abs($amt - $pamt) < 0.01 && $pm === $ppm && $sig !== '' && $psig !== '' && $sig === $psig) {
-                    $dupeIdx = $j;
+                if (abs($dt->timestamp - $pdt->timestamp) <= 30 && abs($amt - $pamt) < 0.01 && $pm === $ppm && $sig !== '' && $psig !== '' && $sig === $psig) {
                     $pHasSN = !empty($p['sale_number']);
                     $rHasSN = !empty($r['sale_number']);
                     $pSource = strtolower((string)($p['source'] ?? ''));
                     $rSource = strtolower((string)($r['source'] ?? ''));
-                    if (($rHasSN && !$pHasSN) || ($pSource !== 'local' && $rSource === 'local')) $preferCurrent = true;
-                    break;
+                    $sameSN = $pHasSN && $rHasSN && ((string)$p['sale_number'] === (string)$r['sale_number']);
+                    // Only treat as duplicate if same sale_number OR cross-source
+                    if ($sameSN || ($pSource !== '' && $rSource !== '' && $pSource !== $rSource)) {
+                        $dupeIdx = $j;
+                        if (($rHasSN && !$pHasSN) || ($pSource !== 'local' && $rSource === 'local')) $preferCurrent = true;
+                        break;
+                    }
                 }
             }
             if ($dupeIdx >= 0) {
