@@ -12866,7 +12866,7 @@
                                       >
                                       <span
                                         class="font-semibold text-yellow-600"
-                                        x-text="customer.points.toLocaleString()"
+                                        x-text="Number(customer.points ?? customer.loyaltyPoints ?? 0).toLocaleString()"
                                       ></span>
                                     </p>
                                     <p>
