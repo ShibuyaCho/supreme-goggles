@@ -1717,7 +1717,8 @@ function cannabisPOS() {
       }
       const dateKey = (d) => {
         try {
-          const dt = new Date(d);
+          const dt = d instanceof Date ? d : new Date(d);
+          if (isNaN(dt.getTime())) return "";
           return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
         } catch (_) {
           return "";
