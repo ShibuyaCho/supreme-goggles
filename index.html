@@ -1136,7 +1136,7 @@
                     >
                       <option value="">All Categories</option>
                       <option value="Flower">🌸 Flower</option>
-                      <option value="Pre-Rolls">���� Pre-Rolls</option>
+                      <option value="Pre-Rolls">����� Pre-Rolls</option>
                       <option value="Infused">
                         🔥 Infused (Joints/Blunts)
                       </option>
@@ -1434,7 +1434,7 @@
                             ></h3>
                             <p
                               class="text-sm text-gray-500"
-                              x-text="`${product.category} ����� ${product.weight || 'N/A'}`"
+                              x-text="`${product.category} ��� ${product.weight || 'N/A'}`"
                             ></p>
                             <div
                               x-show="!['Paraphernalia', 'Accessories', 'Glass', 'Accessories/Paraphernalia'].includes(product.category)"
@@ -12916,7 +12916,7 @@
                                         >Points Earned:</span
                                       >
                                       <span
-                                        x-text="customer.pointsEarned.toLocaleString()"
+                                        x-text="Number(customer.pointsEarned || 0).toLocaleString()"
                                       ></span>
                                     </p>
                                   </div>
