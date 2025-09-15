@@ -132,28 +132,31 @@ class SalesController extends Controller
                 'query' => $request->query(),
             ]);
 
-            // Filter options
-            $employees = collect([]); // Unknown without relational DB
-            $paymentMethods = $mapped->pluck('payment_method')->unique();
+            // If Supabase returned data, render it; otherwise fall back to Eloquent below
+            if ($total > 0) {
+                // Filter options
+                $employees = collect([]); // Unknown without relational DB
+                $paymentMethods = $mapped->pluck('payment_method')->unique();
 
-            // Analytics
-            $analytics = $this->getSalesAnalyticsFromArray($mapped, $request);
+                // Analytics
+                $analytics = $this->getSalesAnalyticsFromArray($mapped, $request);
 
-            return view('sales.index', compact(
-                'sales',
-                'searchQuery',
-                'filterStatus',
-                'filterPayment',
-                'filterEmployee',
-                'dateFrom',
-                'dateTo',
-                'sortBy',
-                'sortOrder',
-                'selectedTab',
-                'employees',
-                'paymentMethods',
-                'analytics'
-            ));
+                return view('sales.index', compact(
+                    'sales',
+                    'searchQuery',
+                    'filterStatus',
+                    'filterPayment',
+                    'filterEmployee',
+                    'dateFrom',
+                    'dateTo',
+                    'sortBy',
+                    'sortOrder',
+                    'selectedTab',
+                    'employees',
+                    'paymentMethods',
+                    'analytics'
+                ));
+            }
         }
 
         // Default: Eloquent (MySQL)
@@ -742,7 +745,8 @@ class SalesController extends Controller
                 ];
             })->values()->all();
 
-            return response()->json($normalized);
+            if (count($normalized) > 0) return response()->json($normalized);
+            // Fallback to Eloquent below if Supabase had no rows
         }
 
         // Default: Eloquent
