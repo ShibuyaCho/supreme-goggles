@@ -477,7 +477,13 @@ document.addEventListener('DOMContentLoaded', function() {
           // Fallback: derive minimal metrics from recent sales endpoint
           try {
             const http = (window.axios||axios);
-            const res2 = await http.get('/api/sales/recent', { params: { status:'completed', limit: 200 }, headers:{Accept:'application/json'} });
+            const tf = document.getElementById('timeframe-selector').value || 'today';
+            const now = new Date();
+            const toISO = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            let start = toISO(now), end = toISO(now);
+            if (tf === 'week') { const first=new Date(now); first.setDate(now.getDate()-6); start=toISO(first); }
+            if (tf === 'month') { const first=new Date(now.getFullYear(),now.getMonth(),1); const last=new Date(now.getFullYear(),now.getMonth()+1,0); start=toISO(first); end=toISO(last); }
+            const res2 = await http.get('/api/sales/recent', { params: { status:'completed', limit: 500, date_from: start, date_to: end }, headers:{Accept:'application/json'} });
             let list = Array.isArray(res2?.data) ? res2.data : (Array.isArray(res2?.data?.data) ? res2.data.data : []);
             let revenue = 0, tx = 0, customers = new Set();
             list.forEach(s=>{ const amt = Number(s.total_amount ?? s.total ?? 0); revenue += amt; tx += 1; if (s.customer_id) customers.add(s.customer_id); });
