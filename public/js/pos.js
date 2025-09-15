@@ -8357,6 +8357,25 @@ function cannabisPOS() {
       }
     },
 
+    viewCustomer(customer) {
+      try {
+        if (customer && typeof customer === "object") {
+          this.selectedCustomer = customer;
+        } else if (customer != null) {
+          const idStr = String(customer);
+          const found = (Array.isArray(this.customers) ? this.customers : []).find(
+            (c) => String(c.id) === idStr,
+          );
+          this.selectedCustomer = found || null;
+        } else {
+          this.selectedCustomer = null;
+        }
+      } catch (_) {
+        this.selectedCustomer = customer || null;
+      }
+      this.showCustomerViewModal = true;
+    },
+
     editCustomer(customer) {
       this.selectedCustomer = customer;
       this.editCustomerForm = {
