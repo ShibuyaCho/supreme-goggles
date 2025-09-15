@@ -181,86 +181,13 @@ export default function Customers() {
 
   // Load from local storage on mount and merge with any POS-saved customers
   useEffect(() => {
-    let loaded: Customer[] | null = null;
+    // Clear any demo/legacy local storage so UI reflects database only
     try {
-      const raw = localStorage.getItem(customersFullKey());
-      const rawGlobal = localStorage.getItem("cannabest-customers");
-      const a = raw ? JSON.parse(raw) : [];
-      const b = rawGlobal ? JSON.parse(rawGlobal) : [];
-      const seen = new Set<string>();
-      const mergedLocal = [
-        ...(Array.isArray(a) ? a : []),
-        ...(Array.isArray(b) ? b : []),
-      ].filter((c) => {
-        const key = String(c?.id || c?.email || c?.phone || "");
-        if (!key || seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-      if (mergedLocal.length) loaded = mergedLocal;
+      localStorage.removeItem(customersFullKey());
+      localStorage.removeItem("cannabest-customers");
+      localStorage.removeItem(posCustomersKey());
+      localStorage.removeItem("cannabisPOS-customers");
     } catch (_) {}
-
-    try {
-      const rawPos =
-        localStorage.getItem(posCustomersKey()) ||
-        localStorage.getItem("cannabisPOS-customers");
-      if (rawPos) {
-        const arr = JSON.parse(rawPos);
-        const mapFromPos = (c: any): Customer => {
-          const fullName = String(c?.name || "").trim();
-          const [first, ...rest] = fullName.split(" ");
-          const id = String(c?.id ?? `${Date.now()}-${Math.random()}`);
-          const loyaltyPoints = Number(c?.loyaltyPoints || 0) || 0;
-          return {
-            id,
-            firstName: first || fullName || "",
-            lastName: rest.join(" ") || "",
-            email: c?.email || "",
-            phone: c?.phone || "",
-            dateOfBirth: "",
-            address: { street: "", city: "", state: "OR", zipCode: "" },
-            customerType: c?.isMedical ? "medical" : "recreational",
-            isActive: true,
-            totalSpent: 0,
-            totalVisits: 0,
-            preferredProducts: [],
-            notes: "",
-            createdDate: new Date().toISOString().split("T")[0],
-            dataRetentionConsent: true,
-            loyaltyProgram:
-              loyaltyPoints > 0
-                ? {
-                    memberId: id,
-                    joinDate: new Date().toISOString().split("T")[0],
-                    pointsBalance: loyaltyPoints,
-                    tier: "Bronze",
-                    isVeteran: false,
-                  }
-                : undefined,
-            purchaseHistory: [],
-          };
-        };
-        const posList: Customer[] = Array.isArray(arr)
-          ? arr.map(mapFromPos)
-          : [];
-        if (loaded) {
-          const seen = new Set<string>();
-          const merged = [...loaded, ...posList].filter((c) => {
-            const key = String(c.id || c.email || c.phone || "");
-            if (!key || seen.has(key)) return false;
-            seen.add(key);
-            return true;
-          });
-          setCustomers(merged);
-        } else if (posList.length > 0) {
-          setCustomers(posList);
-        }
-      }
-    } catch (_) {}
-
-    if (loaded) {
-      setCustomers(loaded);
-    }
   }, []);
 
   // Persist whenever the customers list changes
@@ -330,8 +257,9 @@ export default function Customers() {
   const fetchServerCustomers = async (): Promise<Customer[]> => {
     const results: Customer[] = [];
     try {
-      const res = await fetch("/node/customers", {
+      const res = await fetch("/customers", {
         headers: { Accept: "application/json" },
+        credentials: "same-origin",
       });
       if (res.ok) {
         const data = await res.json();
