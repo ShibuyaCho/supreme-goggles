@@ -4260,6 +4260,8 @@ function cannabisPOS() {
         localStorage.setItem(this.customersStorageKey(), JSON.stringify(list));
         // Maintain legacy key for backward compatibility
         localStorage.setItem("cannabisPOS-customers", JSON.stringify(list));
+        // Additional global key used by Customers page
+        localStorage.setItem("cannabest-customers", JSON.stringify(list));
       } catch (e) {}
     },
     loyaltyStorageKeys() {
@@ -4958,8 +4960,10 @@ function cannabisPOS() {
         const out = Array.isArray(this.customers) ? this.customers.slice() : [];
         const legacyRaw = localStorage.getItem("cannabisPOS-customers");
         const userRaw = localStorage.getItem(this.customersStorageKey());
+        const bestRaw = localStorage.getItem("cannabest-customers");
         const legacy = legacyRaw ? JSON.parse(legacyRaw) : [];
         const userScoped = userRaw ? JSON.parse(userRaw) : [];
+        const best = bestRaw ? JSON.parse(bestRaw) : [];
         const merged = [...out];
         const seen = new Set(out.map((c) => String(c.id || c.email || c.phone || Math.random())));
         const addAll = (arr) => {
@@ -4973,7 +4977,8 @@ function cannabisPOS() {
         };
         addAll(userScoped);
         addAll(legacy);
-        this.customers = merged;
+        addAll(best);
+        this.customers = merged.map(c => ({ ...c, isActive: c.isActive === undefined ? true : c.isActive }));
         // Persist merged list to both scoped and legacy keys to survive session changes
         try { this._saveCustomersLocal(); } catch (_) {}
       } catch (error) {
