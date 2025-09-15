@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -304,6 +304,116 @@ export default function Customers() {
     notes: "",
     dataRetentionConsent: false
   });
+
+  // Local persistence helpers (per-user scope + POS-compatible mirror)
+  const getUserId = () => {
+    try {
+      const u = JSON.parse(
+        localStorage.getItem("pos_user") ||
+          localStorage.getItem("user_data") ||
+          "null"
+      );
+      return u?.id || "anon";
+    } catch (_) {
+      return "anon";
+    }
+  };
+  const storageFullKey = `cannabest-customers-${getUserId()}`;
+  const posCustomersKey = `cannabisPOS-customers-${getUserId()}`;
+
+  const saveCustomersLocal = (list: Customer[]) => {
+    try {
+      localStorage.setItem(storageFullKey, JSON.stringify(list));
+    } catch (_) {}
+    try {
+      const simplified = list.map((c) => ({
+        id: c.id,
+        name: `${c.firstName} ${c.lastName || ""}`.trim(),
+        email: c.email,
+        phone: c.phone,
+        isMedical: c.customerType === "medical",
+        loyaltyPoints: c.loyaltyProgram?.pointsBalance || 0,
+      }));
+      localStorage.setItem(posCustomersKey, JSON.stringify(simplified));
+      localStorage.setItem("cannabisPOS-customers", JSON.stringify(simplified));
+    } catch (_) {}
+  };
+
+  // Load from local storage on mount and merge with any POS-saved customers
+  useEffect(() => {
+    let loaded: Customer[] | null = null;
+    try {
+      const raw = localStorage.getItem(storageFullKey);
+      if (raw) loaded = JSON.parse(raw);
+    } catch (_) {}
+
+    try {
+      const rawPos =
+        localStorage.getItem(posCustomersKey) ||
+        localStorage.getItem("cannabisPOS-customers");
+      if (rawPos) {
+        const arr = JSON.parse(rawPos);
+        const mapFromPos = (c: any): Customer => {
+          const fullName = String(c?.name || "").trim();
+          const [first, ...rest] = fullName.split(" ");
+          const id = String(c?.id ?? `${Date.now()}-${Math.random()}`);
+          const loyaltyPoints = Number(c?.loyaltyPoints || 0) || 0;
+          return {
+            id,
+            firstName: first || fullName || "",
+            lastName: rest.join(" ") || "",
+            email: c?.email || "",
+            phone: c?.phone || "",
+            dateOfBirth: "",
+            address: { street: "", city: "", state: "OR", zipCode: "" },
+            customerType: c?.isMedical ? "medical" : "recreational",
+            isActive: true,
+            totalSpent: 0,
+            totalVisits: 0,
+            preferredProducts: [],
+            notes: "",
+            createdDate: new Date().toISOString().split("T")[0],
+            dataRetentionConsent: true,
+            loyaltyProgram:
+              loyaltyPoints > 0
+                ? {
+                    memberId: id,
+                    joinDate: new Date().toISOString().split("T")[0],
+                    pointsBalance: loyaltyPoints,
+                    tier: "Bronze",
+                    isVeteran: false,
+                  }
+                : undefined,
+            purchaseHistory: [],
+          };
+        };
+        const posList: Customer[] = Array.isArray(arr)
+          ? arr.map(mapFromPos)
+          : [];
+        if (loaded) {
+          const seen = new Set<string>();
+          const merged = [...loaded, ...posList].filter((c) => {
+            const key = String(c.id || c.email || c.phone || "");
+            if (!key || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          setCustomers(merged);
+        } else if (posList.length > 0) {
+          setCustomers(posList);
+        }
+      }
+    } catch (_) {}
+
+    if (loaded) {
+      setCustomers(loaded);
+    }
+  }, []);
+
+  // Persist whenever the customers list changes
+  useEffect(() => {
+    saveCustomersLocal(customers);
+  }, [customers]);
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = 
