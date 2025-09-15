@@ -893,29 +893,28 @@ class SalesController extends Controller
             $bucketKey = $dt->format('Y-m-d H:i') . '|' . number_format($amt, 2, '.', '') . '|' . $pm;
 
             if ($sn !== '') {
+                // De-dup strictly by sale_number; DO NOT drop entries based on bucket when sale_number exists
                 if (isset($indexBySN[$sn])) {
                     $keepIdx = $indexBySN[$sn];
                     $keep = $out[$keepIdx];
                     $rSource = strtolower((string)($r['source'] ?? ''));
                     $kSource = strtolower((string)($keep['source'] ?? ''));
                     if ($kSource !== 'local' && $rSource === 'local') { $out[$keepIdx] = $r; }
-                    if (isset($seenBuckets[$bucketKey]) && $kSource !== 'local' && $rSource === 'local') {
-                        $seenBuckets[$bucketKey] = true;
-                    }
                     continue;
                 } else {
-                    if (isset($seenBuckets[$bucketKey])) { continue; }
                     $indexBySN[$sn] = count($out);
                     $out[] = $r;
-                    $seenBuckets[$bucketKey] = strtolower((string)($r['source'] ?? '')) === 'local';
                     continue;
                 }
             }
 
             $ts = 0; try { $ts = $dt->timestamp; } catch (\Throwable $e) { $ts = 0; }
+            // Fallback de-dup only for records WITHOUT sale_number: merge near-duplicates
             $matched = false;
             for ($j = max(0, count($out) - 100); $j < count($out); $j++) {
                 $p = $out[$j];
+                // If existing row has a sale_number, do not collapse it with bucket logic
+                if (!empty($p['sale_number'])) { continue; }
                 $pd = null; try { $pd = \Carbon\Carbon::parse($p['created_at'] ?? now())->setTimezone($tz); } catch (\Throwable $e) { $pd = now(); }
                 $pts = $pd->timestamp;
                 $pamt = (float)($p['total_amount'] ?? ($p['total'] ?? 0));
