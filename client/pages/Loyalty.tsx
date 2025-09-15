@@ -137,6 +137,34 @@ const mockCustomers: LoyaltyCustomer[] = [
 export default function Loyalty() {
   const [customers, setCustomers] = useState<LoyaltyCustomer[]>(mockCustomers);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const getUserId = () => {
+    try {
+      const u = JSON.parse(
+        localStorage.getItem("pos_user") ||
+          localStorage.getItem("user_data") ||
+          "null"
+      );
+      return u?.id || "anon";
+    } catch (_) {
+      return "anon";
+    }
+  };
+  const loyaltyKey = () => `cannabest-loyalty-${getUserId()}`;
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(loyaltyKey());
+      if (raw) {
+        const list = JSON.parse(raw);
+        if (Array.isArray(list) && list.length) setCustomers(list);
+      }
+    } catch (_) {}
+  }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem(loyaltyKey(), JSON.stringify(customers)); } catch (_) {}
+  }, [customers]);
   const [showSignupDialog, setShowSignupDialog] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<LoyaltyCustomer | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
