@@ -207,6 +207,15 @@ class SalesController extends Controller
         // Apply sorting
         $query->orderBy($sortBy, $sortOrder);
 
+        // Keep only latest row per sale_number (best-effort) to prevent duplicates
+        try {
+            $query->whereIn('id', function($q){
+                $q->select(DB::raw('MAX(id)'))
+                  ->from('sales')
+                  ->groupBy('sale_number');
+            });
+        } catch (\Throwable $e) { /* ignore */ }
+
         $sales = $query->paginate(20);
 
         // Get filter options
