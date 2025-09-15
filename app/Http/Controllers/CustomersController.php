@@ -16,11 +16,10 @@ class CustomersController extends Controller
         $filterActive = $request->get('active', 'all');
         $selectedTab = $request->get('tab', 'customers');
         
-        $query = Customer::query();
-        
-        // Apply search filter
+        // Load from local DB
+        $eloquent = Customer::query();
         if ($searchQuery) {
-            $query->where(function($q) use ($searchQuery) {
+            $eloquent->where(function($q) use ($searchQuery) {
                 $q->where('first_name', 'like', "%{$searchQuery}%")
                   ->orWhere('last_name', 'like', "%{$searchQuery}%")
                   ->orWhere('email', 'like', "%{$searchQuery}%")
@@ -28,18 +27,93 @@ class CustomersController extends Controller
                   ->orWhere('loyalty_member_id', 'like', "%{$searchQuery}%");
             });
         }
-        
-        // Apply type filter
         if ($filterType !== 'all') {
-            $query->where('customer_type', $filterType);
+            $eloquent->where('customer_type', $filterType);
         }
-        
-        // Apply active filter
         if ($filterActive !== 'all') {
-            $query->where('is_active', $filterActive === 'active');
+            $eloquent->where('is_active', $filterActive === 'active');
         }
-        
-        $customers = $query->orderBy('created_at', 'desc')->paginate(20);
+        $local = $eloquent->orderBy('created_at', 'desc')->get();
+
+        // Load from Supabase and merge
+        $merged = collect();
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/customers', [ 'select' => '*' ]);
+                if ($resp->ok()) {
+                    $rows = $resp->json();
+                    $supabase = collect(is_array($rows) ? $rows : [])
+                        ->map(function($r) {
+                            $attrs = [
+                                'id' => $r['id'] ?? null,
+                                'name' => $r['name'] ?? (($r['first_name'] ?? '') . ' ' . ($r['last_name'] ?? '')),
+                                'first_name' => $r['first_name'] ?? null,
+                                'last_name' => $r['last_name'] ?? null,
+                                'email' => $r['email'] ?? null,
+                                'phone' => $r['phone'] ?? null,
+                                'date_of_birth' => $r['date_of_birth'] ?? null,
+                                'address' => $r['address'] ?? null,
+                                'customer_type' => $r['customer_type'] ?? 'recreational',
+                                'is_active' => array_key_exists('is_active',$r) ? (bool)$r['is_active'] : true,
+                                'is_veteran' => (bool)($r['is_veteran'] ?? false),
+                                'notes' => $r['notes'] ?? null,
+                                'data_retention_consent' => (bool)($r['data_retention_consent'] ?? false),
+                                'loyalty_member_id' => $r['loyalty_member_id'] ?? null,
+                                'loyalty_join_date' => $r['loyalty_join_date'] ?? null,
+                                'loyalty_points' => $r['loyalty_points'] ?? 0,
+                                'points_earned' => $r['points_earned'] ?? 0,
+                                'points_redeemed' => $r['points_redeemed'] ?? 0,
+                                'loyalty_tier' => $r['loyalty_tier'] ?? ($r['tier'] ?? 'Bronze'),
+                                'total_spent' => $r['total_spent'] ?? 0,
+                                'total_visits' => $r['total_visits'] ?? 0,
+                                'last_visit' => $r['last_visit'] ?? null,
+                                'created_at' => $r['created_at'] ?? null,
+                                'updated_at' => $r['updated_at'] ?? null,
+                            ];
+                            return new Customer($attrs);
+                        });
+                    $merged = $supabase;
+                }
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        }
+
+        // Merge local and Supabase, dedupe by id/email/phone
+        $merged = $merged->concat($local);
+        $seen = [];
+        $merged = $merged->filter(function($c) use (&$seen, $searchQuery, $filterType, $filterActive) {
+            $key = ($c->id ?: '') . '|' . ($c->email ?: '') . '|' . ($c->phone ?: '');
+            if (isset($seen[$key])) return false;
+            $seen[$key] = true;
+            // Apply filters consistently
+            if ($filterType !== 'all' && ($c->customer_type !== $filterType)) return false;
+            if ($filterActive !== 'all' && ((bool)$c->is_active !== ($filterActive === 'active'))) return false;
+            if ($searchQuery) {
+                $q = mb_strtolower($searchQuery);
+                $hay = mb_strtolower(($c->name ?? '') . ' ' . ($c->email ?? '') . ' ' . ($c->phone ?? '') . ' ' . ($c->loyalty_member_id ?? ''));
+                if (mb_strpos($hay, $q) === false) return false;
+            }
+            return true;
+        })->values();
+
+        // Paginate merged
+        $page = max(1, (int)$request->get('page', 1));
+        $perPage = 20;
+        $items = $merged->forPage($page, $perPage);
+        $customers = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $merged->count(),
+            $perPage,
+            $page,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         // Get analytics data for analytics tab
         $stats = $this->getCustomerStats();
