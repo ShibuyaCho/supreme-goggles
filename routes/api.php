@@ -58,6 +58,76 @@ Route::post('/deals/{id}/email', [DealsController::class, 'sendEmailCampaign'])-
 // Products list for pickers (returns JSON, supports search/status params)
 Route::get('/products', [ProductsController::class, 'index']);
 
+// Price tiers API (public for POS compatibility)
+Route::get('/price-tiers', function () {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
+                'select' => '*',
+            ]);
+            if ($resp->ok()) {
+                return response()->json([
+                    'success' => true,
+                    'tiers' => $resp->json() ?? [],
+                ]);
+            }
+        } catch (\Throwable $e) { /* fall back below */ }
+    }
+    return response()->json(['success' => true, 'tiers' => []]);
+});
+Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) {
+        return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
+    }
+    try {
+        $payload = [$request->all()];
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'return=representation',
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', $payload);
+        if ($resp->successful()) {
+            $arr = $resp->json();
+            return response()->json(['success' => true, 'tier' => is_array($arr) && isset($arr[0]) ? $arr[0] : $arr], 201);
+        }
+        return response()->json(['success' => false, 'message' => $resp->body()], 500);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request) {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) {
+        return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
+    }
+    try {
+        $url = rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers?id=eq.' . urlencode($id);
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'return=representation',
+        ])->patch($url, $request->all());
+        if ($resp->successful()) {
+            $arr = $resp->json();
+            return response()->json(['success' => true, 'tier' => is_array($arr) && isset($arr[0]) ? $arr[0] : $arr]);
+        }
+        return response()->json(['success' => false, 'message' => $resp->body()], 500);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+
 // Authentication routes
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
