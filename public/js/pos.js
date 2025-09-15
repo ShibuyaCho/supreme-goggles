@@ -8372,7 +8372,7 @@ function cannabisPOS() {
       };
     },
 
-    updateCustomer() {
+    async updateCustomer() {
       if (!this.editCustomerForm.name) {
         this.showToast("Customer name is required", "error");
         return;
@@ -8382,8 +8382,9 @@ function cannabisPOS() {
         (c) => c.id === this.selectedCustomer.id,
       );
       if (customerIndex !== -1) {
-        this.customers[customerIndex] = {
-          ...this.customers[customerIndex],
+        const current = this.customers[customerIndex];
+        const updated = {
+          ...current,
           name: this.editCustomerForm.name,
           email: this.editCustomerForm.email,
           phone: this.editCustomerForm.phone,
@@ -8391,12 +8392,52 @@ function cannabisPOS() {
           medicalCard: this.editCustomerForm.medicalCard,
         };
 
+        // Try API update when authenticated and permitted
+        try {
+          if (this.isAuthenticated && this.hasPermission("customers:write") && current.id) {
+            const [first, ...rest] = (updated.name || "").split(" ");
+            const payload = {
+              first_name: first || updated.name,
+              last_name: rest.join(" ") || null,
+              email: updated.email,
+              phone: updated.phone,
+              customer_type: updated.isMedical ? "medical" : "recreational",
+            };
+            const res = await posAuth.apiRequest("patch", `/customers/${current.id}`, payload);
+            if (!(res && res.success)) {
+              await posAuth.apiRequest("put", `/customers/${current.id}`, payload);
+            }
+          }
+        } catch (_) {}
+
+        this.customers[customerIndex] = updated;
+        try { this._saveCustomersLocal(); } catch (_) {}
+        try { this.filterLoyaltyCustomers(); } catch (_) {}
+
         this.showToast(
           `Customer "${this.editCustomerForm.name}" updated successfully`,
           "success",
         );
         this.closeEditCustomerModal();
       }
+    },
+
+    deleteCustomer(customer) {
+      const id = customer && customer.id != null ? customer.id : null;
+      const before = Array.isArray(this.customers) ? this.customers.length : 0;
+      this.customers = (Array.isArray(this.customers) ? this.customers : []).filter(c => String(c.id) !== String(id));
+      const changed = Array.isArray(this.customers) && this.customers.length !== before;
+      if (changed) {
+        try { this._saveCustomersLocal(); } catch (_) {}
+        try { this.filterLoyaltyCustomers(); } catch (_) {}
+      }
+      // Best-effort server delete
+      try {
+        if (this.isAuthenticated && this.hasPermission("customers:write") && id) {
+          posAuth.apiRequest("delete", `/customers/${id}`);
+        }
+      } catch (_) {}
+      this.showToast("Customer deleted", changed ? "success" : "info");
     },
 
     viewCustomer(customer) {
