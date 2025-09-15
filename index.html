@@ -1434,7 +1434,7 @@
                             ></h3>
                             <p
                               class="text-sm text-gray-500"
-                              x-text="`${product.category} ��� ${product.weight || 'N/A'}`"
+                              x-text="`${product.category} ����� ${product.weight || 'N/A'}`"
                             ></p>
                             <div
                               x-show="!['Paraphernalia', 'Accessories', 'Glass', 'Accessories/Paraphernalia'].includes(product.category)"
@@ -12908,7 +12908,7 @@
                                         >Avg Per Visit:</span
                                       >
                                       <span
-                                        x-text="'$' + (customer.totalVisits > 0 ? (customer.totalSpent / customer.totalVisits).toFixed(2) : '0.00')"
+                                        x-text="'$' + (Number(customer.totalVisits || 0) > 0 ? (Number(customer.totalSpent || 0) / Number(customer.totalVisits || 1)).toFixed(2) : '0.00')"
                                       ></span>
                                     </p>
                                     <p>
