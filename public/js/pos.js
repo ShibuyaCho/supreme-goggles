@@ -9889,6 +9889,37 @@ document.addEventListener("DOMContentLoaded", function () {
                 ? window.getAgingAnalysis()
                 : { fresh: 0, slow: 0, stale: 0 };
             };
+          // Ensure inventory helpers exist on the component scope for Alpine bindings
+          if (typeof scope.getInventoryEvaluation !== "function")
+            scope.getInventoryEvaluation = function () {
+              try {
+                if (typeof window.getInventoryEvaluation === "function") {
+                  return window.getInventoryEvaluation();
+                }
+              } catch (_) {}
+              return { totalCost: 0, totalRetail: 0, totalProfit: 0, averageMargin: 0 };
+            };
+          if (typeof scope.getCategoryBreakdown !== "function")
+            scope.getCategoryBreakdown = function () {
+              try {
+                if (typeof window.getCategoryBreakdown === "function") {
+                  return window.getCategoryBreakdown();
+                }
+              } catch (_) {}
+              return {};
+            };
+          if (typeof scope.aspdTimeframe === "undefined") scope.aspdTimeframe = "month";
+          if (typeof scope.expandedCategories === "undefined") scope.expandedCategories = [];
+          if (typeof scope.toggleCategoryExpansion !== "function")
+            scope.toggleCategoryExpansion = function (name) {
+              try {
+                const i = this.expandedCategories.indexOf(name);
+                if (i >= 0) this.expandedCategories.splice(i, 1);
+                else this.expandedCategories.push(name);
+              } catch (_) {}
+            };
+          if (typeof scope.loadAspd !== "function") scope.loadAspd = function(){ try { window.loadAspd && window.loadAspd(); } catch (_) {} };
+          if (typeof scope.exportAspd !== "function") scope.exportAspd = function(){ try { window.exportAspd && window.exportAspd(); } catch (_) {} };
         }
       } catch (_) {}
     });
