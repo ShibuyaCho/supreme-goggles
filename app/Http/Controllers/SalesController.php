@@ -73,10 +73,18 @@ class SalesController extends Controller
                 $rows = $rows->where('employee_id', $filterEmployee);
             }
             if ($dateFrom) {
-                $rows = $rows->filter(fn($r) => substr((string)($r['created_at'] ?? ''),0,10) >= $dateFrom);
+                $rows = $rows->filter(function($r) use ($dateFrom) {
+                    try { $ds = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone(config('app.timezone'))->toDateString(); }
+                    catch (\Throwable $e) { $ds = substr((string)($r['created_at'] ?? ''),0,10); }
+                    return $ds >= $dateFrom;
+                });
             }
             if ($dateTo) {
-                $rows = $rows->filter(fn($r) => substr((string)($r['created_at'] ?? ''),0,10) <= $dateTo);
+                $rows = $rows->filter(function($r) use ($dateTo) {
+                    try { $ds = \Carbon\Carbon::parse($r['created_at'] ?? null)->setTimezone(config('app.timezone'))->toDateString(); }
+                    catch (\Throwable $e) { $ds = substr((string)($r['created_at'] ?? ''),0,10); }
+                    return $ds <= $dateTo;
+                });
             }
 
             // Sorting
