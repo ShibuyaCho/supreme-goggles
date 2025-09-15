@@ -292,18 +292,46 @@ export default function Loyalty() {
     setPointsReason("");
   };
 
-  const signupCustomer = () => {
+  const signupCustomer = async () => {
     if (!newCustomer.name || !newCustomer.phone || !newCustomer.email || !newCustomer.dataRetentionConsent) {
       alert("Please fill all fields and consent to data retention");
       return;
     }
 
+    const joinDate = new Date().toISOString().split('T')[0];
+    const payload = {
+      name: newCustomer.name,
+      email: newCustomer.email,
+      phone: newCustomer.phone,
+      customer_type: 'loyalty',
+      data_retention_consent: true,
+      is_veteran: !!newCustomer.isVeteran,
+      loyalty_points: 0,
+      loyalty_tier: 'Bronze',
+      loyalty_join_date: joinDate,
+      is_active: true,
+    } as any;
+
+    let createdId = Date.now().toString();
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const srv = data?.customer || data?.data || null;
+        if (srv?.id != null) createdId = String(srv.id);
+      }
+    } catch (_) {}
+
     const customer: LoyaltyCustomer = {
-      id: Date.now().toString(),
+      id: createdId,
       name: newCustomer.name,
       phone: newCustomer.phone,
       email: newCustomer.email,
-      joinDate: new Date().toISOString().split('T')[0],
+      joinDate,
       totalSpent: 0,
       totalVisits: 0,
       pointsBalance: 0,
@@ -312,13 +340,13 @@ export default function Loyalty() {
       tier: 'Bronze',
       dataRetentionConsent: newCustomer.dataRetentionConsent,
       salesHistory: [],
-      lastVisit: "",
-      isVeteran: newCustomer.isVeteran
+      lastVisit: '',
+      isVeteran: newCustomer.isVeteran,
     };
 
     setCustomers(prev => [...prev, customer]);
     setShowSignupDialog(false);
-    setNewCustomer({ name: "", phone: "", email: "", dataRetentionConsent: false, isVeteran: false });
+    setNewCustomer({ name: '', phone: '', email: '', dataRetentionConsent: false, isVeteran: false });
     alert(`Welcome ${customer.name}! You've been enrolled in our loyalty program.`);
   };
 
