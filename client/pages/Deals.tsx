@@ -97,6 +97,29 @@ const mockDeals: Deal[] = [];
 
 export default function Deals() {
   const [deals, setDeals] = useState<Deal[]>([]);
+
+  // Local shadow persistence (per-user + global) to retain fields not stored in Supabase
+  const getUserId = () => {
+    try {
+      const u = JSON.parse(
+        localStorage.getItem("pos_user") ||
+          localStorage.getItem("user_data") ||
+          "null"
+      );
+      return u?.id || "anon";
+    } catch (_) {
+      return "anon";
+    }
+  };
+  const dealsUserKey = () => `cannabest-deals-${getUserId()}`;
+  const dealsGlobalKey = () => `cannabest-deals`;
+
+  const saveDealsLocal = (list: Deal[]) => {
+    try {
+      localStorage.setItem(dealsUserKey(), JSON.stringify(list));
+      localStorage.setItem(dealsGlobalKey(), JSON.stringify(list));
+    } catch (_) {}
+  };
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -241,13 +264,67 @@ export default function Deals() {
   useEffect(() => {
     const loadDeals = async () => {
       try {
+        // Load shadow local first
+        let localA: Deal[] = [];
+        let localB: Deal[] = [];
+        try {
+          const rawA = localStorage.getItem(dealsUserKey());
+          const rawB = localStorage.getItem(dealsGlobalKey());
+          localA = rawA ? JSON.parse(rawA) : [];
+          localB = rawB ? JSON.parse(rawB) : [];
+        } catch (_) {}
+        const localMergedMap = new Map<string, Deal>();
+        [...(Array.isArray(localA) ? localA : []), ...(Array.isArray(localB) ? localB : [])].forEach((d) => {
+          if (!d) return;
+          const id = String((d as any).id ?? "");
+          if (!id) return;
+          if (!localMergedMap.has(id)) localMergedMap.set(id, d as Deal);
+        });
+
         const res = await fetch("/api/deals", {
           headers: { Accept: "application/json" },
         });
         const data = await res.json();
         const list = Array.isArray(data?.deals) ? data.deals : [];
-        setDeals(list.map(mapApiDealToUi));
-      } catch {}
+        const fromApi = list.map(mapApiDealToUi);
+
+        // Overlay API with any locally saved fields for the same id
+        const overlayed = fromApi.map((d) => {
+          const local = localMergedMap.get(String(d.id));
+          if (!local) return d;
+          return {
+            ...d,
+            description: local.description ?? d.description,
+            categories: local.categories?.length ? local.categories : d.categories,
+            specificItems: local.specificItems?.length ? local.specificItems : d.specificItems,
+            categoryDiscounts: Object.keys(local.categoryDiscounts || {}).length ? local.categoryDiscounts : d.categoryDiscounts,
+            itemDiscounts: Object.keys(local.itemDiscounts || {}).length ? local.itemDiscounts : d.itemDiscounts,
+            startDate: local.startDate || d.startDate,
+            endDate: local.endDate || d.endDate,
+            frequency: local.frequency || d.frequency,
+            dayOfWeek: local.dayOfWeek ?? d.dayOfWeek,
+            dayOfMonth: local.dayOfMonth ?? d.dayOfMonth,
+            minimumPurchase: local.minimumPurchase ?? d.minimumPurchase,
+            minimumPurchaseType: local.minimumPurchaseType || d.minimumPurchaseType,
+            maxUses: local.maxUses ?? d.maxUses,
+          } as Deal;
+        });
+
+        // Include any locally-saved deals not present in API
+        const apiIds = new Set(overlayed.map((d) => String(d.id)));
+        const localsOnly = Array.from(localMergedMap.values()).filter((d) => !apiIds.has(String(d.id)));
+        const mergedAll = [...overlayed, ...localsOnly];
+        setDeals(mergedAll);
+      } catch {
+        // Fallback to purely local
+        try {
+          const raw = localStorage.getItem(dealsUserKey()) || localStorage.getItem(dealsGlobalKey()) || "[]";
+          const arr = JSON.parse(raw);
+          setDeals(Array.isArray(arr) ? arr : []);
+        } catch (_) {
+          setDeals([]);
+        }
+      }
     };
     loadDeals();
   }, []);
@@ -265,7 +342,29 @@ export default function Deals() {
       });
       const data = await res.json();
       if (res.ok && data?.deal) {
-        setDeals((prev) => [mapApiDealToUi(data.deal), ...prev]);
+        const base = mapApiDealToUi(data.deal);
+        // Merge back fields that Supabase might not return
+        const full: Deal = {
+          ...base,
+          description: newDeal.description ?? base.description,
+          categories: newDeal.categories || base.categories,
+          specificItems: newDeal.specificItems || base.specificItems,
+          categoryDiscounts: newDeal.categoryDiscounts || base.categoryDiscounts,
+          itemDiscounts: newDeal.itemDiscounts || base.itemDiscounts,
+          startDate: newDeal.startDate || base.startDate,
+          endDate: newDeal.endDate || base.endDate,
+          frequency: newDeal.frequency || base.frequency,
+          dayOfWeek: newDeal.dayOfWeek ?? base.dayOfWeek,
+          dayOfMonth: newDeal.dayOfMonth ?? base.dayOfMonth,
+          minimumPurchase: newDeal.minimumPurchase ?? base.minimumPurchase,
+          minimumPurchaseType: newDeal.minimumPurchaseType || base.minimumPurchaseType,
+          maxUses: newDeal.maxUses ?? base.maxUses,
+        } as Deal;
+        setDeals((prev) => {
+          const next = [full, ...prev];
+          saveDealsLocal(next);
+          return next;
+        });
         setShowCreateDialog(false);
         resetForm();
         return;
@@ -327,8 +426,28 @@ export default function Deals() {
       });
       const data = await res.json();
       if (res.ok && data?.deal) {
-        const mapped = mapApiDealToUi(data.deal);
-        setDeals((prev) => prev.map((d) => (d.id === mapped.id ? mapped : d)));
+        const base = mapApiDealToUi(data.deal);
+        const full: Deal = {
+          ...base,
+          description: newDeal.description ?? base.description,
+          categories: newDeal.categories || base.categories,
+          specificItems: newDeal.specificItems || base.specificItems,
+          categoryDiscounts: newDeal.categoryDiscounts || base.categoryDiscounts,
+          itemDiscounts: newDeal.itemDiscounts || base.itemDiscounts,
+          startDate: newDeal.startDate || base.startDate,
+          endDate: newDeal.endDate || base.endDate,
+          frequency: newDeal.frequency || base.frequency,
+          dayOfWeek: newDeal.dayOfWeek ?? base.dayOfWeek,
+          dayOfMonth: newDeal.dayOfMonth ?? base.dayOfMonth,
+          minimumPurchase: newDeal.minimumPurchase ?? base.minimumPurchase,
+          minimumPurchaseType: newDeal.minimumPurchaseType || base.minimumPurchaseType,
+          maxUses: newDeal.maxUses ?? base.maxUses,
+        } as Deal;
+        setDeals((prev) => {
+          const next = prev.map((d) => (d.id === full.id ? full : d));
+          saveDealsLocal(next);
+          return next;
+        });
         setShowEditDialog(false);
         setSelectedDeal(null);
         resetForm();
@@ -422,7 +541,11 @@ export default function Deals() {
 
   const deleteDeal = (dealId: string) => {
     if (confirm("Are you sure you want to delete this deal?")) {
-      setDeals((prev) => prev.filter((deal) => deal.id !== dealId));
+      setDeals((prev) => {
+        const next = prev.filter((deal) => deal.id !== dealId);
+        saveDealsLocal(next);
+        return next;
+      });
     }
   };
 
@@ -447,6 +570,11 @@ export default function Deals() {
         return "Custom";
     }
   };
+
+  // Persist on change
+  useEffect(() => {
+    saveDealsLocal(deals);
+  }, [deals]);
 
   return (
     <div className="min-h-screen bg-gray-50">
