@@ -231,6 +231,65 @@ function cannabisPOS() {
       try { window.exportAspd && window.exportAspd(); } catch (_) {}
     },
 
+    // Inventory evaluation helpers exposed to Alpine scope
+    getInventoryEvaluation() {
+      try {
+        const list = Array.isArray(this.products) ? this.products : [];
+        let totalCost = 0, totalRetail = 0;
+        for (let i = 0; i < list.length; i++) {
+          const p = list[i] || {};
+          const stock = Number(p.stock ?? p.quantity ?? 0);
+          const price = Number(p.price ?? 0);
+          const cost = Number(p.cost ?? p.unit_cost ?? p.costPerUnit ?? 0);
+          if (isFinite(stock) && isFinite(cost)) totalCost += cost * stock;
+          if (isFinite(stock) && isFinite(price)) totalRetail += price * stock;
+        }
+        const totalProfit = totalRetail - totalCost;
+        const averageMargin = totalRetail > 0 ? (totalProfit / totalRetail) * 100 : 0;
+        return { totalCost, totalRetail, totalProfit, averageMargin };
+      } catch (_) {
+        return { totalCost: 0, totalRetail: 0, totalProfit: 0, averageMargin: 0 };
+      }
+    },
+    getCategoryBreakdown() {
+      try {
+        const list = Array.isArray(this.products) ? this.products : [];
+        const map = new Map();
+        for (let i = 0; i < list.length; i++) {
+          const p = list[i] || {};
+          const category = p.category || 'Uncategorized';
+          const stock = Number(p.stock ?? p.quantity ?? 0);
+          const price = Number(p.price ?? 0);
+          const cost = Number(p.cost ?? p.unit_cost ?? p.costPerUnit ?? 0);
+          const entry = map.get(category) || { productCount: 0, totalCost: 0, totalRetail: 0, totalProfit: 0, averageMargin: 0, products: [] };
+          const lineCost = (isFinite(stock) && isFinite(cost)) ? cost * stock : 0;
+          const lineRetail = (isFinite(stock) && isFinite(price)) ? price * stock : 0;
+          entry.productCount += 1;
+          entry.totalCost += lineCost;
+          entry.totalRetail += lineRetail;
+          entry.totalProfit += (lineRetail - lineCost);
+          entry.products.push({
+            id: p.id || p.sku || p.name,
+            name: p.name || 'Product',
+            sku: p.sku || null,
+            category,
+            stock: isFinite(stock) ? stock : 0,
+            price: isFinite(price) ? price : 0,
+            cost: isFinite(cost) ? cost : 0
+          });
+          map.set(category, entry);
+        }
+        const out = {};
+        map.forEach((v, k) => {
+          v.averageMargin = v.totalRetail > 0 ? (v.totalProfit / v.totalRetail) * 100 : 0;
+          out[k] = v;
+        });
+        return out;
+      } catch (_) {
+        return {};
+      }
+    },
+
     // Pagination state
     currentProductPage: 1,
     itemsPerPageCard: 12,
