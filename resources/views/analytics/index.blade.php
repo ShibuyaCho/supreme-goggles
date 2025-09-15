@@ -424,7 +424,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
         try{
           const timeframe = document.getElementById('timeframe-selector').value || 'today';
-          const res = await (window.axios||axios).get('/api/analytics/overview', { params: { timeframe } });
+          const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+          const res = await (window.axios||axios).get('/api/analytics/overview', { params: { timeframe, tz } });
           const data = res?.data || {};
           // Headline metrics
           const m = data.sales || {};
@@ -483,7 +484,8 @@ document.addEventListener('DOMContentLoaded', function() {
             let start = toISO(now), end = toISO(now);
             if (tf === 'week') { const first=new Date(now); first.setDate(now.getDate()-6); start=toISO(first); }
             if (tf === 'month') { const first=new Date(now.getFullYear(),now.getMonth(),1); const last=new Date(now.getFullYear(),now.getMonth()+1,0); start=toISO(first); end=toISO(last); }
-            const res2 = await http.get('/api/sales/recent', { params: { status:'completed', limit: 500, date_from: start, date_to: end }, headers:{Accept:'application/json'} });
+            const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+            const res2 = await http.get('/api/sales/recent', { params: { status:'completed', limit: 500, date_from: start, date_to: end, tz }, headers:{Accept:'application/json'} });
             let list = Array.isArray(res2?.data) ? res2.data : (Array.isArray(res2?.data?.data) ? res2.data.data : []);
             let revenue = 0, tx = 0, customers = new Set();
             list.forEach(s=>{ const amt = Number(s.total_amount ?? s.total ?? 0); revenue += amt; tx += 1; if (s.customer_id) customers.add(s.customer_id); });
@@ -499,7 +501,8 @@ document.addEventListener('DOMContentLoaded', function() {
               let start2 = toISO2(now2), end2 = toISO2(now2);
               if (tf2 === 'week') { const first=new Date(now2); first.setDate(now2.getDate()-6); start2=toISO2(first); }
               if (tf2 === 'month') { const first=new Date(now2.getFullYear(),now2.getMonth(),1); const last=new Date(now2.getFullYear(),now2.getMonth()+1,0); start2=toISO2(first); end2=toISO2(last); }
-              const res3 = await fetch(`/sales/recent-json?status=completed&limit=500&date_from=${start2}&date_to=${end2}` , { headers: { 'Accept': 'application/json' } });
+              const tz3 = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+              const res3 = await fetch(`/sales/recent-json?status=completed&limit=500&date_from=${start2}&date_to=${end2}&tz=${encodeURIComponent(tz3)}` , { headers: { 'Accept': 'application/json' } });
               if (res3.ok) {
                 const data3 = await res3.json();
                 const list = Array.isArray(data3) ? data3 : (Array.isArray(data3?.data) ? data3.data : []);
@@ -526,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hydrate End of Day from Supabase-backed API
     try {
-        fetch('/api/analytics/end-of-day', { headers: { 'Accept': 'application/json' }})
+        (function(){ const tz=(Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone)||''; fetch(`/api/analytics/end-of-day?tz=${encodeURIComponent(tz)}`, { headers: { 'Accept': 'application/json' }})
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (!data) return;
@@ -544,6 +547,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 setText('eod-credit', fmt(data.creditSales));
             })
             .catch(() => {});
+    })();
     } catch(_) {}
 
 });
