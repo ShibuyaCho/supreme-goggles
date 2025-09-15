@@ -2160,7 +2160,18 @@
                                     />
                                   </svg>
                                 </button>
+                                <template x-if="item._unit === 'g'">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    class="w-16 text-center font-medium border rounded px-1 py-0.5"
+                                    x-model.number="item.quantity"
+                                    @change="updateQuantity(index, item.quantity)"
+                                  />
+                                </template>
                                 <span
+                                  x-show="item._unit !== 'g'"
                                   class="w-8 text-center font-medium"
                                   x-text="item.quantity"
                                 ></span>
