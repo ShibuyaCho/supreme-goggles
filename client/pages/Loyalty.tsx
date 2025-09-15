@@ -326,7 +326,7 @@ export default function Loyalty() {
 
     let created: LoyaltyCustomer | null = null;
     try {
-      const res = await fetch("/api/loyalty-members", {
+      const res = await fetch("/node/loyalty-members", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
