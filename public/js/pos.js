@@ -9381,5 +9381,21 @@ document.addEventListener("DOMContentLoaded", function () {
     if (typeof window.analyticsView === 'undefined') window.analyticsView = 'company';
     if (typeof window.refreshAnalytics !== 'function') window.refreshAnalytics = function(){ try { window.refreshLandingAnalytics && window.refreshLandingAnalytics(); } catch(_){} };
     if (typeof window.getTopDiscounts !== 'function') window.getTopDiscounts = function(){ return Array.isArray(window.__topDiscounts) ? window.__topDiscounts : []; };
+    // Attempt to hydrate the root Alpine component with expected bindings
+    document.addEventListener('DOMContentLoaded', function(){
+      try {
+        const app = document.getElementById('app');
+        const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
+        if (scope) {
+          if (typeof scope.analyticsView === 'undefined') scope.analyticsView = window.analyticsView || 'company';
+          if (typeof scope.refreshAnalytics !== 'function') scope.refreshAnalytics = function(){ try { window.refreshLandingAnalytics && window.refreshLandingAnalytics(); } catch(_){} };
+          if (typeof scope.getTopDiscounts !== 'function') scope.getTopDiscounts = function(){ return window.getTopDiscounts ? window.getTopDiscounts() : []; };
+          if (typeof scope.getTopProducts !== 'function') scope.getTopProducts = function(){ return window.getTopProducts ? window.getTopProducts() : []; };
+          if (typeof scope.getTopVendors !== 'function') scope.getTopVendors = function(){ return window.getTopVendors ? window.getTopVendors() : []; };
+          if (typeof scope.getStoreComparison !== 'function') scope.getStoreComparison = function(){ return window.getStoreComparison ? window.getStoreComparison() : []; };
+          if (typeof scope.getAgingAnalysis !== 'function') scope.getAgingAnalysis = function(){ return window.getAgingAnalysis ? window.getAgingAnalysis() : {fresh:0,slow:0,stale:0}; };
+        }
+      } catch(_) {}
+    });
   } catch(_) {}
 })();
