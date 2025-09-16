@@ -22,6 +22,28 @@ function cannabisPOS() {
       try {
         this.loadMonthStats();
       } catch (_) {}
+      // Auto-persist settings when fields change
+      try {
+        const watch = this.$watch ? this.$watch.bind(this) : null;
+        if (watch) {
+          // Tax settings
+          watch('taxSettings.recreationalRate', () => this._saveBusinessSettingsDebounced());
+          watch('taxSettings.medicalRate', () => this._saveBusinessSettingsDebounced());
+          watch('taxSettings.includeInPrice', () => this._saveBusinessSettingsDebounced());
+          watch('taxSettings.localRate', () => this._saveBusinessSettingsDebounced());
+          watch('taxSettings.stateRate', () => this._saveBusinessSettingsDebounced());
+          // Sales settings
+          watch('salesSettings.minimumSale', () => this._saveBusinessSettingsDebounced());
+          watch('salesSettings.enforceMinimumSale', () => this._saveBusinessSettingsDebounced());
+          watch('salesSettings.dailyLimit', () => this._saveBusinessSettingsDebounced());
+          watch('salesSettings.requireCustomerInfo', () => this._saveBusinessSettingsDebounced());
+          // Print settings
+          watch('printSettings.autoprint', () => this._savePrintSettingsDebounced());
+          watch('printSettings.printLabels', () => this._savePrintSettingsDebounced());
+          watch('printSettings.receiptTemplate', () => this._savePrintSettingsDebounced());
+          watch('printSettings.paperSize', () => this._savePrintSettingsDebounced());
+        }
+      } catch (_) {}
     },
 
     // Store selection (multi-store UI only; backend can read headers for isolation)
@@ -5625,9 +5647,11 @@ function cannabisPOS() {
 
     saveTaxSettings() {
       try { localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings)); } catch(_) {}
+      try { this._saveBusinessSettingsDebounced(); } catch (_) {}
     },
     saveSalesSettings() {
       try { localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings)); } catch(_) {}
+      try { this._saveBusinessSettingsDebounced(); } catch (_) {}
     },
 
     toggleCategoryAutoprint(category) {
@@ -5677,6 +5701,38 @@ function cannabisPOS() {
           res?.data?.success === true ||
           (res?.status && res.status >= 200 && res.status < 300);
         if (!ok) throw new Error("save-failed");
+      } catch (_) {}
+    },
+
+    _saveBusinessSettingsDebounced() {
+      try { if (this._businessSaveTimer) clearTimeout(this._businessSaveTimer); } catch(_) {}
+      this._businessSaveTimer = setTimeout(() => this._saveBusinessSettings(), 400);
+    },
+
+    async _saveBusinessSettings() {
+      try {
+        // Map UI state to backend settings keys
+        const payload = {
+          cannabis_tax: Number(this.taxSettings.recreationalRate) || 0,
+          excise_tax: Number(this.taxSettings.localRate) || 0,
+          sales_tax: Number(this.taxSettings.stateRate) || 0,
+          tax_inclusive: !!this.taxSettings.includeInPrice,
+          minimum_price_amount: Number(this.salesSettings.minimumSale) || 0,
+          minimum_price_enabled: !!this.salesSettings.enforceMinimumSale,
+          __ui_daily_limit: Number(this.salesSettings.dailyLimit) || 0,
+          require_customer: !!this.salesSettings.requireCustomerInfo,
+        };
+        // Persist locally for resilience
+        try {
+          localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings));
+          localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings));
+        } catch (_) {}
+        // POST to API (Supabase-backed)
+        const res = await (window.posAuth
+          ? posAuth.apiRequest('post', '/settings/pos', payload)
+          : (window.axios || axios).post('/api/settings/pos', payload));
+        const ok = res?.success === true || res?.data?.success === true || (res?.status && res.status >= 200 && res.status < 300);
+        if (!ok) throw new Error('save-failed');
       } catch (_) {}
     },
 
