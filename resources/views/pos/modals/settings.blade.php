@@ -189,26 +189,30 @@ function handleSettingsUpdate(event) {
     submitButton.textContent = 'Saving...';
     submitButton.disabled = true;
 
-    CannabisPOS.api.post('/api/settings/update', settingsData)
-        .then(response => {
-            if (response.success) {
+    (window.axios || axios)
+        .post('/api/settings/pos', settingsData, { headers: { 'Accept': 'application/json' } })
+        .then((res) => {
+            const ok = (res && res.data && res.data.success === true) || (res.status >= 200 && res.status < 300);
+            if (ok) {
                 CannabisPOS.closeModal('settings-modal');
-                
                 // Update the tax display in the header
                 const taxDisplay = document.getElementById('tax-display');
                 if (taxDisplay) {
                     taxDisplay.textContent = `Tax: ${settingsData.sales_tax}%`;
                 }
-                
                 // Show success message
-                alert('Settings updated successfully!');
+                if (window.POS?.showToast) POS.showToast('Settings updated successfully!', 'success');
+                else alert('Settings updated successfully!');
             } else {
-                throw new Error(response.message || 'Settings update failed');
+                const msg = (res && res.data && res.data.message) || 'Settings update failed';
+                throw new Error(msg);
             }
         })
-        .catch(error => {
+        .catch((error) => {
             console.error('Settings update error:', error);
-            alert('Failed to update settings: ' + (error.message || 'Unknown error'));
+            const msg = (error && error.response && (error.response.data?.message || error.response.data?.error)) || error.message || 'Unknown error';
+            if (window.POS?.showToast) POS.showToast(`Failed to update settings: ${msg}`, 'error');
+            else alert('Failed to update settings: ' + msg);
         })
         .finally(() => {
             submitButton.textContent = originalText;
@@ -216,7 +220,32 @@ function handleSettingsUpdate(event) {
         });
 }
 
-function openSettingsModal() {
+async function openSettingsModal() {
     CannabisPOS.openModal('settings-modal');
+    try {
+        const { data } = await (window.axios || axios).get('/api/settings/pos', { headers: { 'Accept': 'application/json' } });
+        const s = (data && (data.settings || data)) || {};
+        const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+        const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
+        setVal('sales-tax', s.sales_tax);
+        setVal('excise-tax', s.excise_tax);
+        setVal('cannabis-tax', s.cannabis_tax);
+        setChk('tax-inclusive', s.tax_inclusive);
+        setChk('auto-print-receipt', s.auto_print_receipt);
+        setChk('require-customer', s.require_customer);
+        setChk('age-verification', s.age_verification);
+        setChk('limit-enforcement', s.limit_enforcement);
+        setChk('accept-cash', s.accept_cash);
+        setChk('accept-debit', s.accept_debit);
+        setChk('accept-check', s.accept_check);
+        setChk('round-to-nearest', s.round_to_nearest);
+        setChk('metrc-enabled', s.metrc_enabled);
+        setVal('metrc-user-key', s.metrc_user_key);
+        setVal('metrc-vendor-key', s.metrc_vendor_key);
+        setVal('metrc-facility', s.metrc_facility);
+        setVal('receipt-footer', s.receipt_footer);
+        setVal('store-name', s.store_name);
+        setVal('store-address', s.store_address);
+    } catch (_) { /* ignore prefill errors */ }
 }
 </script>
