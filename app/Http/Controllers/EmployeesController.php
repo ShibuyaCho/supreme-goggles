@@ -303,6 +303,63 @@ class EmployeesController extends Controller
         ]);
     }
     
+    public function export(Request $request)
+    {
+        $searchQuery = $request->get('search', '');
+        $role = $request->get('role', 'all');
+        $status = $request->get('status', 'all');
+        $department = $request->get('department', 'all');
+
+        $query = Employee::query();
+        if ($searchQuery) {
+            $q = trim($searchQuery);
+            $query->where(function($qb) use ($q){
+                $qb->where('first_name','like',"%{$q}%")
+                   ->orWhere('last_name','like',"%{$q}%")
+                   ->orWhere('email','like',"%{$q}%")
+                   ->orWhere('employee_id','like',"%{$q}%");
+            });
+        }
+        if ($role !== 'all') {
+            $query->where(function($qb) use ($role){
+                $qb->where('role',$role)->orWhere('position',$role);
+            });
+        }
+        if ($status !== 'all') {
+            $query->where('status',$status);
+        }
+        if ($department !== 'all') {
+            $query->where('department',$department);
+        }
+        $rows = $query->orderBy('last_name')->orderBy('first_name')->get();
+
+        $filename = 'employees_' . now()->format('Y-m-d') . '.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+        $callback = function() use ($rows) {
+            $out = fopen('php://output', 'w');
+            fputcsv($out, ['Employee ID','First Name','Last Name','Email','Phone','Department','Role','Status','Hire Date','Active']);
+            foreach ($rows as $e) {
+                fputcsv($out, [
+                    $e->employee_id,
+                    $e->first_name,
+                    $e->last_name,
+                    $e->email,
+                    $e->phone,
+                    $e->department,
+                    $e->role ?: $e->position,
+                    $e->status,
+                    optional($e->hire_date)->format('Y-m-d'),
+                    $e->is_active ? 'Yes' : 'No',
+                ]);
+            }
+            fclose($out);
+        };
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function toggleStatus($id)
     {
         $employee = Employee::findOrFail($id);
