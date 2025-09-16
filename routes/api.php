@@ -177,7 +177,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
                 ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                    'id' => 'eq.default',
+                    'id' => 'eq.' . $storeId,
                     'select' => '*',
                 ]);
                 if ($resp0->ok()) {
