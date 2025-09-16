@@ -9632,33 +9632,19 @@
                               <td
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
-                                <button
-                                  @click="viewSaleDetails(sale)"
-                                  class="text-blue-600 hover:text-blue-900 mr-2"
-                                >
-                                  View
-                                </button>
-                                <button
-                                  @click="reprintReceipt(sale)"
-                                  class="text-green-600 hover:text-green-900 mr-2"
-                                >
-                                  Reprint
-                                </button>
-                                <button
-                                  @click="voidSale(sale)"
-                                  class="text-orange-600 hover:text-orange-900 mr-2"
-                                  :disabled="sale.isVoided"
-                                >
-                                  <span
-                                    x-text="sale.isVoided ? 'Voided' : 'Void'"
-                                  ></span>
-                                </button>
-                                <button
-                                  @click="refundSale(sale)"
-                                  class="text-red-600 hover:text-red-900"
-                                >
-                                  Refund
-                                </button>
+                                <div class="relative" x-data="{ open:false }">
+                                  <button @click="open = !open" class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md hover:bg-gray-50">
+                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"/></svg>
+                                    More Actions
+                                  </button>
+                                  <div x-show="open" x-transition @click.outside="open=false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
+                                    <button @click="viewSaleDetails(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">View</button>
+                                    <button @click="reprintReceipt(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Reprint Receipt</button>
+                                    <button @click="reprintExitLabels(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Reprint Exit Labels</button>
+                                    <button @click="refundSale(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Refund</button>
+                                    <button @click="voidSale(sale); open=false" :disabled="sale.isVoided" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 disabled:text-gray-400"><span x-text="sale.isVoided ? 'Voided' : 'Void'"></span></button>
+                                  </div>
+                                </div>
                               </td>
                             </tr>
                           </template>
