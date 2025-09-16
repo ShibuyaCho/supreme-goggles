@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Sale;
 use App\Models\Customer;
+use Illuminate\Support\Facades\Http;
 
 class OrderQueueController extends Controller
 {
@@ -41,7 +42,24 @@ class OrderQueueController extends Controller
         ]);
         
         $order->update(['status' => $request->status]);
-        
+
+        // Mirror to Supabase if configured
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/sales?id=eq.' . urlencode($order->id), [
+                    'status' => $request->status,
+                    'updated_at' => now()->toISOString(),
+                ]);
+            }
+        } catch (\Throwable $e) { /* best-effort mirror, ignore failures */ }
+
         return response()->json([
             'message' => 'Order status updated successfully',
             'order' => $order

@@ -341,6 +341,7 @@ Route::prefix('payment')->name('payment.')->group(function () {
 // Order Queue Routes (for online orders, if applicable)
 Route::prefix('order-queue')->name('order-queue.')->group(function () {
     Route::get('/', [OrderQueueController::class, 'index'])->name('index');
+    Route::post('/{order}/status', [OrderQueueController::class, 'updateStatus'])->name('status');
     Route::get('/{order}', [OrderQueueController::class, 'show'])->name('show');
     Route::post('/{order}/fulfill', [OrderQueueController::class, 'fulfill'])->name('fulfill');
     Route::post('/{order}/cancel', [OrderQueueController::class, 'cancel'])->name('cancel');
