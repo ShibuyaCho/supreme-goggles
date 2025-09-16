@@ -946,10 +946,13 @@ app.get("/api/settings/pos", async (req, res) => {
 app.post("/api/settings/pos", async (req, res) => {
   const incoming = req.body?.settings || req.body || {};
   try {
+    // Determine store scope
+    const rawId = (req && (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"])) || "default";
+    const storeId = String(rawId || "default").trim().replace(/[^A-Za-z0-9_.-]/g, "");
     // Fetch current settings to merge
     let current = {};
     try {
-      const r0 = await supaFetch("pos_settings?id=eq.default&select=*", {
+      const r0 = await supaFetch(`pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`, {
         method: "GET",
       });
       if (r0.ok) {
