@@ -296,13 +296,7 @@ class SalesController extends Controller
         
         // Generate receipt PDF (fallback to HTML if PDF library unavailable)
         if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
-            $html = view('sales.receipt', compact('sale'))->render();
-            $filename = "receipt_{$sale->sale_number}.html";
-            return response($html, 200)
-                ->header('Content-Type', 'text/html; charset=UTF-8')
-                ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
-                ->header('X-Export-Fallback', 'pdf->html')
-                ->header('X-Export-Filename', $filename);
+            return view('sales.receipt', compact('sale'));
         }
 
         $pdf = Pdf::loadView('sales.receipt', compact('sale'));
