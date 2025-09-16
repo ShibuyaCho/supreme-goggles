@@ -1449,6 +1449,69 @@ app.delete("/node/report-templates/:id", async (req, res) => {
   }
 });
 
+// Rooms (Supabase-backed)
+app.get("/node/rooms", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const type = (req.query?.type || "").toString().trim();
+    const active = (req.query?.active || "").toString().trim();
+    let qp = "rooms?select=*";
+    const filters = [];
+    if (search) filters.push(`or=(name.ilike.*${encodeURIComponent(search)}*,room_id.ilike.*${encodeURIComponent(search)}*)`);
+    if (type) filters.push(`type=eq.${encodeURIComponent(type)}`);
+    if (active) filters.push(`is_active=eq.${encodeURIComponent(active)}`);
+    if (filters.length) qp += `&${filters.join("&")}`;
+    const r = await supaFetch(qp, { method: "GET" });
+    const rows = r.ok ? await r.json() : [];
+    res.json({ success: true, rooms: Array.isArray(rows) ? rows : [] });
+  } catch (e) {
+    res.json({ success: true, rooms: [] });
+  }
+});
+
+app.post("/node/rooms", async (req, res) => {
+  try {
+    const b = req.body || {};
+    const room_id = b.room_id || `RM-${String((b.name||'')).replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,4) || 'GEN'}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+    const row = {
+      name: b.name || "Room",
+      room_id,
+      type: b.type || "storage",
+      is_active: b.is_active !== false,
+      max_capacity: Number.isFinite(Number(b.max_capacity)) ? Number(b.max_capacity) : null,
+      current_stock: Number.isFinite(Number(b.current_stock)) ? Number(b.current_stock) : 0,
+      description: b.description || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    const r = await supaFetch("rooms", { method: "POST", body: [row] });
+    const data = r.ok ? await r.json() : null;
+    res.status(201).json({ success: true, room: Array.isArray(data) ? data[0] : data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.put("/node/rooms/:id", async (req, res) => {
+  try {
+    const r = await supaFetch(`rooms?id=eq.${encodeURIComponent(req.params.id)}`, { method: "PATCH", body: req.body || {} });
+    const data = r.ok ? await r.json() : null;
+    res.json({ success: true, room: Array.isArray(data) ? data[0] : data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.delete("/node/rooms/:id", async (req, res) => {
+  try {
+    const d = await supaFetch(`rooms?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
 // Loyalty points adjustments (customers table)
 app.post("/api/loyalty/:customerId/adjust-points", async (req, res) => {
   try {
