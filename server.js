@@ -2866,9 +2866,9 @@ app.get("/sales/:id/exit-labels", async (req, res) => {
       method: "GET",
       query: { select: "*" },
     });
-    const rows = r.ok ? await r.json() : [];
-    const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
-    if (!s) return res.status(404).type("text").send("Sale not found");
+    let rows = r.ok ? await r.json() : [];
+    let s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    if (!s) s = buildStubSale(id);
 
     let settings = {};
     try {
