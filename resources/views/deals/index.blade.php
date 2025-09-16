@@ -11,7 +11,7 @@
                 <h1 class="text-xl font-semibold">Deals & Specials</h1>
                 <p class="text-sm opacity-80">Manage sales, discounts, and promotions</p>
             </div>
-            <button x-data @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+            <button x-data="{}" @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
@@ -149,7 +149,7 @@
             </div>
             <h3 class="text-lg font-medium text-gray-900 mb-2">No deals created yet</h3>
             <p class="text-gray-600 mb-4">Create your first deal to start offering discounts and promotions to customers.</p>
-            <button @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors">
+            <button x-data="{}" @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors">
                 Create Your First Deal
             </button>
         </div>
