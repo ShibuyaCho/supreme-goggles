@@ -55,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const countEl = document.getElementById('metrc-count');
     const transfersList = document.getElementById('transfers-list');
     const transfersCount = document.getElementById('metrc-transfers-count');
+    const transfersSearch = document.getElementById('transfers-search');
 
     function row(text){ return `<div class=\"text-sm text-gray-600\">${text}</div>`; }
 
