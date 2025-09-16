@@ -361,6 +361,7 @@
 @push('scripts')
 <script>
 let selectedProducts = new Set();
+window.selectedProducts = selectedProducts;
 
 document.addEventListener('DOMContentLoaded', function() {
     // Tab switching
