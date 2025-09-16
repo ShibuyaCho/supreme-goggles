@@ -2314,6 +2314,33 @@ app.post("/sales/:id/void", async (req, res) => {
 });
 
 // Sales: refund (creates a negative sale)
+// Order Queue (Supabase-backed)
+app.get("/node/order-queue", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const q = {
+      select: "*",
+      order: "created_at.asc",
+      limit: "500",
+      status: "in.(pending,preparing,ready)",
+    };
+    if (search) {
+      const n = Number(search);
+      if (Number.isFinite(n)) {
+        q.or = `(id.eq.${n})`;
+      } else {
+        const s = `*${encodeURIComponent(search)}*`;
+        q.or = `("customer"->>first_name.ilike.${s},"customer"->>last_name.ilike.${s})`;
+      }
+    }
+    const r = await supaFetch("sales", { method: "GET", query: q });
+    const rows = r.ok ? await r.json() : [];
+    res.json({ success: true, orders: Array.isArray(rows) ? rows : [] });
+  } catch (e) {
+    res.json({ success: true, orders: [] });
+  }
+});
+
 app.post("/sales/:id/refund", async (req, res) => {
   try {
     const id = String(req.params.id || "");
