@@ -620,6 +620,17 @@ document.addEventListener('DOMContentLoaded', function() {
       serverRooms.forEach(sr => { const nr = normalizeRoom(sr); if (!byName.has((nr.name||'').toLowerCase())) { localRooms.push(nr); byName.add((nr.name||'').toLowerCase()); } });
       saveRooms(localRooms);
     }
+    // Also merge from Supabase via Node alias
+    try {
+      const r = await fetch('/node/rooms', { headers: { Accept: 'application/json' } });
+      if (r.ok) {
+        const data = await r.json();
+        const list = Array.isArray(data?.rooms) ? data.rooms : [];
+        const byName = new Set(localRooms.map(r => (r.name||'').toLowerCase()));
+        list.forEach(sr => { const nr = normalizeRoom(sr); if (!byName.has((nr.name||'').toLowerCase())) { localRooms.push(nr); byName.add((nr.name||'').toLowerCase()); } });
+        saveRooms(localRooms);
+      }
+    } catch(_) {}
     let roomsGrid = document.getElementById('rooms-grid');
     function ensureRoomsGrid(){ if (!roomsGrid) roomsGrid = document.getElementById('rooms-grid'); return !!roomsGrid; }
     function findRoomCardByName(n){
