@@ -118,6 +118,8 @@ Route::prefix('customers')->name('customers.')->group(function () {
     Route::post('/{customer}/redeem-points', [CustomersController::class, 'redeemPoints'])->name('redeem-points');
     Route::post('/{customer}/update-tier', [CustomersController::class, 'updateTier'])->name('update-tier');
     Route::post('/{customer}/start-sale', [CustomersController::class, 'startSale'])->name('start-sale');
+    Route::post('/{customer}/activate', [CustomersController::class, 'activate'])->name('activate');
+    Route::post('/{customer}/deactivate', [CustomersController::class, 'deactivate'])->name('deactivate');
     
     // Search and Export
     Route::get('/search/{query}', [CustomersController::class, 'search'])->name('search');

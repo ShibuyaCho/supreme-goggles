@@ -208,7 +208,18 @@ class CustomersController extends Controller
     {
         $customer = Customer::findOrFail($id);
         $customer->loadPurchaseHistory();
-        
+
+        if (request()->expectsJson() || request()->wantsJson()) {
+            return response()->json([
+                'id' => $customer->id,
+                'full_name' => $customer->full_name,
+                'email' => $customer->email,
+                'phone' => $customer->phone,
+                'customer_type' => $customer->customer_type,
+                'loyalty_member_id' => $customer->loyalty_member_id,
+                'loyalty_points' => $customer->loyalty_points,
+            ]);
+        }
         return view('customers.show', compact('customer'));
     }
     

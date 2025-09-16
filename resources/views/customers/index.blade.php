@@ -473,7 +473,7 @@ function editCustomer(customerId) {
 
 function startSaleForCustomer(customerId) {
     // Store customer data and navigate to POS
-    fetch(`/customers/${customerId}`)
+    fetch(`/customers/${customerId}`, { headers: { 'Accept': 'application/json' } })
         .then(response => response.json())
         .then(customer => {
             const customerData = {
