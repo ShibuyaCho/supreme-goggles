@@ -2,7 +2,20 @@
     $sale = $sale ?? null;
     $storeName = config('services.pos.store_name', 'Cannabest POS');
     $ts = optional($sale->created_at)->timezone(config('app.timezone'))->format('Y-m-d h:ia');
-    $items = is_array($sale->cart) ? $sale->cart : [];
+    if (is_array($sale->cart_items)) {
+        $items = $sale->cart_items;
+    } elseif (is_array($sale->cart)) {
+        $items = $sale->cart;
+    } else {
+        $items = ($sale->saleItems ?? collect())->map(function($it){
+            return [
+                'name' => $it->product->name ?? $it->product_name ?? 'Item',
+                'quantity' => (float)($it->quantity ?? 1),
+                'category' => strtolower((string)($it->product_category ?? ($it->product->category ?? ''))),
+                'weight' => null,
+            ];
+        })->values()->all();
+    }
 @endphp
 <!doctype html>
 <html>
