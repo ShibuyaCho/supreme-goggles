@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Room;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 
 class RoomsController extends Controller
 {
@@ -45,7 +46,31 @@ class RoomsController extends Controller
         ];
         $data['room_id'] = 'RM-' . strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $request->name), 0, 4)) . '-' . strtoupper(substr(uniqid(), -4));
         $room = Room::create($data);
-        
+
+        // Mirror to Supabase (best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/rooms', [[
+                    'name' => $room->name,
+                    'room_id' => $room->room_id,
+                    'type' => $room->type,
+                    'is_active' => $room->is_active,
+                    'max_capacity' => $room->max_capacity,
+                    'current_stock' => $room->current_stock,
+                    'description' => $room->description,
+                    'created_at' => now()->toISOString(),
+                    'updated_at' => now()->toISOString(),
+                ]]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
         return response()->json([
             'message' => 'Room created successfully',
             'room' => $room
@@ -75,7 +100,28 @@ class RoomsController extends Controller
             'description' => $request->description,
             'is_active' => $request->boolean('is_active', $room->is_active),
         ]);
-        
+
+        // Mirror update to Supabase (best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/rooms?room_id=eq.' . urlencode($room->room_id), [
+                    'name' => $room->name,
+                    'type' => $room->type,
+                    'is_active' => $room->is_active,
+                    'max_capacity' => $room->max_capacity,
+                    'description' => $room->description,
+                    'updated_at' => now()->toISOString(),
+                ]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
         return response()->json([
             'message' => 'Room updated successfully',
             'room' => $room
