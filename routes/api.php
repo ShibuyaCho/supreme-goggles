@@ -123,6 +123,12 @@ Route::get('/settings/pos', function() {
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
     $settings = [];
+    // Multi-store: scope by X-Store-ID header when present
+    $storeId = request()->header('X-Store-ID');
+    $storeId = is_string($storeId) ? trim($storeId) : '';
+    if ($storeId === '' || $storeId === null) $storeId = 'default';
+    // sanitize id for safety
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
     if ($supabaseUrl && $supabaseKey) {
         try {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
