@@ -1175,6 +1175,37 @@ app.get("/node/products", async (req, res) => {
   }
 });
 
+app.post("/node/products", async (req, res) => {
+  try {
+    const body = Array.isArray(req.body) ? req.body : [req.body || {}];
+    const r = await supaFetch("products", { method: "POST", body });
+    const data = r.ok ? await r.json() : null;
+    res.status(201).json({ success: true, product: Array.isArray(data) ? data[0] : data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.put("/node/products/:id", async (req, res) => {
+  try {
+    const r = await supaFetch(`products?id=eq.${encodeURIComponent(req.params.id)}`, { method: "PATCH", body: req.body || {} });
+    const data = r.ok ? await r.json() : null;
+    res.json({ success: true, product: Array.isArray(data) ? data[0] : data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.delete("/node/products/:id", async (req, res) => {
+  try {
+    const d = await supaFetch(`products?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
 // Inventory: transfer room
 app.post("/api/products/transfer-room", async (req, res) => {
   const b = req.body || {};
