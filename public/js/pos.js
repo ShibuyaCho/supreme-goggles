@@ -705,6 +705,39 @@ function cannabisPOS() {
       isGLS: false,
       metrcTag: "",
     },
+    resetProductForm() {
+      try {
+        const defaults = {
+          name: "",
+          category: "",
+          price: 0,
+          cost: 0,
+          stock: 0,
+          weight: "",
+          thc: 0,
+          cbd: 0,
+          cbc: 0,
+          cbn: 0,
+          cbg: 0,
+          sku: "",
+          vendor: "",
+          supplier: "",
+          supplierLicense: "",
+          unitOfMeasurement: "Each",
+          productType: "",
+          strainDominance: "",
+          servingSize: 0,
+          totalServings: 0,
+          picture: null,
+          room: "Sales Floor",
+          onSalesFloor: true,
+          isGLS: false,
+          metrcTag: "",
+        };
+        // Preserve reactivity by replacing object
+        this.productForm = Object.assign({}, defaults);
+      } catch (e) { try { console.error(e); } catch(_) {} }
+    },
     employeeForm: {
       name: "",
       email: "",
