@@ -162,6 +162,11 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
     $incoming = $request->all();
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
+    // Multi-store: scope by X-Store-ID header when present
+    $storeId = $request->header('X-Store-ID');
+    $storeId = is_string($storeId) ? trim($storeId) : '';
+    if ($storeId === '' || $storeId === null) $storeId = 'default';
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
     try {
         // Merge with current
         $current = [];
