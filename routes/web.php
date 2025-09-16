@@ -157,6 +157,7 @@ Route::prefix('sales')->name('sales.')->group(function () {
 // Analytics and Reporting Routes
 Route::prefix('analytics')->name('analytics.')->group(function () {
     Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+    Route::get('/export-overview', [AnalyticsController::class, 'exportOverview'])->name('export-overview');
     Route::get('/dashboard', [AnalyticsController::class, 'dashboard'])->name('dashboard');
     
     // Sales Analytics
