@@ -310,6 +310,93 @@ function cannabisPOS() {
       }
     },
 
+    // Inventory evaluation actions
+    async refreshInventoryEvaluation() {
+      try {
+        if (typeof this.loadProducts === 'function') {
+          await this.loadProducts();
+        }
+        // Cache a snapshot so other components can read fresh numbers if needed
+        this.inventoryEvaluation = {
+          summary: this.getInventoryEvaluation(),
+          breakdown: this.getCategoryBreakdown(),
+          ts: Date.now(),
+        };
+        if (window.POS && typeof window.POS.showToast === 'function') {
+          window.POS.showToast('Inventory evaluation refreshed', 'success');
+        }
+      } catch (e) {
+        console.error(e);
+        if (window.POS && typeof window.POS.showToast === 'function') {
+          window.POS.showToast('Refresh failed', 'error');
+        } else {
+          alert('Refresh failed');
+        }
+      }
+    },
+    async exportInventoryReport() {
+      try {
+        // Prefer the global ReportExportManager if available (richer UI)
+        if (window.reportExportManager && typeof window.reportExportManager.showExportModal === 'function') {
+          window.reportExportManager.showExportModal('inventory', {});
+          return;
+        }
+        const choice = prompt('Export format: pdf, excel, or csv', 'pdf');
+        const fmt = (choice || '').trim().toLowerCase();
+        if (!fmt || !['pdf','excel','csv'].includes(fmt)) return;
+        const client = window.axios || axios;
+        const res = await client.post('/api/reports/export', {
+          report_type: 'inventory',
+          format: fmt,
+          start_date: null,
+          end_date: null,
+          filters: {}
+        }, { responseType: 'blob' });
+        const headers = res.headers || {};
+        const contentType = (headers['content-type'] || 'application/octet-stream').toLowerCase();
+        let blob = res.data instanceof Blob ? res.data : new Blob([res.data], { type: contentType });
+        // Fallback if server returns JSON stub
+        const looksLikeJson = contentType.includes('json') || (blob && blob.size > 0 && blob.size < 2048);
+        if (looksLikeJson) {
+          try {
+            const text = await blob.text();
+            if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
+              const headings = ['Product Name','SKU','Category','Quantity','Unit Cost','Unit Price','Total Value','Room','METRC Tag'];
+              const csv = headings.join(',') + '\n';
+              blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            }
+          } catch (_) {}
+        }
+        const ts = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+        const filename = `cannabis_pos_inventory_${ts}.${fmt === 'excel' ? 'xlsx' : (looksLikeJson ? 'csv' : fmt)}`;
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.setAttribute('download', filename);
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>window.URL.revokeObjectURL(url), 100);
+        if (window.POS && typeof window.POS.showToast === 'function') {
+          window.POS.showToast('Inventory report exported', 'success');
+        }
+      } catch (e) {
+        console.error('Inventory export failed', e);
+        // Last-resort CSV headers
+        const headings = ['Product Name','SKU','Category','Quantity','Unit Cost','Unit Price','Total Value','Room','METRC Tag'];
+        const csv = headings.join(',') + '\n';
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const ts = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.setAttribute('download', `cannabis_pos_inventory_${ts}.csv`);
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(()=>window.URL.revokeObjectURL(url), 100);
+        if (window.POS && typeof window.POS.showToast === 'function') {
+          window.POS.showToast('Downloaded CSV headers (fallback)', 'info');
+        } else {
+          alert('Downloaded CSV headers (fallback)');
+        }
+      }
+    },
+
     // METRC Vendors state and helpers
     incomingVendors: [],
     vendorSearchQuery: "",
