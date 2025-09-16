@@ -5531,9 +5531,38 @@ function cannabisPOS() {
         }
       } catch (_) {}
 
-      // Hydrate print settings from server when available
+      // Load tax/sales settings (local first)
+      try {
+        const ts = JSON.parse(
+          localStorage.getItem("cannabisPOS-taxSettings") || "{}",
+        );
+        if (ts && typeof ts === "object") {
+          this.taxSettings = {
+            recreationalRate: Number(ts.recreationalRate || 0),
+            medicalRate: Number(ts.medicalRate || 0),
+            includeInPrice: !!ts.includeInPrice,
+            localRate: Number(ts.localRate || 0),
+            stateRate: Number(ts.stateRate || 0),
+          };
+        }
+        const ss = JSON.parse(
+          localStorage.getItem("cannabisPOS-salesSettings") || "{}",
+        );
+        if (ss && typeof ss === "object") {
+          this.salesSettings = {
+            minimumSale: Number(ss.minimumSale || 0),
+            enforceMinimumSale: !!ss.enforceMinimumSale,
+            dailyLimit: Number(ss.dailyLimit || 0),
+            requireCustomerInfo: !!ss.requireCustomerInfo,
+          };
+        }
+      } catch (_) {}
+
+      // Hydrate from server when available
       this._hydratePrintSettingsFromServer &&
         this._hydratePrintSettingsFromServer();
+      this._hydrateBusinessSettingsFromServer &&
+        this._hydrateBusinessSettingsFromServer();
     },
 
     async _hydratePrintSettingsFromServer() {
