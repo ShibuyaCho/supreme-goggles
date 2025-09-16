@@ -1235,6 +1235,17 @@ app.put("/api/deals/:id", async (req, res) => {
     res.status(500).json({ success: false, error: "Failed" });
   }
 });
+// Deals: delete
+app.delete("/api/deals/:id", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    const r = await supaFetch(`deals?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!r.ok) return res.status(500).json({ success: false, error: "Failed" });
+    res.json({ success: true });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
 
 // Price tiers
 app.get("/api/price-tiers", async (_req, res) => {
