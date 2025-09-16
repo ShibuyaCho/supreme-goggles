@@ -452,6 +452,84 @@
 </script>
 @endpush
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const container = document.getElementById('cart-items');
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  if (!container) return;
+
+  function roundStep(val, step) {
+    const s = Number(step || 1);
+    if (!isFinite(s) || s <= 0) return val;
+    const decimals = (s.toString().split('.')[1] || '').length;
+    return Number((Math.round(val / s) * s).toFixed(decimals));
+  }
+
+  function normalize(val, isFlower, min, max, step){
+    let v = Number(val || 0);
+    if (!isFinite(v)) v = isFlower ? 0.01 : 1;
+    v = roundStep(v, step);
+    if (isFlower) v = Number(v.toFixed(2));
+    if (min != null && isFinite(min)) v = Math.max(v, Number(min));
+    if (max != null && isFinite(max)) v = Math.min(v, Number(max));
+    return v;
+  }
+
+  async function patchQuantity(id, qty){
+    try{
+      const res = await fetch(`/pos/cart/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept':'application/json' },
+        body: JSON.stringify({ product_id: String(id), quantity: Number(qty) })
+      });
+      const data = await res.json().catch(()=>({}));
+      if (!res.ok || data.success === false) throw new Error(data.message || 'Update failed');
+      if (window.POS && typeof POS.showToast === 'function') POS.showToast('Quantity updated', 'success');
+      setTimeout(()=> window.location.reload(), 100);
+    } catch(e){
+      if (window.POS && typeof POS.showToast === 'function') POS.showToast(e.message || 'Update failed', 'error');
+    }
+  }
+
+  container.addEventListener('click', function(e){
+    const dec = e.target.closest('.decrease-quantity');
+    const inc = e.target.closest('.increase-quantity');
+    if (!dec && !inc) return;
+    const btn = dec || inc;
+    const id = btn.getAttribute('data-item-id');
+    if (!id) return;
+    const selector = `.quantity-input[data-item-id="${id}"]`;
+    const input = container.querySelector(selector);
+    if (!input) return;
+    const isFlower = input.getAttribute('data-is-flower') === '1' || (parseFloat(input.step) < 1);
+    const step = parseFloat(input.step || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const min = parseFloat(input.min || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const max = parseFloat(input.max || '999') || 999;
+    const current = parseFloat(input.value || (isFlower ? '0.01' : '1')) || (isFlower ? 0.01 : 1);
+    const next = normalize(current + (inc ? step : -step), isFlower, min, max, step);
+    input.value = isFlower ? next.toFixed(2) : String(Math.round(next));
+    patchQuantity(id, next);
+  });
+
+  container.addEventListener('change', function(e){
+    const input = e.target.closest('.quantity-input');
+    if (!input) return;
+    const id = input.getAttribute('data-item-id');
+    if (!id) return;
+    const isFlower = input.getAttribute('data-is-flower') === '1' || (parseFloat(input.step) < 1);
+    const step = parseFloat(input.step || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const min = parseFloat(input.min || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const max = parseFloat(input.max || '999') || 999;
+    const val = parseFloat(input.value);
+    const next = normalize(val, isFlower, min, max, step);
+    input.value = isFlower ? next.toFixed(2) : String(Math.round(next));
+    patchQuantity(id, next);
+  });
+});
+</script>
+@endpush
+
 @push('styles')
 <link href="{{ asset('css/pos-enhancements.css') }}" rel="stylesheet">
 @endpush
