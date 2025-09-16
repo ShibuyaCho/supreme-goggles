@@ -11,6 +11,33 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Demo fallback: build a stub sale when Supabase is not accessible (RLS/unauthorized)
+function buildStubSale(id) {
+  const now = new Date();
+  const cart = [
+    { name: "Blue Dream Flower (by gram)", price: 12.5, quantity: 3.2, category: "Flower", weight: "Sold by gram" },
+    { name: "Gummy Bears 10-pack", price: 15.0, quantity: 1, category: "Edibles" },
+  ];
+  const subtotal = cart.reduce((s,i)=> s + Number(i.price||0) * Number(i.quantity||1), 0);
+  const discount_amount = 0;
+  const tax = +(subtotal * 0.2).toFixed(2);
+  const total = +(subtotal - discount_amount + tax).toFixed(2);
+  return {
+    id: Number(id),
+    sale_number: String(id),
+    created_at: now.toISOString(),
+    status: "completed",
+    payment_method: "cash",
+    cart,
+    subtotal,
+    discount_amount,
+    tax,
+    total,
+    meta: { register: "Demo-1" },
+    customer: { type: "recreational" },
+  };
+}
+
 // Supabase REST helper
 const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
