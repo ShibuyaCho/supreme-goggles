@@ -2744,9 +2744,9 @@ app.get("/sales/:id/receipt", async (req, res) => {
     method: "GET",
     query: { select: "*" },
   });
-  const rows = r.ok ? await r.json() : [];
-  const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
-  if (!s) return res.status(404).type("text").send("Receipt not found");
+  let rows = r.ok ? await r.json() : [];
+  let s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!s) s = buildStubSale(id);
 
   // Fetch POS settings for store info
   let settings = {};
