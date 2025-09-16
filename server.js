@@ -1138,6 +1138,25 @@ app.put("/api/customers/:id", async (req, res) => {
   }
 });
 
+// Customers: delete
+app.delete("/api/customers/:id", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    // Attempt hard delete first
+    let d = await supaFetch(`customers?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    if (!d.ok) {
+      // Fallback to soft-delete by deactivating the customer
+      await supaFetch(`customers?id=eq.${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: { is_active: false },
+      });
+    }
+    return res.json({ success: true });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: "Failed to delete customer" });
+  }
+});
+
 // Inventory: transfer room
 app.post("/api/products/transfer-room", async (req, res) => {
   const b = req.body || {};
