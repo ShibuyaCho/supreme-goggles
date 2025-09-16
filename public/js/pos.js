@@ -3429,6 +3429,11 @@ function cannabisPOS() {
       ).size;
       const customerCount = recCount + medUnique;
       const totalSales = list.length;
+      const m = this.monthStats || null;
+      const mDay = m && m.dayOfMonth ? Number(m.dayOfMonth) : new Date().getDate();
+      const mDays = m && m.daysInMonth ? Number(m.daysInMonth) : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+      const mRev = m && m.revenue != null ? Number(m.revenue) : revenue;
+      const mCust = m && m.customers != null ? Number(m.customers) : customerCount;
       return {
         totalSales,
         totalRevenue: revenue,
@@ -3440,45 +3445,14 @@ function cannabisPOS() {
         totalDiscounts,
         tillBreakdown: { opening: 0 },
         paceReport: {
-          currentMonthSales:
-            this.monthStats && this.monthStats.revenue != null
-              ? this.monthStats.revenue
-              : revenue,
-          dailyAverage: totalSales > 0 ? revenue / Math.max(1, totalSales) : 0,
-          monthProjection: (() => {
-            const now = new Date();
-            const d =
-              (this.monthStats && this.monthStats.dayOfMonth) || now.getDate();
-            const dim =
-              (this.monthStats && this.monthStats.daysInMonth) ||
-              new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const m =
-              this.monthStats && this.monthStats.revenue != null
-                ? this.monthStats.revenue
-                : revenue;
-            return d > 0 ? (m / d) * dim : 0;
-          })(),
+          currentMonthSales: mRev,
+          dailyAverage: mDay > 0 ? mRev / mDay : 0,
+          monthProjection: mDay > 0 ? (mRev / mDay) * mDays : 0,
         },
         customerPaceReport: {
-          currentMonthCustomers:
-            this.monthStats && this.monthStats.customers != null
-              ? this.monthStats.customers
-              : customerCount,
-          dailyAverage:
-            totalSales > 0 ? customerCount / Math.max(1, totalSales) : 0,
-          monthProjection: (() => {
-            const now = new Date();
-            const d =
-              (this.monthStats && this.monthStats.dayOfMonth) || now.getDate();
-            const dim =
-              (this.monthStats && this.monthStats.daysInMonth) ||
-              new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            const m =
-              this.monthStats && this.monthStats.customers != null
-                ? this.monthStats.customers
-                : customerCount;
-            return d > 0 ? (m / d) * dim : 0;
-          })(),
+          currentMonthCustomers: mCust,
+          dailyAverage: mDay > 0 ? mCust / mDay : 0,
+          monthProjection: mDay > 0 ? (mCust / mDay) * mDays : 0,
         },
       };
     },
