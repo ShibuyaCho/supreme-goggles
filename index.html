@@ -910,7 +910,15 @@
             </div>
 
             <!-- User Menu -->
-            <div class="flex items-center space-x-4">
+          <div class="flex items-center space-x-4">
+            <!-- Store selector -->
+            <div class="hidden md:flex items-center space-x-2">
+              <button class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors" onclick="(function(){var s=localStorage.getItem('pos_store');var cur='default';try{if(s){var o=JSON.parse(s);cur=(o.name||o.id||'default');}}catch(e){}var input=prompt('Enter Store ID or name to use:',cur);if(!input)return;var st={id:String(input).trim(),name:String(input).trim()};try{localStorage.setItem('pos_store',JSON.stringify(st));}catch(e){} try{window.dispatchEvent(new Event('storage'));}catch(e){}})()">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V5a3 3 0 013-3h0a3 3 0 013 3v2"/></svg>
+                <span>Add/Switch Store</span>
+              </button>
+              <button class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded" onclick="try{localStorage.removeItem('pos_store');window.dispatchEvent(new Event('storage'));}catch(e){}">Clear</button>
+            </div>
               <button
                 id="global-refresh-metrc-demo"
                 @click="$window.__refreshMetrc && $window.__refreshMetrc()"
