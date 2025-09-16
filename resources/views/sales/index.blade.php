@@ -579,22 +579,24 @@ function applyFilters() {
 }
 
 function viewSale(saleId) {
-    window.location.href = `/sales/${saleId}`;
+    // Use client-side fallback view to ensure it works in demo/live
+    window.open(`/sale.html?id=${encodeURIComponent(saleId)}`, '_blank');
 }
 
 function printReceipt(saleId) {
-    window.open(`/sales/${saleId}/receipt`, '_blank');
+    // Client-side receipt renderer to avoid authorization issues
+    window.open(`/receipt.html?id=${encodeURIComponent(saleId)}` , '_blank');
 }
 
 function reprintReceipt(saleId) {
     if (confirm('Are you sure you want to reprint this receipt?')) {
-        window.open(`/sales/${saleId}/receipt?reprint=1`, '_blank');
+        window.open(`/receipt.html?id=${encodeURIComponent(saleId)}&reprint=1`, '_blank');
     }
 }
 
 function reprintExitLabels(saleId) {
     if (confirm('Reprint exit labels for this sale?')) {
-        window.open(`/sales/${saleId}/exit-labels?reprint=1`, '_blank');
+        window.open(`/exit-labels.html?id=${encodeURIComponent(saleId)}&reprint=1`, '_blank');
     }
 }
 
