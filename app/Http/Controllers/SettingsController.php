@@ -199,6 +199,38 @@ class SettingsController extends Controller
             // Store remaining settings in cache with a long TTL
             Cache::put('pos_settings', $settings, now()->addDays(30));
 
+            // Persist to Supabase (store-scoped) with DB fallback
+            try {
+                $supabaseUrl = env('SUPABASE_URL');
+                $supabaseKey = env('SUPABASE_ANON_KEY');
+                $storeId = request()->header('X-Store-ID');
+                $storeId = is_string($storeId) ? trim($storeId) : '';
+                if ($storeId === '' || $storeId === null) $storeId = 'default';
+                $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+                $saved = false;
+                if ($supabaseUrl && $supabaseKey) {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'return=representation',
+                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                        'id' => $storeId,
+                        'settings' => $settings,
+                        'updated_at' => now()->toIso8601String(),
+                    ]]);
+                    if ($resp->successful()) { $saved = true; }
+                }
+                if (!$saved) {
+                    \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
+                        ['id' => $storeId],
+                        ['settings' => json_encode($settings), 'updated_at' => now()]
+                    );
+                }
+            } catch (\Throwable $e) {
+                // ignore persistence errors; cache still holds values
+            }
+
             // Persist org-wide METRC settings to environment if provided
             if (!empty($settings['metrc_vendor_key'])) {
                 $this->updateEnvVariable('METRC_VENDOR_KEY', $settings['metrc_vendor_key']);
