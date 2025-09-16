@@ -809,5 +809,30 @@ function getProductNameById(id) {
         if (e.key === 'Enter') verifyPinAndExecuteDelete();
     });
 })();
+
+// Additional handlers to prevent runtime errors from undefined functions
+function toggleProductMenu(id){
+  try {
+    const menu = document.getElementById(`product-menu-${id}`);
+    if (!menu) return;
+    menu.classList.toggle('hidden');
+    const onDocClick = (e)=>{ if (!e.target.closest(`#product-menu-${id}`)) { menu.classList.add('hidden'); document.removeEventListener('click', onDocClick); } };
+    setTimeout(()=>document.addEventListener('click', onDocClick), 0);
+  } catch(e) { console.error(e); }
+}
+function duplicateProduct(id){
+  try {
+    // Redirect to edit with duplication intent; backend can handle ?duplicate=1 to prefill/create copy
+    window.location.href = `/products/${encodeURIComponent(id)}/edit?duplicate=1`;
+  } catch(e) { console.error(e); }
+}
+function viewSalesHistory(id){
+  try {
+    // Navigate to Sales page filtered by product (query param consumed by UI/controller if supported)
+    const url = new URL(window.location.origin + '/sales');
+    url.searchParams.set('product_id', String(id));
+    window.location.href = url.toString();
+  } catch(e) { console.error(e); }
+}
 </script>
 @endpush
