@@ -197,7 +197,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Accept' => 'application/json',
                 'Prefer' => 'return=representation',
             ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
-                'id' => 'default',
+                'id' => $storeId,
                 'settings' => $merged,
                 'updated_at' => now()->toIso8601String(),
             ]]);
