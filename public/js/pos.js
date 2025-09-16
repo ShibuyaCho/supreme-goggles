@@ -3521,6 +3521,12 @@ function cannabisPOS() {
       window.open(`/sales/${id}/receipt?reprint=1`, "_blank");
     },
 
+    reprintExitLabels(sale) {
+      const id = sale?.numericId || sale?.id || null;
+      if (!id) return;
+      window.open(`/sales/${id}/exit-labels?reprint=1`, "_blank");
+    },
+
     async voidSale(sale) {
       const id = sale?.numericId || sale?.id || null;
       if (!id) return;
