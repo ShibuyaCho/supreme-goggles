@@ -3544,19 +3544,19 @@ function cannabisPOS() {
     viewSaleDetails(sale) {
       const id = sale?.numericId || sale?.id || null;
       if (!id) return;
-      window.open(`/sales/${id}`, "_blank");
+      window.open(`/sale.html?id=${encodeURIComponent(id)}`, "_blank");
     },
 
     reprintReceipt(sale) {
       const id = sale?.numericId || sale?.id || null;
       if (!id) return;
-      window.open(`/sales/${id}/receipt?reprint=1`, "_blank");
+      window.open(`/receipt.html?id=${encodeURIComponent(id)}&reprint=1`, "_blank");
     },
 
     reprintExitLabels(sale) {
       const id = sale?.numericId || sale?.id || null;
       if (!id) return;
-      window.open(`/sales/${id}/exit-labels?reprint=1`, "_blank");
+      window.open(`/exit-labels.html?id=${encodeURIComponent(id)}&reprint=1`, "_blank");
     },
 
     async voidSale(sale) {
