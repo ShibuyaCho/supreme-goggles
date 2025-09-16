@@ -787,7 +787,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
                     ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                        'id' => 'eq.default',
+                        'id' => 'eq.' . $storeId,
                         'select' => '*',
                     ]);
                     if ($resp->ok()) {
