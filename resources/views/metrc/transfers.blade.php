@@ -144,6 +144,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     refreshBtn?.addEventListener('click', refreshMetrc);
+
+    async function runTransfersSearch(q){
+        try {
+            const url = q ? `/node/metrc/transfers?search=${encodeURIComponent(q)}` : '/node/metrc/transfers';
+            const res = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!res.ok) return;
+            const data = await res.json();
+            const transfers = Array.isArray(data?.transfers) ? data.transfers : [];
+            transfersCount.textContent = `${transfers.length} transfers`;
+            if (transfers.length === 0) {
+                transfersList.innerHTML = '<div class="p-6 text-gray-500">No transfers found.</div>';
+            } else {
+                transfersList.innerHTML = transfers.slice(0, 100).map(t => {
+                    const manifest = t.manifest_number || 'Unknown Manifest';
+                    const shipper = t.shipper_name || t.shipper_license || 'Unknown Shipper';
+                    const dest = t.destination_name || t.destination_license || 'Destination';
+                    const dep = t.estimated_departure || null;
+                    const arr = t.estimated_arrival || null;
+                    const delivered = t.delivered_at || null;
+                    const pkgs = t.package_count || 0;
+                    return `
+                    <div class="p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="font-medium text-gray-900">Manifest ${manifest}</div>
+                            <span class="px-2 py-1 text-xs rounded bg-blue-100 text-blue-700">${pkgs} pkg</span>
+                        </div>
+                        ${row(`From: ${shipper}`)}
+                        ${row(`To: ${dest}`)}
+                        ${row(`ETA: ${arr ? new Date(arr).toLocaleString() : 'N/A'} • Depart: ${dep ? new Date(dep).toLocaleString() : 'N/A'}`)}
+                        ${delivered ? row(`Delivered: ${new Date(delivered).toLocaleString()}`) : ''}
+                    </div>`;
+                }).join('');
+            }
+        } catch (_) {}
+    }
+
+    let searchDebounce;
+    transfersSearch?.addEventListener('input', (e) => {
+        const q = e.target.value || '';
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => runTransfersSearch(q), 250);
+    });
 });
 </script>
 @endsection
