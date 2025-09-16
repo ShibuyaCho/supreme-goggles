@@ -2712,6 +2712,7 @@ app.get("/sales/:id", async (req, res) => {
 // Sales: receipt (HTML fallback)
 app.get("/sales/:id/receipt", async (req, res) => {
   const id = String(req.params.id || "");
+  // Fetch sale
   const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, {
     method: "GET",
     query: { select: "*" },
@@ -2719,12 +2720,114 @@ app.get("/sales/:id/receipt", async (req, res) => {
   const rows = r.ok ? await r.json() : [];
   const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!s) return res.status(404).type("text").send("Receipt not found");
+
+  // Fetch POS settings for store info
+  let settings = {};
+  try {
+    const sr = await supaFetch("pos_settings?id=eq.default&select=settings", { method: "GET" });
+    const arr = sr.ok ? await sr.json() : [];
+    const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+    settings = row && row.settings && typeof row.settings === "object" ? row.settings : {};
+  } catch (_) {}
+  const storeName = settings.store_name || "Cannabest POS";
+  const storePhone = settings.store_phone || "";
+  const website = settings.website || "";
+  const receiptFooter = settings.receipt_footer || `Thank you for shopping at ${storeName}`;
+  const registerName = (s.meta && (s.meta.register || s.meta.till || s.meta.drawer)) || "";
+
   const cart = Array.isArray(s.cart) ? s.cart : [];
-  const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Receipt ${id}</title><style>body{font-family:monospace;padding:16px}</style></head><body>
-    <h2>Receipt #${s.sale_number || id}</h2>
-    ${cart.map((i) => `${i.quantity || 1} x ${i.name || "Item"} @ $${Number(i.price || 0).toFixed(2)} = $${(Number(i.price || 0) * Number(i.quantity || 1)).toFixed(2)}`).join("<br/>")}
-    <hr/>Subtotal: $${Number(s.subtotal || 0).toFixed(2)} | Tax: $${Number(s.tax || 0).toFixed(2)} | Total: $${Number(s.total || 0).toFixed(2)}
-  </body></html>`;
+  // Compute discounts (item-level + cart-level)
+  const items = cart.map((i) => {
+    const name = i?.name || "Item";
+    const price = Number(i?.price || 0);
+    const qty = Number(i?.quantity || 1);
+    const category = (i?.category || i?.product_category || "").toString();
+    const weightStr = (i?.weight || i?.selectedWeight || "").toString();
+    const isFlower = category.toLowerCase() === "flower" || /\bg\b|gram/i.test(weightStr);
+    const unitDisplay = isFlower ? `${qty.toFixed(2)} g` : `${qty} x`;
+    const lineBase = price * qty;
+    const discAmt = i?.discount && typeof i.discount === "object" && Number(i.discount.amount)
+      ? Number(i.discount.amount) * qty
+      : 0;
+    const lineTotal = Math.max(0, lineBase - discAmt);
+    return { name, price, qty, isFlower, unitDisplay, lineBase, discAmt, lineTotal };
+  });
+  const itemDiscountTotal = items.reduce((a, x) => a + Number(x.discAmt || 0), 0);
+  const cartDiscount = Number(s.discount_amount || 0);
+  const subtotal = Number(s.subtotal || 0);
+  const tax = Number(s.tax || s.tax_amount || 0);
+  const total = Number(s.total || s.total_amount || 0);
+  const changeDue = (() => {
+    try {
+      const m = s.meta || {};
+      const c = Number(m.change_due || m.change || m.cash_change || 0);
+      if (isFinite(c)) return c;
+    } catch(_){}
+    return 0;
+  })();
+  const customerType = (() => {
+    const c = s.customer || {};
+    const t = (c.type || c.customerType || s.customer_type || "").toString().toLowerCase();
+    return t === "medical" ? "Medical" : "Recreational";
+  })();
+  const ts = new Date(s.created_at || Date.now()).toLocaleString();
+
+  // Styles for 80mm thermal receipt
+  const css = `
+    *{box-sizing:border-box}
+    body{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; margin:0; padding:12px;}
+    .rcpt{max-width:320px;margin:0 auto;color:#111}
+    .c{text-align:center}
+    .r{display:flex;justify-content:space-between;gap:8px}
+    .muted{color:#4b5563}
+    .sm{font-size:12px}
+    .xs{font-size:11px}
+    h1{font-size:16px;margin:0 0 4px 0}
+    hr{border:none;border-top:1px dashed #999;margin:8px 0}
+    table{width:100%;border-collapse:collapse}
+    th,td{font-size:12px;padding:2px 0;vertical-align:top}
+    .tot td{font-weight:bold}
+  `;
+
+  const linesHtml = items
+    .map((x) => {
+      const left = `${x.unitDisplay} ${x.name}`.trim();
+      const right = `$${x.lineTotal.toFixed(2)}`;
+      const discLine = x.discAmt > 0 ? `<div class=\"r xs muted\"><span>Discount</span><span>-$${x.discAmt.toFixed(2)}</span></div>` : "";
+      return `<div class=\"r\"><div class=\"xs\">${left}</div><div class=\"xs\">${right}</div></div>${discLine}`;
+    })
+    .join("");
+
+  const html = `<!doctype html><html><head><meta charset="utf-8"/>
+    <title>Receipt ${s.sale_number || id}</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    <style>${css}</style></head><body>
+    <div class="rcpt">
+      <div class="c">
+        <h1>${storeName}</h1>
+        ${settings.store_address ? `<div class=\"xs muted\">${settings.store_address}</div>` : ""}
+        ${storePhone ? `<div class=\"xs muted\">${storePhone}</div>` : ""}
+        ${website ? `<div class=\"xs muted\">${website}</div>` : ""}
+      </div>
+      <hr/>
+      <div class="xs muted">Receipt #: ${s.sale_number || id}</div>
+      <div class="xs muted">Timestamp: ${ts}</div>
+      ${registerName ? `<div class=\"xs muted\">Register/Till: ${registerName}</div>` : ""}
+      <div class="xs muted">Customer Type: ${customerType}</div>
+      <hr/>
+      ${linesHtml}
+      <hr/>
+      ${itemDiscountTotal > 0 ? `<div class=\"r xs\"><span>Item Discounts</span><span>-$${itemDiscountTotal.toFixed(2)}</span></div>` : ""}
+      ${cartDiscount > 0 ? `<div class=\"r xs\"><span>Cart Discount</span><span>-$${cartDiscount.toFixed(2)}</span></div>` : ""}
+      <div class="r xs"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
+      <div class="r xs"><span>Tax</span><span>$${tax.toFixed(2)}</span></div>
+      <div class="r xs tot"><span>Total</span><span>$${total.toFixed(2)}</span></div>
+      <div class="r xs"><span>Change Due</span><span>$${Number(changeDue || 0).toFixed(2)}</span></div>
+      <hr/>
+      <div class="c xs">${receiptFooter || `Thank you for shopping at ${storeName}`}</div>
+    </div>
+    <script>window.onload = function(){ try{ if (new URLSearchParams(location.search).get('reprint')) { window.print(); } } catch(_){} };</script>
+    </body></html>`;
   res.type("html").send(html);
 });
 
