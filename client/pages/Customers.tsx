@@ -254,11 +254,11 @@ export default function Customers() {
     };
   };
 
-  const fetchServerCustomers = async (): Promise<Customer[]> => {
+  const fetchServerCustomers = async (search?: string): Promise<Customer[]> => {
     const results: Customer[] = [];
     // 1) Primary: Node alias -> Supabase
     try {
-      const res = await fetch("/node/customers", { headers: { Accept: "application/json" } });
+      const res = await fetch(`/node/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`, { headers: { Accept: "application/json" } });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data?.customers) ? data.customers : [];
@@ -268,7 +268,7 @@ export default function Customers() {
     // 2) Fallback: /api/customers (could be Node or Laravel depending on server)
     try {
       const token = localStorage.getItem("auth_token");
-      const res = await fetch("/api/customers", {
+      const res = await fetch(`/api/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`, {
         headers: {
           Accept: "application/json",
           Authorization: token ? `Bearer ${token}` : "",
@@ -318,6 +318,18 @@ export default function Customers() {
       }
     })();
   }, []);
+
+  // Remote search against Supabase when the query changes (debounced)
+  useEffect(() => {
+    const q = searchQuery.trim();
+    const tid = setTimeout(async () => {
+      try {
+        const list = await fetchServerCustomers(q || undefined);
+        if (Array.isArray(list)) setCustomers(list);
+      } catch (_) {}
+    }, 300);
+    return () => clearTimeout(tid);
+  }, [searchQuery]);
 
   const filteredCustomers = customers.filter((customer) => {
     const matchesSearch =
@@ -560,17 +572,43 @@ export default function Customers() {
     }
   };
 
-  const deactivateCustomer = (customerId: string) => {
+  const deactivateCustomer = async (customerId: string) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        await fetch(`/api/customers/${customerId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ is_active: false }),
+        });
+      }
+    } catch (_) {}
     setCustomers((prev) =>
       prev.map((customer) =>
-        customer.id === customerId
-          ? { ...customer, isActive: false }
-          : customer,
+        customer.id === customerId ? { ...customer, isActive: false } : customer,
       ),
     );
   };
 
-  const activateCustomer = (customerId: string) => {
+  const activateCustomer = async (customerId: string) => {
+    try {
+      const token = localStorage.getItem("auth_token");
+      if (token) {
+        await fetch(`/api/customers/${customerId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ is_active: true }),
+        });
+      }
+    } catch (_) {}
     setCustomers((prev) =>
       prev.map((customer) =>
         customer.id === customerId ? { ...customer, isActive: true } : customer,
