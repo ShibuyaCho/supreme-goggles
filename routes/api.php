@@ -806,7 +806,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             }
             if (!$cached) {
                 try {
-                    $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id','default')->first();
+                    $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
                     if ($row && isset($row->settings)) {
                         $decoded = json_decode($row->settings, true);
                         if (json_last_error() === JSON_ERROR_NONE) {
