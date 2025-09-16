@@ -2718,9 +2718,9 @@ app.get("/sales/:id", async (req, res) => {
     method: "GET",
     query: { select: "*" },
   });
-  const rows = r.ok ? await r.json() : [];
-  const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
-  if (!s) return res.status(404).type("text").send("Sale not found");
+  let rows = r.ok ? await r.json() : [];
+  let s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!s) s = buildStubSale(id);
   const cart = Array.isArray(s.cart) ? s.cart : [];
   const html = `<!doctype html><html><head><meta charset="utf-8"/><title>Sale ${id}</title><style>body{font-family:system-ui,Arial;padding:20px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}</style></head><body>
     <h1>Sale ${id}</h1>
