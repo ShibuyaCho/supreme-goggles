@@ -1655,7 +1655,7 @@ app.post("/node/metrc/transfers", async (req, res) => {
     } catch (_) {}
     return res.json({ success: true, inserted });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Persist failed" });
+    return res.json({ success: false, error: "Persist failed" });
   }
 });
 
