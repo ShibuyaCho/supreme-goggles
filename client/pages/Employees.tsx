@@ -261,7 +261,7 @@ const statusColors = {
 };
 
 export default function Employees() {
-  const [employees, setEmployees] = useState<Employee[]>(mockEmployees);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [tab, setTab] = useState<string>("employees");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRole, setSelectedRole] = useState<string>("all");
@@ -279,6 +279,60 @@ export default function Employees() {
   const [showTimeClockDialog, setShowTimeClockDialog] = useState(false);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
 
+  const mapServerToEmployee = (row: any): Employee => {
+    const first = row?.first_name || "";
+    const last = row?.last_name || "";
+    const role = (row?.role || "cashier") as Employee["role"];
+    const isActive = row?.is_active !== false;
+    const perms = (() => {
+      const p = row?.permissions;
+      if (!p) return { ...defaultRolePermissions[role] } as Employee["permissions"];
+      if (typeof p === "string") {
+        try { const parsed = JSON.parse(p); return { ...defaultRolePermissions[role], ...parsed }; } catch { return { ...defaultRolePermissions[role] }; }
+      }
+      if (typeof p === "object") return { ...defaultRolePermissions[role], ...p };
+      return { ...defaultRolePermissions[role] };
+    })();
+    const certs = Array.isArray(row?.certifications)
+      ? row.certifications
+      : typeof row?.certifications === "string" && row.certifications.includes(",")
+        ? row.certifications.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [];
+    const hireDate = (row?.hire_date || row?.created_at || new Date().toISOString()).toString().split("T")[0];
+    return {
+      id: String(row?.id ?? row?.employee_id ?? Math.random().toString(36).slice(2)),
+      name: `${first} ${last}`.trim() || row?.name || "",
+      email: row?.email || "",
+      phone: row?.phone || "",
+      role,
+      hireDate,
+      status: isActive ? "active" : "inactive",
+      permissions: perms,
+      storeAccess: Array.isArray(row?.store_access) ? row.store_access.map((s: any) => String(s)) : [],
+      primaryStore: String(row?.primary_store || "1"),
+      hourlyRate: Number(row?.hourly_rate || 0) || 0,
+      totalSales: Number(row?.total_sales || 0) || 0,
+      hoursWorked: Number(row?.hours_worked || 0) || 0,
+      certifications: certs,
+      olccWorkerPermit: row?.worker_permit || row?.olcc_worker_permit || "",
+      apiKey: row?.metrc_api_key || row?.api_key || "",
+      notes: row?.notes || "",
+    };
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch("/api/employees", { headers: { Accept: "application/json" } });
+        if (res.ok) {
+          const data = await res.json();
+          const list = Array.isArray(data?.employees) ? data.employees : Array.isArray(data) ? data : [];
+          setEmployees(list.map(mapServerToEmployee));
+        }
+      } catch (_) {}
+    })();
+  }, []);
+
   const filteredEmployees = employees.filter((employee) => {
     const matchesSearch =
       employee.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -290,13 +344,18 @@ export default function Employees() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const toggleEmployeeStatus = (employeeId: string) => {
+  const toggleEmployeeStatus = async (employeeId: string) => {
+    const emp = employees.find((e) => e.id === employeeId);
+    const nextActive = emp ? emp.status !== "active" : true;
+    try {
+      await fetch(`/api/employees/${employeeId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ is_active: nextActive, status: nextActive ? "active" : "inactive" }),
+      });
+    } catch (_) {}
     setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.id === employeeId
-          ? { ...emp, status: emp.status === "active" ? "inactive" : "active" }
-          : emp,
-      ),
+      prev.map((e) => (e.id === employeeId ? { ...e, status: nextActive ? "active" : "inactive" } : e)),
     );
   };
 
@@ -333,39 +392,49 @@ export default function Employees() {
     setUploadedFiles((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const addEmployee = () => {
+  const addEmployee = async () => {
     if (!newEmployee.name || !newEmployee.email || !newEmployee.role) {
       alert("Please fill in all required fields (Name, Email, Role)");
       return;
     }
 
-    const employee: Employee = {
-      id: Date.now().toString(),
-      name: newEmployee.name || "",
-      email: newEmployee.email || "",
-      role: (newEmployee.role as Employee["role"]) || "budtender",
-      phone: newEmployee.phone || "",
-      status: "active",
-      startDate:
-        newEmployee.startDate || new Date().toISOString().split("T")[0],
-      olccPermit: newEmployee.olccPermit || "",
-      apiKey: newEmployee.apiKey || "",
-      permissions:
-        defaultRolePermissions[
-          newEmployee.role as keyof typeof defaultRolePermissions
-        ] || defaultRolePermissions.budtender,
-      storeAccess: newEmployee.storeAccess || ["1"],
-      primaryStore: newEmployee.primaryStore || "1",
-      hourlyRate: newEmployee.hourlyRate || 15.0,
-      totalSales: 0,
-      hoursWorked: 0,
-      certifications: newEmployee.certifications || [],
-    };
-
-    setEmployees((prev) => [...prev, employee]);
+    const fullName = (newEmployee.name || "").trim();
+    const parts = fullName.split(" ");
+    const first_name = parts.shift() || "";
+    const last_name = parts.join(" ") || "";
+    try {
+      const body: any = {
+        name: fullName,
+        first_name,
+        last_name,
+        email: newEmployee.email || "",
+        phone: newEmployee.phone || "",
+        role: (newEmployee.role as Employee["role"]) || "cashier",
+        hourly_rate: newEmployee.hourlyRate || 15.0,
+        hire_date: newEmployee.startDate || new Date().toISOString().split("T")[0],
+        permissions: defaultRolePermissions[(newEmployee.role as keyof typeof defaultRolePermissions) || "cashier"],
+        worker_permit: newEmployee.olccPermit || "",
+        metrc_api_key: newEmployee.apiKey || "",
+      };
+      let created: any = null;
+      const res = await fetch("/api/employees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        const payload = await res.json();
+        created = payload?.employee || null;
+      }
+      if (created) {
+        const emp = mapServerToEmployee(created);
+        setEmployees((prev) => [...prev, emp]);
+      }
+    } catch (_) {
+      // ignore
+    }
     setShowAddEmployeeDialog(false);
     setNewEmployee({});
-    alert(`Employee "${employee.name}" has been added successfully!`);
   };
 
   const editEmployee = (employee: Employee) => {
@@ -374,7 +443,7 @@ export default function Employees() {
     setShowAddEmployeeDialog(true);
   };
 
-  const updateEmployee = () => {
+  const updateEmployee = async () => {
     if (
       !selectedEmployee ||
       !newEmployee.name ||
@@ -405,31 +474,48 @@ export default function Employees() {
         newEmployee.certifications || selectedEmployee.certifications,
     };
 
-    setEmployees((prev) =>
-      prev.map((emp) =>
-        emp.id === selectedEmployee.id ? updatedEmployee : emp,
-      ),
-    );
+    try {
+      const fullName = (updatedEmployee.name || "").trim();
+      const parts = fullName.split(" ");
+      const first_name = parts.shift() || "";
+      const last_name = parts.join(" ") || "";
+      const body: any = {
+        first_name,
+        last_name,
+        email: updatedEmployee.email,
+        phone: updatedEmployee.phone,
+        role: updatedEmployee.role,
+        hourly_rate: updatedEmployee.hourlyRate,
+        permissions: updatedEmployee.permissions,
+        hire_date: updatedEmployee.hireDate,
+        worker_permit: updatedEmployee.olccWorkerPermit || "",
+        metrc_api_key: updatedEmployee.apiKey || "",
+        is_active: updatedEmployee.status === "active",
+        status: updatedEmployee.status,
+        notes: updatedEmployee.notes || "",
+      };
+      await fetch(`/api/employees/${selectedEmployee.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(body),
+      });
+    } catch (_) {}
+    setEmployees((prev) => prev.map((emp) => (emp.id === selectedEmployee.id ? updatedEmployee : emp)));
     setShowAddEmployeeDialog(false);
     setSelectedEmployee(null);
     setNewEmployee({});
-    alert(`Employee "${updatedEmployee.name}" has been updated successfully!`);
   };
 
-  const deactivateEmployee = (employeeId: string) => {
+  const deactivateEmployee = async (employeeId: string) => {
     const employee = employees.find((emp) => emp.id === employeeId);
     if (
       employee &&
       confirm(`Are you sure you want to deactivate ${employee.name}?`)
     ) {
-      setEmployees((prev) =>
-        prev.map((emp) =>
-          emp.id === employeeId
-            ? { ...emp, status: "inactive" as Employee["status"] }
-            : emp,
-        ),
-      );
-      alert(`Employee "${employee.name}" has been deactivated.`);
+      try {
+        await fetch(`/api/employees/${employeeId}`, { method: "DELETE", headers: { Accept: "application/json" } });
+      } catch (_) {}
+      setEmployees((prev) => prev.map((emp) => (emp.id === employeeId ? { ...emp, status: "inactive" as Employee["status"] } : emp)));
     }
   };
 
