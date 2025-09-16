@@ -578,8 +578,12 @@ export default function Deals() {
     } catch {}
   };
 
-  const deleteDeal = (dealId: string) => {
+  const deleteDeal = async (dealId: string) => {
     if (confirm("Are you sure you want to delete this deal?")) {
+      try {
+        const r = await fetch(`/api/deals/${dealId}`, { method: "DELETE", headers: { Accept: "application/json" } });
+        // proceed even if server fails to avoid UI lock; server is source of truth on next load
+      } catch (_) {}
       setDeals((prev) => {
         const next = prev.filter((deal) => deal.id !== dealId);
         saveDealsLocal(next);
