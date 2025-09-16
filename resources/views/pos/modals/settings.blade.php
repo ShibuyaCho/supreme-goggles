@@ -143,6 +143,21 @@
                     </div>
                 </div>
 
+                <!-- Auto Delete Zero-Quantity Products -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="flex items-center">
+                            <input id="auto-delete-zero-quantity" name="auto_delete_zero_quantity" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
+                            <span class="ml-2 text-sm text-gray-700">Enable auto-delete when products reach 0 quantity</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Days to wait before deleting</label>
+                        <input id="auto-delete-zero-days" name="auto_delete_zero_days" type="number" min="1" max="30" step="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                        <p class="text-xs text-gray-500 mt-1">Range: 1-30 days</p>
+                    </div>
+                </div>
+
                 <div class="mt-8 flex justify-end space-x-3">
                     <button type="button" onclick="CannabisPOS.closeModal('settings-modal')" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
                         Cancel
@@ -170,9 +185,10 @@ function handleSettingsUpdate(event) {
     
     // Handle checkboxes (they won't appear in FormData if unchecked)
     const checkboxes = [
-        'tax_inclusive', 'auto_print_receipt', 'require_customer', 
-        'age_verification', 'limit_enforcement', 'accept_cash', 
-        'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled'
+        'tax_inclusive', 'auto_print_receipt', 'require_customer',
+        'age_verification', 'limit_enforcement', 'accept_cash',
+        'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled',
+        'auto_delete_zero_quantity'
     ];
     
     checkboxes.forEach(checkbox => {
@@ -246,6 +262,9 @@ async function openSettingsModal() {
         setVal('receipt-footer', s.receipt_footer);
         setVal('store-name', s.store_name);
         setVal('store-address', s.store_address);
+        // Auto-delete
+        setChk('auto-delete-zero-quantity', s.auto_delete_zero_quantity);
+        setVal('auto-delete-zero-days', s.auto_delete_zero_days);
     } catch (_) { /* ignore prefill errors */ }
 }
 </script>
