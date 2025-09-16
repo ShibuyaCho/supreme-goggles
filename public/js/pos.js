@@ -44,6 +44,36 @@ function cannabisPOS() {
           watch('printSettings.paperSize', () => this._savePrintSettingsDebounced());
         }
       } catch (_) {}
+      // Realtime refresh handlers
+      try {
+        window.addEventListener('realtime:table-changed', (e) => {
+          const t = (e && e.detail && e.detail.table) || '';
+          switch (t) {
+            case 'customers':
+              this._refreshCustomersFromApi && this._refreshCustomersFromApi();
+              break;
+            case 'employees':
+              this.fetchEmployeesFromApi && this.fetchEmployeesFromApi();
+              break;
+            case 'price_tiers':
+              this.loadPriceTiers && this.loadPriceTiers();
+              break;
+            case 'products':
+              this._refreshProductsFromApi && this._refreshProductsFromApi();
+              break;
+            case 'loyalty_members':
+              if (typeof this.refreshLoyalty === 'function') this.refreshLoyalty();
+              break;
+            case 'pos_settings':
+              this._hydrateBusinessSettingsFromServer && this._hydrateBusinessSettingsFromServer();
+              this._hydratePrintSettingsFromServer && this._hydratePrintSettingsFromServer();
+              break;
+            case 'sales':
+              if (typeof this.refreshSales === 'function') this.refreshSales();
+              break;
+          }
+        });
+      } catch (_) {}
     },
 
     // Store selection (multi-store UI only; backend can read headers for isolation)
@@ -5787,6 +5817,40 @@ function cannabisPOS() {
         if (typeof this.showToast === "function")
           this.showToast("Failed to save threshold", "error");
       }
+    },
+
+    async _refreshCustomersFromApi() {
+      try {
+        const res = await (window.posAuth ? posAuth.apiRequest('get', '/customers') : axios.get('/api/customers'));
+        const list = res?.data?.customers || res?.data?.data || res?.customers || [];
+        if (Array.isArray(list)) {
+          this.customers = list.map((c) => ({
+            id: c.id || c.customer_id || c.email || c.phone || Math.random(),
+            name: c.name || [c.first_name, c.last_name].filter(Boolean).join(' '),
+            email: c.email || '',
+            phone: c.phone || '',
+            isActive: c.is_active === false ? false : true,
+            ...c,
+          }));
+          try { this._saveCustomersLocal && this._saveCustomersLocal(); } catch(_) {}
+          try { this.filterLoyaltyCustomers && this.filterLoyaltyCustomers(); } catch(_) {}
+        }
+      } catch (_) {}
+    },
+
+    async _refreshProductsFromApi() {
+      try {
+        const res = await (window.axios || axios).get('/node/products', { headers: { Accept: 'application/json' } });
+        const items = res?.data?.products || [];
+        if (Array.isArray(items)) {
+          this.products = items;
+          try {
+            localStorage.setItem('cannabisPOS-products', JSON.stringify({ data: items }));
+          } catch (_) {}
+          this.normalizeCollections && this.normalizeCollections();
+          this.filterProducts && this.filterProducts();
+        }
+      } catch (_) {}
     },
 
     async loadPriceTiers() {
