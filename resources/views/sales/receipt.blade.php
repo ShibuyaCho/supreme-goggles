@@ -8,7 +8,24 @@
     $customerType = strtolower((string)($sale->customer_type ?? data_get($sale->customer, 'type', 'recreational')));
     $customerType = $customerType === 'medical' ? 'Medical' : 'Recreational';
     $ts = optional($sale->created_at)->timezone(config('app.timezone'))->format('Y-m-d h:ia');
-    $cart = is_array($sale->cart) ? $sale->cart : [];
+
+    // Prefer DB-stored cart_items, then legacy cart, then relation saleItems
+    if (is_array($sale->cart_items)) {
+        $cart = $sale->cart_items;
+    } elseif (is_array($sale->cart)) {
+        $cart = $sale->cart;
+    } else {
+        $cart = ($sale->saleItems ?? collect())->map(function($it){
+            return [
+                'name' => $it->product->name ?? $it->product_name ?? 'Item',
+                'price' => (float)($it->unit_price ?? 0),
+                'quantity' => (float)($it->quantity ?? 1),
+                'category' => strtolower((string)($it->product_category ?? ($it->product->category ?? ''))),
+                'weight' => null,
+            ];
+        })->values()->all();
+    }
+
     $items = collect($cart)->map(function($i){
         $name = $i['name'] ?? 'Item';
         $price = (float)($i['price'] ?? 0);
@@ -25,12 +42,13 @@
         $lineTotal = max(0, $lineBase - $discAmt);
         return compact('name','price','qty','isFlower','unitDisplay','discAmt','lineBase','lineTotal');
     });
+
     $itemDiscountTotal = (float)$items->sum('discAmt');
     $cartDiscount = (float)($sale->discount_amount ?? 0);
     $subtotal = (float)($sale->subtotal ?? 0);
     $tax = (float)($sale->tax_amount ?? $sale->tax ?? 0);
     $total = (float)($sale->total_amount ?? $sale->total ?? 0);
-    $changeDue = (float) (data_get($sale, 'meta.change_due') ?? data_get($sale, 'meta.change') ?? 0);
+    $changeDue = (float)($sale->change_given ?? (data_get($sale, 'meta.change_due') ?? data_get($sale, 'meta.change') ?? 0));
     $footer = config('services.pos.receipt_footer', "Thank you for shopping at {$storeName}");
 @endphp
 <!doctype html>
