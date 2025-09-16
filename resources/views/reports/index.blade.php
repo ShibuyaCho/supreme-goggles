@@ -318,17 +318,25 @@ function reportsManager() {
             frequency: 'weekly',
             email: ''
         },
-        recentReports: [
-            { id: 1, name: 'Daily Sales Summary', type: 'Sales', generated: '2024-01-15 09:00', status: 'completed' },
-            { id: 2, name: 'Inventory Valuation', type: 'Inventory', generated: '2024-01-15 08:30', status: 'completed' },
-            { id: 3, name: 'Tax Collection Report', type: 'Tax', generated: '2024-01-15 08:00', status: 'processing' },
-            { id: 4, name: 'Customer Analysis', type: 'Customer', generated: '2024-01-14 17:30', status: 'completed' }
-        ],
-        scheduledReports: [
-            { id: 1, name: 'Weekly Sales Summary', frequency: 'Weekly (Mondays)', nextRun: 'Jan 22, 2024', active: true },
-            { id: 2, name: 'Monthly Inventory Report', frequency: 'Monthly (1st)', nextRun: 'Feb 1, 2024', active: true },
-            { id: 3, name: 'Daily METRC Compliance', frequency: 'Daily (6 AM)', nextRun: 'Jan 16, 2024', active: false }
-        ],
+        recentReports: [],
+        scheduledReports: [],
+
+        async init() {
+            try {
+                const res = await fetch('/node/report-templates', { headers: { Accept: 'application/json' } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const templates = Array.isArray(data?.templates) ? data.templates : [];
+                    this.recentReports = templates.slice(0, 20).map(t => ({
+                        id: t.id,
+                        name: t.name,
+                        type: (t.report_type || 'general').replace(/\b\w/g, c => c.toUpperCase()),
+                        generated: t.updated_at || t.created_at || '',
+                        status: 'completed'
+                    }));
+                }
+            } catch(_) {}
+        },
 
         async generateReport(type) {
             const fmt = await this.askFormat();
@@ -443,6 +451,34 @@ function reportsManager() {
                 } else {
                     this.triggerDownload({ data: dataBlob, headers: res.headers }, `${this.customReport.name.replace(/\s+/g,'_')}.${fmt === 'excel' ? 'xlsx' : fmt}`);
                 }
+                // Persist custom report template to Supabase
+                try {
+                    const tpl = {
+                        name: this.customReport.name,
+                        description: null,
+                        report_type: reportType,
+                        format: fmt,
+                        include_charts: false,
+                        orientation: 'portrait',
+                        paper_size: 'a4',
+                        config: {
+                            source: this.customReport.source,
+                            start_date: this.customReport.startDate || null,
+                            end_date: this.customReport.endDate || null,
+                            filters: {
+                                include_void: !!this.customReport.includeVoid,
+                                medical_only: !!this.customReport.medicalOnly,
+                                group_by_category: !!this.customReport.groupByCategory,
+                            }
+                        }
+                    };
+                    await fetch('/node/report-templates', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                        body: JSON.stringify(tpl)
+                    });
+                    this.init();
+                } catch(_) {}
                 this.showToast('Report generated successfully!', 'success');
             } catch (e) {
                 const headings = this.getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
@@ -519,7 +555,7 @@ function reportsManager() {
             }
         },
 
-        saveSchedule() {
+        async saveSchedule() {
             if (!this.scheduleForm.type || !this.scheduleForm.email) {
                 this.showToast('Please fill in required fields', 'error');
                 return;
@@ -536,6 +572,13 @@ function reportsManager() {
             this.scheduledReports.push(newSchedule);
             this.showScheduleModal = false;
             this.scheduleForm = { type: '', frequency: 'weekly', email: '' };
+            try {
+                await fetch('/api/activity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({ action: 'report_schedule_saved', schedule: newSchedule })
+                });
+            } catch(_) {}
             this.showToast('Report scheduled successfully!', 'success');
         },
 
