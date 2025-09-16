@@ -976,7 +976,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
                 if (!$saved) {
                     \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
-                        ['id' => 'default'],
+                        ['id' => $storeId],
                         ['settings' => json_encode($settings), 'updated_at' => now()]
                     );
                 }
