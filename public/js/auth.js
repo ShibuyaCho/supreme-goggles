@@ -82,11 +82,13 @@ class POSAuth {
         }
         // Multi-store context headers (UI-managed)
         try {
-          const raw = localStorage.getItem('pos_store');
+          const raw = localStorage.getItem("pos_store");
           if (raw) {
             const store = JSON.parse(raw);
-            if (store && store.id) config.headers['X-Store-ID'] = String(store.id);
-            if (store && store.orgId) config.headers['X-Org-ID'] = String(store.orgId);
+            if (store && store.id)
+              config.headers["X-Store-ID"] = String(store.id);
+            if (store && store.orgId)
+              config.headers["X-Org-ID"] = String(store.orgId);
           }
         } catch (e) {}
         config.headers["Content-Type"] = "application/json";
@@ -336,16 +338,37 @@ class POSAuth {
       if (serverUser) {
         // Prevent role downgrades; prefer the higher role and union permissions
         const current = this.user || {};
-        const rank = (r) => ({ cashier: 1, budtender: 2, inventory: 3, manager: 4, admin: 5 })[String(r || '').toLowerCase()] || 0;
-        const bestRole = rank(current.role) >= rank(serverUser.role) ? current.role || serverUser.role : serverUser.role;
-        const permsA = Array.isArray(current.permissions) ? current.permissions : [];
-        const permsB = Array.isArray(serverUser.permissions) ? serverUser.permissions : [];
-        const hasAll = (String(bestRole).toLowerCase() === 'admin') || permsA.includes('*') || permsB.includes('*');
-        const unionPerms = hasAll ? ['*'] : Array.from(new Set([...(permsA||[]), ...(permsB||[])]));
+        const rank = (r) =>
+          ({ cashier: 1, budtender: 2, inventory: 3, manager: 4, admin: 5 })[
+            String(r || "").toLowerCase()
+          ] || 0;
+        const bestRole =
+          rank(current.role) >= rank(serverUser.role)
+            ? current.role || serverUser.role
+            : serverUser.role;
+        const permsA = Array.isArray(current.permissions)
+          ? current.permissions
+          : [];
+        const permsB = Array.isArray(serverUser.permissions)
+          ? serverUser.permissions
+          : [];
+        const hasAll =
+          String(bestRole).toLowerCase() === "admin" ||
+          permsA.includes("*") ||
+          permsB.includes("*");
+        const unionPerms = hasAll
+          ? ["*"]
+          : Array.from(new Set([...(permsA || []), ...(permsB || [])]));
         const mergedEmployee = {
           ...(serverUser.employee || {}),
           ...(current.employee || {}),
-          role: (bestRole || (serverUser.employee?.role || current.employee?.role || serverUser.role || current.role)) || 'cashier',
+          role:
+            bestRole ||
+            serverUser.employee?.role ||
+            current.employee?.role ||
+            serverUser.role ||
+            current.role ||
+            "cashier",
           permissions: unionPerms,
         };
         this.user = {

@@ -886,15 +886,59 @@
 
               <!-- Store Selector -->
               <div class="ml-4 relative" x-data="{ open:false }">
-                <button @click="open=!open" class="flex items-center px-3 py-2 text-sm font-medium bg-gray-100 rounded-md hover:bg-gray-200">
-                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V4a3 3 0 016 0v3"/></svg>
-                  <span x-text="(selectedStore && selectedStore.name) ? selectedStore.name : 'Default Store'"></span>
-                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                <button
+                  @click="open=!open"
+                  class="flex items-center px-3 py-2 text-sm font-medium bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  <svg
+                    class="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V4a3 3 0 016 0v3"
+                    />
+                  </svg>
+                  <span
+                    x-text="(selectedStore && selectedStore.name) ? selectedStore.name : 'Default Store'"
+                  ></span>
+                  <svg
+                    class="w-4 h-4 ml-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
                 </button>
-                <div x-show="open" @click.outside="open=false" x-cloak class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                <div
+                  x-show="open"
+                  @click.outside="open=false"
+                  x-cloak
+                  class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50"
+                >
                   <div class="py-1">
-                    <button @click="open=false; changeStorePrompt()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Switch Store…</button>
-                    <button @click="open=false; clearStore()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Clear Store</button>
+                    <button
+                      @click="open=false; changeStorePrompt()"
+                      class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Switch Store…
+                    </button>
+                    <button
+                      @click="open=false; clearStore()"
+                      class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Clear Store
+                    </button>
                   </div>
                 </div>
               </div>
@@ -910,15 +954,35 @@
             </div>
 
             <!-- User Menu -->
-          <div class="flex items-center space-x-4">
-            <!-- Store selector -->
-            <div class="hidden md:flex items-center space-x-2">
-              <button class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors" onclick="(function(){var s=localStorage.getItem('pos_store');var cur='default';try{if(s){var o=JSON.parse(s);cur=(o.name||o.id||'default');}}catch(e){}var input=prompt('Enter Store ID or name to use:',cur);if(!input)return;var st={id:String(input).trim(),name:String(input).trim()};try{localStorage.setItem('pos_store',JSON.stringify(st));}catch(e){} try{window.dispatchEvent(new Event('storage'));}catch(e){}})()">
-                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V5a3 3 0 013-3h0a3 3 0 013 3v2"/></svg>
-                <span>Add/Switch Store</span>
-              </button>
-              <button class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded" onclick="try{localStorage.removeItem('pos_store');window.dispatchEvent(new Event('storage'));}catch(e){}">Clear</button>
-            </div>
+            <div class="flex items-center space-x-4">
+              <!-- Store selector -->
+              <div class="hidden md:flex items-center space-x-2">
+                <button
+                  class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
+                  onclick="(function(){var s=localStorage.getItem('pos_store');var cur='default';try{if(s){var o=JSON.parse(s);cur=(o.name||o.id||'default');}}catch(e){}var input=prompt('Enter Store ID or name to use:',cur);if(!input)return;var st={id:String(input).trim(),name:String(input).trim()};try{localStorage.setItem('pos_store',JSON.stringify(st));}catch(e){} try{window.dispatchEvent(new Event('storage'));}catch(e){}})()"
+                >
+                  <svg
+                    class="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V5a3 3 0 013-3h0a3 3 0 013 3v2"
+                    />
+                  </svg>
+                  <span>Add/Switch Store</span>
+                </button>
+                <button
+                  class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded"
+                  onclick="try{localStorage.removeItem('pos_store');window.dispatchEvent(new Event('storage'));}catch(e){}"
+                >
+                  Clear
+                </button>
+              </div>
               <button
                 id="global-refresh-metrc-demo"
                 @click="$window.__refreshMetrc && $window.__refreshMetrc()"
@@ -1160,7 +1224,9 @@
                       <option value="">All Categories</option>
                       <option value="Flower">🌸 Flower</option>
                       <option value="Pre-Rolls">🚬 Pre-Rolls</option>
-                      <option value="Infused">🔥 Infused (Joints/Blunts)</option>
+                      <option value="Infused">
+                        🔥 Infused (Joints/Blunts)
+                      </option>
                       <option value="Edibles">🍬 Edibles</option>
                       <option value="Concentrates">🧈 Concentrates</option>
                       <option value="Vape Products">💨 Vape Products</option>
@@ -1170,7 +1236,9 @@
                       <option value="Beverages">🥤 Beverages</option>
                       <option value="Suppositories">⚕️ Suppositories</option>
                       <option value="Clones/Seeds">🌱 Clones/Seeds</option>
-                      <option value="Immature Plants">🌿 Immature Plants</option>
+                      <option value="Immature Plants">
+                        🌿 Immature Plants
+                      </option>
                       <option value="Mature Plants">🌲 Mature Plants</option>
                       <option value="Hemp">🌿 Hemp Products</option>
                       <option value="Paraphernalia">🧰 Accessories</option>
@@ -13810,21 +13878,58 @@
 
                   <!-- Auto Delete Zeroed Products -->
                   <div class="bg-white border border-gray-200 rounded-lg p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                      <svg class="w-5 h-5 text-emerald-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+                    <h3
+                      class="text-lg font-semibold text-gray-900 mb-4 flex items-center"
+                    >
+                      <svg
+                        class="w-5 h-5 text-emerald-600 mr-2"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                        />
+                      </svg>
                       Auto Delete Zero-Quantity Products
                     </h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div class="flex items-center">
                         <label class="flex items-center">
-                          <input id="auto-delete-zero-quantity" name="auto-delete-zero-quantity" type="checkbox" x-model="autoDeleteZeroQuantity" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
-                          <span class="ml-2 text-sm text-gray-700">Enable auto-delete for items that reach 0 quantity</span>
+                          <input
+                            id="auto-delete-zero-quantity"
+                            name="auto-delete-zero-quantity"
+                            type="checkbox"
+                            x-model="autoDeleteZeroQuantity"
+                            class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                          />
+                          <span class="ml-2 text-sm text-gray-700"
+                            >Enable auto-delete for items that reach 0
+                            quantity</span
+                          >
                         </label>
                       </div>
                       <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Days to wait before deleting</label>
-                        <input id="auto-delete-zero-days" name="auto-delete-zero-days" type="number" min="1" max="30" step="1" x-model.number="autoDeleteZeroDays" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
-                        <p class="text-xs text-gray-500 mt-1">Range: 1-30 days</p>
+                        <label
+                          class="block text-sm font-medium text-gray-700 mb-2"
+                          >Days to wait before deleting</label
+                        >
+                        <input
+                          id="auto-delete-zero-days"
+                          name="auto-delete-zero-days"
+                          type="number"
+                          min="1"
+                          max="30"
+                          step="1"
+                          x-model.number="autoDeleteZeroDays"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        />
+                        <p class="text-xs text-gray-500 mt-1">
+                          Range: 1-30 days
+                        </p>
                       </div>
                     </div>
                   </div>

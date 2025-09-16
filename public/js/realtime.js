@@ -1,7 +1,11 @@
-(function(){
+(function () {
   try {
-    const url = window.__SUPABASE_URL || (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : null);
-    const key = window.__SUPABASE_ANON_KEY || (typeof SUPABASE_ANON_KEY !== 'undefined' ? SUPABASE_ANON_KEY : null);
+    const url =
+      window.__SUPABASE_URL ||
+      (typeof SUPABASE_URL !== "undefined" ? SUPABASE_URL : null);
+    const key =
+      window.__SUPABASE_ANON_KEY ||
+      (typeof SUPABASE_ANON_KEY !== "undefined" ? SUPABASE_ANON_KEY : null);
     if (!url || !key || !window.supabase) return;
 
     const client = window.supabase.createClient(url, key, {
@@ -10,7 +14,7 @@
 
     const getStoreFilter = () => {
       try {
-        const raw = localStorage.getItem('pos_store');
+        const raw = localStorage.getItem("pos_store");
         const store = raw ? JSON.parse(raw) : null;
         if (store && store.id) return `store_id=eq.${String(store.id)}`;
       } catch (e) {}
@@ -18,26 +22,33 @@
     };
 
     const tables = [
-      'customers',
-      'employees',
-      'price_tiers',
-      'loyalty_members',
-      'products',
-      'sales',
-      'deals',
-      'pos_settings',
+      "customers",
+      "employees",
+      "price_tiers",
+      "loyalty_members",
+      "products",
+      "sales",
+      "deals",
+      "pos_settings",
     ];
 
     const subscribe = (table) => {
       const filter = getStoreFilter();
-      const chan = client.channel(`realtime:${table}`)
+      const chan = client
+        .channel(`realtime:${table}`)
         .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table, filter: filter || undefined },
+          "postgres_changes",
+          { event: "*", schema: "public", table, filter: filter || undefined },
           (payload) => {
             try {
-              const evt = new CustomEvent('realtime:table-changed', {
-                detail: { table, type: payload.eventType, new: payload.new, old: payload.old, payload },
+              const evt = new CustomEvent("realtime:table-changed", {
+                detail: {
+                  table,
+                  type: payload.eventType,
+                  new: payload.new,
+                  old: payload.old,
+                  payload,
+                },
               });
               window.dispatchEvent(evt);
             } catch (e) {}
@@ -52,9 +63,11 @@
     tables.forEach(subscribe);
 
     // If store changes, resubscribe with new filter
-    window.addEventListener('storage', (e) => {
-      if (e.key === 'pos_store') {
-        try { client.getChannels().forEach((c) => client.removeChannel(c)); } catch (e) {}
+    window.addEventListener("storage", (e) => {
+      if (e.key === "pos_store") {
+        try {
+          client.getChannels().forEach((c) => client.removeChannel(c));
+        } catch (e) {}
         tables.forEach(subscribe);
       }
     });

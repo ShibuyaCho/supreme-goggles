@@ -27,52 +27,85 @@ function cannabisPOS() {
         const watch = this.$watch ? this.$watch.bind(this) : null;
         if (watch) {
           // Tax settings
-          watch('taxSettings.recreationalRate', () => this._saveBusinessSettingsDebounced());
-          watch('taxSettings.medicalRate', () => this._saveBusinessSettingsDebounced());
-          watch('taxSettings.includeInPrice', () => this._saveBusinessSettingsDebounced());
-          watch('taxSettings.localRate', () => this._saveBusinessSettingsDebounced());
-          watch('taxSettings.stateRate', () => this._saveBusinessSettingsDebounced());
+          watch("taxSettings.recreationalRate", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("taxSettings.medicalRate", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("taxSettings.includeInPrice", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("taxSettings.localRate", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("taxSettings.stateRate", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
           // Sales settings
-          watch('salesSettings.minimumSale', () => this._saveBusinessSettingsDebounced());
-          watch('salesSettings.enforceMinimumSale', () => this._saveBusinessSettingsDebounced());
-          watch('salesSettings.dailyLimit', () => this._saveBusinessSettingsDebounced());
-          watch('salesSettings.requireCustomerInfo', () => this._saveBusinessSettingsDebounced());
+          watch("salesSettings.minimumSale", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("salesSettings.enforceMinimumSale", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("salesSettings.dailyLimit", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("salesSettings.requireCustomerInfo", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
           // Print settings
-          watch('printSettings.autoprint', () => this._savePrintSettingsDebounced());
-          watch('printSettings.printLabels', () => this._savePrintSettingsDebounced());
-          watch('printSettings.receiptTemplate', () => this._savePrintSettingsDebounced());
-          watch('printSettings.paperSize', () => this._savePrintSettingsDebounced());
+          watch("printSettings.autoprint", () =>
+            this._savePrintSettingsDebounced(),
+          );
+          watch("printSettings.printLabels", () =>
+            this._savePrintSettingsDebounced(),
+          );
+          watch("printSettings.receiptTemplate", () =>
+            this._savePrintSettingsDebounced(),
+          );
+          watch("printSettings.paperSize", () =>
+            this._savePrintSettingsDebounced(),
+          );
           // Auto-delete zero settings
-          watch('autoDeleteZeroQuantity', () => this._saveBusinessSettingsDebounced());
-          watch('autoDeleteZeroDays', () => this._saveBusinessSettingsDebounced());
+          watch("autoDeleteZeroQuantity", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
+          watch("autoDeleteZeroDays", () =>
+            this._saveBusinessSettingsDebounced(),
+          );
         }
       } catch (_) {}
       // Realtime refresh handlers
       try {
-        window.addEventListener('realtime:table-changed', (e) => {
-          const t = (e && e.detail && e.detail.table) || '';
+        window.addEventListener("realtime:table-changed", (e) => {
+          const t = (e && e.detail && e.detail.table) || "";
           switch (t) {
-            case 'customers':
+            case "customers":
               this._refreshCustomersFromApi && this._refreshCustomersFromApi();
               break;
-            case 'employees':
+            case "employees":
               this.fetchEmployeesFromApi && this.fetchEmployeesFromApi();
               break;
-            case 'price_tiers':
+            case "price_tiers":
               this.loadPriceTiers && this.loadPriceTiers();
               break;
-            case 'products':
+            case "products":
               this._refreshProductsFromApi && this._refreshProductsFromApi();
               break;
-            case 'loyalty_members':
-              if (typeof this.refreshLoyalty === 'function') this.refreshLoyalty();
+            case "loyalty_members":
+              if (typeof this.refreshLoyalty === "function")
+                this.refreshLoyalty();
               break;
-            case 'pos_settings':
-              this._hydrateBusinessSettingsFromServer && this._hydrateBusinessSettingsFromServer();
-              this._hydratePrintSettingsFromServer && this._hydratePrintSettingsFromServer();
+            case "pos_settings":
+              this._hydrateBusinessSettingsFromServer &&
+                this._hydrateBusinessSettingsFromServer();
+              this._hydratePrintSettingsFromServer &&
+                this._hydratePrintSettingsFromServer();
               break;
-            case 'sales':
-              if (typeof this.refreshSales === 'function') this.refreshSales();
+            case "sales":
+              if (typeof this.refreshSales === "function") this.refreshSales();
               break;
           }
         });
@@ -83,21 +116,28 @@ function cannabisPOS() {
     selectedStore: null,
     loadStoreContext() {
       try {
-        const raw = localStorage.getItem('pos_store');
+        const raw = localStorage.getItem("pos_store");
         this.selectedStore = raw ? JSON.parse(raw) : null;
       } catch (e) {
         this.selectedStore = null;
       }
     },
     changeStorePrompt() {
-      const nameOrId = prompt('Enter store name or ID to switch:');
+      const nameOrId = prompt("Enter store name or ID to switch:");
       if (!nameOrId) return;
-      const store = { id: String(nameOrId).trim(), name: String(nameOrId).trim() };
-      try { localStorage.setItem('pos_store', JSON.stringify(store)); } catch (e) {}
+      const store = {
+        id: String(nameOrId).trim(),
+        name: String(nameOrId).trim(),
+      };
+      try {
+        localStorage.setItem("pos_store", JSON.stringify(store));
+      } catch (e) {}
       this.selectedStore = store;
     },
     clearStore() {
-      try { localStorage.removeItem('pos_store'); } catch (e) {}
+      try {
+        localStorage.removeItem("pos_store");
+      } catch (e) {}
       this.selectedStore = null;
     },
 
@@ -3605,13 +3645,19 @@ function cannabisPOS() {
     reprintReceipt(sale) {
       const id = sale?.numericId || sale?.id || null;
       if (!id) return;
-      window.open(`/receipt.html?id=${encodeURIComponent(id)}&reprint=1`, "_blank");
+      window.open(
+        `/receipt.html?id=${encodeURIComponent(id)}&reprint=1`,
+        "_blank",
+      );
     },
 
     reprintExitLabels(sale) {
       const id = sale?.numericId || sale?.id || null;
       if (!id) return;
-      window.open(`/exit-labels.html?id=${encodeURIComponent(id)}&reprint=1`, "_blank");
+      window.open(
+        `/exit-labels.html?id=${encodeURIComponent(id)}&reprint=1`,
+        "_blank",
+      );
     },
 
     async voidSale(sale) {
@@ -5616,11 +5662,15 @@ function cannabisPOS() {
           };
         }
         // Load auto-delete zero prefs
-        const z = JSON.parse(localStorage.getItem('cannabisPOS-zeroDelete') || '{}');
-        if (z && typeof z === 'object') {
+        const z = JSON.parse(
+          localStorage.getItem("cannabisPOS-zeroDelete") || "{}",
+        );
+        if (z && typeof z === "object") {
           this.autoDeleteZeroQuantity = !!z.enabled;
           const d = Number(z.days || 1);
-          this.autoDeleteZeroDays = isFinite(d) ? Math.min(30, Math.max(1, d)) : 1;
+          this.autoDeleteZeroDays = isFinite(d)
+            ? Math.min(30, Math.max(1, d))
+            : 1;
         }
       } catch (_) {}
 
@@ -5663,10 +5713,15 @@ function cannabisPOS() {
           ? posAuth.apiRequest("get", "/settings/pos")
           : (window.axios || axios).get("/api/settings/pos"));
         const payload = getRes?.data || {};
-        const s = (payload.settings && typeof payload.settings === 'object') ? payload.settings : payload;
+        const s =
+          payload.settings && typeof payload.settings === "object"
+            ? payload.settings
+            : payload;
         // Map backend settings to UI structures
         const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
-        const med = Number(payload.medical_tax_rate != null ? payload.medical_tax_rate : 0);
+        const med = Number(
+          payload.medical_tax_rate != null ? payload.medical_tax_rate : 0,
+        );
         const loc = Number(s.excise_tax != null ? s.excise_tax : 0);
         const st = Number(s.sales_tax != null ? s.sales_tax : 0);
         this.taxSettings = {
@@ -5685,22 +5740,50 @@ function cannabisPOS() {
         // Auto-delete zero
         this.autoDeleteZeroQuantity = !!s.auto_delete_zero_quantity;
         const d = Number(s.auto_delete_zero_days || 1);
-        this.autoDeleteZeroDays = isFinite(d) ? Math.min(30, Math.max(1, d)) : 1;
+        this.autoDeleteZeroDays = isFinite(d)
+          ? Math.min(30, Math.max(1, d))
+          : 1;
         try {
-          localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings));
-          localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings));
-          localStorage.setItem('cannabisPOS-zeroDelete', JSON.stringify({ enabled: this.autoDeleteZeroQuantity, days: this.autoDeleteZeroDays }));
+          localStorage.setItem(
+            "cannabisPOS-taxSettings",
+            JSON.stringify(this.taxSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-salesSettings",
+            JSON.stringify(this.salesSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-zeroDelete",
+            JSON.stringify({
+              enabled: this.autoDeleteZeroQuantity,
+              days: this.autoDeleteZeroDays,
+            }),
+          );
         } catch (_) {}
       } catch (_) {}
     },
 
     saveTaxSettings() {
-      try { localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings)); } catch(_) {}
-      try { this._saveBusinessSettingsDebounced(); } catch (_) {}
+      try {
+        localStorage.setItem(
+          "cannabisPOS-taxSettings",
+          JSON.stringify(this.taxSettings),
+        );
+      } catch (_) {}
+      try {
+        this._saveBusinessSettingsDebounced();
+      } catch (_) {}
     },
     saveSalesSettings() {
-      try { localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings)); } catch(_) {}
-      try { this._saveBusinessSettingsDebounced(); } catch (_) {}
+      try {
+        localStorage.setItem(
+          "cannabisPOS-salesSettings",
+          JSON.stringify(this.salesSettings),
+        );
+      } catch (_) {}
+      try {
+        this._saveBusinessSettingsDebounced();
+      } catch (_) {}
     },
 
     toggleCategoryAutoprint(category) {
@@ -5754,8 +5837,13 @@ function cannabisPOS() {
     },
 
     _saveBusinessSettingsDebounced() {
-      try { if (this._businessSaveTimer) clearTimeout(this._businessSaveTimer); } catch(_) {}
-      this._businessSaveTimer = setTimeout(() => this._saveBusinessSettings(), 400);
+      try {
+        if (this._businessSaveTimer) clearTimeout(this._businessSaveTimer);
+      } catch (_) {}
+      this._businessSaveTimer = setTimeout(
+        () => this._saveBusinessSettings(),
+        400,
+      );
     },
 
     async _saveBusinessSettings() {
@@ -5771,20 +5859,38 @@ function cannabisPOS() {
           __ui_daily_limit: Number(this.salesSettings.dailyLimit) || 0,
           require_customer: !!this.salesSettings.requireCustomerInfo,
           auto_delete_zero_quantity: !!this.autoDeleteZeroQuantity,
-          auto_delete_zero_days: Math.min(30, Math.max(1, Number(this.autoDeleteZeroDays) || 1)),
+          auto_delete_zero_days: Math.min(
+            30,
+            Math.max(1, Number(this.autoDeleteZeroDays) || 1),
+          ),
         };
         // Persist locally for resilience
         try {
-          localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings));
-          localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings));
-          localStorage.setItem('cannabisPOS-zeroDelete', JSON.stringify({ enabled: payload.auto_delete_zero_quantity, days: payload.auto_delete_zero_days }));
+          localStorage.setItem(
+            "cannabisPOS-taxSettings",
+            JSON.stringify(this.taxSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-salesSettings",
+            JSON.stringify(this.salesSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-zeroDelete",
+            JSON.stringify({
+              enabled: payload.auto_delete_zero_quantity,
+              days: payload.auto_delete_zero_days,
+            }),
+          );
         } catch (_) {}
         // POST to API (Supabase-backed)
         const res = await (window.posAuth
-          ? posAuth.apiRequest('post', '/settings/pos', payload)
-          : (window.axios || axios).post('/api/settings/pos', payload));
-        const ok = res?.success === true || res?.data?.success === true || (res?.status && res.status >= 200 && res.status < 300);
-        if (!ok) throw new Error('save-failed');
+          ? posAuth.apiRequest("post", "/settings/pos", payload)
+          : (window.axios || axios).post("/api/settings/pos", payload));
+        const ok =
+          res?.success === true ||
+          res?.data?.success === true ||
+          (res?.status && res.status >= 200 && res.status < 300);
+        if (!ok) throw new Error("save-failed");
       } catch (_) {}
     },
 
@@ -5843,31 +5949,44 @@ function cannabisPOS() {
 
     async _refreshCustomersFromApi() {
       try {
-        const res = await (window.posAuth ? posAuth.apiRequest('get', '/customers') : axios.get('/api/customers'));
-        const list = res?.data?.customers || res?.data?.data || res?.customers || [];
+        const res = await (window.posAuth
+          ? posAuth.apiRequest("get", "/customers")
+          : axios.get("/api/customers"));
+        const list =
+          res?.data?.customers || res?.data?.data || res?.customers || [];
         if (Array.isArray(list)) {
           this.customers = list.map((c) => ({
             id: c.id || c.customer_id || c.email || c.phone || Math.random(),
-            name: c.name || [c.first_name, c.last_name].filter(Boolean).join(' '),
-            email: c.email || '',
-            phone: c.phone || '',
+            name:
+              c.name || [c.first_name, c.last_name].filter(Boolean).join(" "),
+            email: c.email || "",
+            phone: c.phone || "",
             isActive: c.is_active === false ? false : true,
             ...c,
           }));
-          try { this._saveCustomersLocal && this._saveCustomersLocal(); } catch(_) {}
-          try { this.filterLoyaltyCustomers && this.filterLoyaltyCustomers(); } catch(_) {}
+          try {
+            this._saveCustomersLocal && this._saveCustomersLocal();
+          } catch (_) {}
+          try {
+            this.filterLoyaltyCustomers && this.filterLoyaltyCustomers();
+          } catch (_) {}
         }
       } catch (_) {}
     },
 
     async _refreshProductsFromApi() {
       try {
-        const res = await (window.axios || axios).get('/node/products', { headers: { Accept: 'application/json' } });
+        const res = await (window.axios || axios).get("/node/products", {
+          headers: { Accept: "application/json" },
+        });
         const items = res?.data?.products || [];
         if (Array.isArray(items)) {
           this.products = items;
           try {
-            localStorage.setItem('cannabisPOS-products', JSON.stringify({ data: items }));
+            localStorage.setItem(
+              "cannabisPOS-products",
+              JSON.stringify({ data: items }),
+            );
           } catch (_) {}
           this.normalizeCollections && this.normalizeCollections();
           this.filterProducts && this.filterProducts();
