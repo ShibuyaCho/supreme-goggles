@@ -968,7 +968,7 @@ app.post("/api/settings/pos", async (req, res) => {
       method: "POST",
       body: [
         {
-          id: "default",
+          id: storeId,
           settings: merged,
           updated_at: new Date().toISOString(),
         },
