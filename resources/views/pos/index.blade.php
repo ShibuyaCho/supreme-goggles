@@ -406,8 +406,18 @@
         try {
           if (window.POS && typeof POS.showLoading === 'function') POS.showLoading();
           const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
-          const count = Array.isArray(res?.data?.transfers) ? res.data.transfers.length : (res?.data?.count || 0);
+          const transfers = Array.isArray(res?.data?.transfers) ? res.data.transfers : [];
+          const count = transfers.length || (res?.data?.count || 0);
           if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
+          try {
+            if (transfers.length) {
+              await fetch('/node/metrc/transfers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ transfers })
+              });
+            }
+          } catch (_) {}
           if (window.POS && typeof POS.showToast === 'function') POS.showToast(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
         } catch (e) {
           if (window.POS && typeof POS.showToast === 'function') POS.showToast('Failed to refresh METRC data', 'error');
