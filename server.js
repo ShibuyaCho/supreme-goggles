@@ -800,7 +800,7 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res) => {
 });
 
 // Settings: POS get
-app.get("/api/settings/pos", async (_req, res) => {
+app.get("/api/settings/pos", async (req, res) => {
   // Defaults (mirrors Laravel defaults)
   const defaults = {
     sales_tax: 0.0,
