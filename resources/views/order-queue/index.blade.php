@@ -12,6 +12,7 @@
                 <p class="text-sm opacity-80">Manage phone and online orders</p>
             </div>
             <div class="flex items-center gap-4">
+                <input type="search" placeholder="Search orders (ID or customer name)" class="px-3 py-2 rounded border border-gray-300 text-sm w-64" x-model.debounce.300ms="searchTerm" @input="runSearch" />
                 <button @click="refreshQueue" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm">
                     Refresh Queue
                 </button>
@@ -302,11 +303,12 @@ function orderQueueData() {
         lastUpdated: '',
         showOrderDetails: false,
         selectedOrder: null,
+        searchTerm: '',
 
         init() {
             this.calculateTotalOrdersToday();
             this.updateLastUpdated();
-            
+            this.runSearch();
             // Auto-refresh every 30 seconds
             setInterval(() => {
                 this.refreshQueue();
@@ -337,6 +339,22 @@ function orderQueueData() {
             } catch (error) {
                 console.error('Error refreshing queue:', error);
             }
+        },
+
+        async runSearch() {
+            try {
+                const q = this.searchTerm ? `?search=${encodeURIComponent(this.searchTerm)}` : '';
+                const res = await fetch(`/node/order-queue${q}`, { headers: { Accept: 'application/json' } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const list = Array.isArray(data?.orders) ? data.orders : [];
+                    this.pendingOrders = list.filter(o => (o.status || '').toLowerCase() === 'pending');
+                    this.preparingOrders = list.filter(o => (o.status || '').toLowerCase() === 'preparing');
+                    this.readyOrders = list.filter(o => (o.status || '').toLowerCase() === 'ready');
+                    this.calculateTotalOrdersToday();
+                    this.updateLastUpdated();
+                }
+            } catch(_) {}
         },
 
         async updateOrderStatus(orderId, newStatus) {
