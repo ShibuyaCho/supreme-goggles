@@ -507,7 +507,8 @@ document.addEventListener('DOMContentLoaded', function(){
     const min = parseFloat(input.min || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
     const max = parseFloat(input.max || '999') || 999;
     const current = parseFloat(input.value || (isFlower ? '0.01' : '1')) || (isFlower ? 0.01 : 1);
-    const next = normalize(current + (inc ? step : -step), isFlower, min, max, step);
+    const delta = isFlower ? 1.0 : step;
+    const next = normalize(current + (inc ? delta : -delta), isFlower, min, max, step);
     input.value = isFlower ? next.toFixed(2) : String(Math.round(next));
     patchQuantity(id, next);
   });
