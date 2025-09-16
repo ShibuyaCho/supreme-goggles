@@ -966,7 +966,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                             'Accept' => 'application/json',
                             'Prefer' => 'return=representation',
                         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
-                            'id' => 'default',
+                            'id' => $storeId,
                             'settings' => $settings,
                             'updated_at' => now()->toIso8601String(),
                         ]]);
