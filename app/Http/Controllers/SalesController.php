@@ -448,27 +448,19 @@ class SalesController extends Controller
             'employee',
             'saleItems.product'
         ])->findOrFail($id);
-        
-        // Generate receipt PDF (fallback to HTML if PDF library unavailable)
+
+        // Render Blade HTML (reader-friendly); PDF if package present
         if (!class_exists(\Barryvdh\DomPDF\Facade\Pdf::class)) {
-            $html = view('sales.receipt', [
-                'sale' => $sale,
-                'reprint' => true
-            ])->render();
-            $filename = "receipt_{$sale->sale_number}_reprint.html";
-            return response($html, 200)
-                ->header('Content-Type', 'text/html; charset=UTF-8')
-                ->header('Content-Disposition', "attachment; filename=\"{$filename}\"")
-                ->header('X-Export-Fallback', 'pdf->html')
-                ->header('X-Export-Filename', $filename);
+            return response()->view('sales.receipt', ['sale' => $sale, 'reprint' => true]);
         }
-
-        $pdf = Pdf::loadView('sales.receipt', [
-            'sale' => $sale,
-            'reprint' => true
-        ]);
-
+        $pdf = Pdf::loadView('sales.receipt', ['sale' => $sale, 'reprint' => true]);
         return $pdf->download("receipt_{$sale->sale_number}_reprint.pdf");
+    }
+
+    public function reprintExitLabels($id)
+    {
+        $sale = Sale::with(['saleItems.product'])->findOrFail($id);
+        return response()->view('sales.exit-labels', ['sale' => $sale]);
     }
     
     public function dailyReport(Request $request)
