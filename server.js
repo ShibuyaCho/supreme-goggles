@@ -1306,6 +1306,57 @@ app.put("/api/price-tiers/:id", async (req, res) => {
   }
 });
 
+// Node aliases -> Supabase (preferred to avoid Laravel /api collisions)
+app.get("/node/price-tiers", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    let qp = "price_tiers?select=*";
+    if (search) {
+      const s = encodeURIComponent(search);
+      qp += `&or=(name.ilike.*${s}*,type.ilike.*${s}*,customer_type.ilike.*${s}*)`;
+    }
+    const r = await supaFetch(qp, { method: "GET" });
+    const rows = r.ok ? await r.json() : [];
+    res.json({ success: true, tiers: Array.isArray(rows) ? rows : [] });
+  } catch (_) {
+    res.json({ success: true, tiers: [] });
+  }
+});
+
+app.post("/node/price-tiers", async (req, res) => {
+  try {
+    const payload = Array.isArray(req.body) ? req.body : [req.body || {}];
+    const r = await supaFetch("price_tiers", { method: "POST", body: payload });
+    const data = r.ok ? await r.json() : null;
+    res.status(201).json({ success: true, tier: Array.isArray(data) ? data[0] : data });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.put("/node/price-tiers/:id", async (req, res) => {
+  try {
+    const r = await supaFetch(`price_tiers?id=eq.${encodeURIComponent(req.params.id)}`, {
+      method: "PATCH",
+      body: req.body || {},
+    });
+    const data = r.ok ? await r.json() : null;
+    res.json({ success: true, tier: Array.isArray(data) ? data[0] : data });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.delete("/node/price-tiers/:id", async (req, res) => {
+  try {
+    const d = await supaFetch(`price_tiers?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
+    res.json({ success: true });
+  } catch (_) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
 // Loyalty points adjustments (customers table)
 app.post("/api/loyalty/:customerId/adjust-points", async (req, res) => {
   try {
