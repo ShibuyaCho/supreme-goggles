@@ -589,6 +589,12 @@ function reprintReceipt(saleId) {
     }
 }
 
+function reprintExitLabels(saleId) {
+    if (confirm('Reprint exit labels for this sale?')) {
+        window.open(`/sales/${saleId}/exit-labels?reprint=1`, '_blank');
+    }
+}
+
 function voidSale(saleId) {
     document.getElementById('void-sale-id').value = saleId;
     document.getElementById('void-sale-modal').classList.remove('hidden');
