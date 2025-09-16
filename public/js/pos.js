@@ -921,6 +921,232 @@ function cannabisPOS() {
     metrcPushSuccess: null,
     metrcPushResult: "",
 
+    // Order Queue (SPA)
+    orderQueue: [],
+    filteredOrderQueue: [],
+    orderQueueFilter: {
+      status: "",
+      orderType: "",
+      customer: "",
+      dateRange: "today",
+    },
+    async refreshOrderQueue() {
+      try {
+        let orders = [];
+        if (this.isAuthenticated && window.posAuth && typeof posAuth.apiRequest === "function") {
+          try {
+            const res = await posAuth.apiRequest("get", "/pos/queue-orders");
+            const data = res && (res.data?.orders || res.data?.data || res.data) || [];
+            if (Array.isArray(data)) orders = data;
+          } catch (_) {}
+        }
+        if (!Array.isArray(orders) || orders.length === 0) {
+          try {
+            await this.fetchSavedSales();
+            const list = Array.isArray(this.savedSales) ? this.savedSales : [];
+            orders = list.map((s) => this._mapSavedSaleToOrder(s));
+          } catch (_) {
+            orders = [];
+          }
+        }
+        const normalized = (Array.isArray(orders) ? orders : []).map((o, i) => {
+          const items = Array.isArray(o.items) ? o.items : [];
+          const total = Number(o.total || items.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.quantity || 1), 0));
+          const itemCount = Number(o.itemCount || items.reduce((sum, it) => sum + Number(it.quantity || 0), 0));
+          const customer = o.customer || {};
+          return {
+            id: o.id != null ? o.id : `q-${Date.now()}-${i}`,
+            status: String(o.status || "pending").toLowerCase(),
+            orderType: String(o.orderType || o.type || "pos-hold").toLowerCase(),
+            total: isFinite(total) ? total : 0,
+            itemCount: isFinite(itemCount) ? itemCount : items.length,
+            customer: {
+              name: customer.name || customer.full_name || "Walk-in Customer",
+              phone: customer.phone || customer.phone_number || "",
+              email: customer.email || "",
+              isMedical: !!(customer.isMedical || customer.medical || customer.customerType === "medical"),
+            },
+            placedAt: o.placedAt || o.created_at || o.createdAt || new Date().toISOString(),
+            items: items.map((it, j) => ({
+              id: it.id != null ? it.id : `${i}-${j}`,
+              name: it.name || it.product_name || "Item",
+              quantity: Number(it.quantity || 1),
+              price: Number(it.price || it.unitPrice || 0),
+            })),
+          };
+        });
+        this.orderQueue = normalized;
+        this.filterOrderQueue();
+      } catch (_) {
+        this.orderQueue = [];
+        this.filteredOrderQueue = [];
+      }
+    },
+    _mapSavedSaleToOrder(saved) {
+      try {
+        const items = Array.isArray(saved.cart_items) ? saved.cart_items : Array.isArray(saved.cart) ? saved.cart : [];
+        const total = Number(saved.total_amount != null ? saved.total_amount : saved.total || items.reduce((s, it) => s + Number(it.price || 0) * Number(it.quantity || 1), 0));
+        const itemCount = Number(saved.total_items != null ? saved.total_items : items.reduce((s, it) => s + Number(it.quantity || 0), 0));
+        const customer = saved.customer || saved.customer_info || {};
+        return {
+          id: saved.id || `saved-${Date.now()}`,
+          status: "pending",
+          orderType: "pos-hold",
+          total: isFinite(total) ? total : 0,
+          itemCount: isFinite(itemCount) ? itemCount : items.length,
+          customer: {
+            name: customer.name || "Walk-in Customer",
+            phone: customer.phone || "",
+            email: customer.email || "",
+            isMedical: !!(customer.isMedical || customer.medical),
+          },
+          placedAt: saved.created_at || saved.createdAt || new Date().toISOString(),
+          items: items.map((it, j) => ({
+            id: it.id != null ? it.id : `${saved.id || 'x'}-${j}`,
+            name: it.displayName || it.name || it.product_name || "Item",
+            quantity: Number(it.quantity || 1),
+            price: Number(it.price || 0),
+          })),
+        };
+      } catch (_) {
+        return {
+          id: `saved-${Date.now()}`,
+          status: "pending",
+          orderType: "pos-hold",
+          total: 0,
+          itemCount: 0,
+          customer: { name: "Walk-in Customer", phone: "", email: "", isMedical: false },
+          placedAt: new Date().toISOString(),
+          items: [],
+        };
+      }
+    },
+    filterOrderQueue() {
+      try {
+        const f = this.orderQueueFilter || {};
+        const status = String(f.status || "").toLowerCase();
+        const type = String(f.orderType || "").toLowerCase();
+        const q = String(f.customer || "").toLowerCase();
+        const range = String(f.dateRange || "today");
+        const toLocalISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        let start = "";
+        let end = "";
+        const d = new Date();
+        if (range === "yesterday") {
+          const y = new Date(d);
+          y.setDate(d.getDate() - 1);
+          start = end = toLocalISO(y);
+        } else if (range === "week") {
+          const first = new Date(d);
+          first.setDate(d.getDate() - 6);
+          start = toLocalISO(first);
+          end = toLocalISO(d);
+        } else if (range === "all") {
+          start = end = "";
+        } else {
+          start = end = toLocalISO(d);
+        }
+        const dateInRange = (iso) => {
+          if (!start || !end) return true;
+          try {
+            const dt = new Date(iso);
+            const s = new Date(`${start}T00:00:00`);
+            const e = new Date(`${end}T23:59:59.999`);
+            return dt >= s && dt <= e;
+          } catch (_) {
+            return true;
+          }
+        };
+        this.filteredOrderQueue = (this.orderQueue || []).filter((o) => {
+          const okStatus = !status || String(o.status || "").toLowerCase() === status;
+          const okType = !type || String(o.orderType || "").toLowerCase() === type;
+          const cust = o.customer || {};
+          const okQ = !q ||
+            String(cust.name || "").toLowerCase().includes(q) ||
+            String(cust.email || "").toLowerCase().includes(q) ||
+            String(cust.phone || "").toLowerCase().includes(q);
+          const okDate = dateInRange(o.placedAt || o.created_at || o.createdAt || "");
+          return okStatus && okType && okQ && okDate;
+        });
+      } catch (_) {
+        this.filteredOrderQueue = Array.isArray(this.orderQueue) ? this.orderQueue.slice() : [];
+      }
+    },
+    getOrderQueueStats() {
+      try {
+        const list = Array.isArray(this.orderQueue) ? this.orderQueue : [];
+        let pending = 0, hold = 0, ready = 0, totalValue = 0;
+        for (let i = 0; i < list.length; i++) {
+          const s = String(list[i].status || "").toLowerCase();
+          if (s === "pending") pending++;
+          else if (s === "hold") hold++;
+          else if (s === "ready") ready++;
+          totalValue += Number(list[i].total || 0);
+        }
+        return { pendingOrders: pending, holdOrders: hold, readyOrders: ready, totalValue };
+      } catch (_) {
+        return { pendingOrders: 0, holdOrders: 0, readyOrders: 0, totalValue: 0 };
+      }
+    },
+    getOrderStatusClass(status) {
+      const s = String(status || "").toLowerCase();
+      if (s === "pending") return "bg-yellow-100 text-yellow-800";
+      if (s === "hold") return "bg-orange-100 text-orange-800";
+      if (s === "ready") return "bg-green-100 text-green-800";
+      if (s === "processing") return "bg-blue-100 text-blue-800";
+      if (s === "completed") return "bg-purple-100 text-purple-800";
+      if (s === "cancelled") return "bg-red-100 text-red-800";
+      return "bg-gray-100 text-gray-800";
+    },
+    moveToActiveCart(order) {
+      try {
+        const items = Array.isArray(order?.items) ? order.items : [];
+        if (!items.length) {
+          this.showToast && this.showToast("No items to move", "warning");
+          return;
+        }
+        this.cart = items.map((it) => ({ ...it }));
+        const c = order.customer || {};
+        this.selectedCustomer = {
+          name: c.name || "Walk-in Customer",
+          email: c.email || "",
+          phone: c.phone || "",
+          isMedical: !!c.isMedical,
+        };
+        this.calculateTotals();
+        order.status = "processing";
+        this.showToast && this.showToast("Order moved to cart", "success");
+      } catch (_) {
+        this.showToast && this.showToast("Failed to move order", "error");
+      }
+    },
+    printOrderReceipt(order) {
+      try {
+        this.showToast && this.showToast("Printing receipt…", "info");
+        setTimeout(() => { try { window.print && window.print(); } catch (_) {} }, 10);
+      } catch (_) {}
+    },
+    async updateOrderStatus(order, newStatus) {
+      try {
+        const id = typeof order === "object" ? order.id : order;
+        const idx = (this.orderQueue || []).findIndex((o) => String(o.id) === String(id));
+        if (idx >= 0) this.orderQueue[idx].status = String(newStatus || "").toLowerCase();
+        this.filterOrderQueue();
+        // Try API (web route) best-effort
+        try {
+          await axios.post(`/order-queue/${encodeURIComponent(id)}/status`, { status: newStatus });
+        } catch (_) {}
+        this.showToast && this.showToast("Order status updated", "success");
+      } catch (_) {
+        this.showToast && this.showToast("Failed to update status", "error");
+      }
+    },
+    cancelOrder(order) {
+      try {
+        this.updateOrderStatus(order, "cancelled");
+      } catch (_) {}
+    },
+
     // METRC Integration Settings
     metrcSettings: {
       apiKey: "",
@@ -3315,6 +3541,11 @@ function cannabisPOS() {
       if (page === "metrc-vendors") {
         try {
           this.refreshVendorData();
+        } catch (_) {}
+      }
+      if (page === "order-queue") {
+        try {
+          this.refreshOrderQueue();
         } catch (_) {}
       }
     },
@@ -5848,7 +6079,7 @@ function cannabisPOS() {
 
       const sizes = {
         small: '2" �� 1"',
-        medium: '3" �� 2"',
+        medium: '3" ���� 2"',
         large: '4" × 3"',
         "extra-large": '6" × 4"',
       };
