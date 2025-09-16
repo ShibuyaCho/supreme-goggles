@@ -9633,16 +9633,64 @@
                                 class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                               >
                                 <div class="relative" x-data="{ open:false }">
-                                  <button @click="open = !open" class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md hover:bg-gray-50">
-                                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01"/></svg>
+                                  <button
+                                    @click="open = !open"
+                                    class="inline-flex items-center px-2 py-1 border border-gray-300 rounded-md hover:bg-gray-50"
+                                  >
+                                    <svg
+                                      class="w-4 h-4 mr-1"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M12 5v.01M12 12v.01M12 19v.01"
+                                      />
+                                    </svg>
                                     More Actions
                                   </button>
-                                  <div x-show="open" x-transition @click.outside="open=false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10">
-                                    <button @click="viewSaleDetails(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">View</button>
-                                    <button @click="reprintReceipt(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Reprint Receipt</button>
-                                    <button @click="reprintExitLabels(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Reprint Exit Labels</button>
-                                    <button @click="refundSale(sale); open=false" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100">Refund</button>
-                                    <button @click="voidSale(sale); open=false" :disabled="sale.isVoided" class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 disabled:text-gray-400"><span x-text="sale.isVoided ? 'Voided' : 'Void'"></span></button>
+                                  <div
+                                    x-show="open"
+                                    x-transition
+                                    @click.outside="open=false"
+                                    class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 z-10"
+                                  >
+                                    <button
+                                      @click="viewSaleDetails(sale); open=false"
+                                      class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                                    >
+                                      View
+                                    </button>
+                                    <button
+                                      @click="reprintReceipt(sale); open=false"
+                                      class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                                    >
+                                      Reprint Receipt
+                                    </button>
+                                    <button
+                                      @click="reprintExitLabels(sale); open=false"
+                                      class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                                    >
+                                      Reprint Exit Labels
+                                    </button>
+                                    <button
+                                      @click="refundSale(sale); open=false"
+                                      class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                                    >
+                                      Refund
+                                    </button>
+                                    <button
+                                      @click="voidSale(sale); open=false"
+                                      :disabled="sale.isVoided"
+                                      class="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 disabled:text-gray-400"
+                                    >
+                                      <span
+                                        x-text="sale.isVoided ? 'Voided' : 'Void'"
+                                      ></span>
+                                    </button>
                                   </div>
                                 </div>
                               </td>
@@ -15388,7 +15436,19 @@
                 @click="reprintExitLabels(selectedSale)"
                 class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
               >
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7h18M3 12h18M3 17h18"/></svg>
+                <svg
+                  class="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M3 7h18M3 12h18M3 17h18"
+                  />
+                </svg>
                 Reprint Exit Labels
               </button>
               <button
@@ -21656,77 +21716,128 @@
         }
       } catch (_) {}
     </script>
-  <script>
-    // Global export/print helpers used by Alpine handlers in the static shell
-    (function(){
-      function safeFilename(base){
-        try { return String(base || 'export').replace(/[^\w\-]+/g,'_').slice(0,64); } catch(_) { return 'export'; }
-      }
-      window.printPage = function(){
-        try { window.print(); } catch(e){ console.error('printPage failed', e); }
-      };
-      window.exportToPDF = function(){
-        try {
-          // Best-effort printable window from current view
-          var html = document.documentElement.cloneNode(true);
-          var w = window.open('', '_blank');
-          if (!w) return window.print();
-          w.document.open();
-          w.document.write('<!doctype html><html>' + html.innerHTML + '</html>');
-          w.document.close();
-          w.focus();
-          // Give styles a tick to load before print
-          setTimeout(function(){ try { w.print(); w.close(); } catch(_) { } }, 50);
-        } catch(e){ console.error('exportToPDF failed', e); try { window.print(); } catch(_){} }
-      };
-      window.exportToExcel = function(){
-        try {
-          // Collect visible tables; fall back to simple summary
-          var tables = Array.from(document.querySelectorAll('table'));
-          var rows = [];
-          if (tables.length){
-            tables.forEach(function(tbl, ti){
-              if (ti>0) rows.push(['']);
-              var thead = tbl.querySelectorAll('thead tr');
-              var tbody = tbl.querySelectorAll('tbody tr');
-              var trs = (thead.length? Array.from(thead): []).concat(Array.from(tbody));
-              if (!trs.length) trs = Array.from(tbl.querySelectorAll('tr'));
-              trs.forEach(function(tr){
-                var cells = Array.from(tr.children).map(function(td){
-                  var txt = (td.textContent||'').replace(/\s+/g,' ').trim().replace(/"/g,'""');
-                  return '"' + txt + '"';
-                });
-                if (cells.length) rows.push(cells);
-              });
-            });
-          } else {
-            var title = document.title || 'Export';
-            rows.push(['"' + title.replace(/"/g,'""') + '"']);
-            rows.push(['"Generated"','"' + new Date().toLocaleString().replace(/"/g,'""') + '"']);
+    <script>
+      // Global export/print helpers used by Alpine handlers in the static shell
+      (function () {
+        function safeFilename(base) {
+          try {
+            return String(base || "export")
+              .replace(/[^\w\-]+/g, "_")
+              .slice(0, 64);
+          } catch (_) {
+            return "export";
           }
-          var csv = rows.map(function(r){ return r.join(','); }).join('\n');
-          var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-          var a = document.createElement('a');
-          a.href = URL.createObjectURL(blob);
-          var base = safeFilename((document.querySelector('h1,h2')||{}).textContent || (document.title||'export'));
-          a.download = base + '_' + new Date().toISOString().slice(0,10) + '.csv';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        } catch(e){ console.error('exportToExcel failed', e); }
-      };
-    })();
-  </script>
-  <script>
-    // Analytics report export helper (fallback to CSV/print)
-    (function(){
-      window.exportAnalyticsReport = function(){
-        try {
-          if (typeof window.exportToExcel === 'function') return window.exportToExcel();
-          if (typeof window.exportToPDF === 'function') return window.exportToPDF();
-          if (typeof window.printPage === 'function') return window.printPage();
-          window.print && window.print();
-        } catch(e){ console.error('exportAnalyticsReport failed', e); try{ window.print(); }catch(_){} }
-      };
-    })();
-  </script>
+        }
+        window.printPage = function () {
+          try {
+            window.print();
+          } catch (e) {
+            console.error("printPage failed", e);
+          }
+        };
+        window.exportToPDF = function () {
+          try {
+            // Best-effort printable window from current view
+            var html = document.documentElement.cloneNode(true);
+            var w = window.open("", "_blank");
+            if (!w) return window.print();
+            w.document.open();
+            w.document.write(
+              "<!doctype html><html>" + html.innerHTML + "</html>",
+            );
+            w.document.close();
+            w.focus();
+            // Give styles a tick to load before print
+            setTimeout(function () {
+              try {
+                w.print();
+                w.close();
+              } catch (_) {}
+            }, 50);
+          } catch (e) {
+            console.error("exportToPDF failed", e);
+            try {
+              window.print();
+            } catch (_) {}
+          }
+        };
+        window.exportToExcel = function () {
+          try {
+            // Collect visible tables; fall back to simple summary
+            var tables = Array.from(document.querySelectorAll("table"));
+            var rows = [];
+            if (tables.length) {
+              tables.forEach(function (tbl, ti) {
+                if (ti > 0) rows.push([""]);
+                var thead = tbl.querySelectorAll("thead tr");
+                var tbody = tbl.querySelectorAll("tbody tr");
+                var trs = (thead.length ? Array.from(thead) : []).concat(
+                  Array.from(tbody),
+                );
+                if (!trs.length) trs = Array.from(tbl.querySelectorAll("tr"));
+                trs.forEach(function (tr) {
+                  var cells = Array.from(tr.children).map(function (td) {
+                    var txt = (td.textContent || "")
+                      .replace(/\s+/g, " ")
+                      .trim()
+                      .replace(/"/g, '""');
+                    return '"' + txt + '"';
+                  });
+                  if (cells.length) rows.push(cells);
+                });
+              });
+            } else {
+              var title = document.title || "Export";
+              rows.push(['"' + title.replace(/"/g, '""') + '"']);
+              rows.push([
+                '"Generated"',
+                '"' + new Date().toLocaleString().replace(/"/g, '""') + '"',
+              ]);
+            }
+            var csv = rows
+              .map(function (r) {
+                return r.join(",");
+              })
+              .join("\n");
+            var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            var base = safeFilename(
+              (document.querySelector("h1,h2") || {}).textContent ||
+                document.title ||
+                "export",
+            );
+            a.download =
+              base + "_" + new Date().toISOString().slice(0, 10) + ".csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          } catch (e) {
+            console.error("exportToExcel failed", e);
+          }
+        };
+      })();
+    </script>
+    <script>
+      // Analytics report export helper (fallback to CSV/print)
+      (function () {
+        window.exportAnalyticsReport = function () {
+          try {
+            if (typeof window.exportToExcel === "function")
+              return window.exportToExcel();
+            if (typeof window.exportToPDF === "function")
+              return window.exportToPDF();
+            if (typeof window.printPage === "function")
+              return window.printPage();
+            window.print && window.print();
+          } catch (e) {
+            console.error("exportAnalyticsReport failed", e);
+            try {
+              window.print();
+            } catch (_) {}
+          }
+        };
+      })();
+    </script>
   </body>
 </html>

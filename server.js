@@ -15,10 +15,24 @@ const PORT = process.env.PORT || 3000;
 function buildStubSale(id) {
   const now = new Date();
   const cart = [
-    { name: "Blue Dream Flower (by gram)", price: 12.5, quantity: 3.2, category: "Flower", weight: "Sold by gram" },
-    { name: "Gummy Bears 10-pack", price: 15.0, quantity: 1, category: "Edibles" },
+    {
+      name: "Blue Dream Flower (by gram)",
+      price: 12.5,
+      quantity: 3.2,
+      category: "Flower",
+      weight: "Sold by gram",
+    },
+    {
+      name: "Gummy Bears 10-pack",
+      price: 15.0,
+      quantity: 1,
+      category: "Edibles",
+    },
   ];
-  const subtotal = cart.reduce((s,i)=> s + Number(i.price||0) * Number(i.quantity||1), 0);
+  const subtotal = cart.reduce(
+    (s, i) => s + Number(i.price || 0) * Number(i.quantity || 1),
+    0,
+  );
   const discount_amount = 0;
   const tax = +(subtotal * 0.2).toFixed(2);
   const total = +(subtotal - discount_amount + tax).toFixed(2);
@@ -2751,16 +2765,23 @@ app.get("/sales/:id/receipt", async (req, res) => {
   // Fetch POS settings for store info
   let settings = {};
   try {
-    const sr = await supaFetch("pos_settings?id=eq.default&select=settings", { method: "GET" });
+    const sr = await supaFetch("pos_settings?id=eq.default&select=settings", {
+      method: "GET",
+    });
     const arr = sr.ok ? await sr.json() : [];
     const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-    settings = row && row.settings && typeof row.settings === "object" ? row.settings : {};
+    settings =
+      row && row.settings && typeof row.settings === "object"
+        ? row.settings
+        : {};
   } catch (_) {}
   const storeName = settings.store_name || "Cannabest POS";
   const storePhone = settings.store_phone || "";
   const website = settings.website || "";
-  const receiptFooter = settings.receipt_footer || `Thank you for shopping at ${storeName}`;
-  const registerName = (s.meta && (s.meta.register || s.meta.till || s.meta.drawer)) || "";
+  const receiptFooter =
+    settings.receipt_footer || `Thank you for shopping at ${storeName}`;
+  const registerName =
+    (s.meta && (s.meta.register || s.meta.till || s.meta.drawer)) || "";
 
   const cart = Array.isArray(s.cart) ? s.cart : [];
   // Compute discounts (item-level + cart-level)
@@ -2770,16 +2791,30 @@ app.get("/sales/:id/receipt", async (req, res) => {
     const qty = Number(i?.quantity || 1);
     const category = (i?.category || i?.product_category || "").toString();
     const weightStr = (i?.weight || i?.selectedWeight || "").toString();
-    const isFlower = category.toLowerCase() === "flower" || /\bg\b|gram/i.test(weightStr);
+    const isFlower =
+      category.toLowerCase() === "flower" || /\bg\b|gram/i.test(weightStr);
     const unitDisplay = isFlower ? `${qty.toFixed(2)} g` : `${qty} x`;
     const lineBase = price * qty;
-    const discAmt = i?.discount && typeof i.discount === "object" && Number(i.discount.amount)
-      ? Number(i.discount.amount) * qty
-      : 0;
+    const discAmt =
+      i?.discount && typeof i.discount === "object" && Number(i.discount.amount)
+        ? Number(i.discount.amount) * qty
+        : 0;
     const lineTotal = Math.max(0, lineBase - discAmt);
-    return { name, price, qty, isFlower, unitDisplay, lineBase, discAmt, lineTotal };
+    return {
+      name,
+      price,
+      qty,
+      isFlower,
+      unitDisplay,
+      lineBase,
+      discAmt,
+      lineTotal,
+    };
   });
-  const itemDiscountTotal = items.reduce((a, x) => a + Number(x.discAmt || 0), 0);
+  const itemDiscountTotal = items.reduce(
+    (a, x) => a + Number(x.discAmt || 0),
+    0,
+  );
   const cartDiscount = Number(s.discount_amount || 0);
   const subtotal = Number(s.subtotal || 0);
   const tax = Number(s.tax || s.tax_amount || 0);
@@ -2789,12 +2824,14 @@ app.get("/sales/:id/receipt", async (req, res) => {
       const m = s.meta || {};
       const c = Number(m.change_due || m.change || m.cash_change || 0);
       if (isFinite(c)) return c;
-    } catch(_){}
+    } catch (_) {}
     return 0;
   })();
   const customerType = (() => {
     const c = s.customer || {};
-    const t = (c.type || c.customerType || s.customer_type || "").toString().toLowerCase();
+    const t = (c.type || c.customerType || s.customer_type || "")
+      .toString()
+      .toLowerCase();
     return t === "medical" ? "Medical" : "Recreational";
   })();
   const ts = new Date(s.created_at || Date.now()).toLocaleString();
@@ -2820,7 +2857,10 @@ app.get("/sales/:id/receipt", async (req, res) => {
     .map((x) => {
       const left = `${x.unitDisplay} ${x.name}`.trim();
       const right = `$${x.lineTotal.toFixed(2)}`;
-      const discLine = x.discAmt > 0 ? `<div class=\"r xs muted\"><span>Discount</span><span>-$${x.discAmt.toFixed(2)}</span></div>` : "";
+      const discLine =
+        x.discAmt > 0
+          ? `<div class=\"r xs muted\"><span>Discount</span><span>-$${x.discAmt.toFixed(2)}</span></div>`
+          : "";
       return `<div class=\"r\"><div class=\"xs\">${left}</div><div class=\"xs\">${right}</div></div>${discLine}`;
     })
     .join("");
@@ -2872,10 +2912,15 @@ app.get("/sales/:id/exit-labels", async (req, res) => {
 
     let settings = {};
     try {
-      const sr = await supaFetch("pos_settings?id=eq.default&select=settings", { method: "GET" });
+      const sr = await supaFetch("pos_settings?id=eq.default&select=settings", {
+        method: "GET",
+      });
       const arr = sr.ok ? await sr.json() : [];
       const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-      settings = row && row.settings && typeof row.settings === "object" ? row.settings : {};
+      settings =
+        row && row.settings && typeof row.settings === "object"
+          ? row.settings
+          : {};
     } catch (_) {}
     const storeName = settings.store_name || "Cannabest POS";
 
@@ -2883,10 +2928,14 @@ app.get("/sales/:id/exit-labels", async (req, res) => {
     const items = cart.map((i) => {
       const name = i?.name || "Item";
       const qty = Number(i?.quantity || 1);
-      const cat = (i?.category || i?.product_category || "").toString().toLowerCase();
+      const cat = (i?.category || i?.product_category || "")
+        .toString()
+        .toLowerCase();
       const w = (i?.weight || i?.selectedWeight || "").toString();
       const isFlower = cat === "flower" || /\bg\b|gram/i.test(w);
-      const qtyDisp = isFlower ? `${qty.toFixed(2)} g` : `${Math.round(qty)} units`;
+      const qtyDisp = isFlower
+        ? `${qty.toFixed(2)} g`
+        : `${Math.round(qty)} units`;
       return { name, qtyDisp, isFlower };
     });
 
@@ -2903,7 +2952,7 @@ app.get("/sales/:id/exit-labels", async (req, res) => {
               <div class="row"><span>Sale #</span><span>${s.sale_number || id}</span></div>
               <div class="row"><span>Date</span><span>${new Date(s.created_at || Date.now()).toLocaleString()}</span></div>
               <div class="muted">Thank you for shopping at ${storeName}.</div>
-            </div>`
+            </div>`,
           )
           .join("")}
       </div>

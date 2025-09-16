@@ -3430,10 +3430,19 @@ function cannabisPOS() {
       const customerCount = recCount + medUnique;
       const totalSales = list.length;
       const m = this.monthStats || null;
-      const mDay = m && m.dayOfMonth ? Number(m.dayOfMonth) : new Date().getDate();
-      const mDays = m && m.daysInMonth ? Number(m.daysInMonth) : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+      const mDay =
+        m && m.dayOfMonth ? Number(m.dayOfMonth) : new Date().getDate();
+      const mDays =
+        m && m.daysInMonth
+          ? Number(m.daysInMonth)
+          : new Date(
+              new Date().getFullYear(),
+              new Date().getMonth() + 1,
+              0,
+            ).getDate();
       const mRev = m && m.revenue != null ? Number(m.revenue) : revenue;
-      const mCust = m && m.customers != null ? Number(m.customers) : customerCount;
+      const mCust =
+        m && m.customers != null ? Number(m.customers) : customerCount;
       return {
         totalSales,
         totalRevenue: revenue,
@@ -4245,9 +4254,13 @@ function cannabisPOS() {
             perGram = Number(tier?.prices?.weight_1g || 0);
           }
         } catch (_) {}
-        if (!isFinite(perGram) || perGram <= 0) perGram = Number(product.price || 0);
+        if (!isFinite(perGram) || perGram <= 0)
+          perGram = Number(product.price || 0);
         const grams = 1.0;
-        const price = isFinite(perGram) && perGram > 0 ? perGram * grams : Number(product.price || 0);
+        const price =
+          isFinite(perGram) && perGram > 0
+            ? perGram * grams
+            : Number(product.price || 0);
         this.addFlowerToCart(product, grams, price);
         return;
       }
