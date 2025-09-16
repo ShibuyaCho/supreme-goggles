@@ -1595,6 +1595,94 @@ app.post("/api/activity", async (req, res) => {
   }
 });
 
+// METRC transfers: persist and search in Supabase
+app.post("/node/metrc/transfers", async (req, res) => {
+  try {
+    const arr = Array.isArray(req.body?.transfers)
+      ? req.body.transfers
+      : Array.isArray(req.body)
+        ? req.body
+        : [];
+    if (!arr.length) return res.json({ success: true, inserted: 0 });
+    const rows = arr.map((t) => {
+      const manifest = t.ManifestNumber || t.Manifest || t.ManifestId || t.Id || t.id || null;
+      const shipperLicense = t.ShipperFacilityLicenseNumber || t.ShipperLicenseNumber || t.ShipperFacility || null;
+      const shipperName = t.ShipperFacilityName || t.ShipperName || null;
+      const destLicense = t.DeliveryFacilityLicenseNumber || t.RecipientFacilityLicenseNumber || t.DestinationFacility || null;
+      const destName = t.DeliveryFacilityName || t.RecipientFacilityName || null;
+      const dep = t.EstimatedDepartureDateTime || t.DepartureDateTime || t.departureDateTime || null;
+      const arrAt = t.EstimatedArrivalDateTime || t.ArrivalDateTime || t.arrivalDateTime || null;
+      const deliveredAt = t.DeliveredDateTime || t.deliveredDateTime || null;
+      const pkgs = Array.isArray(t.Packages) ? t.Packages.length : (t.PackageCount || 0);
+      return {
+        manifest_number: manifest ? String(manifest) : null,
+        shipper_license: shipperLicense ? String(shipperLicense) : null,
+        shipper_name: shipperName ? String(shipperName) : null,
+        destination_license: destLicense ? String(destLicense) : null,
+        destination_name: destName ? String(destName) : null,
+        estimated_departure: dep || null,
+        estimated_arrival: arrAt || null,
+        delivered_at: deliveredAt || null,
+        package_count: Number.isFinite(Number(pkgs)) ? Number(pkgs) : 0,
+        raw: t,
+        updated_at: new Date().toISOString(),
+      };
+    });
+    const okRows = rows.filter((r) => r.manifest_number);
+    const r = await supaFetch("metrc_transfers", {
+      method: "POST",
+      body: okRows.length ? okRows : rows,
+      query: okRows.length ? { on_conflict: "manifest_number" } : null,
+    });
+    let inserted = 0;
+    try {
+      const payload = await r.json();
+      inserted = Array.isArray(payload) ? payload.length : payload ? 1 : 0;
+    } catch (_) {}
+    try {
+      await supaFetch("metrc_logs", {
+        method: "POST",
+        body: [
+          {
+            type: "incoming_transfers_refresh",
+            count: rows.length,
+            sample_manifest: rows[0]?.manifest_number || null,
+            payload: { manifests: rows.map((x) => x.manifest_number).filter(Boolean).slice(0, 50) },
+            created_at: new Date().toISOString(),
+          },
+        ],
+      });
+    } catch (_) {}
+    return res.json({ success: true, inserted });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: "Persist failed" });
+  }
+});
+
+app.get("/node/metrc/transfers", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const since = (req.query?.since || "").toString().trim();
+    let qp = "metrc_transfers?select=*";
+    const clauses = [];
+    if (search) {
+      const s = encodeURIComponent(search);
+      clauses.push(
+        `or=(manifest_number.ilike.*${s}*,shipper_name.ilike.*${s}*,destination_name.ilike.*${s}*,shipper_license.ilike.*${s}*,destination_license.ilike.*${s}*)`,
+      );
+    }
+    if (since) {
+      clauses.push(`updated_at=gte.${encodeURIComponent(since)}`);
+    }
+    if (clauses.length) qp += `&${clauses.join("&")}`;
+    const r = await supaFetch(qp, { method: "GET" });
+    const rows = r.ok ? await r.json() : [];
+    res.json({ success: true, transfers: Array.isArray(rows) ? rows : [] });
+  } catch (e) {
+    res.json({ success: true, transfers: [] });
+  }
+});
+
 // In-memory diagnostics
 let __lastPayment = null;
 
