@@ -420,7 +420,7 @@
                     maxlength="4"
                     x-model="employeePin"
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green text-center text-2xl tracking-widest"
-                    placeholder="••••"
+                    placeholder="•••���"
                     @keydown.enter="handlePinLogin(employeeId, employeePin)"
                   />
                 </div>
@@ -21663,5 +21663,64 @@
         }
       } catch (_) {}
     </script>
+  <script>
+    // Global export/print helpers used by Alpine handlers in the static shell
+    (function(){
+      function safeFilename(base){
+        try { return String(base || 'export').replace(/[^\w\-]+/g,'_').slice(0,64); } catch(_) { return 'export'; }
+      }
+      window.printPage = function(){
+        try { window.print(); } catch(e){ console.error('printPage failed', e); }
+      };
+      window.exportToPDF = function(){
+        try {
+          // Best-effort printable window from current view
+          var html = document.documentElement.cloneNode(true);
+          var w = window.open('', '_blank');
+          if (!w) return window.print();
+          w.document.open();
+          w.document.write('<!doctype html><html>' + html.innerHTML + '</html>');
+          w.document.close();
+          w.focus();
+          // Give styles a tick to load before print
+          setTimeout(function(){ try { w.print(); w.close(); } catch(_) { } }, 50);
+        } catch(e){ console.error('exportToPDF failed', e); try { window.print(); } catch(_){} }
+      };
+      window.exportToExcel = function(){
+        try {
+          // Collect visible tables; fall back to simple summary
+          var tables = Array.from(document.querySelectorAll('table'));
+          var rows = [];
+          if (tables.length){
+            tables.forEach(function(tbl, ti){
+              if (ti>0) rows.push(['']);
+              var thead = tbl.querySelectorAll('thead tr');
+              var tbody = tbl.querySelectorAll('tbody tr');
+              var trs = (thead.length? Array.from(thead): []).concat(Array.from(tbody));
+              if (!trs.length) trs = Array.from(tbl.querySelectorAll('tr'));
+              trs.forEach(function(tr){
+                var cells = Array.from(tr.children).map(function(td){
+                  var txt = (td.textContent||'').replace(/\s+/g,' ').trim().replace(/"/g,'""');
+                  return '"' + txt + '"';
+                });
+                if (cells.length) rows.push(cells);
+              });
+            });
+          } else {
+            var title = document.title || 'Export';
+            rows.push(['"' + title.replace(/"/g,'""') + '"']);
+            rows.push(['"Generated"','"' + new Date().toLocaleString().replace(/"/g,'""') + '"']);
+          }
+          var csv = rows.map(function(r){ return r.join(','); }).join('\n');
+          var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+          var a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          var base = safeFilename((document.querySelector('h1,h2')||{}).textContent || (document.title||'export'));
+          a.download = base + '_' + new Date().toISOString().slice(0,10) + '.csv';
+          document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        } catch(e){ console.error('exportToExcel failed', e); }
+      };
+    })();
+  </script>
   </body>
 </html>
