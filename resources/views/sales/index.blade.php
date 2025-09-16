@@ -276,6 +276,9 @@
                                                 <button onclick="reprintReceipt({{ $sale->id }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
                                                     Reprint Receipt
                                                 </button>
+                                                <button onclick="reprintExitLabels({{ $sale->id }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+                                                    Reprint Exit Labels
+                                                </button>
                                                 <button onclick="emailReceipt({{ $sale->id }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
                                                     Email Receipt
                                                 </button>
