@@ -17518,7 +17518,7 @@
                     x-show="roomForm.status === 'restricted'"
                     class="text-xs text-red-600 mt-1"
                   >
-                    ⚠ Restricted rooms cannot have items for sale and will not
+                    �� Restricted rooms cannot have items for sale and will not
                     show on online menus
                   </p>
                 </div>
@@ -21719,6 +21719,19 @@
           a.download = base + '_' + new Date().toISOString().slice(0,10) + '.csv';
           document.body.appendChild(a); a.click(); document.body.removeChild(a);
         } catch(e){ console.error('exportToExcel failed', e); }
+      };
+    })();
+  </script>
+  <script>
+    // Analytics report export helper (fallback to CSV/print)
+    (function(){
+      window.exportAnalyticsReport = function(){
+        try {
+          if (typeof window.exportToExcel === 'function') return window.exportToExcel();
+          if (typeof window.exportToPDF === 'function') return window.exportToPDF();
+          if (typeof window.printPage === 'function') return window.printPage();
+          window.print && window.print();
+        } catch(e){ console.error('exportAnalyticsReport failed', e); try{ window.print(); }catch(_){} }
       };
     })();
   </script>
