@@ -995,7 +995,11 @@ function settingsManager() {
 
         async fetchServerSettings() {
             try {
-                const res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : Promise.resolve({ success: false }));
+                let res = await (window.posAuth ? posAuth.apiRequest('get', '/settings/pos') : null);
+                if (!res || res.success === false) {
+                    const r2 = await (window.axios||axios).get('/api/settings/pos', { headers: { Accept: 'application/json' } });
+                    res = { success: true, data: r2.data };
+                }
                 if (res.success && res.data) {
                     const srv = res.data.settings || res.data;
                     if (srv && typeof srv === 'object') {
