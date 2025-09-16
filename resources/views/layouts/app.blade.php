@@ -394,6 +394,36 @@
             }
         };
 
+        // Generic dialog helpers
+        (function(){
+            try {
+                if (typeof window.openDialog !== 'function') {
+                    window.openDialog = function(id){
+                        try {
+                            var token = String(id||'').replace(/-/g,'');
+                            var key = 'openDialog' + (token.charAt(0).toUpperCase() + token.slice(1));
+                            var fn = window[key];
+                            if (typeof fn === 'function') return fn();
+                            var el = document.getElementById(id);
+                            if (el) { el.classList.remove('hidden'); el.classList.add('flex'); document.body.style.overflow='hidden'; }
+                        } catch(e) {}
+                    };
+                }
+                if (typeof window.closeDialog !== 'function') {
+                    window.closeDialog = function(id){
+                        try {
+                            var token = String(id||'').replace(/-/g,'');
+                            var key = 'closeDialog' + (token.charAt(0).toUpperCase() + token.slice(1));
+                            var fn = window[key];
+                            if (typeof fn === 'function') return fn();
+                            var el = document.getElementById(id);
+                            if (el) { el.classList.add('hidden'); el.classList.remove('flex'); document.body.style.overflow=''; }
+                        } catch(e) {}
+                    };
+                }
+            } catch(_) {}
+        })();
+
         // Mobile menu toggle
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
