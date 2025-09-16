@@ -24,8 +24,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Sample inventory data (in real app, this would come from API)
-const allInventoryItems = [
+type InvItem = { id: string; name: string; category: string; price: number; cost: number; stock: number; room: string; supplier?: string };
+
+// Fallback sample inventory data (used only if API returns empty)
+const fallbackInventoryItems: InvItem[] = [
   // Sales Floor Items
   {
     id: "sf1",
@@ -195,19 +197,72 @@ export default function InventoryReport() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [reportType, setReportType] = useState<"summary" | "detailed">("summary");
 
+  const [items, setItems] = useState<InvItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        let rows: any[] = [];
+        // 1) Node alias -> Supabase
+        try {
+          const r = await fetch("/node/products", { headers: { Accept: "application/json" } });
+          if (r.ok) {
+            const data = await r.json();
+            rows = Array.isArray(data?.products) ? data.products : [];
+          }
+        } catch (_) {}
+        // 2) Laravel API fallback
+        if (!Array.isArray(rows) || rows.length === 0) {
+          try {
+            const r2 = await fetch("/api/products", { headers: { Accept: "application/json" } });
+            if (r2.ok) {
+              const d2 = await r2.json();
+              rows = Array.isArray(d2?.data) ? d2.data : Array.isArray(d2) ? d2 : [];
+            }
+          } catch (_) {}
+        }
+        // 3) Web route JSON fallback
+        if (!Array.isArray(rows) || rows.length === 0) {
+          try {
+            const r3 = await fetch("/products", { headers: { Accept: "application/json" } });
+            if (r3.ok) {
+              const d3 = await r3.json();
+              rows = Array.isArray(d3?.data) ? d3.data : Array.isArray(d3) ? d3 : [];
+            }
+          } catch (_) {}
+        }
+        const mapped: InvItem[] = (Array.isArray(rows) ? rows : []).map((p: any) => ({
+          id: String(p.id ?? p.sku ?? Math.random().toString(36).slice(2)),
+          name: p.name || "",
+          category: p.category || "Uncategorized",
+          price: Number(p.price || 0) || 0,
+          cost: Number(p.cost || 0) || 0,
+          stock: Number(p.quantity || p.stock || 0) || 0,
+          room: p.room || "",
+          supplier: p.supplier || p.vendor || "",
+        }));
+        setItems(mapped.length > 0 ? mapped : fallbackInventoryItems);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
   // Get unique categories
   const allCategories = useMemo(() => {
-    const categories = [...new Set(allInventoryItems.map(item => item.category))];
+    const categories = [...new Set(items.map(item => item.category))];
     return categories.sort();
-  }, []);
+  }, [items]);
 
   // Filter items based on selected category
   const filteredItems = useMemo(() => {
     if (selectedCategory === "all") {
-      return allInventoryItems;
+      return items;
     }
-    return allInventoryItems.filter(item => item.category === selectedCategory);
-  }, [selectedCategory]);
+    return items.filter(item => item.category === selectedCategory);
+  }, [selectedCategory, items]);
   
   // Calculate category totals
   const categoryTotals = useMemo(() => {
@@ -228,8 +283,8 @@ export default function InventoryReport() {
     });
     
     return totals;
-  }, []);
-  
+  }, [filteredItems]);
+
   // Calculate grand totals
   const grandTotals = useMemo(() => {
     return Object.values(categoryTotals).reduce(
@@ -627,6 +682,9 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
 
       <div className="container mx-auto p-6">
         {/* Summary Cards */}
+        {loading ? (
+          <div className="p-6 text-sm text-gray-600">Loading inventory...</div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
             <CardContent className="p-4 text-center">
@@ -661,6 +719,7 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
             </CardContent>
           </Card>
         </div>
+        )}
 
         {/* Category Filter Info */}
         {selectedCategory !== "all" && (
