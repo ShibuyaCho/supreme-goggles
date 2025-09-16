@@ -80,6 +80,15 @@ class POSAuth {
         if (this.token) {
           config.headers.Authorization = `Bearer ${this.token}`;
         }
+        // Multi-store context headers (UI-managed)
+        try {
+          const raw = localStorage.getItem('pos_store');
+          if (raw) {
+            const store = JSON.parse(raw);
+            if (store && store.id) config.headers['X-Store-ID'] = String(store.id);
+            if (store && store.orgId) config.headers['X-Org-ID'] = String(store.orgId);
+          }
+        } catch (e) {}
         config.headers["Content-Type"] = "application/json";
         config.headers["Accept"] = "application/json";
         return config;
