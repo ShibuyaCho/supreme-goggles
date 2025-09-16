@@ -142,7 +142,8 @@ Route::prefix('sales')->name('sales.')->group(function () {
     Route::post('/{sale}/void', [SalesController::class, 'void'])->name('void');
     Route::post('/{sale}/refund', [SalesController::class, 'refund'])->name('refund');
     Route::post('/{sale}/reprint-receipt', [SalesController::class, 'reprintReceipt'])->name('reprint-receipt');
-    
+    Route::get('/{sale}/exit-labels', [SalesController::class, 'reprintExitLabels'])->name('exit-labels');
+
     // Sale Reports
     Route::get('/report/daily', [SalesController::class, 'dailyReport'])->name('daily-report');
     Route::get('/report/weekly', [SalesController::class, 'weeklyReport'])->name('weekly-report');
