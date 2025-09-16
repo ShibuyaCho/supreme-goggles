@@ -542,65 +542,8 @@ export default function Sales() {
   };
 
   const handleReprintExitLabel = (sale: Sale) => {
-    const exitLabelContent = `
-      <html>
-        <head>
-          <title>Exit Label - ${sale.id}</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              font-size: 11px;
-              color: #000;
-              background: white;
-              margin: 10px;
-              max-width: 200px;
-            }
-            .exit-label {
-              border: 2px solid #000;
-              padding: 8px;
-              text-align: center;
-            }
-            .warning {
-              background-color: #ff0000;
-              color: white;
-              font-weight: bold;
-              padding: 4px;
-              margin: 4px 0;
-            }
-            .info {
-              margin: 3px 0;
-              font-weight: bold;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="exit-label">
-            <div class="warning">EXIT PACKAGE</div>
-            <div class="info">CANNABEST DISPENSARY</div>
-            <div>License: 100-0001</div>
-            <div>Transaction: ${sale.id}</div>
-            <div>${new Date(sale.timestamp).toLocaleDateString()}</div>
-            ${sale.customer ? `<div>Customer: ${sale.customer.name}</div>` : ""}
-            <div class="warning">FOR OREGON USE ONLY</div>
-            <div>Items: ${sale.items.length}</div>
-            <div>Total: $${sale.total.toFixed(2)}</div>
-            <div style="font-size: 9px; margin-top: 8px;">
-              This package contains cannabis products.<br>
-              Keep away from children and pets.<br>
-              Do not operate machinery.
-            </div>
-          </div>
-        </body>
-      </html>
-    `;
-
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(exitLabelContent);
-      printWindow.document.close();
-      printWindow.focus();
-      printWindow.print();
-    }
+    const id = sale.id;
+    window.open(`/sales/${id}/exit-labels?reprint=1`, "_blank");
   };
 
   const handleReprintBarcode = (sale: Sale) => {
