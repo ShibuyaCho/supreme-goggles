@@ -8,6 +8,7 @@ use App\Services\MetrcService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 use PDF;
 
 class ProductsController extends Controller
@@ -166,7 +167,21 @@ class ProductsController extends Controller
             $data['image'] = Storage::url($imagePath);
         }
 
-        Product::create($data);
+        $product = Product::create($data);
+
+        // Mirror to Supabase (best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/products', [ $product->toArray() ]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
 
         return redirect()->route('products.index')->with('success', 'Product created successfully');
     }
@@ -205,6 +220,20 @@ class ProductsController extends Controller
 
         $product->update($productData);
 
+        // Mirror update to Supabase (best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=eq.' . urlencode($product->id), $product->toArray());
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
         return redirect()->route('products.index')->with('success', 'Product updated successfully');
     }
 
@@ -223,7 +252,21 @@ class ProductsController extends Controller
             Storage::disk('public')->delete($imagePath);
         }
 
+        $id = $product->id;
         $product->delete();
+
+        // Mirror delete to Supabase (best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json'
+                ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=eq.' . urlencode($id));
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
 
         return response()->json([
             'message' => 'Product deleted successfully'
@@ -245,6 +288,34 @@ class ProductsController extends Controller
 
         $oldRoom = $product->room;
         $product->update(['room' => $request->new_room]);
+
+        // Mirror to Supabase (product room + inventory movement)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=eq.' . urlencode($product->id), [ 'room' => $request->new_room, 'updated_at' => now()->toISOString() ]);
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/inventory_movements', [[
+                    'product_id' => (int)$product->id,
+                    'from_room' => $oldRoom,
+                    'to_room' => $request->new_room,
+                    'quantity' => null,
+                    'reason' => $request->reason ?: 'transfer',
+                    'actor' => auth()->user()->email ?? 'system',
+                    'created_at' => now()->toISOString(),
+                ]]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
 
         return response()->json([
             'message' => "Product transferred from {$oldRoom} to {$request->new_room}",
@@ -282,6 +353,34 @@ class ProductsController extends Controller
 
         $product->update(['quantity' => $newQuantity]);
 
+        // Mirror to Supabase (quantity + movement log)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=eq.' . urlencode($product->id), [ 'quantity' => $newQuantity, 'updated_at' => now()->toISOString() ]);
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/inventory_movements', [[
+                    'product_id' => (int)$product->id,
+                    'from_room' => $product->room,
+                    'to_room' => $product->room,
+                    'quantity' => (int)($newQuantity - $oldQuantity),
+                    'reason' => $request->reason ?: 'adjust',
+                    'actor' => auth()->user()->email ?? 'system',
+                    'created_at' => now()->toISOString(),
+                ]]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
         return response()->json([
             'message' => 'Quantity adjusted successfully',
             'old_quantity' => $oldQuantity,
@@ -308,6 +407,21 @@ class ProductsController extends Controller
         foreach ($products as $product) {
             $product->update(['room' => $request->new_room]);
         }
+
+        // Mirror to Supabase in batch (by filter)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $ids = implode(',', array_map('intval', $request->product_ids));
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=in.(' . $ids . ')', [ 'room' => $request->new_room, 'updated_at' => now()->toISOString() ]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
 
         return response()->json([
             'message' => count($products) . ' products transferred to ' . $request->new_room
@@ -381,6 +495,22 @@ class ProductsController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
         Product::whereIn('id', $request->product_ids)->update(['price' => $request->price]);
+
+        // Mirror to Supabase in batch
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $ids = implode(',', array_map('intval', $request->product_ids));
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=in.(' . $ids . ')', [ 'price' => $request->price, 'updated_at' => now()->toISOString() ]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
         return response()->json(['message' => count($request->product_ids) . ' products updated']);
     }
 
