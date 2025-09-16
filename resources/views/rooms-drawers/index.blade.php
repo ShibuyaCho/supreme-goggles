@@ -581,11 +581,12 @@ document.addEventListener('DOMContentLoaded', function() {
         activityEl.appendChild(row);
       });
     }
-    function addActivity(title, details=''){
+    async function addActivity(title, details=''){
       const entry = { at: new Date().toISOString(), by: currentUserName(), title, details };
       activityLog.push(entry);
       saveActivity();
       try { const k='pos_activity_log'; const prev=JSON.parse(localStorage.getItem(k)||'[]'); prev.push(entry); localStorage.setItem(k, JSON.stringify(prev)); } catch(_) {}
+      try { await fetch('/api/activity', { method:'POST', headers:{ 'Content-Type':'application/json', Accept:'application/json' }, body: JSON.stringify({ action:'rooms_drawers', entry }) }); } catch(_) {}
       renderActivity();
     }
     document.getElementById('rd-clear-log')?.addEventListener('click', ()=>{ activityLog = []; saveActivity(); renderActivity(); });
