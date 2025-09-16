@@ -4474,9 +4474,13 @@ function cannabisPOS() {
         const incoming = Number(newQuantity);
         let next = incoming;
         if (item && item._unit === "g") {
-          const step = 1.0; // increment flower grams by 1.0 via buttons
           const delta = incoming - prev;
-          next = prev + (delta >= 0 ? step : -step);
+          const isButtonStep = Math.abs(Math.abs(delta) - 1.0) < 1e-6; // +/- buttons pass prev±1
+          if (isButtonStep) {
+            next = prev + (delta >= 0 ? 1.0 : -1.0);
+          } else {
+            next = incoming; // manual entry: use exact typed grams
+          }
         }
         const q = Number(next);
         item.quantity = isFinite(q)
