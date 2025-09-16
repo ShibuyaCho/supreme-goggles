@@ -909,17 +909,18 @@ function settingsManager() {
 
         async saveSettings() {
             try {
-                const res = await (window.posAuth ? posAuth.apiRequest('post', '/settings', this.settings) : Promise.resolve({ success: false }));
-                if (res.success) {
+                const res = await (window.posAuth ? posAuth.apiRequest('post', '/settings/pos', this.settings) : (window.axios||axios).post('/api/settings/pos', this.settings));
+                const ok = (res && res.success === true) || (res && res.data && res.data.success === true);
+                if (ok) {
                     this.showToast('Settings saved successfully!', 'success');
                 } else {
-                    this.showToast('Error saving settings' + (res.message ? (': ' + res.message) : ''), 'error');
+                    const msg = (res && res.message) || (res && res.data && res.data.message) || '';
+                    this.showToast('Error saving settings' + (msg ? (': ' + msg) : ''), 'error');
                 }
             } catch (error) {
                 console.error('Error saving settings:', error);
                 this.showToast('Error saving settings', 'error');
             } finally {
-                // Always keep a local copy so sensitive fields persist client-side
                 this.saveSettingsToStorage();
             }
         },
