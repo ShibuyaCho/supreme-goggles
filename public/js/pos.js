@@ -4256,9 +4256,19 @@ function cannabisPOS() {
         return;
       }
 
-      // For flower products, open deli-style selection
-      if (product.category === "Flower" && product.priceTier) {
-        this.openFlowerDeliModal(product);
+      // For flower products, add 1.0g directly (no prompt)
+      if (product.category === "Flower") {
+        let perGram = 0;
+        try {
+          if (product.priceTier && Array.isArray(this.priceTiers)) {
+            const tier = this.priceTiers.find((t) => t.id == product.priceTier);
+            perGram = Number(tier?.prices?.weight_1g || 0);
+          }
+        } catch (_) {}
+        if (!isFinite(perGram) || perGram <= 0) perGram = Number(product.price || 0);
+        const grams = 1.0;
+        const price = isFinite(perGram) && perGram > 0 ? perGram * grams : Number(product.price || 0);
+        this.addFlowerToCart(product, grams, price);
         return;
       }
 
