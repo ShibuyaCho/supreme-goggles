@@ -53,6 +53,10 @@ let nextEmployeeId = 1;
 let devTemplates = [];
 let nextTemplateId = 1;
 
+// Dev time clock (persisted)
+let devTimeEntries = []; // { id, employee_id, clock_in, clock_out, notes }
+let nextTimeEntryId = 1;
+
 const AUTH_FILE = path.join(__dirname, ".dev-auth.json");
 function loadDevState() {
   try {
@@ -61,11 +65,11 @@ function loadDevState() {
       const data = JSON.parse(raw || "{}");
       if (Array.isArray(data.users)) devStore.users = data.users;
       if (typeof data.nextUserId === "number") nextUserId = data.nextUserId;
-      if (typeof data.nextEmployeeId === "number")
-        nextEmployeeId = data.nextEmployeeId;
+      if (typeof data.nextEmployeeId === "number") nextEmployeeId = data.nextEmployeeId;
       if (Array.isArray(data.devTemplates)) devTemplates = data.devTemplates;
-      if (typeof data.nextTemplateId === "number")
-        nextTemplateId = data.nextTemplateId;
+      if (typeof data.nextTemplateId === "number") nextTemplateId = data.nextTemplateId;
+      if (Array.isArray(data.devTimeEntries)) devTimeEntries = data.devTimeEntries;
+      if (typeof data.nextTimeEntryId === "number") nextTimeEntryId = data.nextTimeEntryId;
     }
   } catch (e) {
     console.warn("Failed to load dev auth state:", e.message);
@@ -79,6 +83,8 @@ function saveDevState() {
       nextEmployeeId,
       devTemplates,
       nextTemplateId,
+      devTimeEntries,
+      nextTimeEntryId,
     };
     fs.writeFileSync(AUTH_FILE, JSON.stringify(data, null, 2), "utf8");
   } catch (e) {
@@ -939,6 +945,41 @@ app.get("/api/employees", async (_req, res) => {
   }
 });
 
+// Employees: next-id (dev + supabase-backed)
+app.get("/api/employees/next-id", async (_req, res) => {
+  async function getNextEmpId() {
+    try {
+      const r = await supaFetch(
+        "employees?select=employee_id,created_at&order=created_at.desc&limit=200",
+        { method: "GET" },
+      );
+      const arr = r.ok ? await r.json() : [];
+      let max = 0;
+      for (const row of Array.isArray(arr) ? arr : []) {
+        const v = row && row.employee_id ? String(row.employee_id) : "";
+        const m = v.match(/(\d+)/);
+        if (m) {
+          const n = parseInt(m[1].replace(/^0+/, "") || "0", 10);
+          if (n > max) max = n;
+        }
+      }
+      const next = Math.max(1, max + 1);
+      const pad = next < 100 ? 2 : String(next).length;
+      return `Emp${String(next).padStart(pad, "0")}`;
+    } catch (_) {
+      const id = nextEmployeeId++;
+      saveDevState();
+      return `Emp${String(id).padStart(id < 100 ? 2 : String(id).length, "0")}`;
+    }
+  }
+  try {
+    const nextId = await getNextEmpId();
+    return res.json({ next_id: nextId });
+  } catch (e) {
+    return res.json({ next_id: `Emp${String(nextEmployeeId++).padStart(2, "0")}` });
+  }
+});
+
 // Employees: create
 app.post("/api/employees", async (req, res) => {
   const b = req.body || {};
@@ -1083,6 +1124,85 @@ app.delete("/api/employees/:id", async (req, res) => {
       .status(500)
       .json({ success: false, error: "Failed to delete employee" });
   }
+});
+
+// Employees: time entries (dev + supabase-backed)
+app.get("/api/employees/time-entries", async (req, res) => {
+  try {
+    const start = (req.query?.start_date || "").toString();
+    const end = (req.query?.end_date || "").toString();
+    const emp = (req.query?.employee_id || "").toString();
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const params = new URLSearchParams();
+      params.set("select", "id,employee_id,clock_in,clock_out,notes");
+      if (start) params.set("clock_in.gte", start);
+      if (end) params.set("clock_in.lte", end);
+      if (emp) params.set("employee_id", `eq.${emp}`);
+      const r = await supaFetch(`time_clock_entries?${params.toString()}`, { method: "GET" });
+      if (r.ok) {
+        const rows = await r.json();
+        return res.json({ entries: Array.isArray(rows) ? rows : [] });
+      }
+    }
+  } catch (_) {}
+  // Fallback to in-memory
+  const startMs = req.query?.start_date ? Date.parse(String(req.query.start_date)) : null;
+  const endMs = req.query?.end_date ? Date.parse(String(req.query.end_date)) : null;
+  const empId = req.query?.employee_id ? String(req.query.employee_id) : null;
+  const out = devTimeEntries.filter((e) => {
+    const t = Date.parse(e.clock_in);
+    if (startMs && t < startMs) return false;
+    if (endMs && t > endMs + 86400000 - 1) return false;
+    if (empId && String(e.employee_id) !== String(empId)) return false;
+    return true;
+  });
+  return res.json({ entries: out });
+});
+
+app.post("/api/employees/time-entries", async (req, res) => {
+  const b = req.body || {};
+  const row = {
+    id: nextTimeEntryId++,
+    employee_id: b.employee_id ? Number(b.employee_id) : null,
+    clock_in: b.clock_in || new Date().toISOString(),
+    clock_out: b.clock_out || null,
+    notes: b.notes || "",
+  };
+  try {
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const r = await supaFetch("time_clock_entries", { method: "POST", body: [row] });
+      if (r.ok) {
+        const payload = await r.json();
+        const created = Array.isArray(payload) ? payload[0] : payload;
+        return res.status(201).json({ entry: created });
+      }
+    }
+  } catch (_) {}
+  devTimeEntries.push(row);
+  saveDevState();
+  return res.status(201).json({ entry: row });
+});
+
+app.put("/api/employees/time-entries/:id", async (req, res) => {
+  const id = String(req.params.id || "");
+  const b = req.body || {};
+  try {
+    if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+      const r = await supaFetch(`time_clock_entries?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: b });
+      if (r.ok) {
+        const payload = await r.json();
+        const updated = Array.isArray(payload) ? payload[0] : payload;
+        return res.json({ entry: updated });
+      }
+    }
+  } catch (_) {}
+  const idx = devTimeEntries.findIndex((e) => String(e.id) === id);
+  if (idx >= 0) {
+    devTimeEntries[idx] = { ...devTimeEntries[idx], ...b };
+    saveDevState();
+    return res.json({ entry: devTimeEntries[idx] });
+  }
+  return res.json({ entry: null });
 });
 
 // Customers: list
