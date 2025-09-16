@@ -313,7 +313,7 @@ function cannabisPOS() {
     // Inventory evaluation actions
     async refreshInventoryEvaluation() {
       try {
-        if (typeof this.loadProducts === 'function') {
+        if (typeof this.loadProducts === "function") {
           await this.loadProducts();
         }
         // Cache a snapshot so other components can read fresh numbers if needed
@@ -322,77 +322,117 @@ function cannabisPOS() {
           breakdown: this.getCategoryBreakdown(),
           ts: Date.now(),
         };
-        if (window.POS && typeof window.POS.showToast === 'function') {
-          window.POS.showToast('Inventory evaluation refreshed', 'success');
+        if (window.POS && typeof window.POS.showToast === "function") {
+          window.POS.showToast("Inventory evaluation refreshed", "success");
         }
       } catch (e) {
         console.error(e);
-        if (window.POS && typeof window.POS.showToast === 'function') {
-          window.POS.showToast('Refresh failed', 'error');
+        if (window.POS && typeof window.POS.showToast === "function") {
+          window.POS.showToast("Refresh failed", "error");
         } else {
-          alert('Refresh failed');
+          alert("Refresh failed");
         }
       }
     },
     async exportInventoryReport() {
       try {
         // Prefer the global ReportExportManager if available (richer UI)
-        if (window.reportExportManager && typeof window.reportExportManager.showExportModal === 'function') {
-          window.reportExportManager.showExportModal('inventory', {});
+        if (
+          window.reportExportManager &&
+          typeof window.reportExportManager.showExportModal === "function"
+        ) {
+          window.reportExportManager.showExportModal("inventory", {});
           return;
         }
-        const choice = prompt('Export format: pdf, excel, or csv', 'pdf');
-        const fmt = (choice || '').trim().toLowerCase();
-        if (!fmt || !['pdf','excel','csv'].includes(fmt)) return;
+        const choice = prompt("Export format: pdf, excel, or csv", "pdf");
+        const fmt = (choice || "").trim().toLowerCase();
+        if (!fmt || !["pdf", "excel", "csv"].includes(fmt)) return;
         const client = window.axios || axios;
-        const res = await client.post('/api/reports/export', {
-          report_type: 'inventory',
-          format: fmt,
-          start_date: null,
-          end_date: null,
-          filters: {}
-        }, { responseType: 'blob' });
+        const res = await client.post(
+          "/api/reports/export",
+          {
+            report_type: "inventory",
+            format: fmt,
+            start_date: null,
+            end_date: null,
+            filters: {},
+          },
+          { responseType: "blob" },
+        );
         const headers = res.headers || {};
-        const contentType = (headers['content-type'] || 'application/octet-stream').toLowerCase();
-        let blob = res.data instanceof Blob ? res.data : new Blob([res.data], { type: contentType });
+        const contentType = (
+          headers["content-type"] || "application/octet-stream"
+        ).toLowerCase();
+        let blob =
+          res.data instanceof Blob
+            ? res.data
+            : new Blob([res.data], { type: contentType });
         // Fallback if server returns JSON stub
-        const looksLikeJson = contentType.includes('json') || (blob && blob.size > 0 && blob.size < 2048);
+        const looksLikeJson =
+          contentType.includes("json") ||
+          (blob && blob.size > 0 && blob.size < 2048);
         if (looksLikeJson) {
           try {
             const text = await blob.text();
-            if (text.trim().startsWith('{') || text.trim().startsWith('[')) {
-              const headings = ['Product Name','SKU','Category','Quantity','Unit Cost','Unit Price','Total Value','Room','METRC Tag'];
-              const csv = headings.join(',') + '\n';
-              blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+            if (text.trim().startsWith("{") || text.trim().startsWith("[")) {
+              const headings = [
+                "Product Name",
+                "SKU",
+                "Category",
+                "Quantity",
+                "Unit Cost",
+                "Unit Price",
+                "Total Value",
+                "Room",
+                "METRC Tag",
+              ];
+              const csv = headings.join(",") + "\n";
+              blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
             }
           } catch (_) {}
         }
-        const ts = new Date().toISOString().slice(0,19).replace(/:/g,'-');
-        const filename = `cannabis_pos_inventory_${ts}.${fmt === 'excel' ? 'xlsx' : (looksLikeJson ? 'csv' : fmt)}`;
+        const ts = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
+        const filename = `cannabis_pos_inventory_${ts}.${fmt === "excel" ? "xlsx" : looksLikeJson ? "csv" : fmt}`;
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.setAttribute('download', filename);
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(()=>window.URL.revokeObjectURL(url), 100);
-        if (window.POS && typeof window.POS.showToast === 'function') {
-          window.POS.showToast('Inventory report exported', 'success');
+        const a = document.createElement("a");
+        a.href = url;
+        a.setAttribute("download", filename);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        if (window.POS && typeof window.POS.showToast === "function") {
+          window.POS.showToast("Inventory report exported", "success");
         }
       } catch (e) {
-        console.error('Inventory export failed', e);
+        console.error("Inventory export failed", e);
         // Last-resort CSV headers
-        const headings = ['Product Name','SKU','Category','Quantity','Unit Cost','Unit Price','Total Value','Room','METRC Tag'];
-        const csv = headings.join(',') + '\n';
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-        const ts = new Date().toISOString().slice(0,19).replace(/:/g,'-');
+        const headings = [
+          "Product Name",
+          "SKU",
+          "Category",
+          "Quantity",
+          "Unit Cost",
+          "Unit Price",
+          "Total Value",
+          "Room",
+          "METRC Tag",
+        ];
+        const csv = headings.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const ts = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
         const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.setAttribute('download', `cannabis_pos_inventory_${ts}.csv`);
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(()=>window.URL.revokeObjectURL(url), 100);
-        if (window.POS && typeof window.POS.showToast === 'function') {
-          window.POS.showToast('Downloaded CSV headers (fallback)', 'info');
+        const a = document.createElement("a");
+        a.href = url;
+        a.setAttribute("download", `cannabis_pos_inventory_${ts}.csv`);
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => window.URL.revokeObjectURL(url), 100);
+        if (window.POS && typeof window.POS.showToast === "function") {
+          window.POS.showToast("Downloaded CSV headers (fallback)", "info");
         } else {
-          alert('Downloaded CSV headers (fallback)');
+          alert("Downloaded CSV headers (fallback)");
         }
       }
     },
@@ -823,7 +863,11 @@ function cannabisPOS() {
         };
         // Preserve reactivity by replacing object
         this.productForm = Object.assign({}, defaults);
-      } catch (e) { try { console.error(e); } catch(_) {} }
+      } catch (e) {
+        try {
+          console.error(e);
+        } catch (_) {}
+      }
     },
     employeeForm: {
       name: "",
@@ -1020,10 +1064,15 @@ function cannabisPOS() {
     async refreshOrderQueue() {
       try {
         let orders = [];
-        if (this.isAuthenticated && window.posAuth && typeof posAuth.apiRequest === "function") {
+        if (
+          this.isAuthenticated &&
+          window.posAuth &&
+          typeof posAuth.apiRequest === "function"
+        ) {
           try {
             const res = await posAuth.apiRequest("get", "/pos/queue-orders");
-            const data = res && (res.data?.orders || res.data?.data || res.data) || [];
+            const data =
+              (res && (res.data?.orders || res.data?.data || res.data)) || [];
             if (Array.isArray(data)) orders = data;
           } catch (_) {}
         }
@@ -1038,22 +1087,42 @@ function cannabisPOS() {
         }
         const normalized = (Array.isArray(orders) ? orders : []).map((o, i) => {
           const items = Array.isArray(o.items) ? o.items : [];
-          const total = Number(o.total || items.reduce((sum, it) => sum + Number(it.price || 0) * Number(it.quantity || 1), 0));
-          const itemCount = Number(o.itemCount || items.reduce((sum, it) => sum + Number(it.quantity || 0), 0));
+          const total = Number(
+            o.total ||
+              items.reduce(
+                (sum, it) =>
+                  sum + Number(it.price || 0) * Number(it.quantity || 1),
+                0,
+              ),
+          );
+          const itemCount = Number(
+            o.itemCount ||
+              items.reduce((sum, it) => sum + Number(it.quantity || 0), 0),
+          );
           const customer = o.customer || {};
           return {
             id: o.id != null ? o.id : `q-${Date.now()}-${i}`,
             status: String(o.status || "pending").toLowerCase(),
-            orderType: String(o.orderType || o.type || "pos-hold").toLowerCase(),
+            orderType: String(
+              o.orderType || o.type || "pos-hold",
+            ).toLowerCase(),
             total: isFinite(total) ? total : 0,
             itemCount: isFinite(itemCount) ? itemCount : items.length,
             customer: {
               name: customer.name || customer.full_name || "Walk-in Customer",
               phone: customer.phone || customer.phone_number || "",
               email: customer.email || "",
-              isMedical: !!(customer.isMedical || customer.medical || customer.customerType === "medical"),
+              isMedical: !!(
+                customer.isMedical ||
+                customer.medical ||
+                customer.customerType === "medical"
+              ),
             },
-            placedAt: o.placedAt || o.created_at || o.createdAt || new Date().toISOString(),
+            placedAt:
+              o.placedAt ||
+              o.created_at ||
+              o.createdAt ||
+              new Date().toISOString(),
             items: items.map((it, j) => ({
               id: it.id != null ? it.id : `${i}-${j}`,
               name: it.name || it.product_name || "Item",
@@ -1071,9 +1140,26 @@ function cannabisPOS() {
     },
     _mapSavedSaleToOrder(saved) {
       try {
-        const items = Array.isArray(saved.cart_items) ? saved.cart_items : Array.isArray(saved.cart) ? saved.cart : [];
-        const total = Number(saved.total_amount != null ? saved.total_amount : saved.total || items.reduce((s, it) => s + Number(it.price || 0) * Number(it.quantity || 1), 0));
-        const itemCount = Number(saved.total_items != null ? saved.total_items : items.reduce((s, it) => s + Number(it.quantity || 0), 0));
+        const items = Array.isArray(saved.cart_items)
+          ? saved.cart_items
+          : Array.isArray(saved.cart)
+            ? saved.cart
+            : [];
+        const total = Number(
+          saved.total_amount != null
+            ? saved.total_amount
+            : saved.total ||
+                items.reduce(
+                  (s, it) =>
+                    s + Number(it.price || 0) * Number(it.quantity || 1),
+                  0,
+                ),
+        );
+        const itemCount = Number(
+          saved.total_items != null
+            ? saved.total_items
+            : items.reduce((s, it) => s + Number(it.quantity || 0), 0),
+        );
         const customer = saved.customer || saved.customer_info || {};
         return {
           id: saved.id || `saved-${Date.now()}`,
@@ -1087,9 +1173,10 @@ function cannabisPOS() {
             email: customer.email || "",
             isMedical: !!(customer.isMedical || customer.medical),
           },
-          placedAt: saved.created_at || saved.createdAt || new Date().toISOString(),
+          placedAt:
+            saved.created_at || saved.createdAt || new Date().toISOString(),
           items: items.map((it, j) => ({
-            id: it.id != null ? it.id : `${saved.id || 'x'}-${j}`,
+            id: it.id != null ? it.id : `${saved.id || "x"}-${j}`,
             name: it.displayName || it.name || it.product_name || "Item",
             quantity: Number(it.quantity || 1),
             price: Number(it.price || 0),
@@ -1102,7 +1189,12 @@ function cannabisPOS() {
           orderType: "pos-hold",
           total: 0,
           itemCount: 0,
-          customer: { name: "Walk-in Customer", phone: "", email: "", isMedical: false },
+          customer: {
+            name: "Walk-in Customer",
+            phone: "",
+            email: "",
+            isMedical: false,
+          },
           placedAt: new Date().toISOString(),
           items: [],
         };
@@ -1115,7 +1207,8 @@ function cannabisPOS() {
         const type = String(f.orderType || "").toLowerCase();
         const q = String(f.customer || "").toLowerCase();
         const range = String(f.dateRange || "today");
-        const toLocalISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+        const toLocalISO = (d) =>
+          `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
         let start = "";
         let end = "";
         const d = new Date();
@@ -1145,24 +1238,40 @@ function cannabisPOS() {
           }
         };
         this.filteredOrderQueue = (this.orderQueue || []).filter((o) => {
-          const okStatus = !status || String(o.status || "").toLowerCase() === status;
-          const okType = !type || String(o.orderType || "").toLowerCase() === type;
+          const okStatus =
+            !status || String(o.status || "").toLowerCase() === status;
+          const okType =
+            !type || String(o.orderType || "").toLowerCase() === type;
           const cust = o.customer || {};
-          const okQ = !q ||
-            String(cust.name || "").toLowerCase().includes(q) ||
-            String(cust.email || "").toLowerCase().includes(q) ||
-            String(cust.phone || "").toLowerCase().includes(q);
-          const okDate = dateInRange(o.placedAt || o.created_at || o.createdAt || "");
+          const okQ =
+            !q ||
+            String(cust.name || "")
+              .toLowerCase()
+              .includes(q) ||
+            String(cust.email || "")
+              .toLowerCase()
+              .includes(q) ||
+            String(cust.phone || "")
+              .toLowerCase()
+              .includes(q);
+          const okDate = dateInRange(
+            o.placedAt || o.created_at || o.createdAt || "",
+          );
           return okStatus && okType && okQ && okDate;
         });
       } catch (_) {
-        this.filteredOrderQueue = Array.isArray(this.orderQueue) ? this.orderQueue.slice() : [];
+        this.filteredOrderQueue = Array.isArray(this.orderQueue)
+          ? this.orderQueue.slice()
+          : [];
       }
     },
     getOrderQueueStats() {
       try {
         const list = Array.isArray(this.orderQueue) ? this.orderQueue : [];
-        let pending = 0, hold = 0, ready = 0, totalValue = 0;
+        let pending = 0,
+          hold = 0,
+          ready = 0,
+          totalValue = 0;
         for (let i = 0; i < list.length; i++) {
           const s = String(list[i].status || "").toLowerCase();
           if (s === "pending") pending++;
@@ -1170,9 +1279,19 @@ function cannabisPOS() {
           else if (s === "ready") ready++;
           totalValue += Number(list[i].total || 0);
         }
-        return { pendingOrders: pending, holdOrders: hold, readyOrders: ready, totalValue };
+        return {
+          pendingOrders: pending,
+          holdOrders: hold,
+          readyOrders: ready,
+          totalValue,
+        };
       } catch (_) {
-        return { pendingOrders: 0, holdOrders: 0, readyOrders: 0, totalValue: 0 };
+        return {
+          pendingOrders: 0,
+          holdOrders: 0,
+          readyOrders: 0,
+          totalValue: 0,
+        };
       }
     },
     getOrderStatusClass(status) {
@@ -1210,18 +1329,27 @@ function cannabisPOS() {
     printOrderReceipt(order) {
       try {
         this.showToast && this.showToast("Printing receipt…", "info");
-        setTimeout(() => { try { window.print && window.print(); } catch (_) {} }, 10);
+        setTimeout(() => {
+          try {
+            window.print && window.print();
+          } catch (_) {}
+        }, 10);
       } catch (_) {}
     },
     async updateOrderStatus(order, newStatus) {
       try {
         const id = typeof order === "object" ? order.id : order;
-        const idx = (this.orderQueue || []).findIndex((o) => String(o.id) === String(id));
-        if (idx >= 0) this.orderQueue[idx].status = String(newStatus || "").toLowerCase();
+        const idx = (this.orderQueue || []).findIndex(
+          (o) => String(o.id) === String(id),
+        );
+        if (idx >= 0)
+          this.orderQueue[idx].status = String(newStatus || "").toLowerCase();
         this.filterOrderQueue();
         // Try API (web route) best-effort
         try {
-          await axios.post(`/order-queue/${encodeURIComponent(id)}/status`, { status: newStatus });
+          await axios.post(`/order-queue/${encodeURIComponent(id)}/status`, {
+            status: newStatus,
+          });
         } catch (_) {}
         this.showToast && this.showToast("Order status updated", "success");
       } catch (_) {
@@ -5358,7 +5486,8 @@ function cannabisPOS() {
       } catch (_) {}
 
       // Hydrate print settings from server when available
-      this._hydratePrintSettingsFromServer && this._hydratePrintSettingsFromServer();
+      this._hydratePrintSettingsFromServer &&
+        this._hydratePrintSettingsFromServer();
     },
 
     async _hydratePrintSettingsFromServer() {
@@ -5368,10 +5497,14 @@ function cannabisPOS() {
           : (window.axios || axios).get("/api/settings/pos"));
         const s = (getRes && (getRes.data?.settings || getRes.data)) || {};
         if (s && typeof s === "object") {
-          this.printSettings.autoprint = !!(s.receipt_autoprint ?? s.auto_print_receipt);
-          this.printSettings.paperSize = s.receipt_paper_size || this.printSettings.paperSize;
+          this.printSettings.autoprint = !!(
+            s.receipt_autoprint ?? s.auto_print_receipt
+          );
+          this.printSettings.paperSize =
+            s.receipt_paper_size || this.printSettings.paperSize;
           const cats = s.receipt_categories_autoprint;
-          if (Array.isArray(cats)) this.printSettings.categoriesAutoprint = cats;
+          if (Array.isArray(cats))
+            this.printSettings.categoriesAutoprint = cats;
           // Persist locally
           try {
             localStorage.setItem(
@@ -5393,7 +5526,9 @@ function cannabisPOS() {
     },
 
     _savePrintSettingsDebounced() {
-      try { if (this._printSaveTimer) clearTimeout(this._printSaveTimer); } catch (_) {}
+      try {
+        if (this._printSaveTimer) clearTimeout(this._printSaveTimer);
+      } catch (_) {}
       this._printSaveTimer = setTimeout(() => this._savePrintSettings(), 400);
     },
 
@@ -5417,7 +5552,8 @@ function cannabisPOS() {
           receipt_paper_size: this.printSettings.paperSize,
           // Keep extras (non-critical) so UI can remember choices
           __ui_print_labels: !!this.printSettings.printLabels,
-          __ui_receipt_template: this.printSettings.receiptTemplate || "standard",
+          __ui_receipt_template:
+            this.printSettings.receiptTemplate || "standard",
         };
         const res = await (window.posAuth
           ? posAuth.apiRequest("post", "/settings/pos", payload)

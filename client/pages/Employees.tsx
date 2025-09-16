@@ -286,21 +286,40 @@ export default function Employees() {
     const isActive = row?.is_active !== false;
     const perms = (() => {
       const p = row?.permissions;
-      if (!p) return { ...defaultRolePermissions[role] } as Employee["permissions"];
+      if (!p)
+        return { ...defaultRolePermissions[role] } as Employee["permissions"];
       if (typeof p === "string") {
-        try { const parsed = JSON.parse(p); return { ...defaultRolePermissions[role], ...parsed }; } catch { return { ...defaultRolePermissions[role] }; }
+        try {
+          const parsed = JSON.parse(p);
+          return { ...defaultRolePermissions[role], ...parsed };
+        } catch {
+          return { ...defaultRolePermissions[role] };
+        }
       }
-      if (typeof p === "object") return { ...defaultRolePermissions[role], ...p };
+      if (typeof p === "object")
+        return { ...defaultRolePermissions[role], ...p };
       return { ...defaultRolePermissions[role] };
     })();
     const certs = Array.isArray(row?.certifications)
       ? row.certifications
-      : typeof row?.certifications === "string" && row.certifications.includes(",")
-        ? row.certifications.split(",").map((s: string) => s.trim()).filter(Boolean)
+      : typeof row?.certifications === "string" &&
+          row.certifications.includes(",")
+        ? row.certifications
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
         : [];
-    const hireDate = (row?.hire_date || row?.created_at || new Date().toISOString()).toString().split("T")[0];
+    const hireDate = (
+      row?.hire_date ||
+      row?.created_at ||
+      new Date().toISOString()
+    )
+      .toString()
+      .split("T")[0];
     return {
-      id: String(row?.id ?? row?.employee_id ?? Math.random().toString(36).slice(2)),
+      id: String(
+        row?.id ?? row?.employee_id ?? Math.random().toString(36).slice(2),
+      ),
       name: `${first} ${last}`.trim() || row?.name || "",
       email: row?.email || "",
       phone: row?.phone || "",
@@ -308,7 +327,9 @@ export default function Employees() {
       hireDate,
       status: isActive ? "active" : "inactive",
       permissions: perms,
-      storeAccess: Array.isArray(row?.store_access) ? row.store_access.map((s: any) => String(s)) : [],
+      storeAccess: Array.isArray(row?.store_access)
+        ? row.store_access.map((s: any) => String(s))
+        : [],
       primaryStore: String(row?.primary_store || "1"),
       hourlyRate: Number(row?.hourly_rate || 0) || 0,
       totalSales: Number(row?.total_sales || 0) || 0,
@@ -323,10 +344,16 @@ export default function Employees() {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch("/api/employees", { headers: { Accept: "application/json" } });
+        const res = await fetch("/api/employees", {
+          headers: { Accept: "application/json" },
+        });
         if (res.ok) {
           const data = await res.json();
-          const list = Array.isArray(data?.employees) ? data.employees : Array.isArray(data) ? data : [];
+          const list = Array.isArray(data?.employees)
+            ? data.employees
+            : Array.isArray(data)
+              ? data
+              : [];
           setEmployees(list.map(mapServerToEmployee));
         }
       } catch (_) {}
@@ -350,12 +377,22 @@ export default function Employees() {
     try {
       await fetch(`/api/employees/${employeeId}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ is_active: nextActive, status: nextActive ? "active" : "inactive" }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          is_active: nextActive,
+          status: nextActive ? "active" : "inactive",
+        }),
       });
     } catch (_) {}
     setEmployees((prev) =>
-      prev.map((e) => (e.id === employeeId ? { ...e, status: nextActive ? "active" : "inactive" } : e)),
+      prev.map((e) =>
+        e.id === employeeId
+          ? { ...e, status: nextActive ? "active" : "inactive" }
+          : e,
+      ),
     );
   };
 
@@ -411,15 +448,23 @@ export default function Employees() {
         phone: newEmployee.phone || "",
         role: (newEmployee.role as Employee["role"]) || "cashier",
         hourly_rate: newEmployee.hourlyRate || 15.0,
-        hire_date: newEmployee.startDate || new Date().toISOString().split("T")[0],
-        permissions: defaultRolePermissions[(newEmployee.role as keyof typeof defaultRolePermissions) || "cashier"],
+        hire_date:
+          newEmployee.startDate || new Date().toISOString().split("T")[0],
+        permissions:
+          defaultRolePermissions[
+            (newEmployee.role as keyof typeof defaultRolePermissions) ||
+              "cashier"
+          ],
         worker_permit: newEmployee.olccPermit || "",
         metrc_api_key: newEmployee.apiKey || "",
       };
       let created: any = null;
       const res = await fetch("/api/employees", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify(body),
       });
       if (res.ok) {
@@ -496,11 +541,18 @@ export default function Employees() {
       };
       await fetch(`/api/employees/${selectedEmployee.id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
         body: JSON.stringify(body),
       });
     } catch (_) {}
-    setEmployees((prev) => prev.map((emp) => (emp.id === selectedEmployee.id ? updatedEmployee : emp)));
+    setEmployees((prev) =>
+      prev.map((emp) =>
+        emp.id === selectedEmployee.id ? updatedEmployee : emp,
+      ),
+    );
     setShowAddEmployeeDialog(false);
     setSelectedEmployee(null);
     setNewEmployee({});
@@ -513,9 +565,18 @@ export default function Employees() {
       confirm(`Are you sure you want to deactivate ${employee.name}?`)
     ) {
       try {
-        await fetch(`/api/employees/${employeeId}`, { method: "DELETE", headers: { Accept: "application/json" } });
+        await fetch(`/api/employees/${employeeId}`, {
+          method: "DELETE",
+          headers: { Accept: "application/json" },
+        });
       } catch (_) {}
-      setEmployees((prev) => prev.map((emp) => (emp.id === employeeId ? { ...emp, status: "inactive" as Employee["status"] } : emp)));
+      setEmployees((prev) =>
+        prev.map((emp) =>
+          emp.id === employeeId
+            ? { ...emp, status: "inactive" as Employee["status"] }
+            : emp,
+        ),
+      );
     }
   };
 

@@ -65,11 +65,15 @@ function loadDevState() {
       const data = JSON.parse(raw || "{}");
       if (Array.isArray(data.users)) devStore.users = data.users;
       if (typeof data.nextUserId === "number") nextUserId = data.nextUserId;
-      if (typeof data.nextEmployeeId === "number") nextEmployeeId = data.nextEmployeeId;
+      if (typeof data.nextEmployeeId === "number")
+        nextEmployeeId = data.nextEmployeeId;
       if (Array.isArray(data.devTemplates)) devTemplates = data.devTemplates;
-      if (typeof data.nextTemplateId === "number") nextTemplateId = data.nextTemplateId;
-      if (Array.isArray(data.devTimeEntries)) devTimeEntries = data.devTimeEntries;
-      if (typeof data.nextTimeEntryId === "number") nextTimeEntryId = data.nextTimeEntryId;
+      if (typeof data.nextTemplateId === "number")
+        nextTemplateId = data.nextTemplateId;
+      if (Array.isArray(data.devTimeEntries))
+        devTimeEntries = data.devTimeEntries;
+      if (typeof data.nextTimeEntryId === "number")
+        nextTimeEntryId = data.nextTimeEntryId;
     }
   } catch (e) {
     console.warn("Failed to load dev auth state:", e.message);
@@ -976,7 +980,9 @@ app.get("/api/employees/next-id", async (_req, res) => {
     const nextId = await getNextEmpId();
     return res.json({ next_id: nextId });
   } catch (e) {
-    return res.json({ next_id: `Emp${String(nextEmployeeId++).padStart(2, "0")}` });
+    return res.json({
+      next_id: `Emp${String(nextEmployeeId++).padStart(2, "0")}`,
+    });
   }
 });
 
@@ -1138,7 +1144,9 @@ app.get("/api/employees/time-entries", async (req, res) => {
       if (start) params.set("clock_in.gte", start);
       if (end) params.set("clock_in.lte", end);
       if (emp) params.set("employee_id", `eq.${emp}`);
-      const r = await supaFetch(`time_clock_entries?${params.toString()}`, { method: "GET" });
+      const r = await supaFetch(`time_clock_entries?${params.toString()}`, {
+        method: "GET",
+      });
       if (r.ok) {
         const rows = await r.json();
         return res.json({ entries: Array.isArray(rows) ? rows : [] });
@@ -1146,8 +1154,12 @@ app.get("/api/employees/time-entries", async (req, res) => {
     }
   } catch (_) {}
   // Fallback to in-memory
-  const startMs = req.query?.start_date ? Date.parse(String(req.query.start_date)) : null;
-  const endMs = req.query?.end_date ? Date.parse(String(req.query.end_date)) : null;
+  const startMs = req.query?.start_date
+    ? Date.parse(String(req.query.start_date))
+    : null;
+  const endMs = req.query?.end_date
+    ? Date.parse(String(req.query.end_date))
+    : null;
   const empId = req.query?.employee_id ? String(req.query.employee_id) : null;
   const out = devTimeEntries.filter((e) => {
     const t = Date.parse(e.clock_in);
@@ -1170,7 +1182,10 @@ app.post("/api/employees/time-entries", async (req, res) => {
   };
   try {
     if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      const r = await supaFetch("time_clock_entries", { method: "POST", body: [row] });
+      const r = await supaFetch("time_clock_entries", {
+        method: "POST",
+        body: [row],
+      });
       if (r.ok) {
         const payload = await r.json();
         const created = Array.isArray(payload) ? payload[0] : payload;
@@ -1188,7 +1203,10 @@ app.put("/api/employees/time-entries/:id", async (req, res) => {
   const b = req.body || {};
   try {
     if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-      const r = await supaFetch(`time_clock_entries?id=eq.${encodeURIComponent(id)}`, { method: "PATCH", body: b });
+      const r = await supaFetch(
+        `time_clock_entries?id=eq.${encodeURIComponent(id)}`,
+        { method: "PATCH", body: b },
+      );
       if (r.ok) {
         const payload = await r.json();
         const updated = Array.isArray(payload) ? payload[0] : payload;
@@ -1263,7 +1281,9 @@ app.delete("/api/customers/:id", async (req, res) => {
   try {
     const id = String(req.params.id || "");
     // Attempt hard delete first
-    let d = await supaFetch(`customers?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    let d = await supaFetch(`customers?id=eq.${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
     if (!d.ok) {
       // Fallback to soft-delete by deactivating the customer
       await supaFetch(`customers?id=eq.${encodeURIComponent(id)}`, {
@@ -1273,7 +1293,9 @@ app.delete("/api/customers/:id", async (req, res) => {
     }
     return res.json({ success: true });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to delete customer" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to delete customer" });
   }
 });
 
@@ -1284,12 +1306,18 @@ app.get("/node/products", async (req, res) => {
     const category = (req.query?.category || "").toString().trim();
     let qp = "products?select=*";
     const filters = [];
-    if (search) filters.push(`or=(name.ilike.*${encodeURIComponent(search)}*,sku.ilike.*${encodeURIComponent(search)}*,metrc_tag.ilike.*${encodeURIComponent(search)}*)`);
+    if (search)
+      filters.push(
+        `or=(name.ilike.*${encodeURIComponent(search)}*,sku.ilike.*${encodeURIComponent(search)}*,metrc_tag.ilike.*${encodeURIComponent(search)}*)`,
+      );
     if (category) filters.push(`category=eq.${encodeURIComponent(category)}`);
     if (filters.length) qp += `&${filters.join("&")}`;
     const r = await supaFetch(qp);
     const payload = r.ok ? await r.json() : [];
-    res.json({ success: true, products: Array.isArray(payload) ? payload : [] });
+    res.json({
+      success: true,
+      products: Array.isArray(payload) ? payload : [],
+    });
   } catch (_) {
     res.json({ success: true, products: [] });
   }
@@ -1300,7 +1328,9 @@ app.post("/node/products", async (req, res) => {
     const body = Array.isArray(req.body) ? req.body : [req.body || {}];
     const r = await supaFetch("products", { method: "POST", body });
     const data = r.ok ? await r.json() : null;
-    res.status(201).json({ success: true, product: Array.isArray(data) ? data[0] : data });
+    res
+      .status(201)
+      .json({ success: true, product: Array.isArray(data) ? data[0] : data });
   } catch (e) {
     res.status(500).json({ success: false, error: "Failed" });
   }
@@ -1308,7 +1338,10 @@ app.post("/node/products", async (req, res) => {
 
 app.put("/node/products/:id", async (req, res) => {
   try {
-    const r = await supaFetch(`products?id=eq.${encodeURIComponent(req.params.id)}`, { method: "PATCH", body: req.body || {} });
+    const r = await supaFetch(
+      `products?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "PATCH", body: req.body || {} },
+    );
     const data = r.ok ? await r.json() : null;
     res.json({ success: true, product: Array.isArray(data) ? data[0] : data });
   } catch (e) {
@@ -1318,7 +1351,10 @@ app.put("/node/products/:id", async (req, res) => {
 
 app.delete("/node/products/:id", async (req, res) => {
   try {
-    const d = await supaFetch(`products?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    const d = await supaFetch(
+      `products?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "DELETE" },
+    );
     if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
     res.json({ success: true });
   } catch (e) {
@@ -1408,7 +1444,9 @@ app.put("/api/deals/:id", async (req, res) => {
 app.delete("/api/deals/:id", async (req, res) => {
   try {
     const id = String(req.params.id || "");
-    const r = await supaFetch(`deals?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
+    const r = await supaFetch(`deals?id=eq.${encodeURIComponent(id)}`, {
+      method: "DELETE",
+    });
     if (!r.ok) return res.status(500).json({ success: false, error: "Failed" });
     res.json({ success: true });
   } catch (_) {
@@ -1479,7 +1517,9 @@ app.post("/node/price-tiers", async (req, res) => {
     const payload = Array.isArray(req.body) ? req.body : [req.body || {}];
     const r = await supaFetch("price_tiers", { method: "POST", body: payload });
     const data = r.ok ? await r.json() : null;
-    res.status(201).json({ success: true, tier: Array.isArray(data) ? data[0] : data });
+    res
+      .status(201)
+      .json({ success: true, tier: Array.isArray(data) ? data[0] : data });
   } catch (_) {
     res.status(500).json({ success: false, error: "Failed" });
   }
@@ -1487,10 +1527,13 @@ app.post("/node/price-tiers", async (req, res) => {
 
 app.put("/node/price-tiers/:id", async (req, res) => {
   try {
-    const r = await supaFetch(`price_tiers?id=eq.${encodeURIComponent(req.params.id)}`, {
-      method: "PATCH",
-      body: req.body || {},
-    });
+    const r = await supaFetch(
+      `price_tiers?id=eq.${encodeURIComponent(req.params.id)}`,
+      {
+        method: "PATCH",
+        body: req.body || {},
+      },
+    );
     const data = r.ok ? await r.json() : null;
     res.json({ success: true, tier: Array.isArray(data) ? data[0] : data });
   } catch (_) {
@@ -1500,7 +1543,10 @@ app.put("/node/price-tiers/:id", async (req, res) => {
 
 app.delete("/node/price-tiers/:id", async (req, res) => {
   try {
-    const d = await supaFetch(`price_tiers?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    const d = await supaFetch(
+      `price_tiers?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "DELETE" },
+    );
     if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
     res.json({ success: true });
   } catch (_) {
@@ -1541,9 +1587,14 @@ app.post("/node/report-templates", async (req, res) => {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-    const r = await supaFetch("report_templates", { method: "POST", body: [row] });
+    const r = await supaFetch("report_templates", {
+      method: "POST",
+      body: [row],
+    });
     const data = r.ok ? await r.json() : null;
-    res.status(201).json({ success: true, template: Array.isArray(data) ? data[0] : data });
+    res
+      .status(201)
+      .json({ success: true, template: Array.isArray(data) ? data[0] : data });
   } catch (e) {
     res.status(500).json({ success: false, error: "Failed" });
   }
@@ -1551,7 +1602,10 @@ app.post("/node/report-templates", async (req, res) => {
 
 app.put("/node/report-templates/:id", async (req, res) => {
   try {
-    const r = await supaFetch(`report_templates?id=eq.${encodeURIComponent(req.params.id)}`, { method: "PATCH", body: req.body || {} });
+    const r = await supaFetch(
+      `report_templates?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "PATCH", body: req.body || {} },
+    );
     const data = r.ok ? await r.json() : null;
     res.json({ success: true, template: Array.isArray(data) ? data[0] : data });
   } catch (e) {
@@ -1561,7 +1615,10 @@ app.put("/node/report-templates/:id", async (req, res) => {
 
 app.delete("/node/report-templates/:id", async (req, res) => {
   try {
-    const d = await supaFetch(`report_templates?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    const d = await supaFetch(
+      `report_templates?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "DELETE" },
+    );
     if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
     res.json({ success: true });
   } catch (e) {
@@ -1577,7 +1634,10 @@ app.get("/node/rooms", async (req, res) => {
     const active = (req.query?.active || "").toString().trim();
     let qp = "rooms?select=*";
     const filters = [];
-    if (search) filters.push(`or=(name.ilike.*${encodeURIComponent(search)}*,room_id.ilike.*${encodeURIComponent(search)}*)`);
+    if (search)
+      filters.push(
+        `or=(name.ilike.*${encodeURIComponent(search)}*,room_id.ilike.*${encodeURIComponent(search)}*)`,
+      );
     if (type) filters.push(`type=eq.${encodeURIComponent(type)}`);
     if (active) filters.push(`is_active=eq.${encodeURIComponent(active)}`);
     if (filters.length) qp += `&${filters.join("&")}`;
@@ -1592,21 +1652,34 @@ app.get("/node/rooms", async (req, res) => {
 app.post("/node/rooms", async (req, res) => {
   try {
     const b = req.body || {};
-    const room_id = b.room_id || `RM-${String((b.name||'')).replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,4) || 'GEN'}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+    const room_id =
+      b.room_id ||
+      `RM-${
+        String(b.name || "")
+          .replace(/[^A-Za-z0-9]/g, "")
+          .toUpperCase()
+          .slice(0, 4) || "GEN"
+      }-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
     const row = {
       name: b.name || "Room",
       room_id,
       type: b.type || "storage",
       is_active: b.is_active !== false,
-      max_capacity: Number.isFinite(Number(b.max_capacity)) ? Number(b.max_capacity) : null,
-      current_stock: Number.isFinite(Number(b.current_stock)) ? Number(b.current_stock) : 0,
+      max_capacity: Number.isFinite(Number(b.max_capacity))
+        ? Number(b.max_capacity)
+        : null,
+      current_stock: Number.isFinite(Number(b.current_stock))
+        ? Number(b.current_stock)
+        : 0,
       description: b.description || null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
     const r = await supaFetch("rooms", { method: "POST", body: [row] });
     const data = r.ok ? await r.json() : null;
-    res.status(201).json({ success: true, room: Array.isArray(data) ? data[0] : data });
+    res
+      .status(201)
+      .json({ success: true, room: Array.isArray(data) ? data[0] : data });
   } catch (e) {
     res.status(500).json({ success: false, error: "Failed" });
   }
@@ -1614,7 +1687,10 @@ app.post("/node/rooms", async (req, res) => {
 
 app.put("/node/rooms/:id", async (req, res) => {
   try {
-    const r = await supaFetch(`rooms?id=eq.${encodeURIComponent(req.params.id)}`, { method: "PATCH", body: req.body || {} });
+    const r = await supaFetch(
+      `rooms?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "PATCH", body: req.body || {} },
+    );
     const data = r.ok ? await r.json() : null;
     res.json({ success: true, room: Array.isArray(data) ? data[0] : data });
   } catch (e) {
@@ -1624,7 +1700,10 @@ app.put("/node/rooms/:id", async (req, res) => {
 
 app.delete("/node/rooms/:id", async (req, res) => {
   try {
-    const d = await supaFetch(`rooms?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    const d = await supaFetch(
+      `rooms?id=eq.${encodeURIComponent(req.params.id)}`,
+      { method: "DELETE" },
+    );
     if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
     res.json({ success: true });
   } catch (e) {
@@ -1931,15 +2010,35 @@ app.post("/node/metrc/transfers", async (req, res) => {
         : [];
     if (!arr.length) return res.json({ success: true, inserted: 0 });
     const rows = arr.map((t) => {
-      const manifest = t.ManifestNumber || t.Manifest || t.ManifestId || t.Id || t.id || null;
-      const shipperLicense = t.ShipperFacilityLicenseNumber || t.ShipperLicenseNumber || t.ShipperFacility || null;
+      const manifest =
+        t.ManifestNumber || t.Manifest || t.ManifestId || t.Id || t.id || null;
+      const shipperLicense =
+        t.ShipperFacilityLicenseNumber ||
+        t.ShipperLicenseNumber ||
+        t.ShipperFacility ||
+        null;
       const shipperName = t.ShipperFacilityName || t.ShipperName || null;
-      const destLicense = t.DeliveryFacilityLicenseNumber || t.RecipientFacilityLicenseNumber || t.DestinationFacility || null;
-      const destName = t.DeliveryFacilityName || t.RecipientFacilityName || null;
-      const dep = t.EstimatedDepartureDateTime || t.DepartureDateTime || t.departureDateTime || null;
-      const arrAt = t.EstimatedArrivalDateTime || t.ArrivalDateTime || t.arrivalDateTime || null;
+      const destLicense =
+        t.DeliveryFacilityLicenseNumber ||
+        t.RecipientFacilityLicenseNumber ||
+        t.DestinationFacility ||
+        null;
+      const destName =
+        t.DeliveryFacilityName || t.RecipientFacilityName || null;
+      const dep =
+        t.EstimatedDepartureDateTime ||
+        t.DepartureDateTime ||
+        t.departureDateTime ||
+        null;
+      const arrAt =
+        t.EstimatedArrivalDateTime ||
+        t.ArrivalDateTime ||
+        t.arrivalDateTime ||
+        null;
       const deliveredAt = t.DeliveredDateTime || t.deliveredDateTime || null;
-      const pkgs = Array.isArray(t.Packages) ? t.Packages.length : (t.PackageCount || 0);
+      const pkgs = Array.isArray(t.Packages)
+        ? t.Packages.length
+        : t.PackageCount || 0;
       return {
         manifest_number: manifest ? String(manifest) : null,
         shipper_license: shipperLicense ? String(shipperLicense) : null,
@@ -1973,7 +2072,12 @@ app.post("/node/metrc/transfers", async (req, res) => {
             type: "incoming_transfers_refresh",
             count: rows.length,
             sample_manifest: rows[0]?.manifest_number || null,
-            payload: { manifests: rows.map((x) => x.manifest_number).filter(Boolean).slice(0, 50) },
+            payload: {
+              manifests: rows
+                .map((x) => x.manifest_number)
+                .filter(Boolean)
+                .slice(0, 50),
+            },
             created_at: new Date().toISOString(),
           },
         ],
