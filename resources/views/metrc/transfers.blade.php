@@ -121,6 +121,15 @@ document.addEventListener('DOMContentLoaded', function() {
                             ${delivered ? row(`Delivered: ${new Date(delivered).toLocaleString()}`) : ''}
                         </div>`;
                     }).join('');
+
+                    // Persist to Supabase for search/history
+                    try {
+                        await fetch('/node/metrc/transfers', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                            body: JSON.stringify({ transfers })
+                        });
+                    } catch (_) {}
                 }
             }
 
