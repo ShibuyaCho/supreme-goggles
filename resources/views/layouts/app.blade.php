@@ -157,6 +157,37 @@
       })();
     </script>
     <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function(){
+        function readStore(){
+          try{ const raw=localStorage.getItem('pos_store'); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+        }
+        function updateLabel(){
+          try{
+            const label=document.getElementById('header-store-label');
+            const btn=document.getElementById('header-store-button');
+            const s=readStore();
+            if(label){ label.textContent = s && (s.name||s.id) ? `Store: ${s.name||s.id}` : 'Store: default'; }
+            if(btn){ btn.title = 'Current ' + (s && (s.name||s.id) ? (s.name||s.id) : 'default'); }
+          }catch(e){}
+        }
+        window.addOrSwitchStore = function(){
+          const current = readStore();
+          const input = prompt('Enter Store ID or name to use:', current && (current.name||current.id) ? (current.name||current.id) : 'default');
+          if(!input) return;
+          const store = { id: String(input).trim(), name: String(input).trim() };
+          try { localStorage.setItem('pos_store', JSON.stringify(store)); } catch(e) {}
+          updateLabel();
+          try { window.dispatchEvent(new Event('storage')); } catch(e) {}
+        };
+        window.clearStoreCtx = function(){
+          try { localStorage.removeItem('pos_store'); } catch(e) {}
+          updateLabel();
+          try { window.dispatchEvent(new Event('storage')); } catch(e) {}
+        };
+        document.addEventListener('DOMContentLoaded', updateLabel);
+      })();
+    </script>
 </head>
 
 <body class="font-sans antialiased bg-gray-50">
@@ -228,6 +259,15 @@
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v3M7 4H5a1 1 0 00-1 1v16a1 1 0 001 1h14a1 1 0 001-1V5a1 1 0 00-1-1h-2M9 9h6m-6 4h6m-3 4h3"/></svg>
                         Create Drawer
                     </a>
+                    <!-- Store selector -->
+                    <div class="hidden md:flex items-center space-x-2">
+                        <button id="header-store-button" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors" onclick="window.addOrSwitchStore && window.addOrSwitchStore()">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V5a3 3 0 013-3h0a3 3 0 013 3v2"/></svg>
+                            <span>Add/Switch Store</span>
+                        </button>
+                        <span id="header-store-label" class="text-xs text-gray-600"></span>
+                        <button class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded" onclick="window.clearStoreCtx && window.clearStoreCtx()">Clear</button>
+                    </div>
                     <!-- Current Employee -->
                     <div class="hidden md:flex items-center text-sm text-gray-700 relative" id="user-menu-container" data-employee-id="{{ auth()->user()->employee->id ?? '' }}">
                         <!-- Always-visible quick clock buttons (desktop) -->
