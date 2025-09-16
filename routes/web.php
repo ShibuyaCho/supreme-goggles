@@ -287,7 +287,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/inventory/low-stock', [ReportsController::class, 'lowStock'])->name('low-stock');
     Route::get('/inventory/expiring-products', [ReportsController::class, 'expiringProducts'])->name('expiring-products');
     Route::get('/inventory/movement', [ReportsController::class, 'inventoryMovement'])->name('inventory-movement');
-    Route::get('/inventory/valuation', [ReportsController::class, 'inventoryValuation'])->name('inventory-valuation');
+    Route::get('/inventory/valuation', [ReportsController::class, 'inventoryEvaluation'])->name('inventory-valuation');
     
     // Compliance Reports
     Route::get('/compliance/metrc-sync', [ReportsController::class, 'metrcSync'])->name('metrc-sync');
