@@ -5591,6 +5591,45 @@ function cannabisPOS() {
       } catch (_) {}
     },
 
+    async _hydrateBusinessSettingsFromServer() {
+      try {
+        const getRes = await (window.posAuth
+          ? posAuth.apiRequest("get", "/settings/pos")
+          : (window.axios || axios).get("/api/settings/pos"));
+        const payload = getRes?.data || {};
+        const s = (payload.settings && typeof payload.settings === 'object') ? payload.settings : payload;
+        // Map backend settings to UI structures
+        const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
+        const med = Number(payload.medical_tax_rate != null ? payload.medical_tax_rate : 0);
+        const loc = Number(s.excise_tax != null ? s.excise_tax : 0);
+        const st = Number(s.sales_tax != null ? s.sales_tax : 0);
+        this.taxSettings = {
+          recreationalRate: isFinite(rec) ? rec : 0,
+          medicalRate: isFinite(med) ? med : 0,
+          includeInPrice: !!s.tax_inclusive,
+          localRate: isFinite(loc) ? loc : 0,
+          stateRate: isFinite(st) ? st : 0,
+        };
+        this.salesSettings = {
+          minimumSale: Number(s.minimum_price_amount || 0),
+          enforceMinimumSale: !!s.minimum_price_enabled,
+          dailyLimit: Number(s.__ui_daily_limit || 0),
+          requireCustomerInfo: !!s.require_customer,
+        };
+        try {
+          localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings));
+          localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings));
+        } catch (_) {}
+      } catch (_) {}
+    },
+
+    saveTaxSettings() {
+      try { localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings)); } catch(_) {}
+    },
+    saveSalesSettings() {
+      try { localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings)); } catch(_) {}
+    },
+
     toggleCategoryAutoprint(category) {
       try {
         const idx = this.printSettings.categoriesAutoprint.indexOf(category);
