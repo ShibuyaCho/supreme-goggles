@@ -13,6 +13,7 @@ function cannabisPOS() {
     init() {
       this.normalizeCollections();
       this.initAuth();
+      this.loadStoreContext();
       this.loadSettings();
       this.loadCartState();
       this.loadData();
@@ -21,6 +22,28 @@ function cannabisPOS() {
       try {
         this.loadMonthStats();
       } catch (_) {}
+    },
+
+    // Store selection (multi-store UI only; backend can read headers for isolation)
+    selectedStore: null,
+    loadStoreContext() {
+      try {
+        const raw = localStorage.getItem('pos_store');
+        this.selectedStore = raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        this.selectedStore = null;
+      }
+    },
+    changeStorePrompt() {
+      const nameOrId = prompt('Enter store name or ID to switch:');
+      if (!nameOrId) return;
+      const store = { id: String(nameOrId).trim(), name: String(nameOrId).trim() };
+      try { localStorage.setItem('pos_store', JSON.stringify(store)); } catch (e) {}
+      this.selectedStore = store;
+    },
+    clearStore() {
+      try { localStorage.removeItem('pos_store'); } catch (e) {}
+      this.selectedStore = null;
     },
 
     // Login form data
