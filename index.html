@@ -884,6 +884,21 @@
                 </div>
               </div>
 
+              <!-- Store Selector -->
+              <div class="ml-4 relative" x-data="{ open:false }">
+                <button @click="open=!open" class="flex items-center px-3 py-2 text-sm font-medium bg-gray-100 rounded-md hover:bg-gray-200">
+                  <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V4a3 3 0 016 0v3"/></svg>
+                  <span x-text="(selectedStore && selectedStore.name) ? selectedStore.name : 'Default Store'"></span>
+                  <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div x-show="open" @click.outside="open=false" x-cloak class="absolute left-0 mt-2 w-56 bg-white rounded-md shadow-lg border border-gray-200 z-50">
+                  <div class="py-1">
+                    <button @click="open=false; changeStorePrompt()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Switch Store…</button>
+                    <button @click="open=false; clearStore()" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Clear Store</button>
+                  </div>
+                </div>
+              </div>
+
               <!-- Current Page Indicator -->
               <div class="ml-6 hidden md:block">
                 <span class="text-sm text-gray-500">Current: </span>
