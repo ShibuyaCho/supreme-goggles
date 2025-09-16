@@ -42,6 +42,9 @@ function cannabisPOS() {
           watch('printSettings.printLabels', () => this._savePrintSettingsDebounced());
           watch('printSettings.receiptTemplate', () => this._savePrintSettingsDebounced());
           watch('printSettings.paperSize', () => this._savePrintSettingsDebounced());
+          // Auto-delete zero settings
+          watch('autoDeleteZeroQuantity', () => this._saveBusinessSettingsDebounced());
+          watch('autoDeleteZeroDays', () => this._saveBusinessSettingsDebounced());
         }
       } catch (_) {}
       // Realtime refresh handlers
@@ -5531,6 +5534,10 @@ function cannabisPOS() {
       requireCustomerInfo: false,
     },
 
+    // Auto delete zeroed products
+    autoDeleteZeroQuantity: false,
+    autoDeleteZeroDays: 1,
+
     _printSaveTimer: null,
 
     // Settings and data management
@@ -5608,6 +5615,13 @@ function cannabisPOS() {
             requireCustomerInfo: !!ss.requireCustomerInfo,
           };
         }
+        // Load auto-delete zero prefs
+        const z = JSON.parse(localStorage.getItem('cannabisPOS-zeroDelete') || '{}');
+        if (z && typeof z === 'object') {
+          this.autoDeleteZeroQuantity = !!z.enabled;
+          const d = Number(z.days || 1);
+          this.autoDeleteZeroDays = isFinite(d) ? Math.min(30, Math.max(1, d)) : 1;
+        }
       } catch (_) {}
 
       // Hydrate from server when available
@@ -5668,9 +5682,14 @@ function cannabisPOS() {
           dailyLimit: Number(s.__ui_daily_limit || 0),
           requireCustomerInfo: !!s.require_customer,
         };
+        // Auto-delete zero
+        this.autoDeleteZeroQuantity = !!s.auto_delete_zero_quantity;
+        const d = Number(s.auto_delete_zero_days || 1);
+        this.autoDeleteZeroDays = isFinite(d) ? Math.min(30, Math.max(1, d)) : 1;
         try {
           localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings));
           localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings));
+          localStorage.setItem('cannabisPOS-zeroDelete', JSON.stringify({ enabled: this.autoDeleteZeroQuantity, days: this.autoDeleteZeroDays }));
         } catch (_) {}
       } catch (_) {}
     },
@@ -5751,11 +5770,14 @@ function cannabisPOS() {
           minimum_price_enabled: !!this.salesSettings.enforceMinimumSale,
           __ui_daily_limit: Number(this.salesSettings.dailyLimit) || 0,
           require_customer: !!this.salesSettings.requireCustomerInfo,
+          auto_delete_zero_quantity: !!this.autoDeleteZeroQuantity,
+          auto_delete_zero_days: Math.min(30, Math.max(1, Number(this.autoDeleteZeroDays) || 1)),
         };
         // Persist locally for resilience
         try {
           localStorage.setItem('cannabisPOS-taxSettings', JSON.stringify(this.taxSettings));
           localStorage.setItem('cannabisPOS-salesSettings', JSON.stringify(this.salesSettings));
+          localStorage.setItem('cannabisPOS-zeroDelete', JSON.stringify({ enabled: payload.auto_delete_zero_quantity, days: payload.auto_delete_zero_days }));
         } catch (_) {}
         // POST to API (Supabase-backed)
         const res = await (window.posAuth
