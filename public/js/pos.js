@@ -5463,6 +5463,22 @@ function cannabisPOS() {
       paperSize: "80mm",
       categoriesAutoprint: [],
     },
+
+    // Tax and Sales settings (used by Settings UI bindings)
+    taxSettings: {
+      recreationalRate: 0,
+      medicalRate: 0,
+      includeInPrice: false,
+      localRate: 0,
+      stateRate: 0,
+    },
+    salesSettings: {
+      minimumSale: 0,
+      enforceMinimumSale: false,
+      dailyLimit: 0,
+      requireCustomerInfo: false,
+    },
+
     _printSaveTimer: null,
 
     // Settings and data management
