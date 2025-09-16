@@ -1388,6 +1388,67 @@ app.delete("/node/price-tiers/:id", async (req, res) => {
   }
 });
 
+// Report templates (Supabase-backed)
+app.get("/node/report-templates", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    let qp = "report_templates?select=*";
+    if (search) {
+      const s = encodeURIComponent(search);
+      qp += `&or=(name.ilike.*${s}*,report_type.ilike.*${s}*)`;
+    }
+    const r = await supaFetch(qp, { method: "GET" });
+    const rows = r.ok ? await r.json() : [];
+    res.json({ success: true, templates: Array.isArray(rows) ? rows : [] });
+  } catch (e) {
+    res.json({ success: true, templates: [] });
+  }
+});
+
+app.post("/node/report-templates", async (req, res) => {
+  try {
+    const body = req.body || {};
+    const row = {
+      user_id: req.body?.user_id || null,
+      name: body.name || "Untitled",
+      description: body.description || null,
+      report_type: body.report_type || body.type || "sales",
+      format: (body.format || "pdf").toLowerCase(),
+      include_charts: !!body.include_charts,
+      orientation: body.orientation || "portrait",
+      paper_size: body.paper_size || "a4",
+      config: body.config || {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    const r = await supaFetch("report_templates", { method: "POST", body: [row] });
+    const data = r.ok ? await r.json() : null;
+    res.status(201).json({ success: true, template: Array.isArray(data) ? data[0] : data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.put("/node/report-templates/:id", async (req, res) => {
+  try {
+    const r = await supaFetch(`report_templates?id=eq.${encodeURIComponent(req.params.id)}`, { method: "PATCH", body: req.body || {} });
+    const data = r.ok ? await r.json() : null;
+    res.json({ success: true, template: Array.isArray(data) ? data[0] : data });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
+app.delete("/node/report-templates/:id", async (req, res) => {
+  try {
+    const d = await supaFetch(`report_templates?id=eq.${encodeURIComponent(req.params.id)}`, { method: "DELETE" });
+    if (!d.ok) return res.status(500).json({ success: false, error: "Failed" });
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ success: false, error: "Failed" });
+  }
+});
+
 // Loyalty points adjustments (customers table)
 app.post("/api/loyalty/:customerId/adjust-points", async (req, res) => {
   try {
