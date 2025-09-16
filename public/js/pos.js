@@ -4946,6 +4946,16 @@ function cannabisPOS() {
       }
     },
 
+    // Print settings used in Settings UI and demo index.html
+    printSettings: {
+      autoprint: false,
+      printLabels: false,
+      receiptTemplate: "standard",
+      paperSize: "80mm",
+      categoriesAutoprint: [],
+    },
+    _printSaveTimer: null,
+
     // Settings and data management
     loadSettings() {
       try {
@@ -4966,6 +4976,24 @@ function cannabisPOS() {
           const storeSettings = JSON.parse(savedStoreSettings);
           this.storeSettings = { ...this.storeSettings, ...storeSettings };
         }
+
+        // Load print settings (local first)
+        try {
+          const ps = JSON.parse(
+            localStorage.getItem("cannabisPOS-printSettings") || "{}",
+          );
+          if (ps && typeof ps === "object") {
+            this.printSettings = {
+              autoprint: !!ps.autoprint,
+              printLabels: !!ps.printLabels,
+              receiptTemplate: ps.receiptTemplate || "standard",
+              paperSize: ps.paperSize || "80mm",
+              categoriesAutoprint: Array.isArray(ps.categoriesAutoprint)
+                ? ps.categoriesAutoprint
+                : [],
+            };
+          }
+        } catch (_) {}
       } catch (error) {
         console.error("Error loading settings:", error);
       }
@@ -4976,6 +5004,78 @@ function cannabisPOS() {
           const n = parseFloat(wt);
           if (!isNaN(n) && isFinite(n)) this.weightThreshold = Math.max(0, n);
         }
+      } catch (_) {}
+
+      // Hydrate print settings from server when available
+      this._hydratePrintSettingsFromServer && this._hydratePrintSettingsFromServer();
+    },
+
+    async _hydratePrintSettingsFromServer() {
+      try {
+        const getRes = await (window.posAuth
+          ? posAuth.apiRequest("get", "/settings/pos")
+          : (window.axios || axios).get("/api/settings/pos"));
+        const s = (getRes && (getRes.data?.settings || getRes.data)) || {};
+        if (s && typeof s === "object") {
+          this.printSettings.autoprint = !!(s.receipt_autoprint ?? s.auto_print_receipt);
+          this.printSettings.paperSize = s.receipt_paper_size || this.printSettings.paperSize;
+          const cats = s.receipt_categories_autoprint;
+          if (Array.isArray(cats)) this.printSettings.categoriesAutoprint = cats;
+          // Persist locally
+          try {
+            localStorage.setItem(
+              "cannabisPOS-printSettings",
+              JSON.stringify(this.printSettings),
+            );
+          } catch (_) {}
+        }
+      } catch (_) {}
+    },
+
+    toggleCategoryAutoprint(category) {
+      try {
+        const idx = this.printSettings.categoriesAutoprint.indexOf(category);
+        if (idx >= 0) this.printSettings.categoriesAutoprint.splice(idx, 1);
+        else this.printSettings.categoriesAutoprint.push(category);
+        this._savePrintSettingsDebounced();
+      } catch (_) {}
+    },
+
+    _savePrintSettingsDebounced() {
+      try { if (this._printSaveTimer) clearTimeout(this._printSaveTimer); } catch (_) {}
+      this._printSaveTimer = setTimeout(() => this._savePrintSettings(), 400);
+    },
+
+    async _savePrintSettings() {
+      try {
+        // Save locally
+        try {
+          localStorage.setItem(
+            "cannabisPOS-printSettings",
+            JSON.stringify(this.printSettings),
+          );
+        } catch (_) {}
+        // Persist to server (Supabase-backed settings)
+        const payload = {
+          receipt_autoprint: !!this.printSettings.autoprint,
+          receipt_categories_autoprint: Array.isArray(
+            this.printSettings.categoriesAutoprint,
+          )
+            ? this.printSettings.categoriesAutoprint
+            : [],
+          receipt_paper_size: this.printSettings.paperSize,
+          // Keep extras (non-critical) so UI can remember choices
+          __ui_print_labels: !!this.printSettings.printLabels,
+          __ui_receipt_template: this.printSettings.receiptTemplate || "standard",
+        };
+        const res = await (window.posAuth
+          ? posAuth.apiRequest("post", "/settings/pos", payload)
+          : (window.axios || axios).post("/api/settings/pos", payload));
+        const ok =
+          res?.success === true ||
+          res?.data?.success === true ||
+          (res?.status && res.status >= 200 && res.status < 300);
+        if (!ok) throw new Error("save-failed");
       } catch (_) {}
     },
 
