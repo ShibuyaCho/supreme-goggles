@@ -1157,6 +1157,24 @@ app.delete("/api/customers/:id", async (req, res) => {
   }
 });
 
+// Products: list (Node alias -> Supabase)
+app.get("/node/products", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const category = (req.query?.category || "").toString().trim();
+    let qp = "products?select=*";
+    const filters = [];
+    if (search) filters.push(`or=(name.ilike.*${encodeURIComponent(search)}*,sku.ilike.*${encodeURIComponent(search)}*,metrc_tag.ilike.*${encodeURIComponent(search)}*)`);
+    if (category) filters.push(`category=eq.${encodeURIComponent(category)}`);
+    if (filters.length) qp += `&${filters.join("&")}`;
+    const r = await supaFetch(qp);
+    const payload = r.ok ? await r.json() : [];
+    res.json({ success: true, products: Array.isArray(payload) ? payload : [] });
+  } catch (_) {
+    res.json({ success: true, products: [] });
+  }
+});
+
 // Inventory: transfer room
 app.post("/api/products/transfer-room", async (req, res) => {
   const b = req.body || {};
