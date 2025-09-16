@@ -25,7 +25,10 @@
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
             <div class="p-4 border-b flex items-center justify-between">
                 <h2 class="text-lg font-semibold">Incoming Transfers</h2>
-                <div class="text-sm text-gray-500" id="metrc-transfers-count">0 transfers</div>
+                <div class="flex items-center gap-3">
+                    <input id="transfers-search" type="search" placeholder="Search manifests, shipper, destination..." class="w-72 px-2 py-1 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
+                    <div class="text-sm text-gray-500" id="metrc-transfers-count">0 transfers</div>
+                </div>
             </div>
             <div id="transfers-list" class="divide-y">
                 <div class="p-6 text-gray-500">Click "Refresh METRC Data" to fetch transfers.</div>
