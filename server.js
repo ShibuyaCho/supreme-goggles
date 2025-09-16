@@ -2831,6 +2831,64 @@ app.get("/sales/:id/receipt", async (req, res) => {
   res.type("html").send(html);
 });
 
+// Sales: exit labels (HTML)
+app.get("/sales/:id/exit-labels", async (req, res) => {
+  try {
+    const id = String(req.params.id || "");
+    const r = await supaFetch(`sales?id=eq.${encodeURIComponent(id)}`, {
+      method: "GET",
+      query: { select: "*" },
+    });
+    const rows = r.ok ? await r.json() : [];
+    const s = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    if (!s) return res.status(404).type("text").send("Sale not found");
+
+    let settings = {};
+    try {
+      const sr = await supaFetch("pos_settings?id=eq.default&select=settings", { method: "GET" });
+      const arr = sr.ok ? await sr.json() : [];
+      const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+      settings = row && row.settings && typeof row.settings === "object" ? row.settings : {};
+    } catch (_) {}
+    const storeName = settings.store_name || "Cannabest POS";
+
+    const cart = Array.isArray(s.cart) ? s.cart : [];
+    const items = cart.map((i) => {
+      const name = i?.name || "Item";
+      const qty = Number(i?.quantity || 1);
+      const cat = (i?.category || i?.product_category || "").toString().toLowerCase();
+      const w = (i?.weight || i?.selectedWeight || "").toString();
+      const isFlower = cat === "flower" || /\bg\b|gram/i.test(w);
+      const qtyDisp = isFlower ? `${qty.toFixed(2)} g` : `${Math.round(qty)} units`;
+      return { name, qtyDisp, isFlower };
+    });
+
+    const css = `body{font-family:Arial, Helvetica, sans-serif;margin:0;padding:12px}.label{width:300px;border:1px solid #e5e7eb;border-radius:6px;padding:10px;margin:8px auto}.hdr{font-weight:700;font-size:14px;text-align:center}.row{display:flex;justify-content:space-between;font-size:12px;margin:2px 0}.muted{color:#6b7280;font-size:11px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}@media print{.grid{grid-template-columns:repeat(2,1fr);gap:6px}}`;
+
+    const html = `<!doctype html><html><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Exit Labels ${s.sale_number || id}</title><style>${css}</style></head><body>
+      <div class="grid">
+        ${items
+          .map(
+            (x) => `<div class="label">
+              <div class="hdr">${storeName}</div>
+              <div class="row"><span>Product</span><span>${x.name}</span></div>
+              <div class="row"><span>${x.isFlower ? "Weight" : "Quantity"}</span><span>${x.qtyDisp}</span></div>
+              <div class="row"><span>Sale #</span><span>${s.sale_number || id}</span></div>
+              <div class="row"><span>Date</span><span>${new Date(s.created_at || Date.now()).toLocaleString()}</span></div>
+              <div class="muted">Thank you for shopping at ${storeName}.</div>
+            </div>`
+          )
+          .join("")}
+      </div>
+      <script>window.onload=function(){try{if(new URLSearchParams(location.search).get('reprint')) window.print();}catch(_){}}</script>
+    </body></html>`;
+
+    res.type("html").send(html);
+  } catch (e) {
+    res.status(500).type("text").send("Failed to render exit labels");
+  }
+});
+
 // Sales: void
 app.post("/sales/:id/void", async (req, res) => {
   try {
