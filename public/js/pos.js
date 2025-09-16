@@ -4464,7 +4464,7 @@ function cannabisPOS() {
         const incoming = Number(newQuantity);
         let next = incoming;
         if (item && item._unit === "g") {
-          const step = 0.25;
+          const step = 1.0; // increment flower grams by 1.0 via buttons
           const delta = incoming - prev;
           next = prev + (delta >= 0 ? step : -step);
         }
@@ -6076,24 +6076,7 @@ function cannabisPOS() {
           return;
         }
         const perGram = Number(tier.prices?.weight_1g || 0);
-        const defaultGrams =
-          this.weightThreshold && this.weightThreshold > 0
-            ? this.weightThreshold
-            : 1.0;
-        let gramsStr = null;
-        try {
-          gramsStr = prompt(
-            `Enter grams for ${product.name} (e.g. 1.25)`,
-            String(defaultGrams),
-          );
-        } catch (_) {
-          gramsStr = String(defaultGrams);
-        }
-        const grams = Number(parseFloat(gramsStr));
-        if (!isFinite(grams) || grams <= 0) {
-          this.showToast("Invalid grams amount", "error");
-          return;
-        }
+        const grams = 1.0; // default add 1.0g, no popup
         const price = isFinite(perGram) && perGram > 0 ? perGram * grams : 0;
         this.addFlowerToCart(product, grams, price);
         return;
