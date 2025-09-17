@@ -5875,14 +5875,8 @@ function cannabisPOS() {
           );
         } catch (_) {}
         // POST to API (Supabase-backed)
-        const res = await (window.posAuth
-          ? posAuth.apiRequest("post", "/settings/pos", payload)
-          : (window.axios || axios).post("/api/settings/pos", payload));
-        const ok =
-          res?.success === true ||
-          res?.data?.success === true ||
-          (res?.status && res.status >= 200 && res.status < 300);
-        if (!ok) throw new Error("save-failed");
+        const res = await (window.SettingsClient ? SettingsClient.save(payload) : Promise.resolve({ success:false }));
+        if (!res || res.success !== true) throw new Error("save-failed");
       } catch (_) {}
     },
 
