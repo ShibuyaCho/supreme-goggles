@@ -85,8 +85,16 @@ class POSAuth {
           const raw = localStorage.getItem("pos_store");
           if (raw) {
             const store = JSON.parse(raw);
-            if (store && store.id)
-              config.headers["X-Store-ID"] = String(store.id);
+            if (store && store.id) {
+              let sid = String(store.id || "default");
+              sid = sid
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, "")
+                .replace(/[^a-z0-9_.-]/g, "");
+              if (sid === "defaultstore") sid = "default";
+              config.headers["X-Store-ID"] = sid || "default";
+            }
             if (store && store.orgId)
               config.headers["X-Org-ID"] = String(store.orgId);
           }
