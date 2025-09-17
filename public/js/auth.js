@@ -253,6 +253,24 @@ class POSAuth {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     } catch (e) {}
     this.touchActivity();
+    // Aggressively refresh settings and price tiers caches post-login for persistence across sessions
+    try {
+      // Refresh POS settings via SettingsClient (writes to localStorage/cookie and dispatches settings:updated)
+      if (window.SettingsClient && typeof SettingsClient.get === "function") {
+        (async ()=>{ try { await SettingsClient.get(true); } catch(_){} })();
+      }
+      // Preload price tiers and persist local backup for offline/session resilience
+      (async ()=>{
+        try {
+          const http = window.axios || axios;
+          const res = await http.get("/api/price-tiers", { headers: { Accept: "application/json" } });
+          const tiers = (res?.data && (res.data.tiers || res.data)) || [];
+          if (Array.isArray(tiers)) {
+            try { localStorage.setItem("cannabisPOS-priceTiers-backup", JSON.stringify(tiers)); } catch(_) {}
+          }
+        } catch(_) {}
+      })();
+    } catch (_) {}
   }
 
   /**
