@@ -318,9 +318,11 @@
       let last = null;
       for (let i = 0; i < 3; i++) {
         try {
-          const data = await httpPost("/api/settings/pos", merged, {
-            store: sid,
-          });
+          const data = await httpPost(
+            "/api/settings/pos",
+            Object.assign({ settings: merged }, merged),
+            { store: sid },
+          );
           const s =
             data && (data.settings || data) ? data.settings || data : merged;
           let m = { ...DEFAULTS, ...s };
