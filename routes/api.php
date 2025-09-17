@@ -262,12 +262,21 @@ Route::get('/loyalty-members', function () {
                     );
                 }
             }
-            $resp = \Illuminate\Support\Facades\Http::withHeaders([
-                'apikey' => $supabaseKey,
-                'Authorization' => 'Bearer ' . $supabaseKey,
-                'Accept' => 'application/json',
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', $params);
-            if ($resp->ok()) {
+            $resp = null; $ok = false;
+            for ($i=0; $i<3; $i++) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', $params);
+                    if ($resp->ok()) { $ok = true; break; }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Supabase loyalty fetch failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+                }
+                usleep(100000 * ($i+1));
+            }
+            if ($ok) {
                 return response()->json([
                     'success' => true,
                     'members' => $resp->json() ?? [],
@@ -306,13 +315,22 @@ Route::post('/loyalty-members', function (\Illuminate\Http\Request $request) {
             'created_at' => now()->toIso8601String(),
             'updated_at' => now()->toIso8601String(),
         ];
-        $resp = \Illuminate\Support\Facades\Http::withHeaders([
-            'apikey' => $supabaseKey,
-            'Authorization' => 'Bearer ' . $supabaseKey,
-            'Accept' => 'application/json',
-            'Prefer' => 'resolution=merge-duplicates,return=representation',
-        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', [ $row ]);
-        if ($resp->successful()) {
+        $resp = null; $success = false;
+        for ($i=0; $i<3; $i++) {
+            try {
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'resolution=merge-duplicates,return=representation',
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', [ $row ]);
+                if ($resp->successful()) { $success = true; break; }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Supabase loyalty save failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+            }
+            usleep(150000 * ($i+1));
+        }
+        if ($success) {
             $arr = $resp->json();
             $created = is_array($arr) && isset($arr[0]) ? $arr[0] : $arr;
             return response()->json(['success' => true, 'member' => $created], 201);
@@ -822,15 +840,24 @@ Route::middleware(['auth:sanctum'])->group(function () {
             $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
             if ($supabaseUrl && $supabaseKey) {
                 try {
-                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
-                        'apikey' => $supabaseKey,
-                        'Authorization' => 'Bearer ' . $supabaseKey,
-                        'Accept' => 'application/json',
-                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                        'id' => 'eq.' . $storeId,
-                        'select' => '*',
-                    ]);
-                    if ($resp->ok()) {
+                    $resp = null; $ok = false;
+                    for ($i=0; $i<3; $i++) {
+                        try {
+                            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                                'apikey' => $supabaseKey,
+                                'Authorization' => 'Bearer ' . $supabaseKey,
+                                'Accept' => 'application/json',
+                            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                                'id' => 'eq.' . $storeId,
+                                'select' => '*',
+                            ]);
+                            if ($resp->ok()) { $ok = true; break; }
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Supabase settings fetch failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+                        }
+                        usleep(100000 * ($i+1));
+                    }
+                    if ($ok) {
                         $arr = $resp->json();
                         $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
                         if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
@@ -1023,17 +1050,26 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 $saved = false;
                 if ($supabaseUrl && $supabaseKey) {
                     try {
-                        $resp = \Illuminate\Support\Facades\Http::withHeaders([
-                            'apikey' => $supabaseKey,
-                            'Authorization' => 'Bearer ' . $supabaseKey,
-                            'Accept' => 'application/json',
-                            'Prefer' => 'resolution=merge-duplicates,return=representation',
-                        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
-                            'id' => $storeId,
-                            'settings' => $settings,
-                            'updated_at' => now()->toIso8601String(),
-                        ]]);
-                        if ($resp->successful()) { $saved = true; }
+                        $resp = null; $success = false;
+                        for ($i=0; $i<3; $i++) {
+                            try {
+                                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                                    'apikey' => $supabaseKey,
+                                    'Authorization' => 'Bearer ' . $supabaseKey,
+                                    'Accept' => 'application/json',
+                                    'Prefer' => 'resolution=merge-duplicates,return=representation',
+                                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                                    'id' => $storeId,
+                                    'settings' => $settings,
+                                    'updated_at' => now()->toIso8601String(),
+                                ]]);
+                                if ($resp->successful()) { $success = true; break; }
+                            } catch (\Throwable $e) {
+                                \Illuminate\Support\Facades\Log::warning('Supabase settings save failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+                            }
+                            usleep(150000 * ($i+1));
+                        }
+                        if ($success) { $saved = true; }
                     } catch (\Throwable $e) { /* fall back to DB */ }
                 }
 
