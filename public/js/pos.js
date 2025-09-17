@@ -6284,56 +6284,113 @@ function cannabisPOS() {
           headers: { Accept: "application/json" },
         });
         const list = res?.data?.tiers || [];
-        if (Array.isArray(list)) {
-          const mapped = list.map((t) => {
-            const prices = t.prices || {
-              weight_1g: 0,
-              weight_3_5g: 0,
-              weight_7g: 0,
-              weight_14g: 0,
-              weight_28g: 0,
-            };
-            const custom = Array.isArray(t.custom_weights) ? t.custom_weights : [];
-            const std = [
-              { weight: 1, price: Number(prices.weight_1g || 0) },
-              { weight: 3.5, price: Number(prices.weight_3_5g || 0) },
-              { weight: 7, price: Number(prices.weight_7g || 0) },
-              { weight: 14, price: Number(prices.weight_14g || 0) },
-              { weight: 28, price: Number(prices.weight_28g || 0) },
-            ].filter((w) => isFinite(w.price) && w.price > 0);
-            const customNorm = custom
-              .map((w) => {
-                const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
-                const price = Number(w.price || 0);
-                return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
-              })
-              .filter((w) => w.weight > 0 && w.price > 0);
-            return {
-              id: t.id,
-              name: t.name,
-              isActive: t.is_active ?? true,
-              createdAt: t.created_at || new Date().toISOString(),
-              prices,
-              customWeights: custom,
-              weights: [...std, ...customNorm],
-            };
-          });
-          this.priceTiers = mapped;
-          if (mapped.length > 0) {
-            try {
-              localStorage.setItem(
-                "cannabisPOS-priceTiers-backup",
-                JSON.stringify(mapped),
-              );
-            } catch (_) {}
-          }
+
+        // Load any locally-saved tiers (offline/optimistic) to merge with server
+        let localBackup = [];
+        try {
+          localBackup = JSON.parse(
+            localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]",
+          );
+          if (!Array.isArray(localBackup)) localBackup = [];
+        } catch (_) {
+          localBackup = [];
         }
-      } catch (e) {
+
+        // If server returns nothing, prefer local backup to preserve user's tiers
+        if (!Array.isArray(list) || list.length === 0) {
+          if (localBackup.length > 0) {
+            this.priceTiers = localBackup;
+            return;
+          }
+          // Keep defaults if no backup exists
+          this.priceTiers = Array.isArray(this.priceTiers) ? this.priceTiers : [];
+          return;
+        }
+
+        // Map server rows to UI model
+        const mapped = list.map((t) => {
+          const prices = t.prices || {
+            weight_1g: 0,
+            weight_3_5g: 0,
+            weight_7g: 0,
+            weight_14g: 0,
+            weight_28g: 0,
+          };
+          const custom = Array.isArray(t.custom_weights) ? t.custom_weights : [];
+          const std = [
+            { weight: 1, price: Number(prices.weight_1g || 0) },
+            { weight: 3.5, price: Number(prices.weight_3_5g || 0) },
+            { weight: 7, price: Number(prices.weight_7g || 0) },
+            { weight: 14, price: Number(prices.weight_14g || 0) },
+            { weight: 28, price: Number(prices.weight_28g || 0) },
+          ].filter((w) => isFinite(w.price) && w.price > 0);
+          const customNorm = custom
+            .map((w) => {
+              const grams = this.extractWeightInGrams
+                ? this.extractWeightInGrams(w.weight)
+                : Number(w.weight || 0);
+              const price = Number(w.price || 0);
+              return {
+                weight: isFinite(grams) ? grams : 0,
+                price: isFinite(price) ? price : 0,
+              };
+            })
+            .filter((w) => w.weight > 0 && w.price > 0);
+          return {
+            id: t.id,
+            name: t.name,
+            isActive: t.is_active ?? true,
+            createdAt: t.created_at || new Date().toISOString(),
+            prices,
+            customWeights: custom,
+            weights: [...std, ...customNorm],
+          };
+        });
+
+        // Merge: keep unique by id (if present) otherwise by name (case-insensitive)
+        const byId = new Map();
+        const byName = new Map();
+        const add = (tier) => {
+          const idKey = tier && tier.id != null ? String(tier.id) : null;
+          const nameKey = (tier?.name || "").trim().toLowerCase();
+          if (idKey && !byId.has(idKey)) {
+            byId.set(idKey, tier);
+          } else if (!idKey && nameKey && !byName.has(nameKey)) {
+            byName.set(nameKey, tier);
+          }
+        };
+        mapped.forEach(add);
+        (localBackup || []).forEach((t) => {
+          const idKey = t && t.id != null ? String(t.id) : null;
+          const nameKey = (t?.name || "").trim().toLowerCase();
+          if (idKey) {
+            if (!byId.has(idKey)) byId.set(idKey, t);
+          } else if (nameKey) {
+            if (!byName.has(nameKey)) byName.set(nameKey, t);
+          }
+        });
+        const merged = [...byId.values()];
+        byName.forEach((v, k) => {
+          // Avoid duplicates where server already has same name (without id)
+          if (!merged.some((x) => (x.name || "").trim().toLowerCase() === k)) {
+            merged.push(v);
+          }
+        });
+
+        this.priceTiers = merged;
+        try {
+          localStorage.setItem(
+            "cannabisPOS-priceTiers-backup",
+            JSON.stringify(this.priceTiers),
+          );
+        } catch (_) {}
+      } catch (_) {
+        // Network/API failed: show whatever we have locally
         try {
           const b = JSON.parse(
             localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]",
           );
-          if (Array.isArray(b)) this.priceTiers = b;
+          if (Array.isArray(b) && b.length) this.priceTiers = b;
         } catch (_) {}
       }
     },
