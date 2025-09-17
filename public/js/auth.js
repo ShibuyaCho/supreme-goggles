@@ -30,18 +30,23 @@ class POSAuth {
     };
     this._cookies = { getCookie, setCookie, deleteCookie };
 
+    // Single source of truth keys
+    this.KEY_TOKEN = "pos_token";
+    this.KEY_USER = "pos_user";
+
+    // Read token/user (with legacy fallback on read only)
     const posToken =
       (typeof localStorage !== "undefined" &&
-        localStorage.getItem("pos_token")) ||
+        localStorage.getItem(this.KEY_TOKEN)) ||
       null;
     const altToken =
       (typeof localStorage !== "undefined" &&
         localStorage.getItem("auth_token")) ||
       null;
-    const cookieToken = getCookie("pos_token");
+    const cookieToken = getCookie(this.KEY_TOKEN);
     const posUserStr =
       (typeof localStorage !== "undefined" &&
-        localStorage.getItem("pos_user")) ||
+        localStorage.getItem(this.KEY_USER)) ||
       null;
     const altUserStr =
       (typeof localStorage !== "undefined" &&
@@ -66,6 +71,31 @@ class POSAuth {
       axios.defaults.headers.common = axios.defaults.headers.common || {};
       axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
     }
+
+    // Multi-tab token sync
+    try {
+      window.addEventListener("storage", (e) => {
+        if (!e) return;
+        if (e.key === this.KEY_TOKEN) {
+          const next = e.newValue || null;
+          if (!next) {
+            // Token removed in another tab
+            this.clearAuth();
+          } else if (next !== this.token) {
+            this.token = next;
+            try {
+              axios.defaults.headers = axios.defaults.headers || {};
+              axios.defaults.headers.common = axios.defaults.headers.common || {};
+              axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
+            } catch (_) {}
+          }
+        }
+        if (e.key === this.KEY_USER && e.newValue) {
+          try { this.user = JSON.parse(e.newValue); } catch (_) {}
+        }
+      });
+    } catch (_) {}
+
     this.setupAxiosInterceptors();
     this.setupActivityTracking();
   }
@@ -206,15 +236,15 @@ class POSAuth {
     this.token = token;
     this.user = user;
     try {
-      localStorage.setItem("pos_token", token);
-      localStorage.setItem("pos_user", JSON.stringify(user));
-      // Back-compat keys
-      localStorage.setItem("auth_token", token);
-      localStorage.setItem("user_data", JSON.stringify(user));
+      localStorage.setItem(this.KEY_TOKEN, token);
+      localStorage.setItem(this.KEY_USER, JSON.stringify(user));
+      // Clean up legacy keys to avoid drift
+      localStorage.removeItem("auth_token");
+      localStorage.removeItem("user_data");
     } catch (e) {}
     try {
       // Cookie fallback to survive certain reload scenarios and environments
-      this._cookies?.setCookie?.("pos_token", token, 30);
+      this._cookies?.setCookie?.(this.KEY_TOKEN, token, 30);
     } catch (e) {}
     try {
       axios.defaults.headers = axios.defaults.headers || {};
@@ -276,27 +306,13 @@ class POSAuth {
   clearAuth() {
     this.token = null;
     this.user = null;
-    try {
-      localStorage.removeItem("pos_token");
-    } catch (e) {}
-    try {
-      localStorage.removeItem("pos_user");
-    } catch (e) {}
-    try {
-      localStorage.removeItem("pos_last_activity");
-    } catch (e) {}
-    try {
-      localStorage.removeItem("auth_token");
-    } catch (e) {}
-    try {
-      localStorage.removeItem("user_data");
-    } catch (e) {}
-    try {
-      localStorage.removeItem("cannabisPOS-auth");
-    } catch (e) {}
-    try {
-      this._cookies?.deleteCookie?.("pos_token");
-    } catch (e) {}
+    try { localStorage.removeItem(this.KEY_TOKEN); } catch (e) {}
+    try { localStorage.removeItem(this.KEY_USER); } catch (e) {}
+    try { localStorage.removeItem("pos_last_activity"); } catch (e) {}
+    try { localStorage.removeItem("auth_token"); } catch (e) {}
+    try { localStorage.removeItem("user_data"); } catch (e) {}
+    try { localStorage.removeItem("cannabisPOS-auth"); } catch (e) {}
+    try { this._cookies?.deleteCookie?.(this.KEY_TOKEN); } catch (e) {}
     try {
       if (axios?.defaults?.headers?.common)
         delete axios.defaults.headers.common["Authorization"];
@@ -409,11 +425,12 @@ class POSAuth {
       if (!token) throw new Error("No token");
       this.token = token;
       try {
-        localStorage.setItem("pos_token", this.token);
-        localStorage.setItem("auth_token", this.token);
+        localStorage.setItem(this.KEY_TOKEN, this.token);
+        // Remove legacy
+        localStorage.removeItem("auth_token");
       } catch (e) {}
       try {
-        this._cookies?.setCookie?.("pos_token", token, 30);
+        this._cookies?.setCookie?.(this.KEY_TOKEN, token, 30);
       } catch (e) {}
       try {
         axios.defaults.headers = axios.defaults.headers || {};
@@ -613,9 +630,12 @@ class POSAuth {
 // Global auth instance
 window.posAuth = new POSAuth();
 
-// Auto-initialize on page load
-document.addEventListener("DOMContentLoaded", () => {
-  posAuth.init();
+// Expose a readiness promise so other modules can await auth init
+window.posAuthReady = new Promise((resolve) => {
+  document.addEventListener("DOMContentLoaded", async () => {
+    try { window.posAuth.init(); } catch (_) {}
+    resolve();
+  });
 });
 
 // Export for use in other modules
