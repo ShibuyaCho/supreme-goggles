@@ -129,6 +129,7 @@ Route::get('/settings/pos', function() {
     if ($storeId === '' || $storeId === null) $storeId = 'default';
     // sanitize id for safety
     $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    $rowMeta = null;
     if ($supabaseUrl && $supabaseKey) {
         try {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
@@ -161,6 +162,7 @@ Route::get('/settings/pos', function() {
             }
             if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
                 $settings = $row['settings'];
+                $rowMeta = $row;
             }
         } catch (\Throwable $e) {}
     }
@@ -168,6 +170,7 @@ Route::get('/settings/pos', function() {
     return response()->json([
         'success' => true,
         'settings' => $settings,
+        'settings_updated_at' => is_array($rowMeta) && isset($rowMeta['updated_at']) ? $rowMeta['updated_at'] : null,
         'tax_rate' => $settings['sales_tax'] ?? 20.0,
         'medical_tax_rate' => 0.0,
         'currency' => 'USD',
