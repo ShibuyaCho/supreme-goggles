@@ -5681,9 +5681,11 @@ function cannabisPOS() {
         this._hydrateBusinessSettingsFromServer();
     },
 
+    _currentStoreId() { try { const raw = localStorage.getItem('pos_store'); if (!raw) return 'default'; const s = JSON.parse(raw); return (s && s.id) ? String(s.id) : 'default'; } catch(_) { return 'default'; } },
+
     async _hydratePrintSettingsFromServer() {
       try {
-        const resp = await (window.SettingsClient ? SettingsClient.get() : Promise.resolve({ success:false }));
+        const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
         const s = (resp && (resp.settings || resp)) || {};
         if (s && typeof s === "object") {
           this.printSettings.autoprint = !!(
