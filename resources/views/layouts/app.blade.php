@@ -267,7 +267,6 @@
                             <span>Add/Switch Store</span>
                         </button>
                         <span id="header-store-label" class="text-xs text-gray-600"></span>
-                        <button class="inline-flex items-center px-2 py-1 text-xs font-medium text-gray-700 bg-gray-200 hover:bg-gray-300 rounded" onclick="window.clearStoreCtx && window.clearStoreCtx()">Clear</button>
                     </div>
                     <!-- Current Employee -->
                     <div class="hidden md:flex items-center text-sm text-gray-700 relative" id="user-menu-container" data-employee-id="{{ auth()->user()->employee->id ?? '' }}">
