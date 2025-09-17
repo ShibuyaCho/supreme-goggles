@@ -6288,10 +6288,24 @@ function cannabisPOS() {
         const items = res?.data?.products || [];
         if (Array.isArray(items)) {
           this.products = items;
+          // Apply locally persisted product->tier assignments
+          try {
+            const mapRaw = localStorage.getItem("cannabisPOS-productTierMap");
+            const map = mapRaw ? JSON.parse(mapRaw) : {};
+            if (map && typeof map === "object") {
+              this.products = this.products.map((p) => ({
+                ...p,
+                priceTier:
+                  map[String(p.id)] !== undefined && map[String(p.id)] !== null
+                    ? map[String(p.id)]
+                    : p.priceTier || null,
+              }));
+            }
+          } catch (_) {}
           try {
             localStorage.setItem(
               "cannabisPOS-products",
-              JSON.stringify({ data: items }),
+              JSON.stringify({ data: this.products }),
             );
           } catch (_) {}
           this.normalizeCollections && this.normalizeCollections();
@@ -6526,10 +6540,24 @@ function cannabisPOS() {
                   : [];
               if (Array.isArray(items) && items.length) {
                 this.products = items;
+                // Apply locally persisted product->tier assignments
+                try {
+                  const mapRaw = localStorage.getItem("cannabisPOS-productTierMap");
+                  const map = mapRaw ? JSON.parse(mapRaw) : {};
+                  if (map && typeof map === "object") {
+                    this.products = this.products.map((p) => ({
+                      ...p,
+                      priceTier:
+                        map[String(p.id)] !== undefined && map[String(p.id)] !== null
+                          ? map[String(p.id)]
+                          : p.priceTier || null,
+                    }));
+                  }
+                } catch (_) {}
                 try {
                   localStorage.setItem(
                     "cannabisPOS-products",
-                    JSON.stringify({ data: items }),
+                    JSON.stringify({ data: this.products }),
                   );
                 } catch (_) {}
               }
@@ -8132,6 +8160,50 @@ function cannabisPOS() {
         this.products[productIndex].metrcData.cbc =
           parseFloat(this.editData.cbc) || 0;
       }
+
+      // Persist assignment aggressively: API + local map fallback
+      try {
+        const id = this.selectedProduct?.id;
+        if (id != null) {
+          const body = {
+            name: this.editData.name,
+            stock: parseInt(this.editData.stock) || 0,
+            cost: parseFloat(this.editData.cost) || 0,
+            price: parseFloat(this.editData.price) || 0,
+            thc: parseFloat(this.editData.thc) || 0,
+            cbd: parseFloat(this.editData.cbd) || 0,
+            priceTier: this.editData.priceTier || null,
+            updated_at: new Date().toISOString(),
+          };
+          // Try Node proxy -> Supabase first
+          (async () => {
+            try {
+              await (window.axios || axios).put(
+                `/node/products/${encodeURIComponent(id)}`,
+                body,
+                { headers: { Accept: "application/json" } },
+              );
+            } catch (_) {
+              // Fallback to Laravel API alias
+              try {
+                await (window.axios || axios).put(
+                  `/api/products/${encodeURIComponent(id)}`,
+                  body,
+                  { headers: { Accept: "application/json" } },
+                );
+              } catch (_) {}
+            }
+          })();
+          // Persist to local product->tier map to survive any session/logout
+          try {
+            const key = "cannabisPOS-productTierMap";
+            const raw = localStorage.getItem(key);
+            const map = raw ? JSON.parse(raw) : {};
+            map[String(id)] = this.editData.priceTier || null;
+            localStorage.setItem(key, JSON.stringify(map));
+          } catch (_) {}
+        }
+      } catch (_) {}
 
       this.showToast("Product updated successfully", "success");
       this.showEditModal = false;
