@@ -113,11 +113,26 @@
   async function addStoreEmbedded(){
     // Auto-generate a new store id (no prompt)
     const sid = 'store-' + Date.now().toString(36);
+    // Prepare minimal settings to create the store immediately so it appears in Switch list
+    let base = {};
+    try { if (window.SettingsClient && typeof SettingsClient.defaults === 'function') base = SettingsClient.defaults(); } catch(_){}
+    try {
+      const current = await getCurrentSettings();
+      if (current && typeof current === 'object') base = Object.assign({}, base, current);
+    } catch(_){}
+    base = Object.assign({ store_name: sid }, base);
+    try {
+      await (window.axios||axios).post('/api/settings/pos', base, { headers: { 'Content-Type':'application/json', 'X-Store-ID': sid } });
+    } catch(_) { /* best-effort */ }
+
+    // Select the new store locally
     let prev = null;
     try { const raw = localStorage.getItem('pos_store'); prev = raw?JSON.parse(raw):null; } catch(_){ }
-    try { localStorage.setItem('pos_store', JSON.stringify({ id: sid, name: sid })); } catch(_){ }
+    try { localStorage.setItem('pos_store', JSON.stringify({ id: sid, name: base.store_name || sid })); } catch(_){ }
     try { window.dispatchEvent(new Event('storage')); } catch(_){ }
     if (typeof window.updateStoreHeaderLabel === 'function') window.updateStoreHeaderLabel();
+
+    // Open embedded Settings so user can complete configuration
     renderModal(`
       <div class="p-0">
         <div class="flex items-center justify-between px-4 py-3 border-b">
