@@ -88,32 +88,43 @@ class SecurityHeaders
     {
         $domain = config('app.url') ? parse_url(config('app.url'), PHP_URL_HOST) : "'self'";
         
-        $directives = [
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'", // Allow inline scripts for Alpine.js
-            "style-src 'self' 'unsafe-inline'", // Allow inline styles
-            "img-src 'self' data: https:",
-            "font-src 'self'",
-            "connect-src 'self'",
-            "media-src 'self'",
-            "object-src 'none'",
-            "child-src 'none'",
-            "frame-src 'none'",
-            "worker-src 'none'",
-            "frame-ancestors 'none'",
-            "form-action 'self'",
-            "base-uri 'self'",
-            "manifest-src 'self'",
-        ];
-
-        // In development, be more permissive
-        if (config('app.env') !== 'production') {
-            $directives = array_map(function($directive) {
-                if (strpos($directive, 'script-src') === 0) {
-                    return "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
-                }
-                return $directive;
-            }, $directives);
+        // Strict defaults; relax only in non-production for DX
+        if (config('app.env') === 'production') {
+            $directives = [
+                "default-src 'self'",
+                "script-src 'self'",
+                "style-src 'self'",
+                "img-src 'self' data: https:",
+                "font-src 'self'",
+                "connect-src 'self'",
+                "media-src 'self'",
+                "object-src 'none'",
+                "child-src 'none'",
+                "frame-src 'none'",
+                "worker-src 'none'",
+                "frame-ancestors 'none'",
+                "form-action 'self'",
+                "base-uri 'self'",
+                "manifest-src 'self'",
+            ];
+        } else {
+            $directives = [
+                "default-src 'self'",
+                "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+                "style-src 'self' 'unsafe-inline'",
+                "img-src 'self' data: https:",
+                "font-src 'self'",
+                "connect-src 'self'",
+                "media-src 'self'",
+                "object-src 'none'",
+                "child-src 'none'",
+                "frame-src 'none'",
+                "worker-src 'none'",
+                "frame-ancestors 'none'",
+                "form-action 'self'",
+                "base-uri 'self'",
+                "manifest-src 'self'",
+            ];
         }
 
         return implode('; ', $directives);
