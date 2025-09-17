@@ -67,18 +67,23 @@ class MetrcService
 
         $url = rtrim($this->baseUrl, '/') . $endpoint;
 
+        // Basic throttling (approx per-facility 55 req/min) to avoid 429s
+        try {
+            $key = 'metrc_rate_' . md5(($this->facilityLicense ?: 'default') . '|' . date('YmdHi'));
+            $count = Cache::increment($key, 1);
+            Cache::put($key, $count, now()->addMinutes(1));
+            if ($count > 55) { usleep(250000); } // 250ms backoff when hot
+        } catch (\Throwable $e) { /* best-effort */ }
+
         // Per METRC docs: Basic base64("user_api_key:integrator_api_key")
-        $buildClient = function($username, $password) {
+        $buildClient = function ($username, $password) {
             return Http::withBasicAuth($username, $password)
                 ->acceptJson()
                 ->timeout(45)
-                ->retry(3, 250)
-                ->withHeaders([
-                    'Content-Type' => 'application/json'
-                ]);
+                ->withHeaders(['Content-Type' => 'application/json']);
         };
 
-        $attempt = function($client) use ($method, $url, $data) {
+        $attemptHttp = function ($client) use ($method, $url, $data) {
             $m = strtoupper($method);
             switch ($m) {
                 case 'GET':
@@ -104,37 +109,67 @@ class MetrcService
             [$this->userKey, $this->vendorKey], // user:vendor
             [$this->vendorKey, $this->userKey], // vendor:user
         ];
-        // Optional explicit username/password from config
         $confUser = config('services.metrc.username');
         $confPass = config('services.metrc.password');
-        if (!empty($confUser) && !empty($confPass)) {
-            $pairs[] = [$confUser, $confPass];
-        }
+        if (!empty($confUser) && !empty($confPass)) { $pairs[] = [$confUser, $confPass]; }
 
-        $response = null;
-        $lastResp = null;
+        $response = null; $lastResp = null;
+        $maxAttempts = 6; $delay = 250; // ms
+        $attemptNo = 0;
         foreach ($pairs as [$u, $p]) {
             if (empty($u) || empty($p)) { continue; }
-            $resp = $attempt($buildClient($u, $p));
-            $lastResp = $resp;
-            if ($resp->successful()) { $response = $resp; break; }
-            if (!in_array($resp->status(), [401,403])) { $response = $resp; break; }
+            $client = $buildClient($u, $p);
+            $attemptNo = 0; $resp = null;
+            do {
+                $attemptNo++;
+                $resp = $attemptHttp($client);
+                $lastResp = $resp;
+                if ($resp->successful()) { $response = $resp; break; }
+                $status = $resp->status();
+                if ($status === 429) {
+                    // Rate limited: honor Retry-After or exponential backoff
+                    $retryAfter = (int)($resp->header('Retry-After') ?? 0);
+                    $sleepMs = $retryAfter > 0 ? ($retryAfter * 1000) : $delay;
+                    usleep($sleepMs * 1000);
+                    $delay = min($delay * 2, 8000);
+                    continue;
+                }
+                if (in_array($status, [500, 502, 503, 504])) {
+                    usleep($delay * 1000);
+                    $delay = min($delay * 2, 8000);
+                    continue;
+                }
+                // For 401/403 or other statuses, break to try next creds or fail
+                break;
+            } while ($attemptNo < $maxAttempts);
+            if ($response) { break; }
+            if (!in_array($lastResp?->status(), [401, 403]) && $lastResp) { $response = $lastResp; break; }
         }
         if (!$response) { $response = $lastResp; }
 
-        if (!$response->successful()) {
-            $status = $response->status();
-            $json = $response->json();
+        if (!$response || !$response->successful()) {
+            $status = $response?->status() ?? 0;
+            $json = $response?->json();
             $error = is_array($json) ? ($json['message'] ?? ($json[0]['message'] ?? 'METRC API request failed')) : 'METRC API request failed';
+            // Metadata-only logging, no secrets
             Log::error('METRC API Error', [
-                'url' => $url,
-                'method' => $method,
+                'endpoint' => $endpoint,
+                'method' => strtoupper($method),
                 'status' => $status,
+                'facility' => $this->facilityLicense ? substr($this->facilityLicense, 0, 6) . '***' : null,
                 'error' => $error,
-                'response' => $response->body()
             ]);
             throw new \Exception("METRC API Error ({$status}): {$error}");
         }
+
+        // Audit log (metadata only)
+        try {
+            Log::info('METRC API Request', [
+                'endpoint' => $endpoint,
+                'method' => strtoupper($method),
+                'status' => $response->status(),
+            ]);
+        } catch (\Throwable $e) {}
 
         return $response->json();
     }
