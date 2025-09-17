@@ -1636,7 +1636,16 @@ function cannabisPOS() {
         // Map to server POS settings schema and persist to Supabase via API
         const hours = Array.isArray(this.storeSettings.hoursPerDay)
           ? this.storeSettings.hoursPerDay.map((d, i) => ({
-              day: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][i] || String(i),
+              day:
+                [
+                  "Monday",
+                  "Tuesday",
+                  "Wednesday",
+                  "Thursday",
+                  "Friday",
+                  "Saturday",
+                  "Sunday",
+                ][i] || String(i),
               is_open: !!d.isOpen,
               open_time: d.openTime || "09:00",
               close_time: d.closeTime || "21:00",
@@ -1655,7 +1664,11 @@ function cannabisPOS() {
           ? SettingsClient.save(payload)
           : Promise.resolve({ success: false }));
         if (!res || res.success !== true) throw new Error("Server save failed");
-        try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch(_) {}
+        try {
+          await (window.SettingsClient
+            ? SettingsClient.get(true)
+            : Promise.resolve());
+        } catch (_) {}
         this.showToast("Settings saved successfully", "success");
       } catch (error) {
         console.error("Error saving settings:", error);
@@ -2193,14 +2206,32 @@ function cannabisPOS() {
             payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
           // Merge and map server settings to UI store settings
           Object.assign(this.storeSettings, settings);
-          this.storeSettings.name = settings.store_name || this.storeSettings.name;
-          this.storeSettings.manager = settings.store_manager || this.storeSettings.manager;
-          this.storeSettings.address = settings.store_address || this.storeSettings.address;
-          this.storeSettings.phone = settings.store_phone || this.storeSettings.phone;
-          this.storeSettings.email = settings.store_email || this.storeSettings.email;
-          this.storeSettings.licenseNumber = settings.license_number || this.storeSettings.licenseNumber;
-          if (Array.isArray(settings.business_hours) && this.storeSettings.hoursPerDay && this.storeSettings.hoursPerDay.length) {
-            const dayNames = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+          this.storeSettings.name =
+            settings.store_name || this.storeSettings.name;
+          this.storeSettings.manager =
+            settings.store_manager || this.storeSettings.manager;
+          this.storeSettings.address =
+            settings.store_address || this.storeSettings.address;
+          this.storeSettings.phone =
+            settings.store_phone || this.storeSettings.phone;
+          this.storeSettings.email =
+            settings.store_email || this.storeSettings.email;
+          this.storeSettings.licenseNumber =
+            settings.license_number || this.storeSettings.licenseNumber;
+          if (
+            Array.isArray(settings.business_hours) &&
+            this.storeSettings.hoursPerDay &&
+            this.storeSettings.hoursPerDay.length
+          ) {
+            const dayNames = [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday",
+            ];
             for (const bh of settings.business_hours) {
               if (!bh) continue;
               const name = String(bh.day || "");
@@ -5842,14 +5873,29 @@ function cannabisPOS() {
         };
         // Map store info into UI model
         this.storeSettings.name = s.store_name || this.storeSettings.name;
-        this.storeSettings.manager = s.store_manager || this.storeSettings.manager;
-        this.storeSettings.address = s.store_address || this.storeSettings.address;
+        this.storeSettings.manager =
+          s.store_manager || this.storeSettings.manager;
+        this.storeSettings.address =
+          s.store_address || this.storeSettings.address;
         this.storeSettings.phone = s.store_phone || this.storeSettings.phone;
         this.storeSettings.email = s.store_email || this.storeSettings.email;
-        this.storeSettings.licenseNumber = s.license_number || this.storeSettings.licenseNumber;
+        this.storeSettings.licenseNumber =
+          s.license_number || this.storeSettings.licenseNumber;
         // Map business hours back to UI structure if present
-        if (Array.isArray(s.business_hours) && this.storeSettings.hoursPerDay && this.storeSettings.hoursPerDay.length) {
-          const dayNames = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+        if (
+          Array.isArray(s.business_hours) &&
+          this.storeSettings.hoursPerDay &&
+          this.storeSettings.hoursPerDay.length
+        ) {
+          const dayNames = [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ];
           const byName = new Map();
           for (const bh of s.business_hours) {
             if (!bh) continue;

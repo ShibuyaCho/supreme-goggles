@@ -6173,7 +6173,10 @@
                   >
                     <div class="text-center space-y-2">
                       <!-- Store Header -->
-                      <div class="text-xs font-bold" x-text="storeSettings.name || 'Cannabest POS'"></div>
+                      <div
+                        class="text-xs font-bold"
+                        x-text="storeSettings.name || 'Cannabest POS'"
+                      ></div>
                       <div class="text-xs">Inventory Label</div>
 
                       <!-- Product Info -->
@@ -6241,10 +6244,16 @@
                       <!-- Retailer Info -->
                       <div class="border-b border-gray-400 pb-2">
                         <div class="font-bold">RETAILER:</div>
-                        <div x-text="storeSettings.name || 'Cannabest POS'"></div>
-                        <div x-text="storeSettings.address || '123 Cannabis Ave'"></div>
+                        <div
+                          x-text="storeSettings.name || 'Cannabest POS'"
+                        ></div>
+                        <div
+                          x-text="storeSettings.address || '123 Cannabis Ave'"
+                        ></div>
                         <div>Portland, OR 97201</div>
-                        <div x-text="storeSettings.licenseNumber ? `License: ${storeSettings.licenseNumber}` : 'License: REC-123456'"></div>
+                        <div
+                          x-text="storeSettings.licenseNumber ? `License: ${storeSettings.licenseNumber}` : 'License: REC-123456'"
+                        ></div>
                       </div>
 
                       <!-- Product Info -->
