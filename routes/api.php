@@ -940,6 +940,32 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/pos', function(\Illuminate\Http\Request $request) {
             try {
                 $settings = $request->all();
+                // Merge with current to avoid overwriting other fields
+                try {
+                    $current = [];
+                    if ($supabaseUrl && $supabaseKey) {
+                        $resp0 = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                        ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $storeId,
+                            'select' => '*',
+                        ]);
+                        if ($resp0->ok()) {
+                            $arr0 = $resp0->json();
+                            $row0 = (is_array($arr0) && isset($arr0[0])) ? $arr0[0] : null;
+                            if ($row0 && isset($row0['settings']) && is_array($row0['settings'])) $current = $row0['settings'];
+                        }
+                    } else {
+                        $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
+                        if ($row && isset($row->settings)) {
+                            $decoded = json_decode($row->settings, true);
+                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) $current = $decoded;
+                        }
+                    }
+                    if (is_array($current)) { $settings = array_merge($current, $settings); }
+                } catch (\Throwable $e) { /* ignore */ }
                 foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','role_permissions'] as $field) {
                     if (isset($settings[$field]) && is_string($settings[$field])) {
                         $decoded = json_decode($settings[$field], true);
