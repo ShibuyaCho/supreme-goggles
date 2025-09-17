@@ -3004,7 +3004,7 @@ function cannabisPOS() {
     async loadDeals() {
       try {
         let list = [];
-        // Primary: API (Node proxy -> Supabase)
+        // Primary: API (Laravel -> Supabase)
         try {
           if (window.posAuth && typeof posAuth.apiRequest === "function") {
             const res = await posAuth.apiRequest("get", "/deals");
@@ -3017,7 +3017,7 @@ function cannabisPOS() {
             list = dealsArr.map((d) => this.mapDealToSpa(d));
           }
         } catch (_) {}
-        // Fallback: Laravel web route (merged Supabase + local DB)
+        // Fallback 1: Laravel web route (merged Supabase + local DB)
         if (!Array.isArray(list) || list.length === 0) {
           try {
             const resp = await fetch("/deals", {
@@ -3031,6 +3031,25 @@ function cannabisPOS() {
                 : Array.isArray(data)
                   ? data
                   : [];
+              list = arr.map((d) => this.mapDealToSpa(d));
+            }
+          } catch (_) {}
+        }
+        // Fallback 2: Supabase REST directly (RLS must allow anon select)
+        if ((!Array.isArray(list) || list.length === 0) && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+          try {
+            const url = `${window.__SUPABASE_URL.replace(/\/$/, '')}/rest/v1/deals?select=*&order=created_at.desc`;
+            const res = await fetch(url, {
+              headers: {
+                apikey: window.__SUPABASE_ANON_KEY,
+                Authorization: `Bearer ${window.__SUPABASE_ANON_KEY}`,
+                Accept: "application/json",
+                "Cache-Control": "no-cache",
+              },
+            });
+            if (res.ok) {
+              const rows = await res.json();
+              const arr = Array.isArray(rows) ? rows : [];
               list = arr.map((d) => this.mapDealToSpa(d));
             }
           } catch (_) {}
