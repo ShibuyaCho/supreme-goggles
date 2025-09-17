@@ -163,20 +163,52 @@
     return r.data;
   }
 
+  async function supaReq(path, init) {
+    const base = (window.__SUPABASE_URL || "").replace(/\/$/, "");
+    const key = window.__SUPABASE_ANON_KEY || "";
+    if (!base || !key) throw new Error("supabase not configured");
+    const url = `${base}/rest/v1/${path}`;
+    const headers = Object.assign(
+      {
+        apikey: key,
+        Authorization: `Bearer ${key}`,
+        Accept: "application/json",
+      },
+      (init && init.headers) || {},
+    );
+    return fetch(url, Object.assign({}, init || {}, { headers }));
+  }
+
   async function getFromServer(sid, noCache = false) {
-    // Try Laravel first
+    // Try backend first
     try {
       return await httpGet("/api/settings/pos", {
         store: sid,
         nocache: noCache ? 1 : 0,
       });
     } catch (_) {}
-    // Try Node alias (if applicable)
+    // Direct Supabase fallback
     try {
-      return await httpGet("/api/settings/pos", {
-        store: sid,
-        nocache: noCache ? 1 : 0,
-      });
+      const r = await supaReq(
+        `pos_settings?id=eq.${encodeURIComponent(sid)}&select=*`,
+        { method: "GET" },
+      );
+      if (r && r.ok) {
+        const arr = await r.json();
+        const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+        return row && row.settings ? { settings: row.settings } : null;
+      }
+      // Legacy id fallback
+      if (sid === "default") {
+        const r2 = await supaReq(`pos_settings?id=eq.defaultstore&select=*`, {
+          method: "GET",
+        });
+        if (r2 && r2.ok) {
+          const arr2 = await r2.json();
+          const row2 = Array.isArray(arr2) && arr2[0] ? arr2[0] : null;
+          return row2 && row2.settings ? { settings: row2.settings } : null;
+        }
+      }
     } catch (_) {}
     return null;
   }
@@ -289,7 +321,46 @@
           await new Promise((r) => setTimeout(r, 200 * (i + 1)));
         }
       }
-      return { success: false, settings: merged, error: last };
+      // Backend failed: direct Supabase upsert fallback
+      try {
+        const body = [
+          { id: sid, settings: merged, updated_at: new Date().toISOString() },
+        ];
+        let r = await supaReq("pos_settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
+          body: JSON.stringify(body),
+        });
+        // Also write legacy id when default
+        if (sid === "default" || sid === "defaultstore") {
+          const legacy = sid === "default" ? "defaultstore" : "default";
+          try {
+            await supaReq("pos_settings", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
+              body: JSON.stringify([
+                {
+                  id: legacy,
+                  settings: merged,
+                  updated_at: new Date().toISOString(),
+                },
+              ]),
+            });
+          } catch (_) {}
+        }
+        if (!r || !r.ok) throw new Error("direct supabase upsert failed");
+        // Verify by direct read
+        try {
+          const g = await getFromServer(sid, true);
+          const vs = g && (g.settings || g) ? g.settings || g : {};
+          const m = { ...DEFAULTS, ...vs };
+          this.saveLocal(sid, m);
+          return { success: true, settings: m, direct: true };
+        } catch (_) {}
+        return { success: true, settings: merged, direct: true };
+      } catch (e2) {
+        return { success: false, settings: merged, error: last || e2 };
+      }
     },
   };
 
