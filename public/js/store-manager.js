@@ -54,6 +54,8 @@
     document.getElementById('sm-add').onclick = addStoreEmbedded;
     document.getElementById('sm-switch').onclick = switchStoreModal;
   }
+  // Expose for fallbacks
+  window.mainMenu = mainMenu;
   async function getCurrentSettings(){
     try {
       if (window.SettingsClient && typeof SettingsClient.get === 'function') {
