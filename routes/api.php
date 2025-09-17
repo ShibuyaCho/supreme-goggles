@@ -15,6 +15,7 @@ use App\Http\Controllers\EmployeesController;
 use App\Http\Controllers\LoyaltyController;
 use App\Http\Controllers\ProductActionsController;
 use App\Http\Controllers\SettingsController;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -60,6 +61,7 @@ Route::get('/products', [ProductsController::class, 'index']);
 
 // Public POS settings endpoints for SPA/demo compatibility
 Route::get('/settings/pos', function() {
+    \Illuminate\Support\Facades\Log::info('Settings GET', ['scope' => 'public', 'store' => (string)request()->header('X-Store-ID')]);
     $defaults = [
         'sales_tax' => 0.0,
         'excise_tax' => 10.0,
@@ -178,6 +180,7 @@ Route::get('/settings/pos', function() {
     ]);
 });
 Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'public', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
     $incoming = $request->all();
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
@@ -343,6 +346,7 @@ Route::post('/loyalty-members', function (\Illuminate\Http\Request $request) {
 
 // Price tiers API (public for POS compatibility)
 Route::get('/price-tiers', function () {
+    \Illuminate\Support\Facades\Log::info('Price Tiers GET', ['scope' => 'public']);
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
     if ($supabaseUrl && $supabaseKey) {
@@ -365,6 +369,7 @@ Route::get('/price-tiers', function () {
     return response()->json(['success' => true, 'tiers' => []]);
 });
 Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('Price Tiers POST', ['scope' => 'public', 'fields' => array_keys($request->all() ?? [])]);
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
     if (!$supabaseUrl || !$supabaseKey) {
@@ -388,6 +393,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
     }
 });
 Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('Price Tiers PUT', ['scope' => 'public', 'id' => $id, 'fields' => array_keys($request->all() ?? [])]);
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
     if (!$supabaseUrl || !$supabaseKey) {
@@ -829,6 +835,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('settings')->group(function () {
         // Read settings (most users)
         Route::get('/pos', function() {
+            \Illuminate\Support\Facades\Log::info('Settings GET', ['scope' => 'protected', 'store' => (string)request()->header('X-Store-ID')]);
             // Try Supabase REST first if configured
             $supabaseUrl = env('SUPABASE_URL');
             $supabaseKey = env('SUPABASE_ANON_KEY');
@@ -1000,6 +1007,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Save POS settings (persist to DB and cache)
         Route::post('/pos', function(\Illuminate\Http\Request $request) {
+            \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'protected', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
             try {
                 $settings = $request->all();
                 // Initialize Supabase and store scope before any reads
