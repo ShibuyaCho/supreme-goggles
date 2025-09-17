@@ -208,8 +208,56 @@ function handleSettingsUpdate(event) {
     (async () => {
         try {
             // Use centralized client (adds X-Store-ID, Authorization, retries)
-            const res = await (window.SettingsClient ? SettingsClient.save(settingsData) : Promise.resolve({ success:false }));
-            if (!res || res.success !== true) throw new Error('Settings update failed');
+            let res = null;
+            try {
+                res = await (window.SettingsClient ? SettingsClient.save(settingsData) : Promise.resolve({ success:false }));
+            } catch(_) { res = null; }
+            if (!res || res.success !== true) {
+                // Last-resort: direct Supabase REST upsert to guarantee persistence
+                try {
+                    const raw = localStorage.getItem('pos_store');
+                    let sid = 'default';
+                    if (raw) { try { sid = JSON.parse(raw)?.id || 'default'; } catch(_) {} }
+                    sid = String(sid||'default').trim().toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9_.-]/g,'');
+                    if (sid === 'defaultstore') sid = 'default';
+                    // Merge with current from server to avoid overwriting
+                    let merged = { ...settingsData };
+                    try {
+                        const g = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+                        const cur = (g && g.settings) || {};
+                        merged = { ...cur, ...settingsData };
+                    } catch(_) {}
+                    const base = (window.__SUPABASE_URL||'').replace(/\/$/,'');
+                    const key = window.__SUPABASE_ANON_KEY||'';
+                    if (base && key) {
+                        const body = [{ id: sid, settings: merged, updated_at: new Date().toISOString() }];
+                        const r = await fetch(`${base}/rest/v1/pos_settings?on_conflict=id`, {
+                            method: 'POST',
+                            headers: { apikey: key, Authorization: `Bearer ${key}`, Accept:'application/json', 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=representation' },
+                            body: JSON.stringify(body)
+                        });
+                        if (!r.ok) throw new Error('supabase upsert failed');
+                        // Legacy id write
+                        try {
+                          const legacy = sid === 'default' ? 'defaultstore' : (sid === 'defaultstore' ? 'default' : null);
+                          if (legacy) {
+                            await fetch(`${base}/rest/v1/pos_settings?on_conflict=id`, {
+                              method: 'POST',
+                              headers: { apikey: key, Authorization: `Bearer ${key}`, Accept:'application/json', 'Content-Type':'application/json', Prefer:'resolution=merge-duplicates,return=representation' },
+                              body: JSON.stringify([{ id: legacy, settings: merged, updated_at: new Date().toISOString() }])
+                            });
+                          }
+                        } catch(_) {}
+                        try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({})); } catch(_) {}
+                        CannabisPOS.closeModal('settings-modal');
+                        const taxDisplay = document.getElementById('tax-display');
+                        if (taxDisplay) taxDisplay.textContent = `Tax: ${merged.sales_tax ?? settingsData.sales_tax}%`;
+                        if (window.POS?.showToast) POS.showToast('Settings updated successfully!', 'success'); else alert('Settings updated successfully!');
+                        return;
+                    }
+                } catch(_) { /* fallthrough to error toast below */ }
+                throw new Error('Settings update failed');
+            }
             try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({})); } catch(_) {}
             CannabisPOS.closeModal('settings-modal');
             const taxDisplay = document.getElementById('tax-display');
