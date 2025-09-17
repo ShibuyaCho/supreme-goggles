@@ -903,7 +903,7 @@
                 <button
                   id="header-store-button"
                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
-                  onclick="window.addOrSwitchStore && window.addOrSwitchStore()"
+                  onclick="(function(){ if(window.addOrSwitchStore){window.addOrSwitchStore();return;} if(window.mainMenu){window.mainMenu();return;} var s=document.createElement('script'); s.src='/js/store-manager.js'; s.onload=function(){ if(window.addOrSwitchStore) window.addOrSwitchStore(); else if(window.mainMenu) window.mainMenu(); }; document.head.appendChild(s); })()"
                 >
                   <svg
                     class="w-4 h-4 mr-1"
