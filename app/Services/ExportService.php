@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\View as ViewFacade;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class ExportService
 {
@@ -333,16 +334,22 @@ class ExportService
                 'room' => $item->room ?? '',
                 'metrc_tag' => $item->metrc_tag ?? ''
             ],
-            'customers' => [
-                'name' => ($item->first_name ?? '') . ' ' . ($item->last_name ?? ''),
-                'type' => $item->customer_type ?? $item->type ?? '',
-                'email' => $item->email ?? '',
-                'phone' => $item->phone ?? '',
-                'visits' => $item->visit_count ?? $item->visits ?? 0,
-                'total_spent' => number_format($item->total_spent ?? 0, 2),
-                'average_order' => number_format($item->avg_order ?? 0, 2),
-                'last_visit' => $item->last_visit ?? ''
-            ],
+            'customers' => (function(){
+                $isAdmin = optional(Auth::user())->role === 'admin';
+                $email = $item->email ?? '';
+                $phone = $item->phone ?? '';
+                if (!$isAdmin) { $email = ''; $phone = ''; }
+                return [
+                    'name' => ($item->first_name ?? '') . ' ' . ($item->last_name ?? ''),
+                    'type' => $item->customer_type ?? $item->type ?? '',
+                    'email' => $email,
+                    'phone' => $phone,
+                    'visits' => $item->visit_count ?? $item->visits ?? 0,
+                    'total_spent' => number_format($item->total_spent ?? 0, 2),
+                    'average_order' => number_format($item->avg_order ?? 0, 2),
+                    'last_visit' => $item->last_visit ?? ''
+                ];
+            })(),
             default => (array) $item
         };
     }
