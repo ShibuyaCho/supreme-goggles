@@ -781,6 +781,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             $supabaseKey = env('SUPABASE_ANON_KEY');
             $cached = null;
             $storeId = request()->header('X-Store-ID');
+            if (!$storeId) { $storeId = request()->query('store'); }
             $storeId = is_string($storeId) ? trim($storeId) : '';
             if ($storeId === '' || $storeId === null) $storeId = 'default';
             $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
@@ -954,6 +955,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 $supabaseUrl = env('SUPABASE_URL');
                 $supabaseKey = env('SUPABASE_ANON_KEY');
                 $storeId = $request->header('X-Store-ID');
+                if (!$storeId) { $storeId = $request->query('store'); }
                 $storeId = is_string($storeId) ? trim($storeId) : '';
                 if ($storeId === '' || $storeId === null) $storeId = 'default';
                 $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
