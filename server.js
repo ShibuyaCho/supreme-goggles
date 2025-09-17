@@ -959,11 +959,13 @@ app.post("/api/settings/pos", async (req, res) => {
   const incoming = req.body?.settings || req.body || {};
   try {
     // Determine store scope
+    const qsStore = req?.query?.store;
     const rawId =
       (req &&
         (req.header
           ? req.header("X-Store-ID")
           : req.headers?.["x-store-id"])) ||
+      qsStore ||
       "default";
     const storeId = String(rawId || "default")
       .trim()
