@@ -10196,53 +10196,97 @@ function cannabisPOS() {
         is_active: true,
         prices: this.tierForm.prices,
         custom_weights: this.tierForm.customWeights || [],
-        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       };
 
+      const isEdit = this.editingTierId != null;
       try {
-        const res = await (window.axios || axios).post(
-          "/api/price-tiers",
-          payload,
-          { headers: { Accept: "application/json" } },
-        );
-        const saved = (res?.data && (res.data.tier || res.data)) || null;
-        const newTier = {
-          id:
-            saved?.id ||
-            Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1,
-          name: saved?.name || payload.name,
-          isActive: saved?.is_active ?? true,
-          createdAt: saved?.created_at || payload.created_at,
-          prices: saved?.prices || payload.prices,
-          customWeights: saved?.custom_weights || payload.custom_weights,
-        };
-        this.priceTiers.push(newTier);
+        let saved = null;
+        if (isEdit) {
+          const res = await (window.axios || axios).put(
+            `/api/price-tiers/${encodeURIComponent(this.editingTierId)}`,
+            payload,
+            { headers: { Accept: "application/json" } },
+          );
+          saved = (res?.data && (res.data.tier || res.data)) || null;
+          const idx = this.priceTiers.findIndex(
+            (t) => String(t.id) === String(this.editingTierId),
+          );
+          const updated = {
+            id: this.editingTierId,
+            name: saved?.name || payload.name,
+            isActive: saved?.is_active ?? this.priceTiers[idx]?.isActive ?? true,
+            createdAt: this.priceTiers[idx]?.createdAt || new Date().toISOString(),
+            prices: saved?.prices || payload.prices,
+            customWeights: saved?.custom_weights || payload.custom_weights,
+          };
+          if (idx >= 0) this.priceTiers.splice(idx, 1, updated);
+          else this.priceTiers.push(updated);
+          this.showToast(`Price tier "${updated.name}" updated`, "success");
+        } else {
+          const res = await (window.axios || axios).post(
+            "/api/price-tiers",
+            { ...payload, created_at: new Date().toISOString() },
+            { headers: { Accept: "application/json" } },
+          );
+          saved = (res?.data && (res.data.tier || res.data)) || null;
+          const newTier = {
+            id:
+              saved?.id ||
+              Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1,
+            name: saved?.name || payload.name,
+            isActive: saved?.is_active ?? true,
+            createdAt: saved?.created_at || new Date().toISOString(),
+            prices: saved?.prices || payload.prices,
+            customWeights: saved?.custom_weights || payload.custom_weights,
+          };
+          this.priceTiers.push(newTier);
+          this.showToast(
+            `Price tier "${newTier.name}" created successfully`,
+            "success",
+          );
+        }
         try {
           localStorage.setItem(
             "cannabisPOS-priceTiers-backup",
             JSON.stringify(this.priceTiers),
           );
         } catch (_) {}
-        this.showToast(
-          `Price tier "${newTier.name}" created successfully`,
-          "success",
-        );
       } catch (e) {
-        // Fallback: local only
-        const fallback = {
-          id: Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1,
-          name: payload.name,
-          isActive: true,
-          createdAt: payload.created_at,
-          prices: payload.prices,
-          customWeights: payload.custom_weights,
-        };
-        this.priceTiers.push(fallback);
-        this.showToast(
-          `Price tier "${fallback.name}" saved locally (offline)`,
-          "warning",
-        );
+        if (isEdit) {
+          const idx = this.priceTiers.findIndex(
+            (t) => String(t.id) === String(this.editingTierId),
+          );
+          if (idx >= 0) {
+            const updated = {
+              ...this.priceTiers[idx],
+              name: payload.name,
+              prices: payload.prices,
+              customWeights: payload.custom_weights,
+            };
+            this.priceTiers.splice(idx, 1, updated);
+            this.showToast(
+              `Price tier "${updated.name}" updated locally (offline)`,
+              "warning",
+            );
+          }
+        } else {
+          const fallback = {
+            id: Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1,
+            name: payload.name,
+            isActive: true,
+            createdAt: new Date().toISOString(),
+            prices: payload.prices,
+            customWeights: payload.custom_weights,
+          };
+          this.priceTiers.push(fallback);
+          this.showToast(
+            `Price tier "${fallback.name}" saved locally (offline)`,
+            "warning",
+          );
+        }
       }
+      this.editingTierId = null;
       this.closeTierModal();
     },
 
