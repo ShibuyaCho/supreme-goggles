@@ -10,13 +10,22 @@ function cannabisPOS() {
     metrcConnected: false,
 
     // Alpine.js init function - called automatically when component initializes
-    init() {
+    async init() {
+      // Ensure auth is initialized before firing networked requests
+      try {
+        const ready = window.posAuthReady;
+        if (ready && typeof ready.then === "function") {
+          await ready;
+        }
+      } catch (_) {}
+
       this.normalizeCollections();
-      this.initAuth();
+      await (this.initAuth && this.initAuth());
       this.loadStoreContext();
       this.loadSettings();
       this.loadCartState();
-      this.loadData();
+      // Defer networked data until auth headers are set
+      await (this.loadData && this.loadData());
       this.filterProducts();
       this.initializeReportData();
       try {
