@@ -933,10 +933,9 @@ app.get("/api/settings/pos", async (req, res) => {
     }
     // Legacy fallback: "defaultstore" for older data
     if (!settingsRow && storeId === "default") {
-      const r2 = await supaFetch(
-        `pos_settings?id=eq.defaultstore&select=*`,
-        { method: "GET" },
-      );
+      const r2 = await supaFetch(`pos_settings?id=eq.defaultstore&select=*`, {
+        method: "GET",
+      });
       if (r2.ok) {
         const arr2 = await r2.json();
         settingsRow = Array.isArray(arr2) && arr2[0] ? arr2[0] : null;

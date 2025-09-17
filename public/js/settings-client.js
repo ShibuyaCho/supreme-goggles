@@ -189,7 +189,11 @@
     } catch (_) {}
     // Direct Supabase fallback via SDK
     try {
-      if (window.supabase && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+      if (
+        window.supabase &&
+        window.__SUPABASE_URL &&
+        window.__SUPABASE_ANON_KEY
+      ) {
         const client = window.supabase.createClient(
           window.__SUPABASE_URL,
           window.__SUPABASE_ANON_KEY,
@@ -210,7 +214,9 @@
             .maybeSingle();
           data = alt.data || null;
         }
-        return data && data.settings ? { settings: data.settings, settings_updated_at: data.updated_at } : null;
+        return data && data.settings
+          ? { settings: data.settings, settings_updated_at: data.updated_at }
+          : null;
       }
     } catch (_) {}
     // Fallback to REST
@@ -222,7 +228,9 @@
       if (r && r.ok) {
         const arr = await r.json();
         const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-        return row && row.settings ? { settings: row.settings, settings_updated_at: row.updated_at } : null;
+        return row && row.settings
+          ? { settings: row.settings, settings_updated_at: row.updated_at }
+          : null;
       }
       if (sid === "default") {
         const r2 = await supaReq(`pos_settings?id=eq.defaultstore&select=*`, {
@@ -231,7 +239,9 @@
         if (r2 && r2.ok) {
           const arr2 = await r2.json();
           const row2 = Array.isArray(arr2) && arr2[0] ? arr2[0] : null;
-          return row2 && row2.settings ? { settings: row2.settings, settings_updated_at: row2.updated_at } : null;
+          return row2 && row2.settings
+            ? { settings: row2.settings, settings_updated_at: row2.updated_at }
+            : null;
         }
       }
     } catch (_) {}
@@ -279,7 +289,10 @@
               ? data.settings || data
               : {};
           const merged = { ...DEFAULTS, ...settings };
-          const updatedAt = data && (data.settings_updated_at || data.updated_at) ? data.settings_updated_at || data.updated_at : null;
+          const updatedAt =
+            data && (data.settings_updated_at || data.updated_at)
+              ? data.settings_updated_at || data.updated_at
+              : null;
           this.saveLocal(sid, merged);
           try {
             window.dispatchEvent(
@@ -351,19 +364,38 @@
       }
       // Backend failed: direct Supabase upsert fallback
       try {
-        if (window.supabase && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+        if (
+          window.supabase &&
+          window.__SUPABASE_URL &&
+          window.__SUPABASE_ANON_KEY
+        ) {
           const client = window.supabase.createClient(
             window.__SUPABASE_URL,
             window.__SUPABASE_ANON_KEY,
           );
-          const row = { id: sid, settings: merged, updated_at: new Date().toISOString() };
-          let { error } = await client.from("pos_settings").upsert([row], { onConflict: "id" });
+          const row = {
+            id: sid,
+            settings: merged,
+            updated_at: new Date().toISOString(),
+          };
+          let { error } = await client
+            .from("pos_settings")
+            .upsert([row], { onConflict: "id" });
           if (error) throw error;
           if (sid === "default" || sid === "defaultstore") {
             const legacy = sid === "default" ? "defaultstore" : "default";
-            await client.from("pos_settings").upsert([
-              { id: legacy, settings: merged, updated_at: new Date().toISOString() },
-            ], { onConflict: "id" });
+            await client
+              .from("pos_settings")
+              .upsert(
+                [
+                  {
+                    id: legacy,
+                    settings: merged,
+                    updated_at: new Date().toISOString(),
+                  },
+                ],
+                { onConflict: "id" },
+              );
           }
         } else {
           const body = [
@@ -371,7 +403,10 @@
           ];
           const r = await supaReq("pos_settings?on_conflict=id", {
             method: "POST",
-            headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
+            headers: {
+              "Content-Type": "application/json",
+              Prefer: "resolution=merge-duplicates,return=representation",
+            },
             body: JSON.stringify(body),
           });
           if (!r || !r.ok) throw new Error("direct supabase upsert failed");

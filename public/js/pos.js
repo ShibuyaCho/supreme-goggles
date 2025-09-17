@@ -1664,18 +1664,27 @@ function cannabisPOS() {
           ? SettingsClient.save(payload)
           : Promise.resolve({ success: false }));
         if (!res || res.success !== true) {
-          try { await new Promise(r=>setTimeout(r,250)); } catch(_) {}
+          try {
+            await new Promise((r) => setTimeout(r, 250));
+          } catch (_) {}
           try {
             res = await (window.SettingsClient
               ? SettingsClient.save(payload)
               : Promise.resolve({ success: false }));
-          } catch(_) {}
+          } catch (_) {}
         }
         if (res && res.success === true) {
-          try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch(_) {}
+          try {
+            await (window.SettingsClient
+              ? SettingsClient.get(true)
+              : Promise.resolve());
+          } catch (_) {}
           this.showToast("Settings saved successfully", "success");
         } else {
-          this.showToast("Failed to save settings (saved locally, will retry)", "error");
+          this.showToast(
+            "Failed to save settings (saved locally, will retry)",
+            "error",
+          );
           return;
         }
       } catch (error) {
@@ -2203,12 +2212,14 @@ function cannabisPOS() {
             payload.settings && typeof payload.settings === "object"
               ? payload.settings
               : {};
-          const serverTs = Number(new Date(payload.settings_updated_at || 0).getTime() || 0);
+          const serverTs = Number(
+            new Date(payload.settings_updated_at || 0).getTime() || 0,
+          );
           let localTs = 0;
           try {
             const raw = localStorage.getItem("cannabisPOS-storeSettings");
             if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
-          } catch(_) {}
+          } catch (_) {}
           // Update local settings with API data
           this.taxRate =
             payload.tax_rate != null
@@ -2222,12 +2233,18 @@ function cannabisPOS() {
           const preferServer = serverTs && serverTs >= localTs;
           if (preferServer) {
             Object.assign(this.storeSettings, settings);
-            this.storeSettings.name = settings.store_name || this.storeSettings.name;
-            this.storeSettings.manager = settings.store_manager || this.storeSettings.manager;
-            this.storeSettings.address = settings.store_address || this.storeSettings.address;
-            this.storeSettings.phone = settings.store_phone || this.storeSettings.phone;
-            this.storeSettings.email = settings.store_email || this.storeSettings.email;
-            this.storeSettings.licenseNumber = settings.license_number || this.storeSettings.licenseNumber;
+            this.storeSettings.name =
+              settings.store_name || this.storeSettings.name;
+            this.storeSettings.manager =
+              settings.store_manager || this.storeSettings.manager;
+            this.storeSettings.address =
+              settings.store_address || this.storeSettings.address;
+            this.storeSettings.phone =
+              settings.store_phone || this.storeSettings.phone;
+            this.storeSettings.email =
+              settings.store_email || this.storeSettings.email;
+            this.storeSettings.licenseNumber =
+              settings.license_number || this.storeSettings.licenseNumber;
           }
           if (
             preferServer &&
@@ -5865,12 +5882,16 @@ function cannabisPOS() {
           ? SettingsClient.get()
           : Promise.resolve({ success: false, settings: {} }));
         const s = (resp && resp.settings) || {};
-        const serverTs = Number(new Date(resp && (resp.updated_at || resp.settings_updated_at || 0)).getTime() || 0);
+        const serverTs = Number(
+          new Date(
+            resp && (resp.updated_at || resp.settings_updated_at || 0),
+          ).getTime() || 0,
+        );
         let localTs = 0;
         try {
           const raw = localStorage.getItem("cannabisPOS-storeSettings");
           if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
-        } catch(_) {}
+        } catch (_) {}
         // Map backend settings to UI structures
         const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
         const med = Number(s.medical_tax_rate != null ? s.medical_tax_rate : 0);
@@ -5893,11 +5914,14 @@ function cannabisPOS() {
         const preferServer = serverTs && serverTs >= localTs;
         if (preferServer) {
           this.storeSettings.name = s.store_name || this.storeSettings.name;
-          this.storeSettings.manager = s.store_manager || this.storeSettings.manager;
-          this.storeSettings.address = s.store_address || this.storeSettings.address;
+          this.storeSettings.manager =
+            s.store_manager || this.storeSettings.manager;
+          this.storeSettings.address =
+            s.store_address || this.storeSettings.address;
           this.storeSettings.phone = s.store_phone || this.storeSettings.phone;
           this.storeSettings.email = s.store_email || this.storeSettings.email;
-          this.storeSettings.licenseNumber = s.license_number || this.storeSettings.licenseNumber;
+          this.storeSettings.licenseNumber =
+            s.license_number || this.storeSettings.licenseNumber;
         }
         // Map business hours back to UI structure if present
         if (
