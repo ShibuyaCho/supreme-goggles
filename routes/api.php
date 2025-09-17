@@ -211,7 +211,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'apikey' => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
-                'Prefer' => 'return=representation',
+                'Prefer' => 'resolution=merge-duplicates,return=representation',
             ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'settings' => $merged,
@@ -225,7 +225,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         'apikey' => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
-                        'Prefer' => 'return=representation',
+                        'Prefer' => 'resolution=merge-duplicates,return=representation',
                     ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $legacy,
                         'settings' => $merged,
@@ -307,7 +307,7 @@ Route::post('/loyalty-members', function (\Illuminate\Http\Request $request) {
             'apikey' => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
-            'Prefer' => 'return=representation',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', [ $row ]);
         if ($resp->successful()) {
             $arr = $resp->json();
@@ -355,7 +355,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
             'apikey' => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
-            'Prefer' => 'return=representation',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', $payload);
         if ($resp->successful()) {
             $arr = $resp->json();
@@ -378,7 +378,7 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
             'apikey' => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
-            'Prefer' => 'return=representation',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
         ])->patch($url, $request->all());
         if ($resp->successful()) {
             $arr = $resp->json();
@@ -1024,7 +1024,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                             'apikey' => $supabaseKey,
                             'Authorization' => 'Bearer ' . $supabaseKey,
                             'Accept' => 'application/json',
-                            'Prefer' => 'return=representation',
+                            'Prefer' => 'resolution=merge-duplicates,return=representation',
                         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                             'id' => $storeId,
                             'settings' => $settings,
