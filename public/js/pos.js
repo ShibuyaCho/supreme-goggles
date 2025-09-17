@@ -5885,16 +5885,16 @@ function cannabisPOS() {
           dailyLimit: Number(s.__ui_daily_limit || 0),
           requireCustomerInfo: !!s.require_customer,
         };
-        // Map store info into UI model
-        this.storeSettings.name = s.store_name || this.storeSettings.name;
-        this.storeSettings.manager =
-          s.store_manager || this.storeSettings.manager;
-        this.storeSettings.address =
-          s.store_address || this.storeSettings.address;
-        this.storeSettings.phone = s.store_phone || this.storeSettings.phone;
-        this.storeSettings.email = s.store_email || this.storeSettings.email;
-        this.storeSettings.licenseNumber =
-          s.license_number || this.storeSettings.licenseNumber;
+        // Map store info into UI model (prefer newer local values)
+        const preferServer = serverTs && serverTs >= localTs;
+        if (preferServer) {
+          this.storeSettings.name = s.store_name || this.storeSettings.name;
+          this.storeSettings.manager = s.store_manager || this.storeSettings.manager;
+          this.storeSettings.address = s.store_address || this.storeSettings.address;
+          this.storeSettings.phone = s.store_phone || this.storeSettings.phone;
+          this.storeSettings.email = s.store_email || this.storeSettings.email;
+          this.storeSettings.licenseNumber = s.license_number || this.storeSettings.licenseNumber;
+        }
         // Map business hours back to UI structure if present
         if (
           Array.isArray(s.business_hours) &&
