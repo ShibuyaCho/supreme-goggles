@@ -23,7 +23,7 @@
                     </svg>
                     Save Settings
                 </button>
-                <button id="settings-refresh-metrc" @click="$window.__refreshMetrc && $window.__refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+                <button id="settings-refresh-metrc" @click="window.__refreshMetrc && window.__refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/>
                     </svg>
@@ -737,7 +737,7 @@
                         <button @click="testMetrcConnection" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             Test Connection
                         </button>
-                        <button id="settings-refresh-metrc" @click="$window.__refreshMetrc && $window.__refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800">
+                        <button id="settings-refresh-metrc" @click="window.__refreshMetrc && window.__refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800">
                             Refresh METRC
                         </button>
                     </div>
