@@ -9,7 +9,8 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
-        // Define scheduled commands here if needed
+        // Periodic reconciliation to prevent drift (adjust frequency as needed)
+        $schedule->command('pos:reconcile --direction=pull')->hourly();
     }
 
     protected function commands(): void
