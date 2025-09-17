@@ -117,7 +117,16 @@ function cannabisPOS() {
     loadStoreContext() {
       try {
         const raw = localStorage.getItem("pos_store");
-        this.selectedStore = raw ? JSON.parse(raw) : null;
+        const s = raw ? JSON.parse(raw) : null;
+        if (s && s.id) {
+          let id = String(s.id).trim().toLowerCase();
+          id = id.replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+          if (id === "defaultstore") id = "default";
+          this.selectedStore = { id, name: s.name || s.id };
+          try { localStorage.setItem("pos_store", JSON.stringify(this.selectedStore)); } catch (_) {}
+        } else {
+          this.selectedStore = null;
+        }
       } catch (e) {
         this.selectedStore = null;
       }
@@ -125,14 +134,16 @@ function cannabisPOS() {
     changeStorePrompt() {
       const nameOrId = prompt("Enter store name or ID to switch:");
       if (!nameOrId) return;
-      const store = {
-        id: String(nameOrId).trim(),
-        name: String(nameOrId).trim(),
-      };
+      const input = String(nameOrId).trim();
+      let id = input.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+      if (id === "defaultstore") id = "default";
+      if (!id) id = "default";
+      const store = { id, name: input };
       try {
         localStorage.setItem("pos_store", JSON.stringify(store));
       } catch (e) {}
       this.selectedStore = store;
+      try { window.dispatchEvent(new Event("storage")); } catch (_) {}
     },
     clearStore() {
       try {
