@@ -51,7 +51,7 @@
           <button id="sm-switch" class="px-4 py-3 rounded bg-blue-600 text-white hover:bg-blue-700">Switch Store</button>
         </div>
       </div>`);
-    document.getElementById('sm-add').onclick = addStoreModal;
+    document.getElementById('sm-add').onclick = addStoreEmbedded;
     document.getElementById('sm-switch').onclick = switchStoreModal;
   }
   async function getCurrentSettings(){
