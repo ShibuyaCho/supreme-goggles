@@ -5707,14 +5707,8 @@ function cannabisPOS() {
 
     async _hydrateBusinessSettingsFromServer() {
       try {
-        const getRes = await (window.posAuth
-          ? posAuth.apiRequest("get", "/settings/pos")
-          : (window.axios || axios).get("/api/settings/pos"));
-        const payload = getRes?.data || {};
-        const s =
-          payload.settings && typeof payload.settings === "object"
-            ? payload.settings
-            : payload;
+        const resp = await (window.SettingsClient ? SettingsClient.get() : Promise.resolve({ success:false, settings:{} }));
+        const s = (resp && resp.settings) ? resp.settings : {};
         // Map backend settings to UI structures
         const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
         const med = Number(
