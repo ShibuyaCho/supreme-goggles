@@ -1664,6 +1664,7 @@ function cannabisPOS() {
           ? SettingsClient.save(payload)
           : Promise.resolve({ success: false }));
         if (!res || res.success !== true) {
+          // Retry once via SettingsClient
           try {
             await new Promise((r) => setTimeout(r, 250));
           } catch (_) {}
@@ -1673,20 +1674,75 @@ function cannabisPOS() {
               : Promise.resolve({ success: false }));
           } catch (_) {}
         }
-        if (res && res.success === true) {
+        if (!res || res.success !== true) {
+          // Last-resort: direct Supabase REST upsert to guarantee persistence
           try {
-            await (window.SettingsClient
-              ? SettingsClient.get(true)
-              : Promise.resolve());
+            let sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function")
+              ? SettingsClient.currentStoreId()
+              : (typeof this._currentStoreId === "function" ? this._currentStoreId() : "default");
+            sid = String(sid || "default").trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+            if (sid === "defaultstore") sid = "default";
+
+            // Merge with current server-side settings to avoid overwriting unrelated fields
+            let mergedForFallback = { ...payload };
+            try {
+              const g = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+              const cur = (g && g.settings) || {};
+              mergedForFallback = { ...cur, ...payload };
+            } catch (_) {}
+
+            const base = (window.__SUPABASE_URL || "").replace(/\/$/, "");
+            const key = window.__SUPABASE_ANON_KEY || "";
+            if (base && key) {
+              const body = [
+                { id: sid, settings: mergedForFallback, updated_at: new Date().toISOString() },
+              ];
+              const res1 = await fetch(`${base}/rest/v1/pos_settings?on_conflict=id`, {
+                method: "POST",
+                headers: {
+                  apikey: key,
+                  Authorization: `Bearer ${key}`,
+                  Accept: "application/json",
+                  "Content-Type": "application/json",
+                  Prefer: "resolution=merge-duplicates,return=representation",
+                },
+                body: JSON.stringify(body),
+              });
+              if (!res1.ok) throw new Error("supabase upsert failed");
+              // Write legacy id for backward compatibility
+              try {
+                const legacy = sid === "default" ? "defaultstore" : (sid === "defaultstore" ? "default" : null);
+                if (legacy) {
+                  await fetch(`${base}/rest/v1/pos_settings?on_conflict=id`, {
+                    method: "POST",
+                    headers: {
+                      apikey: key,
+                      Authorization: `Bearer ${key}`,
+                      Accept: "application/json",
+                      "Content-Type": "application/json",
+                      Prefer: "resolution=merge-duplicates,return=representation",
+                    },
+                    body: JSON.stringify([{ id: legacy, settings: mergedForFallback, updated_at: new Date().toISOString() }]),
+                  });
+                }
+              } catch (_) {}
+              // Verify and refresh local cache/UI
+              try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch (_) {}
+              this.showToast("Settings saved successfully", "success");
+              return;
+            }
           } catch (_) {}
-          this.showToast("Settings saved successfully", "success");
-        } else {
           this.showToast(
             "Failed to save settings (saved locally, will retry)",
             "error",
           );
           return;
         }
+        // API path succeeded
+        try {
+          await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve());
+        } catch (_) {}
+        this.showToast("Settings saved successfully", "success");
       } catch (error) {
         console.error("Error saving settings:", error);
         this.showToast("Failed to save settings", "error");
