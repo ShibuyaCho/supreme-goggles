@@ -921,23 +921,36 @@ app.get("/api/settings/pos", async (req, res) => {
     const storeId = String(rawId || "default")
       .trim()
       .replace(/[^A-Za-z0-9_.-]/g, "");
-    const r = await supaFetch(
+    // Try primary id first
+    let settingsRow = null;
+    let r = await supaFetch(
       `pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`,
-      {
-        method: "GET",
-      },
+      { method: "GET" },
     );
     if (r.ok) {
       const arr = await r.json();
-      const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-      const settings =
-        row?.settings && typeof row.settings === "object"
-          ? { ...defaults, ...row.settings }
+      settingsRow = Array.isArray(arr) && arr[0] ? arr[0] : null;
+    }
+    // Legacy fallback: "defaultstore" for older data
+    if (!settingsRow && storeId === "default") {
+      const r2 = await supaFetch(
+        `pos_settings?id=eq.defaultstore&select=*`,
+        { method: "GET" },
+      );
+      if (r2.ok) {
+        const arr2 = await r2.json();
+        settingsRow = Array.isArray(arr2) && arr2[0] ? arr2[0] : null;
+      }
+    }
+    if (settingsRow) {
+      const s =
+        settingsRow.settings && typeof settingsRow.settings === "object"
+          ? { ...defaults, ...settingsRow.settings }
           : defaults;
       return res.json({
         success: true,
-        settings,
-        tax_rate: settings.sales_tax ?? 20.0,
+        settings: s,
+        tax_rate: s.sales_tax ?? 20.0,
         medical_tax_rate: 0.0,
         currency: "USD",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -988,7 +1001,8 @@ app.post("/api/settings/pos", async (req, res) => {
     } catch (_) {}
     const merged = { ...current, ...incoming };
 
-    const r = await supaFetch("pos_settings", {
+    // Write to primary id
+    let r = await supaFetch("pos_settings", {
       method: "POST",
       body: [
         {
@@ -999,6 +1013,23 @@ app.post("/api/settings/pos", async (req, res) => {
       ],
       query: { on_conflict: "id" },
     });
+    // Also write to legacy id if applicable
+    if (storeId === "default" || storeId === "defaultstore") {
+      const legacy = storeId === "default" ? "defaultstore" : "default";
+      try {
+        await supaFetch("pos_settings", {
+          method: "POST",
+          body: [
+            {
+              id: legacy,
+              settings: merged,
+              updated_at: new Date().toISOString(),
+            },
+          ],
+          query: { on_conflict: "id" },
+        });
+      } catch (_) {}
+    }
     const payload = r.ok ? await r.json() : null;
     return res.json({ success: true, settings: merged, saved: payload });
   } catch (e) {
