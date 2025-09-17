@@ -139,12 +139,28 @@ Route::get('/settings/pos', function() {
                 'id' => 'eq.' . $storeId,
                 'select' => '*',
             ]);
+            $row = null;
             if ($resp->ok()) {
                 $arr = $resp->json();
                 $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
-                if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
-                    $settings = $row['settings'];
+            }
+            // Legacy fallback: defaultstore
+            if (!$row && $storeId === 'default') {
+                $resp2 = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                    'id' => 'eq.defaultstore',
+                    'select' => '*',
+                ]);
+                if ($resp2->ok()) {
+                    $arr2 = $resp2->json();
+                    $row = (is_array($arr2) && isset($arr2[0])) ? $arr2[0] : null;
                 }
+            }
+            if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
+                $settings = $row['settings'];
             }
         } catch (\Throwable $e) {}
     }
@@ -201,6 +217,22 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'settings' => $merged,
                 'updated_at' => now()->toIso8601String(),
             ]]);
+            // Also write to legacy id for backward-compatibility
+            if ($storeId === 'default' || $storeId === 'defaultstore') {
+                try {
+                    $legacy = $storeId === 'default' ? 'defaultstore' : 'default';
+                    \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'return=representation',
+                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                        'id' => $legacy,
+                        'settings' => $merged,
+                        'updated_at' => now()->toIso8601String(),
+                    ]]);
+                } catch (\Throwable $e) { /* ignore */ }
+            }
             if ($resp->successful()) {
                 return response()->json(['success' => true, 'settings' => $merged]);
             }
