@@ -29,10 +29,10 @@ foreach ($requiredVars as $var) {
     if ($value) {
         if (in_array($var, ['METRC_PASSWORD'])) {
             echo "   ✓ {$var}: Set (****)\n";
-        } elseif (in_array($var, ['METRC_USER_KEY', 'METRC_VENDOR_KEY'])) {
-            echo "   ✓ {$var}: Set (***" . substr($value, -4) . ")\n";
+        } elseif (in_array($var, ['METRC_USER_KEY', 'METRC_VENDOR_KEY', 'METRC_USERNAME', 'METRC_FACILITY'])) {
+            echo "   ✓ {$var}: Set\n";
         } else {
-            echo "   ✓ {$var}: {$value}\n";
+            echo "   ✓ {$var}: Set\n";
         }
     } else {
         echo "   ✗ {$var}: Not set\n";
@@ -44,8 +44,8 @@ echo "\n2. Testing Service Configuration...\n";
 $metrcConfig = config('services.metrc');
 echo "   Base URL: " . ($metrcConfig['base_url'] ?? 'Not set') . "\n";
 echo "   Enabled: " . ($metrcConfig['enabled'] ? 'Yes' : 'No') . "\n";
-echo "   Facility: " . ($metrcConfig['facility_license'] ?? 'Not set') . "\n";
-echo "   Tag Prefix: " . ($metrcConfig['tag_prefix'] ?? 'Not set') . "\n";
+echo "   Facility: " . (!empty($metrcConfig['facility_license']) ? 'Set' : 'Not set') . "\n";
+echo "   Tag Prefix: " . (!empty($metrcConfig['tag_prefix']) ? 'Set' : 'Not set') . "\n";
 
 // Test 3: Basic HTTP Connection
 echo "\n3. Testing HTTP Connection to METRC...\n";
@@ -81,7 +81,7 @@ try {
 echo "\n4. Testing METRC Service Class...\n";
 try {
     $metrcService = app(\App\Services\MetrcService::class);
-    echo "   ✓ MetrcService class instantiated successfully\n";
+    echo "   �� MetrcService class instantiated successfully\n";
     
     // Test connection method if it exists
     if (method_exists($metrcService, 'testConnection')) {
@@ -120,7 +120,7 @@ echo "4. Visit /test/env-test to verify all environment variables\n";
 echo "5. Visit /test/database-test to verify database connection\n\n";
 
 echo "METRC Credentials Summary:\n";
-echo "- Username: " . (env('METRC_USERNAME') ?: 'Not set') . "\n";
-echo "- Facility: " . (env('METRC_FACILITY') ?: 'Not set') . "\n";
+echo "- Username: " . (env('METRC_USERNAME') ? 'Set' : 'Not set') . "\n";
+echo "- Facility: " . (env('METRC_FACILITY') ? 'Set' : 'Not set') . "\n";
 echo "- API Keys: " . (env('METRC_USER_KEY') && env('METRC_VENDOR_KEY') ? 'Set' : 'Missing') . "\n";
 echo "- Base URL: " . (env('METRC_BASE_URL') ?: 'Not set') . "\n";
