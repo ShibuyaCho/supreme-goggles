@@ -1660,16 +1660,24 @@ function cannabisPOS() {
           license_number: this.storeSettings.licenseNumber,
           business_hours: hours,
         };
-        const res = await (window.SettingsClient
+        let res = await (window.SettingsClient
           ? SettingsClient.save(payload)
           : Promise.resolve({ success: false }));
-        if (!res || res.success !== true) throw new Error("Server save failed");
-        try {
-          await (window.SettingsClient
-            ? SettingsClient.get(true)
-            : Promise.resolve());
-        } catch (_) {}
-        this.showToast("Settings saved successfully", "success");
+        if (!res || res.success !== true) {
+          try { await new Promise(r=>setTimeout(r,250)); } catch(_) {}
+          try {
+            res = await (window.SettingsClient
+              ? SettingsClient.save(payload)
+              : Promise.resolve({ success: false }));
+          } catch(_) {}
+        }
+        if (res && res.success === true) {
+          try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch(_) {}
+          this.showToast("Settings saved successfully", "success");
+        } else {
+          this.showToast("Failed to save settings (saved locally, will retry)", "error");
+          return;
+        }
       } catch (error) {
         console.error("Error saving settings:", error);
         this.showToast("Failed to save settings", "error");
