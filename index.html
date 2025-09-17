@@ -4580,12 +4580,11 @@
                           <div
                             x-show="printData.companyLogoEnabled"
                             class="text-xs font-bold text-green-700"
-                          >
-                            🌿 CANNABEST DISPENSARY
-                          </div>
+                            x-text="`🌿 ${storeSettings.name || 'Cannabest POS'}`"
+                          ></div>
                           <div
                             class="text-xs font-bold"
-                            x-text="printData.companyLogoEnabled ? 'Licensed Cannabis Retailer' : 'CANNABEST DISPENSARY'"
+                            x-text="printData.companyLogoEnabled ? 'Licensed Cannabis Retailer' : (storeSettings.name || 'Cannabest POS')"
                           ></div>
                           <div
                             x-show="!printData.companyLogoEnabled"
@@ -4658,12 +4657,11 @@
                             <div
                               x-show="printData.companyLogoEnabled"
                               class="font-bold text-green-700"
-                            >
-                              🌿 CANNABEST DISPENSARY
-                            </div>
+                              x-text="`🌿 ${storeSettings.name || 'Cannabest POS'}`"
+                            ></div>
                             <div
                               class="font-bold"
-                              x-text="printData.companyLogoEnabled ? 'Oregon OLCC Exit Label' : 'CANNABEST DISPENSARY'"
+                              x-text="printData.companyLogoEnabled ? 'Oregon OLCC Exit Label' : (storeSettings.name || 'Cannabest POS')"
                             ></div>
                             <div
                               x-show="!printData.companyLogoEnabled"
@@ -6175,7 +6173,7 @@
                   >
                     <div class="text-center space-y-2">
                       <!-- Store Header -->
-                      <div class="text-xs font-bold">CANNABEST DISPENSARY</div>
+                      <div class="text-xs font-bold" x-text="storeSettings.name || 'Cannabest POS'"></div>
                       <div class="text-xs">Inventory Label</div>
 
                       <!-- Product Info -->
@@ -6243,10 +6241,10 @@
                       <!-- Retailer Info -->
                       <div class="border-b border-gray-400 pb-2">
                         <div class="font-bold">RETAILER:</div>
-                        <div>Cannabest Dispensary</div>
-                        <div>123 Cannabis Ave</div>
+                        <div x-text="storeSettings.name || 'Cannabest POS'"></div>
+                        <div x-text="storeSettings.address || '123 Cannabis Ave'"></div>
                         <div>Portland, OR 97201</div>
-                        <div>License: REC-123456</div>
+                        <div x-text="storeSettings.licenseNumber ? `License: ${storeSettings.licenseNumber}` : 'License: REC-123456'"></div>
                       </div>
 
                       <!-- Product Info -->
