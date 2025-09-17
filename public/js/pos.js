@@ -1704,16 +1704,26 @@ function cannabisPOS() {
         if (!res || res.success !== true) {
           // Last-resort: direct Supabase REST upsert to guarantee persistence
           try {
-            let sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function")
-              ? SettingsClient.currentStoreId()
-              : (typeof this._currentStoreId === "function" ? this._currentStoreId() : "default");
-            sid = String(sid || "default").trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+            let sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : typeof this._currentStoreId === "function"
+                  ? this._currentStoreId()
+                  : "default";
+            sid = String(sid || "default")
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, "")
+              .replace(/[^a-z0-9_.-]/g, "");
             if (sid === "defaultstore") sid = "default";
 
             // Merge with current server-side settings to avoid overwriting unrelated fields
             let mergedForFallback = { ...payload };
             try {
-              const g = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+              const g = await (window.SettingsClient
+                ? SettingsClient.get(true)
+                : Promise.resolve({ success: false, settings: {} }));
               const cur = (g && g.settings) || {};
               mergedForFallback = { ...cur, ...payload };
             } catch (_) {}
@@ -1722,23 +1732,35 @@ function cannabisPOS() {
             const key = window.__SUPABASE_ANON_KEY || "";
             if (base && key) {
               const body = [
-                { id: sid, settings: mergedForFallback, updated_at: new Date().toISOString() },
-              ];
-              const res1 = await fetch(`${base}/rest/v1/pos_settings?on_conflict=id`, {
-                method: "POST",
-                headers: {
-                  apikey: key,
-                  Authorization: `Bearer ${key}`,
-                  Accept: "application/json",
-                  "Content-Type": "application/json",
-                  Prefer: "resolution=merge-duplicates,return=representation",
+                {
+                  id: sid,
+                  settings: mergedForFallback,
+                  updated_at: new Date().toISOString(),
                 },
-                body: JSON.stringify(body),
-              });
+              ];
+              const res1 = await fetch(
+                `${base}/rest/v1/pos_settings?on_conflict=id`,
+                {
+                  method: "POST",
+                  headers: {
+                    apikey: key,
+                    Authorization: `Bearer ${key}`,
+                    Accept: "application/json",
+                    "Content-Type": "application/json",
+                    Prefer: "resolution=merge-duplicates,return=representation",
+                  },
+                  body: JSON.stringify(body),
+                },
+              );
               if (!res1.ok) throw new Error("supabase upsert failed");
               // Write legacy id for backward compatibility
               try {
-                const legacy = sid === "default" ? "defaultstore" : (sid === "defaultstore" ? "default" : null);
+                const legacy =
+                  sid === "default"
+                    ? "defaultstore"
+                    : sid === "defaultstore"
+                      ? "default"
+                      : null;
                 if (legacy) {
                   await fetch(`${base}/rest/v1/pos_settings?on_conflict=id`, {
                     method: "POST",
@@ -1747,14 +1769,25 @@ function cannabisPOS() {
                       Authorization: `Bearer ${key}`,
                       Accept: "application/json",
                       "Content-Type": "application/json",
-                      Prefer: "resolution=merge-duplicates,return=representation",
+                      Prefer:
+                        "resolution=merge-duplicates,return=representation",
                     },
-                    body: JSON.stringify([{ id: legacy, settings: mergedForFallback, updated_at: new Date().toISOString() }]),
+                    body: JSON.stringify([
+                      {
+                        id: legacy,
+                        settings: mergedForFallback,
+                        updated_at: new Date().toISOString(),
+                      },
+                    ]),
                   });
                 }
               } catch (_) {}
               // Verify and refresh local cache/UI
-              try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch (_) {}
+              try {
+                await (window.SettingsClient
+                  ? SettingsClient.get(true)
+                  : Promise.resolve());
+              } catch (_) {}
               this.showToast("Settings saved successfully", "success");
               return;
             }
@@ -1767,7 +1800,9 @@ function cannabisPOS() {
         }
         // API path succeeded
         try {
-          await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve());
+          await (window.SettingsClient
+            ? SettingsClient.get(true)
+            : Promise.resolve());
         } catch (_) {}
         this.showToast("Settings saved successfully", "success");
       } catch (error) {
@@ -6345,14 +6380,16 @@ function cannabisPOS() {
                     };
                   })
                   .filter((w) => w.weight > 0 && w.price > 0);
-                const weights = Array.isArray(t.weights) && t.weights.length
-                  ? t.weights
-                  : [...std, ...customNorm];
+                const weights =
+                  Array.isArray(t.weights) && t.weights.length
+                    ? t.weights
+                    : [...std, ...customNorm];
                 return {
                   id: t.id != null ? t.id : name, // fallback id by name
                   name,
                   isActive: t.isActive ?? t.is_active ?? true,
-                  createdAt: t.createdAt || t.created_at || new Date().toISOString(),
+                  createdAt:
+                    t.createdAt || t.created_at || new Date().toISOString(),
                   prices,
                   customWeights: custom,
                   weights,
@@ -6364,7 +6401,9 @@ function cannabisPOS() {
             return;
           }
           // Keep defaults if no backup exists
-          this.priceTiers = Array.isArray(this.priceTiers) ? this.priceTiers : [];
+          this.priceTiers = Array.isArray(this.priceTiers)
+            ? this.priceTiers
+            : [];
           return;
         }
 
@@ -6377,7 +6416,9 @@ function cannabisPOS() {
             weight_14g: 0,
             weight_28g: 0,
           };
-          const custom = Array.isArray(t.custom_weights) ? t.custom_weights : [];
+          const custom = Array.isArray(t.custom_weights)
+            ? t.custom_weights
+            : [];
           const std = [
             { weight: 1, price: Number(prices.weight_1g || 0) },
             { weight: 3.5, price: Number(prices.weight_3_5g || 0) },
@@ -10360,16 +10401,23 @@ function cannabisPOS() {
           ].filter((w) => isFinite(w.price) && w.price > 0);
           const customNorm = (Array.isArray(baseCustom) ? baseCustom : [])
             .map((w) => {
-              const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+              const grams = this.extractWeightInGrams
+                ? this.extractWeightInGrams(w.weight)
+                : Number(w.weight || 0);
               const price = Number(w.price || 0);
-              return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+              return {
+                weight: isFinite(grams) ? grams : 0,
+                price: isFinite(price) ? price : 0,
+              };
             })
             .filter((w) => w.weight > 0 && w.price > 0);
           const updated = {
             id: this.editingTierId,
             name: saved?.name || payload.name,
-            isActive: saved?.is_active ?? this.priceTiers[idx]?.isActive ?? true,
-            createdAt: this.priceTiers[idx]?.createdAt || new Date().toISOString(),
+            isActive:
+              saved?.is_active ?? this.priceTiers[idx]?.isActive ?? true,
+            createdAt:
+              this.priceTiers[idx]?.createdAt || new Date().toISOString(),
             prices: basePrices,
             customWeights: baseCustom,
             weights: [...std, ...customNorm],
@@ -10395,9 +10443,14 @@ function cannabisPOS() {
           ].filter((w) => isFinite(w.price) && w.price > 0);
           const customNorm = (Array.isArray(baseCustom) ? baseCustom : [])
             .map((w) => {
-              const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+              const grams = this.extractWeightInGrams
+                ? this.extractWeightInGrams(w.weight)
+                : Number(w.weight || 0);
               const price = Number(w.price || 0);
-              return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+              return {
+                weight: isFinite(grams) ? grams : 0,
+                price: isFinite(price) ? price : 0,
+              };
             })
             .filter((w) => w.weight > 0 && w.price > 0);
           const newTier = {
@@ -10436,11 +10489,20 @@ function cannabisPOS() {
               { weight: 14, price: Number(payload.prices?.weight_14g || 0) },
               { weight: 28, price: Number(payload.prices?.weight_28g || 0) },
             ].filter((w) => isFinite(w.price) && w.price > 0);
-            const customNorm = (Array.isArray(payload.custom_weights) ? payload.custom_weights : [])
+            const customNorm = (
+              Array.isArray(payload.custom_weights)
+                ? payload.custom_weights
+                : []
+            )
               .map((w) => {
-                const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+                const grams = this.extractWeightInGrams
+                  ? this.extractWeightInGrams(w.weight)
+                  : Number(w.weight || 0);
                 const price = Number(w.price || 0);
-                return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+                return {
+                  weight: isFinite(grams) ? grams : 0,
+                  price: isFinite(price) ? price : 0,
+                };
               })
               .filter((w) => w.weight > 0 && w.price > 0);
             const updated = {
@@ -10464,11 +10526,18 @@ function cannabisPOS() {
             { weight: 14, price: Number(payload.prices?.weight_14g || 0) },
             { weight: 28, price: Number(payload.prices?.weight_28g || 0) },
           ].filter((w) => isFinite(w.price) && w.price > 0);
-          const customNorm = (Array.isArray(payload.custom_weights) ? payload.custom_weights : [])
+          const customNorm = (
+            Array.isArray(payload.custom_weights) ? payload.custom_weights : []
+          )
             .map((w) => {
-              const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+              const grams = this.extractWeightInGrams
+                ? this.extractWeightInGrams(w.weight)
+                : Number(w.weight || 0);
               const price = Number(w.price || 0);
-              return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+              return {
+                weight: isFinite(grams) ? grams : 0,
+                price: isFinite(price) ? price : 0,
+              };
             })
             .filter((w) => w.weight > 0 && w.price > 0);
           const fallback = {
@@ -10558,7 +10627,7 @@ function cannabisPOS() {
           const r = await (window.axios || axios).delete(
             `/node/price-tiers/${encodeURIComponent(idStr)}`,
           );
-          if (!(r && (r.status >= 200 && r.status < 300))) throw new Error();
+          if (!(r && r.status >= 200 && r.status < 300)) throw new Error();
         } catch (_) {
           await (window.axios || axios).put(
             `/api/price-tiers/${encodeURIComponent(idStr)}`,

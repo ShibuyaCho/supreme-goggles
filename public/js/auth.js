@@ -85,13 +85,17 @@ class POSAuth {
             this.token = next;
             try {
               axios.defaults.headers = axios.defaults.headers || {};
-              axios.defaults.headers.common = axios.defaults.headers.common || {};
-              axios.defaults.headers.common["Authorization"] = `Bearer ${this.token}`;
+              axios.defaults.headers.common =
+                axios.defaults.headers.common || {};
+              axios.defaults.headers.common["Authorization"] =
+                `Bearer ${this.token}`;
             } catch (_) {}
           }
         }
         if (e.key === this.KEY_USER && e.newValue) {
-          try { this.user = JSON.parse(e.newValue); } catch (_) {}
+          try {
+            this.user = JSON.parse(e.newValue);
+          } catch (_) {}
         }
       });
     } catch (_) {}
@@ -306,13 +310,27 @@ class POSAuth {
   clearAuth() {
     this.token = null;
     this.user = null;
-    try { localStorage.removeItem(this.KEY_TOKEN); } catch (e) {}
-    try { localStorage.removeItem(this.KEY_USER); } catch (e) {}
-    try { localStorage.removeItem("pos_last_activity"); } catch (e) {}
-    try { localStorage.removeItem("auth_token"); } catch (e) {}
-    try { localStorage.removeItem("user_data"); } catch (e) {}
-    try { localStorage.removeItem("cannabisPOS-auth"); } catch (e) {}
-    try { this._cookies?.deleteCookie?.(this.KEY_TOKEN); } catch (e) {}
+    try {
+      localStorage.removeItem(this.KEY_TOKEN);
+    } catch (e) {}
+    try {
+      localStorage.removeItem(this.KEY_USER);
+    } catch (e) {}
+    try {
+      localStorage.removeItem("pos_last_activity");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("auth_token");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("user_data");
+    } catch (e) {}
+    try {
+      localStorage.removeItem("cannabisPOS-auth");
+    } catch (e) {}
+    try {
+      this._cookies?.deleteCookie?.(this.KEY_TOKEN);
+    } catch (e) {}
     try {
       if (axios?.defaults?.headers?.common)
         delete axios.defaults.headers.common["Authorization"];
@@ -633,7 +651,9 @@ window.posAuth = new POSAuth();
 // Expose a readiness promise so other modules can await auth init
 window.posAuthReady = new Promise((resolve) => {
   document.addEventListener("DOMContentLoaded", async () => {
-    try { window.posAuth.init(); } catch (_) {}
+    try {
+      window.posAuth.init();
+    } catch (_) {}
     resolve();
   });
 });
