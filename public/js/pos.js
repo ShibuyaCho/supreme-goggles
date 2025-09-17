@@ -2084,28 +2084,6 @@ function cannabisPOS() {
       if (!Array.isArray(this.sortedProducts)) this.sortedProducts = [];
     },
 
-    // Authentication methods
-    async initAuth() {
-      this.isAuthenticated = posAuth.isAuthenticated();
-      this.currentUser = posAuth.getUser();
-
-      if (!this.isAuthenticated) {
-        console.log("User not authenticated");
-        return;
-      }
-
-      // Verify token is still valid, but do NOT force logout on transient failures
-      try {
-        const user = await posAuth.refreshUser();
-        if (user) {
-          this.currentUser = user;
-        }
-        // If user is null, keep existing auth state; axios interceptor will handle true 401 via pos-unauthorized
-      } catch (error) {
-        console.warn("Auth verification failed (non-fatal):", error);
-        // Do not clear auth here; allow interceptor-driven flow to prompt re-auth only when necessary
-      }
-    },
 
     async handleLogin(email, password) {
       const result = await posAuth.login(email, password);
