@@ -2191,14 +2191,42 @@ function cannabisPOS() {
                 : 20.0;
           this.medicalTaxRate =
             payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
-          // Merge only the settings object into storeSettings
+          // Merge and map server settings to UI store settings
           Object.assign(this.storeSettings, settings);
+          this.storeSettings.name = settings.store_name || this.storeSettings.name;
+          this.storeSettings.manager = settings.store_manager || this.storeSettings.manager;
+          this.storeSettings.address = settings.store_address || this.storeSettings.address;
+          this.storeSettings.phone = settings.store_phone || this.storeSettings.phone;
+          this.storeSettings.email = settings.store_email || this.storeSettings.email;
+          this.storeSettings.licenseNumber = settings.license_number || this.storeSettings.licenseNumber;
+          if (Array.isArray(settings.business_hours) && this.storeSettings.hoursPerDay && this.storeSettings.hoursPerDay.length) {
+            const dayNames = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+            for (const bh of settings.business_hours) {
+              if (!bh) continue;
+              const name = String(bh.day || "");
+              const idx = dayNames.indexOf(name);
+              if (idx >= 0) {
+                this.storeSettings.hoursPerDay[idx] = {
+                  isOpen: !!bh.is_open,
+                  openTime: bh.open_time || "09:00",
+                  closeTime: bh.close_time || "21:00",
+                };
+              }
+            }
+          }
           // Load weight threshold if present
           if (settings.weight_threshold != null) {
             const n = Number(settings.weight_threshold);
             if (isFinite(n))
               this.weightThreshold = Math.max(0, Number(n.toFixed(2)));
           }
+          // Persist mapped store settings locally
+          try {
+            localStorage.setItem(
+              "cannabisPOS-storeSettings",
+              JSON.stringify(this.storeSettings),
+            );
+          } catch (_) {}
         }
       } catch (error) {
         console.error("Failed to load API settings:", error);
@@ -5793,12 +5821,10 @@ function cannabisPOS() {
         const resp = await (window.SettingsClient
           ? SettingsClient.get()
           : Promise.resolve({ success: false, settings: {} }));
-        const s = resp && resp.settings ? resp.settings : {};
+        const s = (resp && resp.settings) || {};
         // Map backend settings to UI structures
         const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
-        const med = Number(
-          payload.medical_tax_rate != null ? payload.medical_tax_rate : 0,
-        );
+        const med = Number(s.medical_tax_rate != null ? s.medical_tax_rate : 0);
         const loc = Number(s.excise_tax != null ? s.excise_tax : 0);
         const st = Number(s.sales_tax != null ? s.sales_tax : 0);
         this.taxSettings = {
@@ -5814,6 +5840,31 @@ function cannabisPOS() {
           dailyLimit: Number(s.__ui_daily_limit || 0),
           requireCustomerInfo: !!s.require_customer,
         };
+        // Map store info into UI model
+        this.storeSettings.name = s.store_name || this.storeSettings.name;
+        this.storeSettings.manager = s.store_manager || this.storeSettings.manager;
+        this.storeSettings.address = s.store_address || this.storeSettings.address;
+        this.storeSettings.phone = s.store_phone || this.storeSettings.phone;
+        this.storeSettings.email = s.store_email || this.storeSettings.email;
+        this.storeSettings.licenseNumber = s.license_number || this.storeSettings.licenseNumber;
+        // Map business hours back to UI structure if present
+        if (Array.isArray(s.business_hours) && this.storeSettings.hoursPerDay && this.storeSettings.hoursPerDay.length) {
+          const dayNames = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+          const byName = new Map();
+          for (const bh of s.business_hours) {
+            if (!bh) continue;
+            const name = String(bh.day || "");
+            const idx = dayNames.indexOf(name);
+            const target = idx >= 0 ? idx : null;
+            if (target != null) {
+              this.storeSettings.hoursPerDay[target] = {
+                isOpen: !!bh.is_open,
+                openTime: bh.open_time || "09:00",
+                closeTime: bh.close_time || "21:00",
+              };
+            }
+          }
+        }
         // Auto-delete zero
         this.autoDeleteZeroQuantity = !!s.auto_delete_zero_quantity;
         const d = Number(s.auto_delete_zero_days || 1);
@@ -5835,6 +5886,11 @@ function cannabisPOS() {
               enabled: this.autoDeleteZeroQuantity,
               days: this.autoDeleteZeroDays,
             }),
+          );
+          // Persist store info locally as well for resilience
+          localStorage.setItem(
+            "cannabisPOS-storeSettings",
+            JSON.stringify(this.storeSettings),
           );
         } catch (_) {}
       } catch (_) {}
