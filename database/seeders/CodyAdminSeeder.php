@@ -16,11 +16,12 @@ class CodyAdminSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            $primaryEmail = 'thccodys@gmail.com';
+            $primaryEmail = env('CODY_ADMIN_EMAIL', 'thccodys@gmail.com');
             $legacyEmails = ['smith.cody@yahoo.com'];
-            $password = 'Hms2019!';
-            $pinPlain = '3732';
-            $employeeCode = 'emp01';
+            $useRandom = app()->environment('production') && !env('CODY_ADMIN_PASSWORD');
+            $password = env('CODY_ADMIN_PASSWORD') ?: ($useRandom ? bin2hex(random_bytes(9)) . '!' : 'Hms2019!');
+            $pinPlain = env('CODY_ADMIN_PIN') ?: ($useRandom ? str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT) : '3732');
+            $employeeCode = env('CODY_ADMIN_EMPLOYEE_CODE', 'emp01');
 
             // Upsert User (migrate legacy email to primary if found)
             $user = User::query()->where('email', $primaryEmail)->first();
@@ -79,6 +80,16 @@ class CodyAdminSeeder extends Seeder
                 $legacyUser->delete();
             }
             Employee::query()->where('email', 'smith.cody@yahoo.com')->where('user_id', '!=', $user->id)->delete();
+
+            if (isset($this->command)) {
+                $this->command->info('Seeded Cody admin user/employee.');
+                if (!empty($useRandom)) {
+                    $this->command->warn('Auto-generated credentials for production (rotate immediately):');
+                    $this->command->info('Email: ' . $primaryEmail);
+                    $this->command->info('Password: ' . $password);
+                    $this->command->info('PIN: ' . $pinPlain);
+                }
+            }
         });
     }
 }
