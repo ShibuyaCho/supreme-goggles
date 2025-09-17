@@ -148,6 +148,7 @@
     <script src="{{ asset('js/auth.js') }}" defer></script>
     <script src="{{ asset('js/pos.js') }}" defer></script>
     <script src="{{ asset('js/modal-keyboard-handler.js') }}" defer></script>
+    <script src="{{ asset('js/store-manager.js') }}" defer></script>
     <!-- Global fallbacks to satisfy Alpine expressions on pages that reference reportFilters/currentReport -->
     <script>
       (function(){
@@ -172,20 +173,7 @@
             if(btn){ btn.title = 'Current ' + (s && (s.name||s.id) ? (s.name||s.id) : 'default'); }
           }catch(e){}
         }
-        window.addOrSwitchStore = function(){
-          const current = readStore();
-          const input = prompt('Enter Store ID or name to use:', current && (current.name||current.id) ? (current.name||current.id) : 'default');
-          if(!input) return;
-          const store = { id: String(input).trim(), name: String(input).trim() };
-          try { localStorage.setItem('pos_store', JSON.stringify(store)); } catch(e) {}
-          updateLabel();
-          try { window.dispatchEvent(new Event('storage')); } catch(e) {}
-        };
-        window.clearStoreCtx = function(){
-          try { localStorage.removeItem('pos_store'); } catch(e) {}
-          updateLabel();
-          try { window.dispatchEvent(new Event('storage')); } catch(e) {}
-        };
+        window.updateStoreHeaderLabel = updateLabel;
         document.addEventListener('DOMContentLoaded', updateLabel);
       })();
     </script>
