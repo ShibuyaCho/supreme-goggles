@@ -267,24 +267,39 @@ export default function Settings() {
 
   const saveToApi = async (settings: StoreSettings) => {
     const payload: any = {
+      // Store info
       store_name: settings.storeName,
+      store_address: (settings as any).storeAddress ?? '',
+      store_phone: (settings as any).storePhone ?? '',
+      store_email: (settings as any).storeEmail ?? '',
+      store_manager: (settings as any).storeManager ?? '',
+      license_number: (settings as any).licenseNumber ?? '',
       website: settings.website,
+      receipt_footer: (settings as any).receiptFooter ?? '',
+
+      // Taxes
       sales_tax: Number(settings.taxRate) || 0,
+
+      // Auto delete
       auto_delete_zero_quantity: !!settings.autoDeleteZeroQuantity,
-      auto_delete_zero_days: Math.min(
-        30,
-        Math.max(1, Number(settings.autoDeleteZeroDays) || 1),
-      ),
-      exit_label_categories: Array.isArray(settings.exitLabelCategories)
-        ? settings.exitLabelCategories
-        : [],
+      auto_delete_zero_days: Math.min(30, Math.max(1, Number(settings.autoDeleteZeroDays) || 1)),
+
+      // Exit labels & printing
+      exit_label_categories: Array.isArray(settings.exitLabelCategories) ? settings.exitLabelCategories : [],
+      receipt_autoprint: (settings as any).receiptAutoprint ?? false,
+      receipt_categories_autoprint: Array.isArray((settings as any).receiptCategoriesAutoprint) ? (settings as any).receiptCategoriesAutoprint : [],
+      receipt_paper_size: (settings as any).receiptPaperSize ?? '80mm',
+
+      // Pricing
       minimum_price_enabled: !!settings.minimumPriceEnabled,
-      minimum_price_categories: Array.isArray(settings.minimumPriceCategories)
-        ? settings.minimumPriceCategories
-        : [],
+      minimum_price_categories: Array.isArray(settings.minimumPriceCategories) ? settings.minimumPriceCategories : [],
       minimum_price_amount: Number(settings.minimumPriceAmount) || 0,
+
+      // Display & inventory
       inventory_view_mode: settings.inventoryViewMode,
       expandable_cart: !!settings.expandableCart,
+
+      // Hours
       business_hours: settings.hours,
     };
     const sc: any = (window as any).SettingsClient;
