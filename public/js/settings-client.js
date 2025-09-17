@@ -155,6 +155,11 @@
         "X-Store-ID": sid,
       },
     };
+    try {
+      const meta = document.querySelector('meta[name="csrf-token"]');
+      const token = meta && meta.getAttribute('content');
+      if (token) cfg.headers['X-CSRF-TOKEN'] = token;
+    } catch (_) {}
     if (params) {
       cfg.params = params;
       if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
