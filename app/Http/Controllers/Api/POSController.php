@@ -80,21 +80,26 @@ class POSController extends Controller
             
             $employeeId = optional(auth()->user()?->employee)->id;
             if (!$employeeId) {
-                // Temporary relaxed behavior for testing: fall back to any employee
-                $employeeId = \App\Models\Employee::query()->value('id');
-            }
-            if (!$employeeId) {
-                $emp = \App\Models\Employee::create([
-                    'employee_id' => 'POS-' . now()->format('YmdHis'),
-                    'first_name' => 'POS',
-                    'last_name' => 'User',
-                    'email' => 'pos@example.com',
-                    'pin' => bcrypt('0000'),
-                    'password' => bcrypt(str()->random(12)),
-                    'role' => 'cashier',
-                    'is_active' => true,
-                ]);
-                $employeeId = $emp->id;
+                if (app()->environment(['local','testing','staging']) || config('app.debug')) {
+                    $employeeId = \App\Models\Employee::query()->value('id');
+                    if (!$employeeId) {
+                        $emp = \App\Models\Employee::create([
+                            'employee_id' => 'POS-' . now()->format('YmdHis'),
+                            'first_name' => 'POS',
+                            'last_name' => 'User',
+                            'email' => 'pos@example.com',
+                            'pin' => bcrypt(\Illuminate\Support\Str::random(32)),
+                            'password' => bcrypt(\Illuminate\Support\Str::random(32)),
+                            'role' => 'cashier',
+                            'is_active' => true,
+                        ]);
+                        $employeeId = $emp->id;
+                    }
+                } else {
+                    return response()->json([
+                        'error' => 'Authenticated employee required to process payments'
+                    ], 403);
+                }
             }
 
             // Compute subtotal from items and derive tax amount
