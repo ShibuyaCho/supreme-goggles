@@ -205,49 +205,38 @@ function handleSettingsUpdate(event) {
     submitButton.textContent = 'Saving...';
     submitButton.disabled = true;
 
-    (window.axios || axios)
-        .post('/api/settings/pos', settingsData, { headers: { 'Accept': 'application/json' } })
-        .then((res) => {
-            const ok = (res && res.data && res.data.success === true) || (res.status >= 200 && res.status < 300);
-            if (ok) {
-                CannabisPOS.closeModal('settings-modal');
-                // Update the tax display in the header
-                const taxDisplay = document.getElementById('tax-display');
-                if (taxDisplay) {
-                    taxDisplay.textContent = `Tax: ${settingsData.sales_tax}%`;
-                }
-                // Show success message
-                if (window.POS?.showToast) POS.showToast('Settings updated successfully!', 'success');
-                else alert('Settings updated successfully!');
-            } else {
-                const msg = (res && res.data && res.data.message) || 'Settings update failed';
-                throw new Error(msg);
-            }
-        })
-        .catch((error) => {
-            console.error('Settings update error:', error);
+    (async () => {
+        try {
+            // Use centralized client (adds X-Store-ID, Authorization, retries)
+            const res = await (window.SettingsClient ? SettingsClient.save(settingsData) : Promise.resolve({ success:false }));
+            if (!res || res.success !== true) throw new Error('Settings update failed');
+            try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({})); } catch(_) {}
+            CannabisPOS.closeModal('settings-modal');
+            const taxDisplay = document.getElementById('tax-display');
+            if (taxDisplay) taxDisplay.textContent = `Tax: ${settingsData.sales_tax}%`;
+            if (window.POS?.showToast) POS.showToast('Settings updated successfully!', 'success'); else alert('Settings updated successfully!');
+        } catch (error) {
             const msg = (error && error.response && (error.response.data?.message || error.response.data?.error)) || error.message || 'Unknown error';
-            if (window.POS?.showToast) POS.showToast(`Failed to update settings: ${msg}`, 'error');
-            else alert('Failed to update settings: ' + msg);
-        })
-        .finally(() => {
+            if (window.POS?.showToast) POS.showToast(`Failed to update settings: ${msg}`, 'error'); else alert('Failed to update settings: ' + msg);
+        } finally {
             submitButton.textContent = originalText;
             submitButton.disabled = false;
-        });
+        }
+    })();
 }
 
 async function openSettingsModal() {
     CannabisPOS.openModal('settings-modal');
     try {
-        const { data } = await (window.axios || axios).get('/api/settings/pos', { headers: { 'Accept': 'application/json' } });
-        const s = (data && (data.settings || data)) || {};
+        const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+        const s = (resp && resp.settings) || {};
         const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
         const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
         setVal('sales-tax', s.sales_tax);
         setVal('excise-tax', s.excise_tax);
         setVal('cannabis-tax', s.cannabis_tax);
         setChk('tax-inclusive', s.tax_inclusive);
-        setChk('auto-print-receipt', s.auto_print_receipt);
+        setChk('auto-print-receipt', s.receipt_autoprint ?? s.auto_print_receipt);
         setChk('require-customer', s.require_customer);
         setChk('age-verification', s.age_verification);
         setChk('limit-enforcement', s.limit_enforcement);
@@ -262,7 +251,6 @@ async function openSettingsModal() {
         setVal('receipt-footer', s.receipt_footer);
         setVal('store-name', s.store_name);
         setVal('store-address', s.store_address);
-        // Auto-delete
         setChk('auto-delete-zero-quantity', s.auto_delete_zero_quantity);
         setVal('auto-delete-zero-days', s.auto_delete_zero_days);
     } catch (_) { /* ignore prefill errors */ }
