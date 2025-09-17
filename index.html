@@ -902,7 +902,7 @@
               <div class="hidden md:flex items-center space-x-2">
                 <button
                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
-                  onclick="(function(){var s=localStorage.getItem('pos_store');var cur='default';try{if(s){var o=JSON.parse(s);cur=(o.name||o.id||'default');}}catch(e){}var input=prompt('Enter Store ID or name to use:',cur);if(!input)return;var st={id:String(input).trim(),name:String(input).trim()};try{localStorage.setItem('pos_store',JSON.stringify(st));}catch(e){} try{window.dispatchEvent(new Event('storage'));}catch(e){}})()"
+                  onclick="window.addOrSwitchStore && window.addOrSwitchStore()"
                 >
                   <svg
                     class="w-4 h-4 mr-1"
