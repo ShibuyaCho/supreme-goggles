@@ -181,6 +181,15 @@ function cannabisPOS() {
     // Reports functionality
     showCreateReportModal: false,
     recentReports: [],
+    // Pre-generated report filters used by the Reports page
+    reportFilters: {
+      store: "all",
+      dateRange: "today",
+      category: "all",
+      room: "all",
+    },
+    // Currently displayed generated report (if any)
+    currentReport: null,
     customReport: {
       name: "",
       type: "",
