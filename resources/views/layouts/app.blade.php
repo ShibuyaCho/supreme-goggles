@@ -149,6 +149,21 @@
     <script src="{{ asset('js/pos.js') }}" defer></script>
     <script src="{{ asset('js/modal-keyboard-handler.js') }}" defer></script>
     <script src="{{ asset('js/store-manager.js') }}" defer></script>
+    <script>
+      // Ensure the Add/Switch Store button always works (lazy-load store-manager if needed)
+      (function(){
+        if (!window.addOrSwitchStore) {
+          window.addOrSwitchStore = function(){
+            function open() { if (window.addOrSwitchStore.__ready) { window.addOrSwitchStore.__ready(); return; } if (window.mainMenu) { window.mainMenu(); return; } }
+            try { open(); } catch(_) {}
+            var s = document.createElement('script');
+            s.src = '{{ asset('js/store-manager.js') }}';
+            s.onload = function(){ try { open(); } catch(_) {} };
+            document.head.appendChild(s);
+          };
+        }
+      })();
+    </script>
     <!-- Global fallbacks to satisfy Alpine expressions on pages that reference reportFilters/currentReport -->
     <script>
       (function(){
