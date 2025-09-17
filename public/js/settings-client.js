@@ -307,7 +307,11 @@
         }
       }
       // Backend failed: do not fallback to direct Supabase; keep single source of truth
-      return { success: false, settings: merged, error: last || new Error('settings save failed') };
+      return {
+        success: false,
+        settings: merged,
+        error: last || new Error("settings save failed"),
+      };
     },
   };
 
