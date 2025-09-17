@@ -1096,9 +1096,33 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     );
                 }
 
-                \Illuminate\Support\Facades\Cache::put('pos_settings', $settings, now()->addYears(5));
+                // Read-after-write verification from Supabase when available
+                $fresh = $settings;
+                if ($supabaseUrl && $supabaseKey) {
+                    try {
+                        $verify = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                        ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $storeId,
+                            'select' => '*',
+                        ]);
+                        if ($verify->ok()) {
+                            $arr = $verify->json();
+                            $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+                            if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
+                                $fresh = $row['settings'];
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Supabase verify after settings save failed', ['error'=>$e->getMessage()]);
+                    }
+                }
 
-                return response()->json(['success' => true, 'settings' => $settings]);
+                \Illuminate\Support\Facades\Cache::put('pos_settings', $fresh, now()->addYears(5));
+
+                return response()->json(['success' => true, 'settings' => $fresh]);
             } catch (\Throwable $e) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
