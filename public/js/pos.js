@@ -5681,11 +5681,22 @@ function cannabisPOS() {
         this._hydrateBusinessSettingsFromServer();
     },
 
-    _currentStoreId() { try { const raw = localStorage.getItem('pos_store'); if (!raw) return 'default'; const s = JSON.parse(raw); return (s && s.id) ? String(s.id) : 'default'; } catch(_) { return 'default'; } },
+    _currentStoreId() {
+      try {
+        const raw = localStorage.getItem("pos_store");
+        if (!raw) return "default";
+        const s = JSON.parse(raw);
+        return s && s.id ? String(s.id) : "default";
+      } catch (_) {
+        return "default";
+      }
+    },
 
     async _hydratePrintSettingsFromServer() {
       try {
-        const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+        const resp = await (window.SettingsClient
+          ? SettingsClient.get(true)
+          : Promise.resolve({ success: false }));
         const s = (resp && (resp.settings || resp)) || {};
         if (s && typeof s === "object") {
           this.printSettings.autoprint = !!(
@@ -5709,8 +5720,10 @@ function cannabisPOS() {
 
     async _hydrateBusinessSettingsFromServer() {
       try {
-        const resp = await (window.SettingsClient ? SettingsClient.get() : Promise.resolve({ success:false, settings:{} }));
-        const s = (resp && resp.settings) ? resp.settings : {};
+        const resp = await (window.SettingsClient
+          ? SettingsClient.get()
+          : Promise.resolve({ success: false, settings: {} }));
+        const s = resp && resp.settings ? resp.settings : {};
         // Map backend settings to UI structures
         const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
         const med = Number(
@@ -5819,7 +5832,9 @@ function cannabisPOS() {
           __ui_receipt_template:
             this.printSettings.receiptTemplate || "standard",
         };
-        const res = await (window.SettingsClient ? SettingsClient.save(payload) : Promise.resolve({ success:false }));
+        const res = await (window.SettingsClient
+          ? SettingsClient.save(payload)
+          : Promise.resolve({ success: false }));
         if (!res || res.success !== true) throw new Error("save-failed");
       } catch (_) {}
     },
@@ -5871,7 +5886,9 @@ function cannabisPOS() {
           );
         } catch (_) {}
         // POST to API (Supabase-backed)
-        const res = await (window.SettingsClient ? SettingsClient.save(payload) : Promise.resolve({ success:false }));
+        const res = await (window.SettingsClient
+          ? SettingsClient.save(payload)
+          : Promise.resolve({ success: false }));
         if (!res || res.success !== true) throw new Error("save-failed");
       } catch (_) {}
     },
@@ -5905,13 +5922,18 @@ function cannabisPOS() {
         try {
           let settings = {};
           try {
-            const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+            const resp = await (window.SettingsClient
+              ? SettingsClient.get(true)
+              : Promise.resolve({ success: false, settings: {} }));
             settings = resp?.settings || settings;
           } catch (_) {}
           settings = settings && typeof settings === "object" ? settings : {};
           settings.weight_threshold = this.weightThreshold;
-          const saveRes = await (window.SettingsClient ? SettingsClient.save(settings) : Promise.resolve({ success:false }));
-          if (!saveRes || saveRes.success !== true) throw new Error("save-failed");
+          const saveRes = await (window.SettingsClient
+            ? SettingsClient.save(settings)
+            : Promise.resolve({ success: false }));
+          if (!saveRes || saveRes.success !== true)
+            throw new Error("save-failed");
         } catch (_) {}
         if (typeof this.showToast === "function")
           this.showToast("Weight threshold saved", "success");
