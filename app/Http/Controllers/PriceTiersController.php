@@ -97,6 +97,8 @@ class PriceTiersController extends Controller
 
         $detailed = $tiers; // Same dataset for detailed table for now
 
+        \Illuminate\Support\Facades\Log::info('Price Tiers index loaded', ['count' => count($tiers)]);
+
         return view('price-tiers.index', [
             'price_tiers' => $tiers,
             'detailed_tiers' => $detailed,
