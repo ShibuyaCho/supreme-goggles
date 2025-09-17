@@ -84,10 +84,10 @@ Route::prefix('products')->name('products.')->group(function () {
     Route::get('/{product}/barcode', [ProductsController::class, 'generateBarcode'])->name('barcode');
     Route::get('/{product}/label', [ProductsController::class, 'generateLabel'])->name('label');
     
-    // Bulk Actions
-    Route::post('/bulk-transfer', [ProductsController::class, 'bulkTransfer'])->name('bulk-transfer');
-    Route::post('/bulk-pricing', [ProductsController::class, 'bulkPricing'])->name('bulk-pricing');
-    Route::post('/bulk-delete', [ProductsController::class, 'bulkDelete'])->name('bulk-delete');
+    // Bulk Actions (explicit authorization)
+    Route::post('/bulk-transfer', [ProductsController::class, 'bulkTransfer'])->name('bulk-transfer')->middleware('permission:products:transfer');
+    Route::post('/bulk-pricing', [ProductsController::class, 'bulkPricing'])->name('bulk-pricing')->middleware('permission:products:write');
+    Route::post('/bulk-delete', [ProductsController::class, 'bulkDelete'])->name('bulk-delete')->middleware('permission:products:delete');
     
     // Import/Export
     Route::get('/export', [ProductsController::class, 'export'])->name('export');
