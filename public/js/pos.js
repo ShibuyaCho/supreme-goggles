@@ -2203,6 +2203,12 @@ function cannabisPOS() {
             payload.settings && typeof payload.settings === "object"
               ? payload.settings
               : {};
+          const serverTs = Number(new Date(payload.settings_updated_at || 0).getTime() || 0);
+          let localTs = 0;
+          try {
+            const raw = localStorage.getItem("cannabisPOS-storeSettings");
+            if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
+          } catch(_) {}
           // Update local settings with API data
           this.taxRate =
             payload.tax_rate != null
