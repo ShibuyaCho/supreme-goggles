@@ -271,25 +271,22 @@ export default function Settings() {
       website: settings.website,
       sales_tax: Number(settings.taxRate) || 0,
       auto_delete_zero_quantity: !!settings.autoDeleteZeroQuantity,
-      auto_delete_zero_days: Math.min(
-        30,
-        Math.max(1, Number(settings.autoDeleteZeroDays) || 1),
-      ),
-      exit_label_categories: Array.isArray(settings.exitLabelCategories)
-        ? settings.exitLabelCategories
-        : [],
+      auto_delete_zero_days: Math.min(30, Math.max(1, Number(settings.autoDeleteZeroDays) || 1)),
+      exit_label_categories: Array.isArray(settings.exitLabelCategories) ? settings.exitLabelCategories : [],
       minimum_price_enabled: !!settings.minimumPriceEnabled,
-      minimum_price_categories: Array.isArray(settings.minimumPriceCategories)
-        ? settings.minimumPriceCategories
-        : [],
+      minimum_price_categories: Array.isArray(settings.minimumPriceCategories) ? settings.minimumPriceCategories : [],
       minimum_price_amount: Number(settings.minimumPriceAmount) || 0,
       inventory_view_mode: settings.inventoryViewMode,
       expandable_cart: !!settings.expandableCart,
       business_hours: settings.hours,
     };
-    await axios.post("/api/settings/pos", payload, {
-      headers: getStoreHeaders(),
-    });
+    const sc: any = (window as any).SettingsClient;
+    if (sc) {
+      const res = await sc.save(payload);
+      if (!res || res.success !== true) throw new Error('save-failed');
+    } else {
+      await axios.post("/api/settings/pos", payload, { headers: getStoreHeaders() });
+    }
   };
 
   const saveSettings = async () => {
@@ -302,13 +299,10 @@ export default function Settings() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await axios.get("/api/settings/pos", {
-          headers: getStoreHeaders(),
-        });
-        const data =
-          res?.data?.settings && typeof res.data.settings === "object"
-            ? res.data.settings
-            : res.data || {};
+        const sc: any = (window as any).SettingsClient;
+        if (sc) {
+          const resp = await sc.get(true);
+          const data = resp?.settings || {};
         if (cancelled) return;
         // Map backend to UI
         const merged: Partial<StoreSettings> = {
@@ -354,6 +348,27 @@ export default function Settings() {
           settings: { ...prev.settings, ...merged },
         }));
         loadedFromServer.current = true;
+        } else {
+          const res = await axios.get("/api/settings/pos", { headers: getStoreHeaders() });
+          const data = res?.data?.settings && typeof res.data.settings === "object" ? res.data.settings : res.data || {};
+          if (cancelled) return;
+          const merged: Partial<StoreSettings> = {
+            storeName: data.store_name ?? currentStore.settings.storeName,
+            website: data.website ?? currentStore.settings.website,
+            taxRate: Number(data.sales_tax ?? currentStore.settings.taxRate) || 0,
+            autoDeleteZeroQuantity: !!data.auto_delete_zero_quantity,
+            autoDeleteZeroDays: Math.min(30, Math.max(1, Number(data.auto_delete_zero_days || currentStore.settings.autoDeleteZeroDays) || 1)),
+            exitLabelCategories: Array.isArray(data.exit_label_categories) ? data.exit_label_categories : currentStore.settings.exitLabelCategories,
+            minimumPriceEnabled: !!data.minimum_price_enabled,
+            minimumPriceCategories: Array.isArray(data.minimum_price_categories) ? data.minimum_price_categories : currentStore.settings.minimumPriceCategories,
+            minimumPriceAmount: Number(data.minimum_price_amount ?? currentStore.settings.minimumPriceAmount) || currentStore.settings.minimumPriceAmount,
+            inventoryViewMode: (data.inventory_view_mode === "list" || data.inventory_view_mode === "cards") ? data.inventory_view_mode : currentStore.settings.inventoryViewMode,
+            expandableCart: data.expandable_cart ?? currentStore.settings.expandableCart,
+            hours: Array.isArray(data.business_hours) ? data.business_hours : currentStore.settings.hours,
+          };
+          setCurrentStore((prev) => ({ ...prev, settings: { ...prev.settings, ...merged } }));
+          loadedFromServer.current = true;
+        }
       } catch (_) {
         // ignore
       }
