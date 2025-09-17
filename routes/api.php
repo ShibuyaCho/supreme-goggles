@@ -1002,6 +1002,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/pos', function(\Illuminate\Http\Request $request) {
             try {
                 $settings = $request->all();
+                // Initialize Supabase and store scope before any reads
+                $supabaseUrl = env('SUPABASE_URL');
+                $supabaseKey = env('SUPABASE_ANON_KEY');
+                $storeId = $request->header('X-Store-ID');
+                if (!$storeId) { $storeId = $request->query('store'); }
+                $storeId = is_string($storeId) ? trim($storeId) : '';
+                if ($storeId === '' || $storeId === null) $storeId = 'default';
+                $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
                 // Merge with current to avoid overwriting other fields
                 try {
                     $current = [];
