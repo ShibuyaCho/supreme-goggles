@@ -164,25 +164,17 @@
     const listEl = document.getElementById('store-list');
     listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">Loading stores…</div>';
     try {
-      const base = (window.__SUPABASE_URL||'').replace(/\/$/,'');
-      const key = window.__SUPABASE_ANON_KEY||'';
-      if (!base || !key || !window.supabase) throw new Error('Supabase not configured');
-      const client = window.supabase.createClient(base, key);
-      const { data, error } = await client.from('pos_settings').select('*').order('updated_at', { ascending: false });
-      if (error) throw error;
-      const rows = Array.isArray(data) ? data : [];
+      const res = await (window.axios||axios).get('/api/settings/stores');
+      const rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
       if (rows.length === 0) {
         listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">No stores found. Use Add Store.</div>';
         return;
       }
       listEl.innerHTML = rows.map((r)=>{
         const id = r.id || '';
-        const name = (r.settings && r.settings.store_name) ? r.settings.store_name : id;
+        const name = r.name || id;
         const updated = r.updated_at ? new Date(r.updated_at).toLocaleString() : '';
-        return `<button data-id="${String(id).replace(/"/g,'&quot;')}" data-name="${String(name).replace(/"/g,'&quot;')}" class="w-full text-left px-4 py-3 hover:bg-gray-50">
-          <div class="font-medium">${name}</div>
-          <div class="text-xs text-gray-500">${id}${updated?` • Updated ${updated}`:''}</div>
-        </button>`;
+        return `<button data-id="${String(id).replace(/"/g,'&quot;')}" data-name="${String(name).replace(/"/g,'&quot;')}" class="w-full text-left px-4 py-3 hover:bg-gray-50">\n          <div class=\"font-medium\">${name}</div>\n          <div class=\"text-xs text-gray-500\">${id}${updated?` • Updated ${updated}`:''}</div>\n        </button>`;
       }).join('');
       listEl.querySelectorAll('button[data-id]').forEach((btn)=>{
         btn.addEventListener('click', ()=>{
