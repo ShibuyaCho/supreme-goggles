@@ -5903,21 +5903,13 @@ function cannabisPOS() {
         try {
           let settings = {};
           try {
-            const getRes = await (window.posAuth
-              ? posAuth.apiRequest("get", "/settings/pos")
-              : (window.axios || axios).get("/api/settings/pos"));
-            settings = getRes?.data?.settings || getRes?.data || settings;
+            const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+            settings = resp?.settings || settings;
           } catch (_) {}
           settings = settings && typeof settings === "object" ? settings : {};
           settings.weight_threshold = this.weightThreshold;
-          const saveRes = await (window.posAuth
-            ? posAuth.apiRequest("post", "/settings/pos", settings)
-            : (window.axios || axios).post("/api/settings/pos", settings));
-          const ok =
-            saveRes?.success === true ||
-            saveRes?.data?.success === true ||
-            (saveRes?.status && saveRes.status >= 200 && saveRes.status < 300);
-          if (!ok) throw new Error("save-failed");
+          const saveRes = await (window.SettingsClient ? SettingsClient.save(settings) : Promise.resolve({ success:false }));
+          if (!saveRes || saveRes.success !== true) throw new Error("save-failed");
         } catch (_) {}
         if (typeof this.showToast === "function")
           this.showToast("Weight threshold saved", "success");
