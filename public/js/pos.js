@@ -1624,12 +1624,38 @@ function cannabisPOS() {
       });
     },
 
-    saveAllSettings() {
+    async saveAllSettings() {
       try {
-        localStorage.setItem(
-          "cannabisPOS-storeSettings",
-          JSON.stringify(this.storeSettings),
-        );
+        // Persist locally
+        try {
+          localStorage.setItem(
+            "cannabisPOS-storeSettings",
+            JSON.stringify(this.storeSettings),
+          );
+        } catch (_) {}
+        // Map to server POS settings schema and persist to Supabase via API
+        const hours = Array.isArray(this.storeSettings.hoursPerDay)
+          ? this.storeSettings.hoursPerDay.map((d, i) => ({
+              day: ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][i] || String(i),
+              is_open: !!d.isOpen,
+              open_time: d.openTime || "09:00",
+              close_time: d.closeTime || "21:00",
+            }))
+          : [];
+        const payload = {
+          store_name: this.storeSettings.name,
+          store_manager: this.storeSettings.manager || "",
+          store_address: this.storeSettings.address,
+          store_phone: this.storeSettings.phone,
+          store_email: this.storeSettings.email,
+          license_number: this.storeSettings.licenseNumber,
+          business_hours: hours,
+        };
+        const res = await (window.SettingsClient
+          ? SettingsClient.save(payload)
+          : Promise.resolve({ success: false }));
+        if (!res || res.success !== true) throw new Error("Server save failed");
+        try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch(_) {}
         this.showToast("Settings saved successfully", "success");
       } catch (error) {
         console.error("Error saving settings:", error);
