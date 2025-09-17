@@ -950,6 +950,7 @@ app.get("/api/settings/pos", async (req, res) => {
       return res.json({
         success: true,
         settings: s,
+        settings_updated_at: settingsRow.updated_at || null,
         tax_rate: s.sales_tax ?? 20.0,
         medical_tax_rate: 0.0,
         currency: "USD",
