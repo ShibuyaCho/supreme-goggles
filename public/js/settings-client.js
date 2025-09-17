@@ -327,7 +327,7 @@
         const body = [
           { id: sid, settings: merged, updated_at: new Date().toISOString() },
         ];
-        let r = await supaReq("pos_settings", {
+        let r = await supaReq("pos_settings?on_conflict=id", {
           method: "POST",
           headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
           body: JSON.stringify(body),
@@ -336,7 +336,7 @@
         if (sid === "default" || sid === "defaultstore") {
           const legacy = sid === "default" ? "defaultstore" : "default";
           try {
-            await supaReq("pos_settings", {
+            await supaReq("pos_settings?on_conflict=id", {
               method: "POST",
               headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
               body: JSON.stringify([
