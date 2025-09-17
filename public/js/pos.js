@@ -146,22 +146,11 @@ function cannabisPOS() {
       }
     },
     changeStorePrompt() {
-      const nameOrId = prompt("Enter store name or ID to switch:");
-      if (!nameOrId) return;
-      const input = String(nameOrId).trim();
-      let id = input
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .replace(/[^a-z0-9_.-]/g, "");
-      if (id === "defaultstore") id = "default";
-      if (!id) id = "default";
-      const store = { id, name: input };
       try {
-        localStorage.setItem("pos_store", JSON.stringify(store));
-      } catch (e) {}
-      this.selectedStore = store;
-      try {
-        window.dispatchEvent(new Event("storage"));
+        if (window.addOrSwitchStore) {
+          window.addOrSwitchStore();
+          return;
+        }
       } catch (_) {}
     },
     clearStore() {
