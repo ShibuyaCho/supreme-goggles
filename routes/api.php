@@ -240,6 +240,24 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 } catch (\Throwable $e) { /* ignore */ }
             }
             if ($resp->successful()) {
+                // Verify by fetching the just-saved row
+                try {
+                    $ver = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'id' => 'eq.' . $storeId,
+                        'select' => '*',
+                    ]);
+                    if ($ver->ok()) {
+                        $va = $ver->json();
+                        $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                        if (is_array($vr) && isset($vr['settings']) && is_array($vr['settings'])) {
+                            return response()->json(['success' => true, 'settings' => $vr['settings']]);
+                        }
+                    }
+                } catch (\Throwable $e) { /* ignore verify errors */ }
                 return response()->json(['success' => true, 'settings' => $merged]);
             }
         }
