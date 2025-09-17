@@ -267,6 +267,59 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
     }
 });
 
+// Public store list for SPA/demo compatibility (no auth)
+Route::get('/settings/stores', function() {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $stores = [];
+    // Try Supabase first
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'select' => 'id,settings,updated_at',
+                'order' => 'updated_at.desc'
+            ]);
+            if ($resp->ok()) {
+                $arr = $resp->json();
+                foreach ((array)$arr as $row) {
+                    $id = (string)($row['id'] ?? '');
+                    $name = $id;
+                    if (isset($row['settings']) && is_array($row['settings']) && isset($row['settings']['store_name'])) {
+                        $name = (string)$row['settings']['store_name'];
+                    }
+                    $stores[] = [
+                        'id' => $id,
+                        'name' => $name,
+                        'updated_at' => $row['updated_at'] ?? null,
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Public store list via Supabase failed', ['error'=>$e->getMessage()]);
+        }
+    }
+    // Fallback to local DB table
+    if (empty($stores)) {
+        try {
+            $rows = \Illuminate\Support\Facades\DB::table('pos_settings')->select('id','settings','updated_at')->orderByDesc('updated_at')->limit(200)->get();
+            foreach ($rows as $r) {
+                $id = (string)$r->id;
+                $name = $id;
+                $settings = json_decode($r->settings ?? '{}', true);
+                if (json_last_error() === JSON_ERROR_NONE && isset($settings['store_name'])) {
+                    $name = (string)$settings['store_name'];
+                }
+                $stores[] = [ 'id'=>$id, 'name'=>$name, 'updated_at'=>$r->updated_at ];
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['success' => true, 'stores' => $stores]);
+});
+
 // Loyalty members API (public for SPA compatibility)
 Route::get('/loyalty-members', function () {
     $supabaseUrl = env('SUPABASE_URL');
