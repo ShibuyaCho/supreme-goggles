@@ -164,9 +164,19 @@
     const listEl = document.getElementById('store-list');
     listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">Loading stores…</div>';
     try {
-      const res = await (window.axios||axios).get('/api/settings/stores');
-      const rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
-      if (rows.length === 0) {
+      let rows = [];
+      if (window.posAuth && typeof window.posAuth.apiRequest === 'function') {
+        try {
+          const r = await window.posAuth.apiRequest('get', '/settings/stores');
+          const payload = (r && (r.data || r)) ? (r.data || r) : {};
+          if (payload && Array.isArray(payload.stores)) rows = payload.stores;
+        } catch(_) {}
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
+        const res = await (window.axios||axios).get('/api/settings/stores', { headers: { Accept: 'application/json' } });
+        rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
         listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">No stores found. Use Add Store.</div>';
         return;
       }
