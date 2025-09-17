@@ -222,6 +222,23 @@
     document.addEventListener('DOMContentLoaded', function(){
       var btn = document.getElementById('header-store-button');
       if (btn) btn.onclick = function(e){ e.preventDefault(); window.addOrSwitchStore(); };
+      // Permanently remove any legacy Default Store dropdown and Clear buttons
+      try {
+        // Remove any button that clears pos_store directly
+        document.querySelectorAll('button[onclick*="pos_store"]').forEach(function(el){
+          var code = (el.getAttribute('onclick')||'');
+          if (code.includes("removeItem('pos_store'") || code.includes('removeItem("pos_store"')) {
+            el.remove();
+          }
+        });
+        // Remove any old dropdown containing "Switch Store…" or "Clear Store"
+        var legacySwitch = Array.from(document.querySelectorAll('button'))
+          .filter(function(b){ return (b.textContent||'').trim() === 'Switch Store…'; });
+        legacySwitch.forEach(function(b){ var box = b.closest('.relative'); if (box) box.remove(); });
+        var legacyClearStore = Array.from(document.querySelectorAll('button'))
+          .filter(function(b){ return (b.textContent||'').trim() === 'Clear Store'; });
+        legacyClearStore.forEach(function(b){ var box = b.closest('.relative'); if (box) box.remove(); });
+      } catch(_) {}
     });
   } catch(_) {}
 })();
