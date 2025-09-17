@@ -121,7 +121,36 @@ class PriceTiersController extends Controller
         }
         
         $priceTier = PriceTier::create($request->all());
-        
+
+        // Mirror to Supabase (best-effort)
+        try {
+            $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $payload = [[
+                    'id' => $priceTier->id,
+                    'name' => $priceTier->name,
+                    'description' => $priceTier->description,
+                    'minimum_quantity' => $priceTier->minimum_quantity,
+                    'discount_percentage' => $request->input('discount_percentage'),
+                    'applicable_categories' => $priceTier->applicable_categories,
+                    'is_active' => $priceTier->is_active,
+                    'updated_at' => now()->toIso8601String(),
+                ]];
+                \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'resolution=merge-duplicates,return=representation',
+                ])->post($supabaseUrl . '/rest/v1/price_tiers?on_conflict=id', $payload);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Supabase mirror (create) failed for price tier', [
+                'id' => $priceTier->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json([
             'message' => 'Price tier created successfully',
             'price_tier' => $priceTier
@@ -145,7 +174,36 @@ class PriceTiersController extends Controller
         }
         
         $priceTier->update($request->all());
-        
+
+        // Mirror update to Supabase (best-effort)
+        try {
+            $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $url = $supabaseUrl . '/rest/v1/price_tiers?id=eq.' . urlencode($priceTier->id);
+                $patch = [
+                    'name' => $priceTier->name,
+                    'description' => $priceTier->description,
+                    'minimum_quantity' => $priceTier->minimum_quantity,
+                    'discount_percentage' => $request->input('discount_percentage'),
+                    'applicable_categories' => $priceTier->applicable_categories,
+                    'is_active' => $priceTier->is_active,
+                    'updated_at' => now()->toIso8601String(),
+                ];
+                \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation',
+                ])->patch($url, $patch);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Supabase mirror (update) failed for price tier', [
+                'id' => $priceTier->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json([
             'message' => 'Price tier updated successfully',
             'price_tier' => $priceTier
@@ -156,7 +214,26 @@ class PriceTiersController extends Controller
     {
         $priceTier = PriceTier::findOrFail($id);
         $priceTier->delete();
-        
+
+        // Mirror delete to Supabase (best-effort)
+        try {
+            $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $url = $supabaseUrl . '/rest/v1/price_tiers?id=eq.' . urlencode($id);
+                \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->delete($url);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Supabase mirror (delete) failed for price tier', [
+                'id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         return response()->json(['message' => 'Price tier deleted successfully']);
     }
 }
