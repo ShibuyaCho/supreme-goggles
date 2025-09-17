@@ -6299,7 +6299,59 @@ function cannabisPOS() {
         // If server returns nothing, prefer local backup to preserve user's tiers
         if (!Array.isArray(list) || list.length === 0) {
           if (localBackup.length > 0) {
-            this.priceTiers = localBackup;
+            // Normalize local backup to expected shape and filter corrupt entries
+            const safe = localBackup
+              .map((t) => {
+                if (!t || typeof t !== "object") return null;
+                const name = (t.name || "").toString().trim();
+                if (!name) return null;
+                const prices = t.prices || {
+                  weight_1g: 0,
+                  weight_3_5g: 0,
+                  weight_7g: 0,
+                  weight_14g: 0,
+                  weight_28g: 0,
+                };
+                const custom = Array.isArray(t.customWeights)
+                  ? t.customWeights
+                  : Array.isArray(t.custom_weights)
+                    ? t.custom_weights
+                    : [];
+                const std = [
+                  { weight: 1, price: Number(prices.weight_1g || 0) },
+                  { weight: 3.5, price: Number(prices.weight_3_5g || 0) },
+                  { weight: 7, price: Number(prices.weight_7g || 0) },
+                  { weight: 14, price: Number(prices.weight_14g || 0) },
+                  { weight: 28, price: Number(prices.weight_28g || 0) },
+                ].filter((w) => isFinite(w.price) && w.price > 0);
+                const customNorm = custom
+                  .map((w) => {
+                    const grams = this.extractWeightInGrams
+                      ? this.extractWeightInGrams(w.weight)
+                      : Number(w.weight || 0);
+                    const price = Number(w.price || 0);
+                    return {
+                      weight: isFinite(grams) ? grams : 0,
+                      price: isFinite(price) ? price : 0,
+                    };
+                  })
+                  .filter((w) => w.weight > 0 && w.price > 0);
+                const weights = Array.isArray(t.weights) && t.weights.length
+                  ? t.weights
+                  : [...std, ...customNorm];
+                return {
+                  id: t.id != null ? t.id : name, // fallback id by name
+                  name,
+                  isActive: t.isActive ?? t.is_active ?? true,
+                  createdAt: t.createdAt || t.created_at || new Date().toISOString(),
+                  prices,
+                  customWeights: custom,
+                  weights,
+                };
+              })
+              .filter(Boolean);
+            this.priceTiers = safe;
+            // Do not overwrite backup here; assume it's already local
             return;
           }
           // Keep defaults if no backup exists
