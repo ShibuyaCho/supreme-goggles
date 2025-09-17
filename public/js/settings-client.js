@@ -86,7 +86,11 @@
       if (!raw) return "default";
       const s = JSON.parse(raw);
       let id = s && s.id ? String(s.id) : "default";
-      id = id.trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+      id = id
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9_.-]/g, "");
       if (id === "defaultstore") id = "default";
       return id || "default";
     } catch (_) {
@@ -162,11 +166,17 @@
   async function getFromServer(sid, noCache = false) {
     // Try Laravel first
     try {
-      return await httpGet("/api/settings/pos", { store: sid, nocache: noCache ? 1 : 0 });
+      return await httpGet("/api/settings/pos", {
+        store: sid,
+        nocache: noCache ? 1 : 0,
+      });
     } catch (_) {}
     // Try Node alias (if applicable)
     try {
-      return await httpGet("/api/settings/pos", { store: sid, nocache: noCache ? 1 : 0 });
+      return await httpGet("/api/settings/pos", {
+        store: sid,
+        nocache: noCache ? 1 : 0,
+      });
     } catch (_) {}
     return null;
   }
@@ -259,7 +269,10 @@
           // Read-after-write verification (bypass cache)
           try {
             const verify = await getFromServer(sid, true);
-            const vs = verify && (verify.settings || verify) ? (verify.settings || verify) : {};
+            const vs =
+              verify && (verify.settings || verify)
+                ? verify.settings || verify
+                : {};
             if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
           } catch (_) {}
           this.saveLocal(sid, m);

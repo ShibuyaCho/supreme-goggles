@@ -123,7 +123,12 @@ function cannabisPOS() {
           id = id.replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
           if (id === "defaultstore") id = "default";
           this.selectedStore = { id, name: s.name || s.id };
-          try { localStorage.setItem("pos_store", JSON.stringify(this.selectedStore)); } catch (_) {}
+          try {
+            localStorage.setItem(
+              "pos_store",
+              JSON.stringify(this.selectedStore),
+            );
+          } catch (_) {}
         } else {
           this.selectedStore = null;
         }
@@ -135,7 +140,10 @@ function cannabisPOS() {
       const nameOrId = prompt("Enter store name or ID to switch:");
       if (!nameOrId) return;
       const input = String(nameOrId).trim();
-      let id = input.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+      let id = input
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9_.-]/g, "");
       if (id === "defaultstore") id = "default";
       if (!id) id = "default";
       const store = { id, name: input };
@@ -143,7 +151,9 @@ function cannabisPOS() {
         localStorage.setItem("pos_store", JSON.stringify(store));
       } catch (e) {}
       this.selectedStore = store;
-      try { window.dispatchEvent(new Event("storage")); } catch (_) {}
+      try {
+        window.dispatchEvent(new Event("storage"));
+      } catch (_) {}
     },
     clearStore() {
       try {
@@ -3036,9 +3046,13 @@ function cannabisPOS() {
           } catch (_) {}
         }
         // Fallback 2: Supabase REST directly (RLS must allow anon select)
-        if ((!Array.isArray(list) || list.length === 0) && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+        if (
+          (!Array.isArray(list) || list.length === 0) &&
+          window.__SUPABASE_URL &&
+          window.__SUPABASE_ANON_KEY
+        ) {
           try {
-            const url = `${window.__SUPABASE_URL.replace(/\/$/, '')}/rest/v1/deals?select=*&order=created_at.desc`;
+            const url = `${window.__SUPABASE_URL.replace(/\/$/, "")}/rest/v1/deals?select=*&order=created_at.desc`;
             const res = await fetch(url, {
               headers: {
                 apikey: window.__SUPABASE_ANON_KEY,
