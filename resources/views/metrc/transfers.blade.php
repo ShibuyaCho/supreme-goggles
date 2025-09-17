@@ -17,6 +17,18 @@
                     </svg>
                     Refresh METRC Data
                 </button>
+                <button id="import-packages" class="inline-flex items-center rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-purple-700" title="Import active packages into inventory">
+                    <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Import Packages
+                </button>
+                <button id="sync-inventory" class="inline-flex items-center rounded-lg bg-gray-700 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800" title="Sync inventory with METRC">
+                    <svg class="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.581" />
+                    </svg>
+                    Sync Inventory
+                </button>
             </div>
         </div>
 
@@ -56,6 +68,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const transfersList = document.getElementById('transfers-list');
     const transfersCount = document.getElementById('metrc-transfers-count');
     const transfersSearch = document.getElementById('transfers-search');
+    const importBtn = document.getElementById('import-packages');
+    const syncBtn = document.getElementById('sync-inventory');
 
     function row(text){ return `<div class=\"text-sm text-gray-600\">${text}</div>`; }
 
@@ -144,6 +158,38 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     refreshBtn?.addEventListener('click', refreshMetrc);
+
+    async function apiPost(url){
+        if (window.posAuth && typeof window.posAuth.apiRequest === 'function') {
+            const r = await window.posAuth.apiRequest('post', url, {});
+            if (!r?.success) throw new Error(r?.message || 'Request failed');
+            return r.data || r;
+        }
+        const resp = await fetch(url, { method:'POST', headers:{ 'Accept':'application/json' }, credentials:'same-origin' });
+        let js = null; try { js = await resp.json(); } catch(_){ js = {}; }
+        if (!resp.ok || js?.success === false) throw new Error(js?.message || js?.error || ('HTTP '+resp.status));
+        return js;
+    }
+
+    importBtn?.addEventListener('click', async function(){
+        try {
+            this.disabled = true;
+            await apiPost('/api/metrc/import-packages');
+            window.POS?.showToast?.('Imported active packages', 'success');
+            await refreshMetrc();
+        } catch(e){ window.POS?.showToast?.(e?.message||'Import failed','error'); }
+        finally { this.disabled = false; }
+    });
+
+    syncBtn?.addEventListener('click', async function(){
+        try {
+            this.disabled = true;
+            await apiPost('/api/metrc/sync-inventory');
+            window.POS?.showToast?.('Inventory sync completed', 'success');
+            await refreshMetrc();
+        } catch(e){ window.POS?.showToast?.(e?.message||'Sync failed','error'); }
+        finally { this.disabled = false; }
+    });
 
     async function runTransfersSearch(q){
         try {
