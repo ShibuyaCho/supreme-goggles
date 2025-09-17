@@ -367,65 +367,8 @@
           await new Promise((r) => setTimeout(r, 200 * (i + 1)));
         }
       }
-      // Backend failed: direct Supabase upsert fallback
-      try {
-        if (
-          window.supabase &&
-          window.__SUPABASE_URL &&
-          window.__SUPABASE_ANON_KEY
-        ) {
-          const client = window.supabase.createClient(
-            window.__SUPABASE_URL,
-            window.__SUPABASE_ANON_KEY,
-          );
-          const row = {
-            id: sid,
-            settings: merged,
-            updated_at: new Date().toISOString(),
-          };
-          let { error } = await client
-            .from("pos_settings")
-            .upsert([row], { onConflict: "id" });
-          if (error) throw error;
-          if (sid === "default" || sid === "defaultstore") {
-            const legacy = sid === "default" ? "defaultstore" : "default";
-            await client.from("pos_settings").upsert(
-              [
-                {
-                  id: legacy,
-                  settings: merged,
-                  updated_at: new Date().toISOString(),
-                },
-              ],
-              { onConflict: "id" },
-            );
-          }
-        } else {
-          const body = [
-            { id: sid, settings: merged, updated_at: new Date().toISOString() },
-          ];
-          const r = await supaReq("pos_settings?on_conflict=id", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Prefer: "resolution=merge-duplicates,return=representation",
-            },
-            body: JSON.stringify(body),
-          });
-          if (!r || !r.ok) throw new Error("direct supabase upsert failed");
-        }
-        // Verify by direct read
-        try {
-          const g = await getFromServer(sid, true);
-          const vs = g && (g.settings || g) ? g.settings || g : {};
-          const m = { ...DEFAULTS, ...vs };
-          this.saveLocal(sid, m);
-          return { success: true, settings: m, direct: true };
-        } catch (_) {}
-        return { success: true, settings: merged, direct: true };
-      } catch (e2) {
-        return { success: false, settings: merged, error: last || e2 };
-      }
+      // Backend failed: do not fallback to direct Supabase; keep single source of truth
+      return { success: false, settings: merged, error: last || new Error('settings save failed') };
     },
   };
 
