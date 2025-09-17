@@ -155,12 +155,9 @@ class POSAuth {
               return await axios(original);
             } catch (e) {}
           }
-          // Only logout if inactivity exceeded; otherwise keep modal
-          const inactive = this.isInactiveBeyondLimit();
-          if (inactive) this.logout();
-          try {
-            document.dispatchEvent(new CustomEvent("pos-unauthorized"));
-          } catch (e) {}
+          // Refresh failed: clear all auth state to avoid stale token loops
+          try { this.clearAuth(); } catch (_) {}
+          try { document.dispatchEvent(new CustomEvent("pos-unauthorized")); } catch (e) {}
         }
         return Promise.reject(error);
       },
