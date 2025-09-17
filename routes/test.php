@@ -12,6 +12,11 @@ use Illuminate\Http\Request;
 | RESTRICTED TO ADMIN USERS ONLY IN PRODUCTION
 */
 
+// Do not register any test routes in production unless explicitly enabled
+if (env('APP_ENV') === 'production' && !env('ENABLE_TEST_ROUTES', false)) {
+    return;
+}
+
 // Middleware group for admin-only test endpoints
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     
