@@ -445,9 +445,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
     */
     // Admin debug route (no permission gate, still requires auth + role)
     Route::get('/metrc/debug/packages', [MetrcController::class, 'debugPackages'])
-        ->middleware('role:admin');
+        ->middleware(['role:admin','throttle:10,1']);
 
-    Route::prefix('metrc')->middleware('permission:metrc:access')->group(function () {
+    Route::prefix('metrc')->middleware(['permission:metrc:access','throttle:60,1'])->group(function () {
         Route::get('/status', function() {
             $svc = app(\App\Services\MetrcService::class);
             return response()->json([

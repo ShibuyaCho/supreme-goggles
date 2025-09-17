@@ -15,6 +15,12 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->environment('production') && !filter_var(env('ALLOW_DEMO_SEEDERS', false), FILTER_VALIDATE_BOOLEAN)) {
+            if (isset($this->command)) {
+                $this->command->warn('UserSeeder skipped in production. Set ALLOW_DEMO_SEEDERS=true to enable.');
+            }
+            return;
+        }
         // Create initial admin user
         $adminUser = User::create([
             'name' => 'System Administrator',
