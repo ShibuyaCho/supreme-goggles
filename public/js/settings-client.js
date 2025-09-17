@@ -254,6 +254,7 @@
               ? data.settings || data
               : {};
           const merged = { ...DEFAULTS, ...settings };
+          const updatedAt = data && (data.settings_updated_at || data.updated_at) ? data.settings_updated_at || data.updated_at : null;
           this.saveLocal(sid, merged);
           try {
             window.dispatchEvent(
@@ -262,7 +263,7 @@
               }),
             );
           } catch (_) {}
-          return { success: true, settings: merged };
+          return { success: true, settings: merged, updated_at: updatedAt };
         } catch (e) {
           last = e;
           await new Promise((r) => setTimeout(r, 200 * (i + 1)));
