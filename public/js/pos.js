@@ -5683,10 +5683,8 @@ function cannabisPOS() {
 
     async _hydratePrintSettingsFromServer() {
       try {
-        const getRes = await (window.posAuth
-          ? posAuth.apiRequest("get", "/settings/pos")
-          : (window.axios || axios).get("/api/settings/pos"));
-        const s = (getRes && (getRes.data?.settings || getRes.data)) || {};
+        const resp = await (window.SettingsClient ? SettingsClient.get() : Promise.resolve({ success:false }));
+        const s = (resp && (resp.settings || resp)) || {};
         if (s && typeof s === "object") {
           this.printSettings.autoprint = !!(
             s.receipt_autoprint ?? s.auto_print_receipt
