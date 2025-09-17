@@ -218,4 +218,10 @@
   window.addOrSwitchStore = function(){
     mainMenu();
   };
+  try {
+    document.addEventListener('DOMContentLoaded', function(){
+      var btn = document.getElementById('header-store-button');
+      if (btn) btn.onclick = function(e){ e.preventDefault(); window.addOrSwitchStore(); };
+    });
+  } catch(_) {}
 })();
