@@ -1660,9 +1660,15 @@ function cannabisPOS() {
           license_number: this.storeSettings.licenseNumber,
           business_hours: hours,
         };
-        let res = await (window.SettingsClient
-          ? SettingsClient.save(payload)
-          : Promise.resolve({ success: false }));
+        let res = null;
+        // Attempt primary save; swallow exceptions so we can fallback
+        try {
+          res = await (window.SettingsClient
+            ? SettingsClient.save(payload)
+            : Promise.resolve({ success: false }));
+        } catch (_) {
+          res = null;
+        }
         if (!res || res.success !== true) {
           // Retry once via SettingsClient
           try {
@@ -1672,7 +1678,9 @@ function cannabisPOS() {
             res = await (window.SettingsClient
               ? SettingsClient.save(payload)
               : Promise.resolve({ success: false }));
-          } catch (_) {}
+          } catch (_) {
+            res = null;
+          }
         }
         if (!res || res.success !== true) {
           // Last-resort: direct Supabase REST upsert to guarantee persistence
