@@ -5861,6 +5861,12 @@ function cannabisPOS() {
           ? SettingsClient.get()
           : Promise.resolve({ success: false, settings: {} }));
         const s = (resp && resp.settings) || {};
+        const serverTs = Number(new Date(resp && (resp.updated_at || resp.settings_updated_at || 0)).getTime() || 0);
+        let localTs = 0;
+        try {
+          const raw = localStorage.getItem("cannabisPOS-storeSettings");
+          if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
+        } catch(_) {}
         // Map backend settings to UI structures
         const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
         const med = Number(s.medical_tax_rate != null ? s.medical_tax_rate : 0);
