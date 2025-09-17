@@ -909,13 +909,11 @@ function settingsManager() {
 
         async saveSettings() {
             try {
-                const res = await (window.posAuth ? posAuth.apiRequest('post', '/settings/pos', this.settings) : (window.axios||axios).post('/api/settings/pos', this.settings));
-                const ok = (res && res.success === true) || (res && res.data && res.data.success === true);
-                if (ok) {
+                const res = await (window.SettingsClient ? SettingsClient.save(this.settings) : Promise.resolve({ success:false }));
+                if (res && res.success) {
                     this.showToast('Settings saved successfully!', 'success');
                 } else {
-                    const msg = (res && res.message) || (res && res.data && res.data.message) || '';
-                    this.showToast('Error saving settings' + (msg ? (': ' + msg) : ''), 'error');
+                    this.showToast('Error saving settings', 'error');
                 }
             } catch (error) {
                 console.error('Error saving settings:', error);
