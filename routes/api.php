@@ -426,6 +426,24 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
             'Prefer' => 'resolution=merge-duplicates,return=representation',
         ])->patch($url, $request->all());
         if ($resp->successful()) {
+            // Fetch the updated row to ensure consistency
+            try {
+                $verify = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
+                    'id' => 'eq.' . $id,
+                    'select' => '*',
+                ]);
+                if ($verify->ok()) {
+                    $va = $verify->json();
+                    $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                    if ($vr) {
+                        return response()->json(['success' => true, 'tier' => $vr]);
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
             $arr = $resp->json();
             return response()->json(['success' => true, 'tier' => is_array($arr) && isset($arr[0]) ? $arr[0] : $arr]);
         }
