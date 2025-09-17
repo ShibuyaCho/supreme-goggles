@@ -10231,13 +10231,30 @@ function cannabisPOS() {
           const idx = this.priceTiers.findIndex(
             (t) => String(t.id) === String(this.editingTierId),
           );
+          const basePrices = saved?.prices || payload.prices;
+          const baseCustom = saved?.custom_weights || payload.custom_weights;
+          const std = [
+            { weight: 1, price: Number(basePrices?.weight_1g || 0) },
+            { weight: 3.5, price: Number(basePrices?.weight_3_5g || 0) },
+            { weight: 7, price: Number(basePrices?.weight_7g || 0) },
+            { weight: 14, price: Number(basePrices?.weight_14g || 0) },
+            { weight: 28, price: Number(basePrices?.weight_28g || 0) },
+          ].filter((w) => isFinite(w.price) && w.price > 0);
+          const customNorm = (Array.isArray(baseCustom) ? baseCustom : [])
+            .map((w) => {
+              const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+              const price = Number(w.price || 0);
+              return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+            })
+            .filter((w) => w.weight > 0 && w.price > 0);
           const updated = {
             id: this.editingTierId,
             name: saved?.name || payload.name,
             isActive: saved?.is_active ?? this.priceTiers[idx]?.isActive ?? true,
             createdAt: this.priceTiers[idx]?.createdAt || new Date().toISOString(),
-            prices: saved?.prices || payload.prices,
-            customWeights: saved?.custom_weights || payload.custom_weights,
+            prices: basePrices,
+            customWeights: baseCustom,
+            weights: [...std, ...customNorm],
           };
           if (idx >= 0) this.priceTiers.splice(idx, 1, updated);
           else this.priceTiers.push(updated);
@@ -10249,6 +10266,22 @@ function cannabisPOS() {
             { headers: { Accept: "application/json" } },
           );
           saved = (res?.data && (res.data.tier || res.data)) || null;
+          const basePrices = saved?.prices || payload.prices;
+          const baseCustom = saved?.custom_weights || payload.custom_weights;
+          const std = [
+            { weight: 1, price: Number(basePrices?.weight_1g || 0) },
+            { weight: 3.5, price: Number(basePrices?.weight_3_5g || 0) },
+            { weight: 7, price: Number(basePrices?.weight_7g || 0) },
+            { weight: 14, price: Number(basePrices?.weight_14g || 0) },
+            { weight: 28, price: Number(basePrices?.weight_28g || 0) },
+          ].filter((w) => isFinite(w.price) && w.price > 0);
+          const customNorm = (Array.isArray(baseCustom) ? baseCustom : [])
+            .map((w) => {
+              const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+              const price = Number(w.price || 0);
+              return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+            })
+            .filter((w) => w.weight > 0 && w.price > 0);
           const newTier = {
             id:
               saved?.id ||
@@ -10256,8 +10289,9 @@ function cannabisPOS() {
             name: saved?.name || payload.name,
             isActive: saved?.is_active ?? true,
             createdAt: saved?.created_at || new Date().toISOString(),
-            prices: saved?.prices || payload.prices,
-            customWeights: saved?.custom_weights || payload.custom_weights,
+            prices: basePrices,
+            customWeights: baseCustom,
+            weights: [...std, ...customNorm],
           };
           this.priceTiers.push(newTier);
           this.showToast(
@@ -10277,11 +10311,26 @@ function cannabisPOS() {
             (t) => String(t.id) === String(this.editingTierId),
           );
           if (idx >= 0) {
+            const std = [
+              { weight: 1, price: Number(payload.prices?.weight_1g || 0) },
+              { weight: 3.5, price: Number(payload.prices?.weight_3_5g || 0) },
+              { weight: 7, price: Number(payload.prices?.weight_7g || 0) },
+              { weight: 14, price: Number(payload.prices?.weight_14g || 0) },
+              { weight: 28, price: Number(payload.prices?.weight_28g || 0) },
+            ].filter((w) => isFinite(w.price) && w.price > 0);
+            const customNorm = (Array.isArray(payload.custom_weights) ? payload.custom_weights : [])
+              .map((w) => {
+                const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+                const price = Number(w.price || 0);
+                return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+              })
+              .filter((w) => w.weight > 0 && w.price > 0);
             const updated = {
               ...this.priceTiers[idx],
               name: payload.name,
               prices: payload.prices,
               customWeights: payload.custom_weights,
+              weights: [...std, ...customNorm],
             };
             this.priceTiers.splice(idx, 1, updated);
             this.showToast(
@@ -10290,6 +10339,20 @@ function cannabisPOS() {
             );
           }
         } else {
+          const std = [
+            { weight: 1, price: Number(payload.prices?.weight_1g || 0) },
+            { weight: 3.5, price: Number(payload.prices?.weight_3_5g || 0) },
+            { weight: 7, price: Number(payload.prices?.weight_7g || 0) },
+            { weight: 14, price: Number(payload.prices?.weight_14g || 0) },
+            { weight: 28, price: Number(payload.prices?.weight_28g || 0) },
+          ].filter((w) => isFinite(w.price) && w.price > 0);
+          const customNorm = (Array.isArray(payload.custom_weights) ? payload.custom_weights : [])
+            .map((w) => {
+              const grams = (this.extractWeightInGrams ? this.extractWeightInGrams(w.weight) : Number(w.weight || 0));
+              const price = Number(w.price || 0);
+              return { weight: isFinite(grams) ? grams : 0, price: isFinite(price) ? price : 0 };
+            })
+            .filter((w) => w.weight > 0 && w.price > 0);
           const fallback = {
             id: Math.max(...this.priceTiers.map((t) => t.id || 0), 0) + 1,
             name: payload.name,
@@ -10297,6 +10360,7 @@ function cannabisPOS() {
             createdAt: new Date().toISOString(),
             prices: payload.prices,
             customWeights: payload.custom_weights,
+            weights: [...std, ...customNorm],
           };
           this.priceTiers.push(fallback);
           this.showToast(
