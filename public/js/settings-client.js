@@ -157,8 +157,8 @@
     };
     try {
       const meta = document.querySelector('meta[name="csrf-token"]');
-      const token = meta && meta.getAttribute('content');
-      if (token) cfg.headers['X-CSRF-TOKEN'] = token;
+      const token = meta && meta.getAttribute("content");
+      if (token) cfg.headers["X-CSRF-TOKEN"] = token;
     } catch (_) {}
     if (params) {
       cfg.params = params;
@@ -389,18 +389,16 @@
           if (error) throw error;
           if (sid === "default" || sid === "defaultstore") {
             const legacy = sid === "default" ? "defaultstore" : "default";
-            await client
-              .from("pos_settings")
-              .upsert(
-                [
-                  {
-                    id: legacy,
-                    settings: merged,
-                    updated_at: new Date().toISOString(),
-                  },
-                ],
-                { onConflict: "id" },
-              );
+            await client.from("pos_settings").upsert(
+              [
+                {
+                  id: legacy,
+                  settings: merged,
+                  updated_at: new Date().toISOString(),
+                },
+              ],
+              { onConflict: "id" },
+            );
           }
         } else {
           const body = [

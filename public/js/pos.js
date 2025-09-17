@@ -2084,7 +2084,6 @@ function cannabisPOS() {
       if (!Array.isArray(this.sortedProducts)) this.sortedProducts = [];
     },
 
-
     async handleLogin(email, password) {
       const result = await posAuth.login(email, password);
       if (result.success) {
@@ -6542,13 +6541,16 @@ function cannabisPOS() {
                 this.products = items;
                 // Apply locally persisted product->tier assignments
                 try {
-                  const mapRaw = localStorage.getItem("cannabisPOS-productTierMap");
+                  const mapRaw = localStorage.getItem(
+                    "cannabisPOS-productTierMap",
+                  );
                   const map = mapRaw ? JSON.parse(mapRaw) : {};
                   if (map && typeof map === "object") {
                     this.products = this.products.map((p) => ({
                       ...p,
                       priceTier:
-                        map[String(p.id)] !== undefined && map[String(p.id)] !== null
+                        map[String(p.id)] !== undefined &&
+                        map[String(p.id)] !== null
                           ? map[String(p.id)]
                           : p.priceTier || null,
                     }));

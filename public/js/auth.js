@@ -156,8 +156,12 @@ class POSAuth {
             } catch (e) {}
           }
           // Refresh failed: clear all auth state to avoid stale token loops
-          try { this.clearAuth(); } catch (_) {}
-          try { document.dispatchEvent(new CustomEvent("pos-unauthorized")); } catch (e) {}
+          try {
+            this.clearAuth();
+          } catch (_) {}
+          try {
+            document.dispatchEvent(new CustomEvent("pos-unauthorized"));
+          } catch (e) {}
         }
         return Promise.reject(error);
       },
@@ -257,18 +261,29 @@ class POSAuth {
     try {
       // Refresh POS settings via SettingsClient (writes to localStorage/cookie and dispatches settings:updated)
       if (window.SettingsClient && typeof SettingsClient.get === "function") {
-        (async ()=>{ try { await SettingsClient.get(true); } catch(_){} })();
+        (async () => {
+          try {
+            await SettingsClient.get(true);
+          } catch (_) {}
+        })();
       }
       // Preload price tiers and persist local backup for offline/session resilience
-      (async ()=>{
+      (async () => {
         try {
           const http = window.axios || axios;
-          const res = await http.get("/api/price-tiers", { headers: { Accept: "application/json" } });
+          const res = await http.get("/api/price-tiers", {
+            headers: { Accept: "application/json" },
+          });
           const tiers = (res?.data && (res.data.tiers || res.data)) || [];
           if (Array.isArray(tiers)) {
-            try { localStorage.setItem("cannabisPOS-priceTiers-backup", JSON.stringify(tiers)); } catch(_) {}
+            try {
+              localStorage.setItem(
+                "cannabisPOS-priceTiers-backup",
+                JSON.stringify(tiers),
+              );
+            } catch (_) {}
           }
-        } catch(_) {}
+        } catch (_) {}
       })();
     } catch (_) {}
   }
@@ -473,8 +488,12 @@ class POSAuth {
       return true;
     } catch (error) {
       console.warn("Failed to refresh token:", error);
-      try { this.clearAuth(); } catch (_) {}
-      try { document.dispatchEvent(new CustomEvent("pos-unauthorized")); } catch (_) {}
+      try {
+        this.clearAuth();
+      } catch (_) {}
+      try {
+        document.dispatchEvent(new CustomEvent("pos-unauthorized"));
+      } catch (_) {}
       return false;
     }
   }

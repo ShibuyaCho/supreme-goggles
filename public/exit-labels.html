@@ -6,55 +6,135 @@
     <meta name="referrer" content="no-referrer" />
     <title>Exit Labels</title>
     <style>
-      body { font-family: Arial, Helvetica, sans-serif; margin: 0; padding: 12px; }
-      .label { width: 300px; border: 1px solid #e5e7eb; border-radius: 6px; padding: 10px; margin: 8px auto; }
-      .hdr { font-weight: 700; font-size: 14px; text-align: center; }
-      .row { display: flex; justify-content: space-between; font-size: 12px; margin: 2px 0; }
-      .muted { color: #6b7280; font-size: 11px; }
-      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 8px; }
-      @media print { .grid { grid-template-columns: repeat(2, 1fr); gap: 6px; } }
+      body {
+        font-family: Arial, Helvetica, sans-serif;
+        margin: 0;
+        padding: 12px;
+      }
+      .label {
+        width: 300px;
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        padding: 10px;
+        margin: 8px auto;
+      }
+      .hdr {
+        font-weight: 700;
+        font-size: 14px;
+        text-align: center;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin: 2px 0;
+      }
+      .muted {
+        color: #6b7280;
+        font-size: 11px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 8px;
+      }
+      @media print {
+        .grid {
+          grid-template-columns: repeat(2, 1fr);
+          gap: 6px;
+        }
+      }
     </style>
   </head>
   <body>
     <div id="grid" class="grid"></div>
     <script>
       (async function () {
-        const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+        const esc = (s) =>
+          String(s == null ? "" : s).replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
         const params = new URLSearchParams(location.search);
         const id = params.get("id");
         const wantPrint = params.get("reprint");
         const grid = document.getElementById("grid");
-        if (!id) { grid.innerHTML = '<div class="label"><div class="hdr">Missing sale id</div></div>'; return; }
+        if (!id) {
+          grid.innerHTML =
+            '<div class="label"><div class="hdr">Missing sale id</div></div>';
+          return;
+        }
         try {
-          const res = await fetch(`/api/sales/${encodeURIComponent(id)}`, { headers: { Accept: "application/json" } });
+          const res = await fetch(`/api/sales/${encodeURIComponent(id)}`, {
+            headers: { Accept: "application/json" },
+          });
           if (!res.ok) throw new Error("Failed to load sale");
           const s = await res.json();
           const saleNumber = s.sale_number || s.id || id;
-          const createdAt = s.created_at || s.createdAt || new Date().toISOString();
-          const items = Array.isArray(s.saleItems) ? s.saleItems : Array.isArray(s.sale_items) ? s.sale_items : Array.isArray(s.cart) ? s.cart.map((i) => ({ product_name: i.name, quantity: i.quantity, unit_price: i.price, total_price: (i.price || 0) * (i.quantity || 1), product_category: i.category, weight: i.weight || i.selectedWeight, })) : [];
-          const storeRes = await fetch("/api/settings/pos", { headers: { Accept: "application/json" } }).catch(() => null);
+          const createdAt =
+            s.created_at || s.createdAt || new Date().toISOString();
+          const items = Array.isArray(s.saleItems)
+            ? s.saleItems
+            : Array.isArray(s.sale_items)
+              ? s.sale_items
+              : Array.isArray(s.cart)
+                ? s.cart.map((i) => ({
+                    product_name: i.name,
+                    quantity: i.quantity,
+                    unit_price: i.price,
+                    total_price: (i.price || 0) * (i.quantity || 1),
+                    product_category: i.category,
+                    weight: i.weight || i.selectedWeight,
+                  }))
+                : [];
+          const storeRes = await fetch("/api/settings/pos", {
+            headers: { Accept: "application/json" },
+          }).catch(() => null);
           let storeName = "Cannabest POS";
-          try { if (storeRes && storeRes.ok) { const js = await storeRes.json(); const st = js.settings || js; storeName = st.store_name || storeName; } } catch (e) {}
+          try {
+            if (storeRes && storeRes.ok) {
+              const js = await storeRes.json();
+              const st = js.settings || js;
+              storeName = st.store_name || storeName;
+            }
+          } catch (e) {}
           const labels = items.map((i) => {
             const name = i.product_name || i.name || "Item";
             const qty = Number(i.quantity || 1);
-            const cat = (i.product_category || i.category || "").toString().toLowerCase();
+            const cat = (i.product_category || i.category || "")
+              .toString()
+              .toLowerCase();
             const w = (i.weight || "").toString();
-            const isFlower = cat === "flower" || /(\b|\s)(g|gram|grams)(\b|\s)/i.test(w);
-            const qtyDisp = isFlower ? qty.toFixed(2) + " g" : Math.round(qty) + " units";
+            const isFlower =
+              cat === "flower" || /(\b|\s)(g|gram|grams)(\b|\s)/i.test(w);
+            const qtyDisp = isFlower
+              ? qty.toFixed(2) + " g"
+              : Math.round(qty) + " units";
             return { name, qtyDisp, isFlower };
           });
-          grid.innerHTML = labels.map((x) => `<div class="label">
+          grid.innerHTML = labels
+            .map(
+              (x) => `<div class="label">
             <div class="hdr">${esc(storeName)}</div>
             <div class="row"><span>Product</span><span>${esc(x.name)}</span></div>
             <div class="row"><span>${x.isFlower ? "Weight" : "Quantity"}</span><span>${esc(x.qtyDisp)}</span></div>
             <div class="row"><span>Sale #</span><span>${esc(saleNumber)}</span></div>
             <div class="row"><span>Date</span><span>${esc(new Date(createdAt).toLocaleString())}</span></div>
             <div class="muted">Thank you for shopping at ${esc(storeName)}.</div>
-          </div>`).join("");
+          </div>`,
+            )
+            .join("");
           if (wantPrint) setTimeout(() => window.print(), 50);
         } catch (e) {
-          grid.innerHTML = '<div class="label"><div class="hdr">Failed to render labels</div></div>';
+          grid.innerHTML =
+            '<div class="label"><div class="hdr">Failed to render labels</div></div>';
         }
       })();
     </script>
