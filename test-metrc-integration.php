@@ -13,6 +13,11 @@ $kernel->bootstrap();
 
 echo "=== METRC Integration Test ===\n\n";
 
+if (env('APP_ENV') === 'production' && !env('ENABLE_TEST_SCRIPTS', false)) {
+    echo "This script is disabled in production. Set ENABLE_TEST_SCRIPTS=true to run intentionally.\n";
+    exit(0);
+}
+
 // Test 1: Environment Variables
 echo "1. Testing Environment Variables...\n";
 $requiredVars = [
@@ -81,7 +86,7 @@ try {
 echo "\n4. Testing METRC Service Class...\n";
 try {
     $metrcService = app(\App\Services\MetrcService::class);
-    echo "   �� MetrcService class instantiated successfully\n";
+    echo "   ✓ MetrcService class instantiated successfully\n";
     
     // Test connection method if it exists
     if (method_exists($metrcService, 'testConnection')) {
