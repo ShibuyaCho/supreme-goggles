@@ -3,14 +3,29 @@
   const LS_KEY = (sid) => `cpos_settings_${sid}`;
   const CK_KEY = (sid) => `cpos_settings_${sid}`;
   const DEFAULTS = {
+    // Store info
+    store_name: 'Cannabest POS',
+    store_address: '',
+    store_phone: '',
+    store_email: '',
+    website: '',
+    store_manager: '',
+    license_number: '',
+    receipt_footer: "Thank you for your business!\nKeep receipt for returns and warranty.",
+
+    // Taxes
     sales_tax: 0,
     excise_tax: 10,
     cannabis_tax: 17,
     tax_inclusive: false,
+
+    // Receipt/printing
     auto_print_receipt: false,
     receipt_autoprint: false,
     receipt_categories_autoprint: [],
     receipt_paper_size: '80mm',
+
+    // POS behavior / payments
     require_customer: true,
     age_verification: true,
     limit_enforcement: true,
@@ -18,13 +33,21 @@
     accept_debit: true,
     accept_check: false,
     round_to_nearest: false,
+
+    // Pricing
     minimum_price_enabled: false,
     minimum_price_amount: 0.01,
     minimum_price_categories: [],
+
+    // Display & inventory
     inventory_view_mode: 'cards',
     expandable_cart: true,
+
+    // Auto delete
     auto_delete_zero_quantity: false,
     auto_delete_zero_days: 1,
+
+    // Hours
     business_hours: [
       { day: 'Monday', is_open: true, open_time: '09:00', close_time: '21:00' },
       { day: 'Tuesday', is_open: true, open_time: '09:00', close_time: '21:00' },
