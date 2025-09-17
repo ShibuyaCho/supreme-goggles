@@ -11,6 +11,18 @@
                 <h1 class="text-2xl font-bold text-gray-900">Sales Management</h1>
                 
                 <div class="flex items-center space-x-4">
+                    <!-- METRC Actions -->
+                    <div class="hidden sm:flex items-center space-x-2">
+                        <button id="push-metrc" aria-label="Push Sales Data to METRC" title="Push Sales Data to METRC" class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 000-8h-1M8 11l4-4m0 0l4 4m-4-4v12"/></svg>
+                            Push to METRC
+                        </button>
+                        <button id="push-metrc-byid" class="inline-flex items-center bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors" title="Push specific sale by ID">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Push by ID
+                        </button>
+                    </div>
+
                     <!-- Quick Reports -->
                     <div class="relative">
                         <button id="reports-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
@@ -493,6 +505,24 @@ document.addEventListener('DOMContentLoaded', function() {
             if (pushBtn) { pushBtn.disabled = true; pushBtn.title = 'METRC not configured'; }
         }
     }
+    const pushByIdBtn = document.getElementById('push-metrc-byid');
+    if (pushByIdBtn) {
+        pushByIdBtn.addEventListener('click', async function(){
+            const input = prompt('Enter sale IDs to push (comma-separated)');
+            if (input === null) return;
+            const ids = String(input).split(',').map(s => s.trim()).filter(Boolean);
+            if (ids.length === 0) { window.POS?.showToast?.('No sale IDs provided','warning'); return; }
+            let ok = 0;
+            for (const id of ids) {
+                try {
+                    await (window.axios || axios).post(`/api/pos/sales/receipts/from-sale/${encodeURIComponent(id)}`, {}, { headers: { 'Accept':'application/json' } });
+                    ok++;
+                } catch (e) { console.warn('Push failed', id, e?.response?.data || e); }
+            }
+            window.POS?.showToast?.(`Pushed ${ok} sale(s)`, ok>0?'success':'warning');
+        });
+    }
+
     if (pushBtn) {
         checkMetrcReady();
         pushBtn.addEventListener('click', async function() {
@@ -512,7 +542,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     const saleId = row.getAttribute('data-sale-id');
                     if (!saleId) continue;
                     try {
-                        const res = await (window.axios || axios).post(`/api/metrc/sales/receipts/from-sale/${saleId}`, {}, { headers: { 'Accept': 'application/json' } });
+                        const res = await (window.axios || axios).post(`/api/pos/sales/receipts/from-sale/${saleId}`, {}, { headers: { 'Accept': 'application/json' } });
                         if (res.status >= 200 && res.status < 300) pushed++;
                     } catch (e) {
                         console.warn('Failed to push sale to METRC', e?.response?.data || e);
