@@ -10290,6 +10290,93 @@ function cannabisPOS() {
       this.closeTierModal();
     },
 
+    editTier(tier) {
+      try {
+        this.editingTierId = tier?.id ?? null;
+        this.tierForm = {
+          name: tier?.name || "",
+          prices: {
+            weight_1g: Number(tier?.prices?.weight_1g || 0),
+            weight_3_5g: Number(tier?.prices?.weight_3_5g || 0),
+            weight_7g: Number(tier?.prices?.weight_7g || 0),
+            weight_14g: Number(tier?.prices?.weight_14g || 0),
+            weight_28g: Number(tier?.prices?.weight_28g || 0),
+          },
+          customWeights: Array.isArray(tier?.customWeights)
+            ? tier.customWeights.map((w) => ({
+                weight: w.weight || "",
+                price: Number(w.price || 0),
+              }))
+            : [],
+        };
+        this.showAddTierModal = true;
+      } catch (_) {
+        this.showAddTierModal = true;
+      }
+    },
+
+    async toggleTierStatus(tier) {
+      try {
+        const next = !tier.isActive;
+        const res = await (window.axios || axios).put(
+          `/api/price-tiers/${encodeURIComponent(tier.id)}`,
+          { is_active: next, updated_at: new Date().toISOString() },
+          { headers: { Accept: "application/json" } },
+        );
+        if (res) {
+          tier.isActive = next;
+          try {
+            localStorage.setItem(
+              "cannabisPOS-priceTiers-backup",
+              JSON.stringify(this.priceTiers),
+            );
+          } catch (_) {}
+          this.showToast(
+            next ? "Tier activated" : "Tier deactivated",
+            "success",
+          );
+        }
+      } catch (e) {
+        tier.isActive = !tier.isActive;
+        try {
+          localStorage.setItem(
+            "cannabisPOS-priceTiers-backup",
+            JSON.stringify(this.priceTiers),
+          );
+        } catch (_) {}
+        this.showToast("Tier status changed locally (offline)", "warning");
+      }
+    },
+
+    async deleteTier(id) {
+      const idStr = String(id);
+      const prev = this.priceTiers.slice();
+      this.priceTiers = this.priceTiers.filter((t) => String(t.id) !== idStr);
+      try {
+        try {
+          const r = await (window.axios || axios).delete(
+            `/node/price-tiers/${encodeURIComponent(idStr)}`,
+          );
+          if (!(r && (r.status >= 200 && r.status < 300))) throw new Error();
+        } catch (_) {
+          await (window.axios || axios).put(
+            `/api/price-tiers/${encodeURIComponent(idStr)}`,
+            { is_active: false, updated_at: new Date().toISOString() },
+          );
+        }
+        try {
+          localStorage.setItem(
+            "cannabisPOS-priceTiers-backup",
+            JSON.stringify(this.priceTiers),
+          );
+        } catch (_) {}
+        this.showToast("Tier deleted", "success");
+      } catch (e) {
+        this.priceTiers = prev;
+        this.showToast("Failed to delete tier", "error");
+      }
+    },
+
     // Void Sale Functions
     closeVoidSaleModal() {
       this.showVoidSaleModal = false;
