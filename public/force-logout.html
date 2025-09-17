@@ -1,8 +1,9 @@
-<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
     <title>Signing out…</title>
     <style>
       body {
@@ -39,24 +40,10 @@
         margin: 6px 0;
         color: #475569;
       }
-      .ok {
-        color: #16a34a;
-      }
-      .err {
-        color: #dc2626;
-      }
-      .muted {
-        color: #64748b;
-        font-size: 12px;
-      }
-      button {
-        margin-top: 12px;
-        padding: 10px 14px;
-        border-radius: 8px;
-        border: 1px solid #cbd5e1;
-        background: #f1f5f9;
-        cursor: pointer;
-      }
+      .ok { color: #16a34a; }
+      .err { color: #dc2626; }
+      .muted { color: #64748b; font-size: 12px; }
+      button { margin-top: 12px; padding: 10px 14px; border-radius: 8px; border: 1px solid #cbd5e1; background: #f1f5f9; cursor: pointer; }
     </style>
   </head>
   <body>
@@ -68,47 +55,21 @@
     </div>
     <script>
       (async function hardLogout() {
-        const step = (m) => {
-          try {
-            document.getElementById("step").textContent = m;
-          } catch (e) {}
-        };
+        const step = (m) => { try { document.getElementById("step").textContent = m; } catch (e) {} };
         try {
           step("Revoking session…");
-          try {
-            await fetch("/api/auth/logout", {
-              method: "POST",
-              headers: { Accept: "application/json" },
-              credentials: "include",
-            });
-          } catch (e) {}
+          try { await fetch("/api/auth/logout", { method: "POST", headers: { Accept: "application/json" }, credentials: "include" }); } catch (e) {}
           step("Clearing local data…");
-          try {
-            localStorage.setItem("pos_force_reauth", "1");
-          } catch (e) {}
-          try {
-            localStorage.removeItem("pos_token");
-          } catch (e) {}
-          try {
-            localStorage.removeItem("pos_user");
-          } catch (e) {}
-          try {
-            localStorage.removeItem("auth_token");
-          } catch (e) {}
-          try {
-            localStorage.removeItem("user_data");
-          } catch (e) {}
-          try {
-            sessionStorage.clear();
-          } catch (e) {}
+          try { localStorage.setItem("pos_force_reauth", "1"); } catch (e) {}
+          try { localStorage.removeItem("pos_token"); } catch (e) {}
+          try { localStorage.removeItem("pos_user"); } catch (e) {}
+          try { localStorage.removeItem("auth_token"); } catch (e) {}
+          try { localStorage.removeItem("user_data"); } catch (e) {}
+          try { sessionStorage.clear(); } catch (e) {}
           step("Done. Redirecting…");
-          setTimeout(() => {
-            window.location.replace("/");
-          }, 400);
+          setTimeout(() => { window.location.replace("/"); }, 400);
         } catch (e) {
-          step(
-            "Sign-out encountered an issue, but local data was cleared. You can close this tab.",
-          );
+          step("Sign-out encountered an issue, but local data was cleared. You can close this tab.");
         }
       })();
     </script>
