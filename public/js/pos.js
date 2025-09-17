@@ -2218,21 +2218,19 @@ function cannabisPOS() {
                 : 20.0;
           this.medicalTaxRate =
             payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
-          // Merge and map server settings to UI store settings
-          Object.assign(this.storeSettings, settings);
-          this.storeSettings.name =
-            settings.store_name || this.storeSettings.name;
-          this.storeSettings.manager =
-            settings.store_manager || this.storeSettings.manager;
-          this.storeSettings.address =
-            settings.store_address || this.storeSettings.address;
-          this.storeSettings.phone =
-            settings.store_phone || this.storeSettings.phone;
-          this.storeSettings.email =
-            settings.store_email || this.storeSettings.email;
-          this.storeSettings.licenseNumber =
-            settings.license_number || this.storeSettings.licenseNumber;
+          // Merge and map server settings to UI store settings (prefer newer)
+          const preferServer = serverTs && serverTs >= localTs;
+          if (preferServer) {
+            Object.assign(this.storeSettings, settings);
+            this.storeSettings.name = settings.store_name || this.storeSettings.name;
+            this.storeSettings.manager = settings.store_manager || this.storeSettings.manager;
+            this.storeSettings.address = settings.store_address || this.storeSettings.address;
+            this.storeSettings.phone = settings.store_phone || this.storeSettings.phone;
+            this.storeSettings.email = settings.store_email || this.storeSettings.email;
+            this.storeSettings.licenseNumber = settings.license_number || this.storeSettings.licenseNumber;
+          }
           if (
+            preferServer &&
             Array.isArray(settings.business_hours) &&
             this.storeSettings.hoursPerDay &&
             this.storeSettings.hoursPerDay.length
