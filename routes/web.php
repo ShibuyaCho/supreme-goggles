@@ -233,6 +233,11 @@ Route::get('/metrc/transfers', function() {
     return view('metrc.transfers');
 })->name('metrc.transfers');
 
+// Oregon METRC Compliance Checklist
+Route::get('/compliance/oregon-metrc', function () {
+    return view('metrc.compliance');
+})->middleware(['auth','role:admin'])->name('metrc.compliance');
+
 // Roles & Permissions Page (Blade)
 Route::get('/roles-permissions', function () {
     return view('roles-permissions.index');
