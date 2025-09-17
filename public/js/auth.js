@@ -455,6 +455,8 @@ class POSAuth {
       return true;
     } catch (error) {
       console.warn("Failed to refresh token:", error);
+      try { this.clearAuth(); } catch (_) {}
+      try { document.dispatchEvent(new CustomEvent("pos-unauthorized")); } catch (_) {}
       return false;
     }
   }
