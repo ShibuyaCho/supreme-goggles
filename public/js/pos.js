@@ -1081,6 +1081,7 @@ function cannabisPOS() {
       },
       customWeights: [],
     },
+    editingTierId: null,
     voidForm: {
       reason: "",
       notes: "",
