@@ -108,6 +108,68 @@
       }
     };
   }
+  async function addStoreEmbedded(){
+    renderModal(`
+      <form id="add-store-form" class="p-6 space-y-4">
+        <h3 class="text-lg font-semibold">Create New Store</h3>
+        <p class="text-sm text-gray-600">Enter a Store ID, then complete the Settings in the embedded page.</p>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Store ID</label>
+          <input id="store-id" type="text" placeholder="e.g. downtown" class="w-full px-3 py-2 border rounded" required />
+          <p class="text-xs text-gray-500 mt-1">Lowercase letters, numbers, dashes, dots, or underscores only.</p>
+        </div>
+        <div class="flex items-center justify-end gap-2 pt-2">
+          <button type="button" data-close="1" class="px-4 py-2 border rounded">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Continue</button>
+        </div>
+      </form>`);
+    const form = document.getElementById('add-store-form');
+    form.onsubmit = function(e){
+      e.preventDefault();
+      const sidRaw = document.getElementById('store-id').value;
+      const sid = sanitizeStoreId(sidRaw);
+      let prev = null;
+      try { const raw = localStorage.getItem('pos_store'); prev = raw?JSON.parse(raw):null; } catch(_){ }
+      try { localStorage.setItem('pos_store', JSON.stringify({ id: sid, name: sid })); } catch(_){ }
+      try { window.dispatchEvent(new Event('storage')); } catch(_){ }
+      if (typeof window.updateStoreHeaderLabel === 'function') window.updateStoreHeaderLabel();
+      renderModal(`
+        <div class="p-0">
+          <div class="flex items-center justify-between px-4 py-3 border-b">
+            <div>
+              <div class="font-semibold">New Store Settings</div>
+              <div class="text-xs text-gray-500">Store ID: ${sid}</div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button id="sm-cancel" class="px-3 py-1 border rounded text-sm">Cancel</button>
+              <button id="sm-done" class="px-3 py-1 bg-green-600 text-white rounded text-sm">Done</button>
+            </div>
+          </div>
+          <div class="h-[70vh] max-h-[80vh]">
+            <iframe src="/settings?embed=1" class="w-full h-full" style="border:0;"></iframe>
+          </div>
+        </div>`);
+      document.getElementById('sm-cancel').onclick = function(){
+        try { if (prev) localStorage.setItem('pos_store', JSON.stringify(prev)); else localStorage.removeItem('pos_store'); } catch(_){ }
+        try { window.dispatchEvent(new Event('storage')); } catch(_){ }
+        if (typeof window.updateStoreHeaderLabel === 'function') window.updateStoreHeaderLabel();
+        closeAll();
+      };
+      document.getElementById('sm-done').onclick = async function(){
+        try {
+          const r = await (window.axios||axios).get('/api/settings/pos', { headers: { 'X-Store-ID': sid }});
+          if (r && r.data && (r.data.settings || r.data.success)) {
+            showToast('Store saved and selected', 'success');
+            closeAll();
+            return;
+          }
+        } catch(_){ }
+        showToast('Finished. If not saved inside Settings, please save and try again.', 'info');
+        closeAll();
+      };
+    };
+  }
+
   async function switchStoreModal(){
     renderModal(`<div class="p-6">
       <h3 class="text-lg font-semibold mb-1">Switch Store</h3>
