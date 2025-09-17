@@ -136,8 +136,14 @@
 
     async save(patch){
       const sid = currentStoreId();
-      const local = this.loadLocal(sid) || {};
-      const merged = { ...DEFAULTS, ...local, ...(patch||{}) };
+      let base = this.loadLocal(sid) || {};
+      // Prefetch current from server to avoid overwriting other fields
+      try {
+        const srv = await getFromServer(sid);
+        const cur = (srv && (srv.settings || srv)) ? (srv.settings || srv) : {};
+        if (cur && typeof cur === 'object') base = { ...base, ...cur };
+      } catch(_) {}
+      const merged = { ...DEFAULTS, ...base, ...(patch||{}) };
       this.saveLocal(sid, merged);
       // Fire and retry server save
       let last = null;
