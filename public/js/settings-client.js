@@ -85,7 +85,10 @@
       const raw = localStorage.getItem("pos_store");
       if (!raw) return "default";
       const s = JSON.parse(raw);
-      return s && s.id ? String(s.id) : "default";
+      let id = s && s.id ? String(s.id) : "default";
+      id = id.trim().toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+      if (id === "defaultstore") id = "default";
+      return id || "default";
     } catch (_) {
       return "default";
     }
@@ -121,9 +124,11 @@
       if (res && res.success && res.data) return res.data;
       if (res && res.data) return res.data;
     }
-    const cfg = { headers: { Accept: "application/json" } };
+    const sid = currentStoreId();
+    const cfg = { headers: { Accept: "application/json", "X-Store-ID": sid } };
     if (params) {
       cfg.params = params;
+      if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
     }
     const r = await (window.axios || axios).get(path, cfg);
     return r.data;
@@ -138,27 +143,30 @@
       if (res && res.success && res.data) return res.data;
       if (res && res.data) return res.data;
     }
+    const sid = currentStoreId();
     const cfg = {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
+        "X-Store-ID": sid,
       },
     };
     if (params) {
       cfg.params = params;
+      if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
     }
     const r = await (window.axios || axios).post(path, body || {}, cfg);
     return r.data;
   }
 
-  async function getFromServer(sid) {
+  async function getFromServer(sid, noCache = false) {
     // Try Laravel first
     try {
-      return await httpGet("/api/settings/pos", { store: sid });
+      return await httpGet("/api/settings/pos", { store: sid, nocache: noCache ? 1 : 0 });
     } catch (_) {}
     // Try Node alias (if applicable)
     try {
-      return await httpGet("/api/settings/pos", { store: sid });
+      return await httpGet("/api/settings/pos", { store: sid, nocache: noCache ? 1 : 0 });
     } catch (_) {}
     return null;
   }
@@ -198,7 +206,7 @@
       let last = null;
       for (let i = 0; i < 3; i++) {
         try {
-          const data = await getFromServer(sid);
+          const data = await getFromServer(sid, true);
           const settings =
             data && typeof data === "object" && (data.settings || data)
               ? data.settings || data
@@ -232,7 +240,7 @@
       let base = this.loadLocal(sid) || {};
       // Prefetch current from server to avoid overwriting other fields
       try {
-        const srv = await getFromServer(sid);
+        const srv = await getFromServer(sid, true);
         const cur = srv && (srv.settings || srv) ? srv.settings || srv : {};
         if (cur && typeof cur === "object") base = { ...base, ...cur };
       } catch (_) {}
@@ -247,7 +255,13 @@
           });
           const s =
             data && (data.settings || data) ? data.settings || data : merged;
-          const m = { ...DEFAULTS, ...s };
+          let m = { ...DEFAULTS, ...s };
+          // Read-after-write verification (bypass cache)
+          try {
+            const verify = await getFromServer(sid, true);
+            const vs = verify && (verify.settings || verify) ? (verify.settings || verify) : {};
+            if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
+          } catch (_) {}
           this.saveLocal(sid, m);
           try {
             window.dispatchEvent(
