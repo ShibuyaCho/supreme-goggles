@@ -344,7 +344,7 @@ function orderQueueData() {
         async runSearch() {
             try {
                 const q = this.searchTerm ? `?search=${encodeURIComponent(this.searchTerm)}` : '';
-                const res = await fetch(`/node/order-queue${q}`, { headers: { Accept: 'application/json' } });
+                const res = await fetch(`/api/pos/queue-orders${q}`, { headers: { Accept: 'application/json' } });
                 if (res.ok) {
                     const data = await res.json();
                     const list = Array.isArray(data?.orders) ? data.orders : [];
