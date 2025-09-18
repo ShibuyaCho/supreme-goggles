@@ -1451,7 +1451,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
                         if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
                             $cached = $row['settings'];
-                            try { \Illuminate\Support\Facades\Cache::put('pos_settings', $cached, now()->addYears(5)); } catch (\Throwable $e) {}
+                            try { \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $cached, now()->addYears(5)); } catch (\Throwable $e) {}
                         }
                     }
                 } catch (\Throwable $e) { /* fall back */ }
@@ -1463,7 +1463,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         $decoded = json_decode($row->settings, true);
                         if (json_last_error() === JSON_ERROR_NONE) {
                             $cached = $decoded;
-                            try { \Illuminate\Support\Facades\Cache::put('pos_settings', $cached, now()->addYears(5)); } catch (\Throwable $e) {}
+                            try { \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $cached, now()->addYears(5)); } catch (\Throwable $e) {}
                         }
                     }
                 } catch (\Throwable $e) {}
@@ -1706,7 +1706,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     }
                 }
 
-                \Illuminate\Support\Facades\Cache::put('pos_settings', $fresh, now()->addYears(5));
+                \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $fresh, now()->addYears(5));
 
                 return response()->json(['success' => true, 'settings' => $fresh]);
             } catch (\Throwable $e) {
