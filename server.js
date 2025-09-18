@@ -3454,12 +3454,10 @@ app.get("/api/analytics/end-of-day", async (req, res) => {
 // Analytics: ASPD (Average Sales Per Day) using Supabase sales.cart
 app.get("/api/analytics/aspd", async (req, res) => {
   try {
-    const tf = String(req.query?.timeframe || "week");
+    // Force MTD (Month-To-Date) permanently, ignoring incoming timeframe
     const today = new Date();
-    let start = new Date(
-      Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), 0, 0, 0),
-    );
-    let end = new Date(
+    const start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0));
+    const end = new Date(
       Date.UTC(
         today.getFullYear(),
         today.getMonth(),
@@ -3469,64 +3467,12 @@ app.get("/api/analytics/aspd", async (req, res) => {
         0,
       ),
     );
-    if (tf === "today") {
-      // already set
-    } else if (tf === "month") {
-      start = new Date(
-        Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0),
-      );
-      end = new Date(
-        Date.UTC(today.getFullYear(), today.getMonth() + 1, 1, 0, 0, 0),
-      );
-    } else if (tf === "custom") {
-      const s = req.query?.start_date
-        ? new Date(String(req.query.start_date))
-        : start;
-      const e = req.query?.end_date
-        ? new Date(String(req.query.end_date))
-        : new Date(start.getTime());
-      start = new Date(
-        Date.UTC(s.getUTCFullYear(), s.getUTCMonth(), s.getUTCDate(), 0, 0, 0),
-      );
-      end = new Date(
-        Date.UTC(
-          e.getUTCFullYear(),
-          e.getUTCMonth(),
-          e.getUTCDate() + 1,
-          0,
-          0,
-          0,
-        ),
-      );
-    } else {
-      // week (default): last 7 days inclusive
-      const d = new Date(
-        Date.UTC(
-          today.getFullYear(),
-          today.getMonth(),
-          today.getDate(),
-          0,
-          0,
-          0,
-        ),
-      );
-      start = new Date(d.getTime() - 6 * 24 * 60 * 60 * 1000);
-      end = new Date(
-        Date.UTC(
-          today.getFullYear(),
-          today.getMonth(),
-          today.getDate() + 1,
-          0,
-          0,
-          0,
-        ),
-      );
-    }
     const startIso = start.toISOString();
     const endIso = end.toISOString();
+    // Elapsed days this month
     const daysInRange = Math.max(
       1,
-      Math.round((end.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)),
+      Math.round((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1) - Date.UTC(today.getFullYear(), today.getMonth(), 1)) / (24 * 60 * 60 * 1000)),
     );
 
     // Current window data (for table)
