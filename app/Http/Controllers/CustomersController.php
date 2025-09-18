@@ -442,4 +442,32 @@ class CustomersController extends Controller
             'veterans' => Customer::where('is_veteran', true)->count()
         ];
     }
+
+    private function mapSupabaseCustomerToLocal(array $row): array
+    {
+        return [
+            'id' => $row['id'] ?? null,
+            'first_name' => $row['first_name'] ?? ($row['name'] ?? ''),
+            'last_name' => $row['last_name'] ?? null,
+            'email' => $row['email'] ?? null,
+            'phone' => $row['phone'] ?? null,
+            'date_of_birth' => $row['date_of_birth'] ?? null,
+            'customer_type' => $row['customer_type'] ?? 'recreational',
+            'address' => isset($row['address']) ? (is_string($row['address']) ? $row['address'] : json_encode($row['address'])) : json_encode([]),
+            'is_active' => array_key_exists('is_active', $row) ? (bool) $row['is_active'] : true,
+            'notes' => $row['notes'] ?? null,
+            'data_retention_consent' => (bool)($row['data_retention_consent'] ?? false),
+            'loyalty_member_id' => $row['loyalty_member_id'] ?? null,
+            'loyalty_join_date' => $row['loyalty_join_date'] ?? null,
+            'loyalty_points' => $row['loyalty_points'] ?? 0,
+            'points_earned' => $row['points_earned'] ?? 0,
+            'points_redeemed' => $row['points_redeemed'] ?? 0,
+            'loyalty_tier' => $row['loyalty_tier'] ?? ($row['tier'] ?? 'Bronze'),
+            'total_spent' => $row['total_spent'] ?? 0,
+            'total_visits' => $row['total_visits'] ?? 0,
+            'last_visit' => $row['last_visit'] ?? null,
+            'created_at' => $row['created_at'] ?? now(),
+            'updated_at' => $row['updated_at'] ?? now(),
+        ];
+    }
 }
