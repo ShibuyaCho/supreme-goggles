@@ -1597,15 +1597,56 @@ app.get("/api/price-tiers", async (_req, res) => {
 });
 app.post("/api/price-tiers", async (req, res) => {
   try {
+    const incoming = req.body || {};
     const r = await supaFetch("price_tiers", {
       method: "POST",
-      body: [req.body || {}],
+      body: [incoming],
     });
     const payload = r.ok ? await r.json() : null;
-    res.status(201).json({
-      success: true,
-      tier: Array.isArray(payload) ? payload[0] : payload,
-    });
+    const created = Array.isArray(payload) ? payload[0] : payload;
+    // Mirror into pos_settings.settings.price_tiers for resilience (best-effort)
+    try {
+      const rawId = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
+      const storeId = String(rawId || "default").trim().replace(/[^A-Za-z0-9_.-]/g, "");
+      // Fetch current settings
+      let cur = {};
+      try {
+        const g = await supaFetch(`pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`, { method: "GET" });
+        if (g.ok) {
+          const arr = await g.json();
+          const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+          if (row && row.settings && typeof row.settings === "object") cur = row.settings;
+        }
+      } catch (_) {}
+      const tiers = Array.isArray(cur.price_tiers) ? cur.price_tiers : Array.isArray(cur.priceTiers) ? cur.priceTiers : [];
+      const copy = {
+        id: created?.id ?? incoming?.id ?? incoming?.name ?? null,
+        name: created?.name ?? incoming?.name ?? "Tier",
+        description: created?.description ?? incoming?.description ?? "",
+        prices: created?.prices ?? incoming?.prices ?? {},
+        custom_weights: created?.custom_weights ?? incoming?.custom_weights ?? incoming?.customWeights ?? [],
+        is_active: typeof created?.is_active === "boolean" ? created.is_active : (incoming?.is_active ?? incoming?.isActive ?? true),
+        created_at: created?.created_at ?? incoming?.created_at ?? new Date().toISOString(),
+        updated_at: created?.updated_at ?? new Date().toISOString(),
+      };
+      let replaced = false;
+      for (let i = 0; i < tiers.length; i++) {
+        const t = tiers[i] || {};
+        const tid = t.id != null ? String(t.id) : null;
+        const cid = copy.id != null ? String(copy.id) : null;
+        const tname = (t.name || "").trim().toLowerCase();
+        const cname = (copy.name || "").trim().toLowerCase();
+        if ((cid && tid === cid) || (cname && tname === cname)) { tiers[i] = copy; replaced = true; break; }
+      }
+      if (!replaced) tiers.push(copy);
+      cur.price_tiers = tiers;
+      await supaFetch("pos_settings", {
+        method: "POST",
+        body: [{ id: storeId, settings: cur, updated_at: new Date().toISOString() }],
+        query: { on_conflict: "id" },
+      });
+    } catch (_) {}
+    res.status(201).json({ success: true, tier: created });
   } catch (_) {
     res.status(500).json({ success: false, error: "Failed" });
   }
