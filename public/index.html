@@ -743,7 +743,13 @@
           const token = localStorage.getItem("pos_token");
           if (window.axios && token) {
             try {
-              await axios.post("/api/auth/logout");
+              try {
+                await axios.post("/api/auth/logout");
+              } catch (e2) {
+                if (e2?.response?.status === 404) {
+                  try { await axios.post("/api/logout"); } catch (_) {}
+                }
+              }
             } catch (e) {}
           }
         } finally {
