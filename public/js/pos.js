@@ -6323,7 +6323,7 @@ function cannabisPOS() {
 
     async loadPriceTiers() {
       try {
-        const res = await (window.axios || axios).get("/api/price-tiers", {
+        const res = await (window.axios || axios).get("/api/price-tiers-open", {
           headers: { Accept: "application/json" },
         });
         const list = res?.data?.tiers || [];
