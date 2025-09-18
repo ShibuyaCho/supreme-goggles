@@ -1,4 +1,9 @@
 (function(){
+  // Ensure Supabase config is present even if the page didn't inject it
+  try {
+    if (!window.__SUPABASE_URL) window.__SUPABASE_URL = 'https://yyitwchajkruipsjvifn.supabase.co';
+    if (!window.__SUPABASE_ANON_KEY) window.__SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aXR3Y2hhamtydWlwc2p2aWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2OTQwNDUsImV4cCI6MjA3MzI3MDA0NX0.-fKS2ODSPNjLEx6HPrTlvXSV6hZqjdyFweIz8_f2ao8';
+  } catch(_) {}
   function ensureContainer(){
     let el = document.getElementById('store-manager-root');
     if (el) return el;
