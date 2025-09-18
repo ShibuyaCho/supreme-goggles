@@ -319,6 +319,19 @@
                 detail: { settings: m, storeId: sid },
               }),
             );
+            try {
+              const arr = Array.isArray(m.price_tiers)
+                ? m.price_tiers
+                : Array.isArray(m.priceTiers)
+                ? m.priceTiers
+                : [];
+              if (arr && arr.length) {
+                localStorage.setItem(
+                  "cannabisPOS-priceTiers-backup",
+                  JSON.stringify(arr),
+                );
+              }
+            } catch (_) {}
           } catch (_) {}
           return { success: true, settings: m };
         } catch (e) {
