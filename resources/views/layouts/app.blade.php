@@ -141,7 +141,17 @@
     </style>
     <!-- Core libraries -->
     <script src="{{ asset('lib/axios/axios.min.js') }}" defer></script>
-    <script>window.__SUPABASE_URL = "{{ env('SUPABASE_URL') }}"; window.__SUPABASE_ANON_KEY = "{{ env('SUPABASE_ANON_KEY') }}";</script>
+    <script>
+      (function(){
+        try {
+          window.__SUPABASE_URL = window.__SUPABASE_URL || "{{ env('SUPABASE_URL') }}" || "";
+          window.__SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY || "{{ env('SUPABASE_ANON_KEY') }}" || "";
+        } catch(_) {}
+        // Safe public fallbacks to ensure POS can read settings when envs are unset
+        if(!window.__SUPABASE_URL){ window.__SUPABASE_URL = "https://yyitwchajkruipsjvifn.supabase.co"; }
+        if(!window.__SUPABASE_ANON_KEY){ window.__SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aXR3Y2hhamtydWlwc2p2aWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2OTQwNDUsImV4cCI6MjA3MzI3MDA0NX0.-fKS2ODSPNjLEx6HPrTlvXSV6hZqjdyFweIz8_f2ao8"; }
+      })();
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="{{ asset('js/realtime.js') }}" defer></script>
     <script src="{{ asset('js/settings-client.js') }}" defer></script>
