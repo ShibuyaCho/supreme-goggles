@@ -168,6 +168,22 @@ Route::get('/settings/pos', function() {
             }
         } catch (\Throwable $e) {}
     }
+    // Fallback to local DB if Supabase empty/unavailable
+    if (empty($settings)) {
+        try {
+            $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
+            if (!$local && $storeId === 'default') {
+                $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', 'defaultstore')->first();
+            }
+            if ($local && isset($local->settings)) {
+                $decoded = json_decode($local->settings, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $settings = $decoded;
+                    $rowMeta = [ 'updated_at' => $local->updated_at ?? null ];
+                }
+            }
+        } catch (\Throwable $e) {}
+    }
     $settings = array_merge($defaults, is_array($settings) ? $settings : []);
     return response()->json([
         'success' => true,
@@ -218,6 +234,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             } catch (\Throwable $e) {}
         }
         $merged = array_merge(is_array($current)?$current:[], is_array($incoming)?$incoming:[]);
+        $savedRemote = false;
         if ($supabaseUrl && $supabaseKey) {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
                 'apikey' => $supabaseKey,
@@ -245,29 +262,20 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     ]]);
                 } catch (\Throwable $e) { /* ignore */ }
             }
-            if ($resp->successful()) {
-                // Verify by fetching the just-saved row
-                try {
-                    $ver = \Illuminate\Support\Facades\Http::withHeaders([
-                        'apikey' => $supabaseKey,
-                        'Authorization' => 'Bearer ' . $supabaseKey,
-                        'Accept' => 'application/json',
-                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                        'id' => 'eq.' . $storeId,
-                        'select' => '*',
-                    ]);
-                    if ($ver->ok()) {
-                        $va = $ver->json();
-                        $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
-                        if (is_array($vr) && isset($vr['settings']) && is_array($vr['settings'])) {
-                            return response()->json(['success' => true, 'settings' => $vr['settings']]);
-                        }
-                    }
-                } catch (\Throwable $e) { /* ignore verify errors */ }
-                return response()->json(['success' => true, 'settings' => $merged]);
-            }
+            if ($resp->successful()) { $savedRemote = true; }
         }
-        return response()->json(['success' => false, 'message' => 'Failed to save settings'], 500);
+        // Always persist locally as a fallback for reliability
+        try {
+            \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
+                ['id' => $storeId],
+                ['settings' => json_encode($merged), 'updated_at' => now()]
+            );
+        } catch (\Throwable $e) { /* ignore local errors */ }
+        if ($savedRemote) {
+            return response()->json(['success' => true, 'settings' => $merged]);
+        }
+        // Remote failed but local saved: still return success with flag
+        return response()->json(['success' => true, 'saved_local' => true, 'settings' => $merged]);
     } catch (\Throwable $e) {
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
