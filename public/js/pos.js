@@ -2648,8 +2648,10 @@ function cannabisPOS() {
               (await this.reportDealUsageFromCart());
           } catch (_) {}
           // Live update the sales list and End of Day stats
+          let localId = null;
           try {
             const sid = result?.data?.sale_id || result?.sale_id;
+            localId = result?.data?.local_sale_id || result?.local_sale_id || null;
             if (sid) {
               await this.appendSaleById(sid);
               try {
@@ -2674,6 +2676,19 @@ function cannabisPOS() {
               } catch (_) {}
             }
           } catch (_) {}
+          // Auto-push to METRC deliveries when connected and permitted
+          try {
+            if (this.metrcConnected && this.hasPermission && this.hasPermission('metrc:sales') && localId) {
+              const push = await (window.posAuth ? posAuth.apiRequest('post', `/metrc/sales/deliveries/from-sale/${encodeURIComponent(localId)}`) : Promise.resolve({ success:false }));
+              if (push && push.success) {
+                this.showToast('Pushed sale to METRC', 'success');
+              } else if (push && push.message) {
+                this.showToast(`METRC push failed: ${push.message}`, 'error');
+              }
+            }
+          } catch (e) {
+            try { console.warn('METRC push failed', e); } catch(_) {}
+          }
           this.clearCart();
           return result.data;
         } else {
