@@ -6509,6 +6509,7 @@ function cannabisPOS() {
 
     async _refreshProductsFromApi() {
       // Prefer Supabase via PHP proxy
+      let loaded = false;
       try {
         const res = await (window.axios || axios).get("/api/products-open", {
           headers: { Accept: "application/json" },
@@ -6520,6 +6521,7 @@ function cannabisPOS() {
             : [];
         if (Array.isArray(items) && items.length) {
           this.products = items;
+          loaded = true;
           // Apply locally persisted product->tier assignments
           try {
             const mapRaw = localStorage.getItem("cannabisPOS-productTierMap");
@@ -6544,6 +6546,37 @@ function cannabisPOS() {
           this.filterProducts && this.filterProducts();
         }
       } catch (_) {}
+      // Fallback: direct Supabase REST if proxy is unavailable
+      if (!loaded && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+        try {
+          const base = String(window.__SUPABASE_URL).replace(/\/$/, "");
+          const key = window.__SUPABASE_ANON_KEY;
+          const url = new URL(base + "/rest/v1/products");
+          url.searchParams.set("select", "*");
+          url.searchParams.set("order", "updated_at.desc");
+          const r = await fetch(url.toString(), {
+            headers: {
+              apikey: key,
+              Authorization: "Bearer " + key,
+              Accept: "application/json",
+            },
+          });
+          if (r.ok) {
+            const arr = await r.json();
+            if (Array.isArray(arr)) {
+              this.products = arr;
+              try {
+                localStorage.setItem(
+                  "cannabisPOS-products",
+                  JSON.stringify({ data: this.products }),
+                );
+              } catch (_) {}
+              this.normalizeCollections && this.normalizeCollections();
+              this.filterProducts && this.filterProducts();
+            }
+          }
+        } catch (_) {}
+      }
     },
 
     async loadPriceTiers() {
