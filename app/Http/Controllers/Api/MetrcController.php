@@ -9,6 +9,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Services\SupabaseService;
 use Illuminate\Support\Facades\Validator;
 
 class MetrcController extends Controller
@@ -544,6 +545,25 @@ class MetrcController extends Controller
     /**
      * Create sales receipt in METRC
      */
+    private function logMetrcPush(string $type, string $status, array $payload = []): void
+    {
+        try {
+            $svc = app(SupabaseService::class);
+            if (method_exists($svc, 'enabled') && $svc->enabled()) {
+                $row = [
+                    'type' => $type,
+                    'action' => 'push',
+                    'status' => $status,
+                    'payload' => $payload,
+                    'created_at' => now()->toIso8601String(),
+                ];
+                $svc->insert('metrc_logs', [$row]);
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+    }
+
     public function createSalesReceipt(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -575,18 +595,23 @@ class MetrcController extends Controller
             ];
 
             $result = $this->metrcService->createSalesReceipt($salesData);
-            
+
             Log::info('METRC sales receipt created', [
                 'sales_data' => $salesData,
                 'user_id' => $request->user()->id
             ]);
-            
+            $this->logMetrcPush('sales_receipt', 'success', [
+                'receipt_number' => $result['ReceiptNumber'] ?? null,
+                'transactions' => is_array($salesData['Transactions']) ? count($salesData['Transactions']) : 0,
+            ]);
+
             return response()->json([
                 'message' => 'Sales receipt created successfully',
                 'receipt_number' => $result['ReceiptNumber'] ?? null,
                 'result' => $result
             ], 201);
         } catch (\Exception $e) {
+            $this->logMetrcPush('sales_receipt', 'error', [ 'message' => $e->getMessage() ]);
             return response()->json([
                 'error' => 'Failed to create sales receipt',
                 'message' => $e->getMessage()
@@ -694,12 +719,14 @@ class MetrcController extends Controller
             $result = $this->metrcService->createSalesDeliveries($deliveries);
 
             Log::info('METRC sales deliveries created', [ 'deliveries_count' => count($deliveries), 'user_id' => $request->user()->id ]);
+            $this->logMetrcPush('sales_deliveries', 'success', [ 'deliveries_count' => count($deliveries) ]);
 
             return response()->json([
                 'message' => 'Sales deliveries created successfully',
                 'result' => $result
             ], 201);
         } catch (\Exception $e) {
+            $this->logMetrcPush('sales_deliveries', 'error', [ 'message' => $e->getMessage() ]);
             return response()->json([
                 'error' => 'Failed to create sales deliveries',
                 'message' => $e->getMessage()
