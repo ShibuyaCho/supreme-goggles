@@ -63,7 +63,15 @@ class AuthManager {
   async logout() {
     try {
       if (this.token) {
-        await axios.post("/api/logout");
+        try {
+          await axios.post("/api/auth/logout");
+        } catch (e) {
+          if (e?.response?.status === 404) {
+            await axios.post("/api/logout");
+          } else {
+            throw e;
+          }
+        }
       }
     } catch (error) {
       console.error("Logout error:", error);
