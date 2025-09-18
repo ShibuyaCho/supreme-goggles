@@ -214,6 +214,7 @@ class SettingsController extends Controller
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
                         'Prefer' => 'return=representation',
+                        'X-Store-ID' => $storeId,
                     ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $storeId,
                         'settings' => $settings,
