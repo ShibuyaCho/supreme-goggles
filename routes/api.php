@@ -182,6 +182,12 @@ Route::get('/settings/pos', function() {
 Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
     \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'public', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
     $incoming = $request->all();
+    // If client sent a nested `settings` object, flatten it into top-level keys
+    if (isset($incoming['settings']) && is_array($incoming['settings'])) {
+        $nested = $incoming['settings'];
+        unset($incoming['settings']);
+        $incoming = array_merge($nested, $incoming);
+    }
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
     // Multi-store: scope by X-Store-ID header when present
