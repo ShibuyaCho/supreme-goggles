@@ -2676,9 +2676,17 @@ function cannabisPOS() {
               } catch (_) {}
             }
           } catch (_) {}
-          // Auto-push to METRC deliveries when connected and permitted
+          // Auto-push to METRC deliveries when connected, permitted, and enabled in settings
           try {
-            if (this.metrcConnected && this.hasPermission && this.hasPermission('metrc:sales') && localId) {
+            let auto = false;
+            try {
+              if (window.SettingsClient && typeof SettingsClient.get === 'function') {
+                const resp = await SettingsClient.get();
+                const s = resp && (resp.settings || resp) ? (resp.settings || {}) : {};
+                auto = !!s.metrc_auto_push_sales;
+              }
+            } catch (_) {}
+            if (auto && this.metrcConnected && this.hasPermission && this.hasPermission('metrc:sales') && localId) {
               const push = await (window.posAuth ? posAuth.apiRequest('post', `/metrc/sales/deliveries/from-sale/${encodeURIComponent(localId)}`) : Promise.resolve({ success:false }));
               if (push && push.success) {
                 this.showToast('Pushed sale to METRC', 'success');
