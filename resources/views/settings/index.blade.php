@@ -889,6 +889,16 @@ function settingsManager() {
 
         loadSettingsFromStorage() {
             try {
+                if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
+                    const sid = SettingsClient.currentStoreId();
+                    const local = SettingsClient.loadLocal(sid);
+                    if (local && typeof local === 'object') {
+                        this.settings = { ...this.settings, ...local };
+                        return;
+                    }
+                }
+            } catch (_) {}
+            try {
                 const legacy = localStorage.getItem('cannabest-pos-settings');
                 const current = localStorage.getItem('cannabisPOS-settings');
                 const stored = current || legacy;
@@ -902,6 +912,12 @@ function settingsManager() {
         },
 
         saveSettingsToStorage() {
+            try {
+                if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
+                    const sid = SettingsClient.currentStoreId();
+                    SettingsClient.saveLocal(sid, this.settings);
+                }
+            } catch (_) {}
             try {
                 const json = JSON.stringify(this.settings);
                 localStorage.setItem('cannabisPOS-settings', json);
