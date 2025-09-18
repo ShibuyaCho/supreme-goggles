@@ -630,6 +630,33 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('rd-clear-log')?.addEventListener('click', ()=>{ activityLog = []; saveActivity(); renderActivity(); });
     renderActivity();
 
+    function printDrawerCount(entry){
+      const d = entry?.data || {};
+      const win = window.open('', 'print-drawer', 'width=600,height=800');
+      if (!win) return;
+      const rows = (d.breakdown||[]).filter(x=>x.qty>0).map(x=>`<tr><td style=\"padding:4px 8px;\">${x.denom>=1?`$${x.denom.toFixed(0)}`:`${(x.denom*100).toFixed(0)}¢`}</td><td style=\"padding:4px 8px; text-align:right;\">${x.qty}</td><td style=\"padding:4px 8px; text-align:right;\">$${(x.denom*x.qty).toFixed(2)}</td></tr>`).join('');
+      win.document.write(`<!doctype html><html><head><meta charset=\"utf-8\"/><title>Drawer Count - ${d.drawerName||''}</title><style>body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:16px;} h1{font-size:18px;margin:0 0 8px;} table{width:100%; border-collapse:collapse;} th,td{border-bottom:1px solid #e5e7eb;} .tot{font-weight:600;} .sign{margin-top:24px; display:flex; gap:24px;} .line{border-top:1px solid #111827; padding-top:4px; min-width:200px;}</style></head><body>
+        <h1>Closed Drawer Count</h1>
+        <div style=\"font-size:12px;color:#374151;\">Drawer: <strong>${d.drawerName||'-'}</strong><br/>When: ${new Date(d.at||entry.at).toLocaleString()}<br/>Counted By: ${d.countedBy||'-'} • Approved By: ${d.approvedBy||'-'}</div>
+        <table style=\"margin-top:12px;\">
+          <thead><tr><th style=\"text-align:left;padding:4px 8px;\">Denomination</th><th style=\"text-align:right;padding:4px 8px;\">Qty</th><th style=\"text-align:right;padding:4px 8px;\">Amount</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan=\"3\" style=\"padding:8px;color:#6b7280;\">No denominations entered</td></tr>'}</tbody>
+          <tfoot>
+            <tr><td></td><td class=\"tot\" style=\"padding:6px 8px; text-align:right;\">Cash Total</td><td class=\"tot\" style=\"padding:6px 8px; text-align:right;\">$${(d.countedTotal||0).toFixed(2)}</td></tr>
+            <tr><td></td><td style=\"padding:6px 8px; text-align:right;\">Expected Cash</td><td style=\"padding:6px 8px; text-align:right;\">$${(d.expectedCashTotal||0).toFixed(2)}</td></tr>
+            <tr><td></td><td style=\"padding:6px 8px; text-align:right;\">Debit Total</td><td style=\"padding:6px 8px; text-align:right;\">$${(d.debitTotal||0).toFixed(2)}</td></tr>
+            <tr><td></td><td class=\"tot\" style=\"padding:6px 8px; text-align:right;\">Variance</td><td class=\"tot\" style=\"padding:6px 8px; text-align:right;\">$${(d.variance||0).toFixed(2)}</td></tr>
+          </tfoot>
+        </table>
+        <div class=\"sign\">
+          <div class=\"line\">Employee Signature</div>
+          <div class=\"line\">Manager Signature</div>
+        </div>
+        <script>window.onload = () => { setTimeout(()=>window.print(), 50); }<\\/script>
+      </body></html>`);
+      try { win.document.close(); } catch(_) {}
+    }
+
     // Extreme persistence for Rooms (merge server + localStorage and render)
     const serverRooms = @json($rooms ?? []);
     const ROOMS_KEYS = ['pos_rooms','rd-rooms'];
