@@ -365,6 +365,56 @@ Route::prefix('price-tiers')->name('price-tiers.')->group(function () {
     Route::patch('/{priceTier}', [PriceTiersController::class, 'update'])->name('update');
     Route::delete('/{priceTier}', [PriceTiersController::class, 'destroy'])->name('destroy');
     Route::post('/apply-to-products', [PriceTiersController::class, 'applyToProducts'])->name('apply-to-products');
+
+    // JSON data endpoint (web route) for client-side tier loading with Supabase+DB fallback
+    Route::get('/json', function() {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get($supabaseUrl . '/rest/v1/price_tiers', [
+                    'select' => '*',
+                    'order' => 'updated_at.desc'
+                ]);
+                if ($resp->ok()) {
+                    return response()->json(['success'=>true,'tiers'=>$resp->json() ?? []]);
+                }
+            } catch (\Throwable $e) { /* fall back below */ }
+        }
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('price_tiers')) {
+                $rows = \App\Models\PriceTier::query()->orderByDesc('updated_at')->get()->map(function($r){
+                    $discount = 0.0;
+                    if ($r->type === 'percentage') { $discount = (float)$r->adjustment_value; }
+                    elseif ($r->type === 'fixed_amount') { $discount = (float)$r->adjustment_value; }
+                    elseif ($r->type === 'fixed_price') { $discount = 0.0; }
+                    $cust = 'recreational';
+                    $ct = $r->customer_types;
+                    if (is_array($ct) && !empty($ct)) { $cust = (string)($ct[0] ?? 'recreational'); }
+                    return [
+                        'id' => $r->id,
+                        'name' => $r->name,
+                        'description' => $r->description,
+                        'status' => $r->is_active ? 'active' : 'inactive',
+                        'type' => (string)$r->type,
+                        'customer_type' => $cust,
+                        'discount' => $discount,
+                        'min_quantity' => $r->minimum_quantity,
+                        'min_amount' => null,
+                        'product_count' => 0,
+                        'schedule' => [ 'start_date' => $r->valid_from, 'end_date' => $r->valid_until ],
+                        'updated_at' => optional($r->updated_at)->toISOString(),
+                    ];
+                })->values()->all();
+                return response()->json(['success' => true, 'tiers' => $rows]);
+            }
+        } catch (\Throwable $e) {}
+        return response()->json(['success'=>true,'tiers'=>[]]);
+    })->name('json');
 });
 
 // API Routes for AJAX requests
