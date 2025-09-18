@@ -420,11 +420,12 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         $savedRemote = false;
         if ($supabaseUrl && $supabaseKey) {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
-                'apikey' => $supabaseKey,
-                'Authorization' => 'Bearer ' . $supabaseKey,
-                'Accept' => 'application/json',
-                'Prefer' => 'resolution=merge-duplicates,return=representation',
-            ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $merged['store_name'] ?? null,
                 'settings' => $merged,
@@ -435,11 +436,12 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 try {
                     $legacy = $storeId === 'default' ? 'defaultstore' : 'default';
                     \Illuminate\Support\Facades\Http::withHeaders([
-                        'apikey' => $supabaseKey,
-                        'Authorization' => 'Bearer ' . $supabaseKey,
-                        'Accept' => 'application/json',
-                        'Prefer' => 'resolution=merge-duplicates,return=representation',
-                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $legacy,
                         'store_name' => $merged['store_name'] ?? null,
                         'settings' => $merged,
@@ -812,11 +814,12 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
             if (!$didReplace) { $tiersArr[] = $copy; }
             $cur['price_tiers'] = $tiersArr;
             \Illuminate\Support\Facades\Http::withHeaders([
-                'apikey' => $supabaseKey,
-                'Authorization' => 'Bearer ' . $supabaseKey,
-                'Accept' => 'application/json',
-                'Prefer' => 'resolution=merge-duplicates,return=representation',
-            ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
                 'settings' => $cur,
@@ -913,11 +916,12 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
                 if (!$didReplace) { $tiersArr[] = $copy; }
                 $cur['price_tiers'] = $tiersArr;
                 \Illuminate\Support\Facades\Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                    'Prefer' => 'resolution=merge-duplicates,return=representation',
-                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
                 'settings' => $cur,
@@ -1649,11 +1653,12 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         for ($i=0; $i<3; $i++) {
                             try {
                                 $resp = \Illuminate\Support\Facades\Http::withHeaders([
-                                    'apikey' => $supabaseKey,
-                                    'Authorization' => 'Bearer ' . $supabaseKey,
-                                    'Accept' => 'application/json',
-                                    'Prefer' => 'resolution=merge-duplicates,return=representation',
-                                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                                     'id' => $storeId,
                                     'store_name' => $settings['store_name'] ?? null,
                                     'settings' => $settings,
