@@ -571,9 +571,21 @@ document.addEventListener('DOMContentLoaded', function() {
     // Activity Log state
     const activityEl = document.getElementById('rd-activity');
     const LOG_KEY = 'rd-activity-log';
-    function loadActivity(){ try { return JSON.parse(localStorage.getItem(LOG_KEY) || '[]'); } catch(_) { return []; } }
+    function readJson(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch(_) { return d; } }
+    function loadActivity(){
+      const a = readJson(LOG_KEY, []);
+      const b = readJson('pos_activity_log', []);
+      const merged = [...a, ...b].filter(Boolean);
+      const seen = new Set();
+      const out = [];
+      for (let i=0;i<merged.length;i++){
+        const m = merged[i]||{}; const key = `${m.at||''}|${m.title||''}|${m.type||''}`;
+        if (seen.has(key)) continue; seen.add(key); out.push(m);
+      }
+      return out;
+    }
     let activityLog = loadActivity();
-    function saveActivity(){ try { localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); } catch(_) {} }
+    function saveActivity(){ try { localStorage.setItem(LOG_KEY, JSON.stringify(activityLog)); localStorage.setItem('pos_activity_log', JSON.stringify(activityLog)); } catch(_) {} }
     function currentUserName(){
       try { const n = window.posAuth?.getUser?.()?.name; if (n) return n; } catch(_) {}
       try { return @json(auth()->user()->name ?? 'User'); } catch(_) { return 'User'; }
@@ -629,6 +641,25 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.getElementById('rd-clear-log')?.addEventListener('click', ()=>{ activityLog = []; saveActivity(); renderActivity(); });
     renderActivity();
+    (async function hydrateActivityFromServer(){
+      try {
+        const r = await fetch('/node/activity?action=rooms_drawers&limit=200', { headers: { Accept: 'application/json' } });
+        if (!r.ok) return;
+        const data = await r.json();
+        const rows = Array.isArray(data?.logs) ? data.logs : [];
+        if (!rows.length) return;
+        const mapped = rows.map(x => {
+          const p = x.payload || {}; const e = p.entry || {};
+          const title = e.title || p.title || (p.action ? String(p.action).replace(/_/g,' ') : 'Activity');
+          return { at: e.at || x.created_at || new Date().toISOString(), by: e.by || (p.user?.name || ''), title, type: e.type || p.type || undefined, data: e.data || p.data || undefined, details: e.details || p.details || undefined };
+        });
+        const combined = [...activityLog, ...mapped];
+        const seen = new Set();
+        activityLog = combined.filter(item => { const key = `${item.at||''}|${item.title||''}|${item.type||''}`; if (seen.has(key)) return false; seen.add(key); return true; });
+        saveActivity();
+        renderActivity();
+      } catch (_) {}
+    })();
 
     function printDrawerCount(entry){
       const d = entry?.data || {};
