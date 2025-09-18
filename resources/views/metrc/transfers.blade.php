@@ -138,7 +138,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Persist to Supabase for search/history
                     try {
-                        await fetch('/api/activity', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ action:'metrc_transfers_log', transfers }) });
+                        await fetch('/node/metrc/transfers', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' }, body: JSON.stringify({ transfers }) });
                     } catch (_) {}
                 }
             }
@@ -189,8 +189,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function runTransfersSearch(q){
         try {
-            const url = '/api/activity';
-            const res = await fetch(url, { method:'POST', headers: { 'Content-Type':'application/json', Accept: 'application/json' }, body: JSON.stringify({ action:'metrc_transfers_search', search:q||'' }) });
+            const params = new URLSearchParams();
+            if (q) params.set('search', q);
+            const res = await fetch('/node/metrc/transfers?' + params.toString(), { headers: { Accept: 'application/json' } });
             if (!res.ok) return;
             const data = await res.json();
             const transfers = Array.isArray(data?.transfers) ? data.transfers : [];
