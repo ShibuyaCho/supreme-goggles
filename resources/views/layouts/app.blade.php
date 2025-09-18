@@ -281,6 +281,24 @@
                         </button>
                         <span id="header-store-label" class="text-xs text-gray-600"></span>
                     </div>
+                    <script>
+                      (function(){
+                        function setLabel(name){
+                          try{ document.getElementById('header-store-label').textContent = name ? `Store: ${name}` : ''; }catch(_){}}
+                        try{
+                          const raw = localStorage.getItem('cannabisPOS-storeSettings');
+                          if(raw){ const s = JSON.parse(raw||'{}'); if(s && s.name) setLabel(s.name); }
+                        }catch(_){}
+                        // also try settings client if available
+                        try {
+                          (window.SettingsClient? SettingsClient.get(true) : Promise.reject()).then(g=>{
+                            const s = g && g.settings ? g.settings : {};
+                            const n = s.store_name || s.storeName || '';
+                            if(n) setLabel(n);
+                          }).catch(()=>{});
+                        } catch(_) {}
+                      })();
+                    </script>
                     <!-- Current Employee -->
                     <div class="hidden md:flex items-center text-sm text-gray-700 relative" id="user-menu-container" data-employee-id="{{ auth()->user()->employee->id ?? '' }}">
                         <!-- Always-visible quick clock buttons (desktop) -->
