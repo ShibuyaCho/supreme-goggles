@@ -360,6 +360,47 @@
 
 @push('scripts')
 <script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const grid = document.getElementById('products-grid');
+    async function hydrateProducts(){
+      if (!grid) return;
+      try{
+        const search = document.getElementById('product-search')?.value || '';
+        const category = document.getElementById('category-filter')?.value || '';
+        const params = new URLSearchParams();
+        if (search) params.set('search', search);
+        if (category && category !== 'all') params.set('category', category);
+        const res = await fetch('/api/products-open' + (params.toString()?`?${params.toString()}`:''), { headers: { Accept:'application/json' } });
+        if (!res.ok) return; const data = await res.json();
+        const list = Array.isArray(data?.products)?data.products:[];
+        const esc=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+        grid.innerHTML = list.map(p => {
+          const name = esc(p.name||'Product');
+          const price = typeof p.price === 'number' ? p.price : (typeof p.unit_price==='number'?p.unit_price:0);
+          const quantity = typeof p.quantity==='number'?p.quantity:(typeof p.on_hand==='number'?p.on_hand:0);
+          const category = esc(p.category||'Uncategorized');
+          return `<div class=\"product-card bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden relative\" data-product-id=\"${p.id}\">`
+            + `<div class=\"p-4\"><h3 class=\"text-sm font-semibold text-gray-900\">${name}</h3>`
+            + `<p class=\"mt-1 text-xs text-gray-500\">${category}</p>`
+            + `<div class=\"mt-3 flex items-center justify-between\">`
+            + `<span class=\"text-lg font-bold text-gray-900\">$${Number(price).toFixed(2)}</span>`
+            + `<span class=\"text-xs text-gray-500\">Qty: ${quantity}</span>`
+            + `</div></div></div>`;
+        }).join('');
+      } catch(_) {}
+    }
+    if (grid) {
+      hydrateProducts();
+      try{ window.addEventListener('realtime:table-changed', (e)=>{ if ((e?.detail?.table)==='products') hydrateProducts(); }); }catch(_){ }
+      document.getElementById('product-search')?.addEventListener('input', ()=> hydrateProducts());
+      document.getElementById('category-filter')?.addEventListener('change', ()=> hydrateProducts());
+    }
+  });
+</script>
+@endpush
+
+@push('scripts')
+<script>
 let selectedProducts = new Set();
 window.selectedProducts = selectedProducts;
 
