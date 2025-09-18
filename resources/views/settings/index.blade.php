@@ -780,6 +780,14 @@ function settingsManager() {
 
             // Merge server settings (authorizes via posAuth)
             this.fetchServerSettings();
+            try {
+                window.addEventListener('realtime:table-changed', (e) => {
+                    if (e && e.detail && e.detail.table === 'pos_settings') {
+                        // Rehydrate from server when settings table changes anywhere
+                        this.fetchServerSettings();
+                    }
+                });
+            } catch (_) {}
 
             // Set up save button listener
             document.getElementById('save-settings-btn').addEventListener('click', () => {
