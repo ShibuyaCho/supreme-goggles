@@ -89,7 +89,7 @@
         <!-- Customers Tab -->
         <div id="customers-tab" class="tab-content {{ $selectedTab !== 'customers' ? 'hidden' : '' }}">
             <!-- Customer Cards -->
-            <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <div id="customers-grid" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 @foreach($customers as $customer)
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
                     <div class="p-6">
