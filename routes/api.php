@@ -140,7 +140,7 @@ Route::get('/settings/pos', function() {
                 'Accept' => 'application/json',
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                 'id' => 'eq.' . $storeId,
-                'select' => 'id,settings,updated_at',
+                'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
             ]);
             $row = null;
             if ($resp->ok()) {
@@ -155,7 +155,7 @@ Route::get('/settings/pos', function() {
                     'Accept' => 'application/json',
                 ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.defaultstore',
-                    'select' => 'id,settings,updated_at',
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 ]);
                 if ($resp2->ok()) {
                     $arr2 = $resp2->json();
@@ -222,7 +222,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     'Accept' => 'application/json',
                 ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
-                    'select' => 'id,settings,updated_at',
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 ]);
                 if ($resp0->ok()) {
                     $arr = $resp0->json();
@@ -293,7 +293,7 @@ Route::get('/settings/stores/open', function() {
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                'select' => 'id,settings,updated_at',
+                'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 'order' => 'updated_at.desc'
             ]);
             if ($resp->ok()) {
@@ -439,7 +439,7 @@ Route::get('/price-tiers', function () {
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
-                'select' => 'id,settings,updated_at',
+                'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 'order' => 'updated_at.desc',
             ]);
             if ($resp->ok()) {
@@ -495,7 +495,7 @@ Route::get('/price-tiers-open', function () {
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
-                'select' => 'id,settings,updated_at',
+                'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 'order' => 'updated_at.desc',
             ]);
             if ($resp->ok()) {
@@ -568,7 +568,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
                     'Accept' => 'application/json',
                 ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
                     'id' => 'eq.' . $created['id'],
-                    'select' => 'id,settings,updated_at',
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 ]);
                 if ($verify->ok()) {
                     $va = $verify->json();
@@ -591,7 +591,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
                     'Accept' => 'application/json',
                 ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
-                    'select' => 'id,settings,updated_at',
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 ]);
                 if ($get->ok()) {
                     $ga = $get->json();
@@ -666,7 +666,7 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
                     'Accept' => 'application/json',
                 ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
                     'id' => 'eq.' . $id,
-                    'select' => 'id,settings,updated_at',
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                 ]);
                 if ($verify->ok()) {
                     $va = $verify->json();
@@ -692,7 +692,7 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
                         'Accept' => 'application/json',
                     ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                         'id' => 'eq.' . $storeId,
-                        'select' => 'id,settings,updated_at',
+                        'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                     ]);
                     if ($get->ok()) {
                         $ga = $get->json();
@@ -1188,7 +1188,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                                 'Accept' => 'application/json',
                             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                                 'id' => 'eq.' . $storeId,
-                                'select' => 'id,settings,updated_at',
+                                'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                             ]);
                             if ($resp->ok()) { $ok = true; break; }
                         } catch (\Throwable $e) {
@@ -1360,7 +1360,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                             'Accept' => 'application/json',
                         ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
-                            'select' => 'id,settings,updated_at',
+                            'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                         ]);
                         if ($resp0->ok()) {
                             $arr0 = $resp0->json();
@@ -1438,7 +1438,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                             'Accept' => 'application/json',
                         ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
-                            'select' => 'id,settings,updated_at',
+                            'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                         ]);
                         if ($verify->ok()) {
                             $arr = $verify->json();
@@ -1496,7 +1496,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
                     ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                        'select' => 'id,settings,updated_at',
+                        'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
                         'order' => 'updated_at.desc'
                     ]);
                     if ($resp->ok()) {
