@@ -12841,3 +12841,37 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   } catch (_) {}
 })();
+
+// Fallback: make deleteReport globally available to Alpine expressions
+(function(){
+  try {
+    if (typeof window.deleteReport !== 'function') {
+      window.deleteReport = async function(reportOrId){
+        try {
+          const id = typeof reportOrId === 'object' && reportOrId ? (reportOrId.id ?? reportOrId.template_id ?? reportOrId.uuid ?? null) : reportOrId;
+          const name = typeof reportOrId === 'object' && reportOrId ? (reportOrId.name || 'this report') : 'this report';
+          if (!id) return;
+          if (!confirm(`Delete ${name}?`)) return;
+          try {
+            await fetch(`/api/reports/templates/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Accept: 'application/json' } });
+          } catch (_) {}
+          try {
+            document.querySelectorAll('[x-data]').forEach(function(root){
+              try {
+                const scope = root.__x && root.__x.$data ? root.__x.$data : null;
+                if (scope && Array.isArray(scope.recentReports)) {
+                  const idx = scope.recentReports.findIndex(function(r){ return String((r && (r.id ?? r.template_id ?? r.uuid))) === String(id); });
+                  if (idx !== -1) {
+                    scope.recentReports.splice(idx,1);
+                    try { localStorage.setItem('cannabisPOS-reports', JSON.stringify(scope.recentReports)); } catch (_) {}
+                  }
+                }
+              } catch (_) {}
+            });
+          } catch (_) {}
+          try { window.POS && typeof POS.showToast === 'function' ? POS.showToast('Report deleted', 'success') : null; } catch (_) {}
+        } catch (_) {}
+      };
+    }
+  } catch (_) {}
+})();
