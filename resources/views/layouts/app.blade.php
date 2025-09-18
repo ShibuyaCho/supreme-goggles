@@ -183,7 +183,7 @@
         } catch (e) {}
       })();
     </script>
-    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <script>
       (function(){
         function readStore(){
