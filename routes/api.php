@@ -268,11 +268,10 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
 });
 
 // Public store list for SPA/demo compatibility (no auth)
-Route::get('/settings/stores', function() {
+Route::get('/settings/stores/open', function() {
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
     $stores = [];
-    // Try Supabase first
     if ($supabaseUrl && $supabaseKey) {
         try {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
@@ -302,7 +301,6 @@ Route::get('/settings/stores', function() {
             \Illuminate\Support\Facades\Log::warning('Public store list via Supabase failed', ['error'=>$e->getMessage()]);
         }
     }
-    // Fallback to local DB table
     if (empty($stores)) {
         try {
             $rows = \Illuminate\Support\Facades\DB::table('pos_settings')->select('id','settings','updated_at')->orderByDesc('updated_at')->limit(200)->get();
