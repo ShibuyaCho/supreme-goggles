@@ -297,7 +297,7 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 bg-white">
+                    <tbody id="tiers-table-body" class="divide-y divide-gray-200 bg-white">
                         @forelse($detailed_tiers ?? [] as $tier)
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4">
@@ -370,4 +370,46 @@
         </div>
     </div>
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    async function refreshTiers(){
+      try {
+        const r = await (window.axios||axios).get('/api/price-tiers', { headers: { Accept: 'application/json' } });
+        const list = (r && r.data && (r.data.tiers||r.data)) || [];
+        const tb = document.getElementById('tiers-table-body');
+        if (!tb || !Array.isArray(list)) return;
+        const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        tb.innerHTML = list.map(t => {
+          const name = esc(t.name || 'Tier');
+          const type = esc(t.type || 'retail');
+          const cust = esc(t.customer_type || 'recreational');
+          const disc = typeof t.discount === 'number' ? t.discount : (t.percentage || 0);
+          const minq = t.min_quantity != null ? t.min_quantity : '-';
+          const count = t.product_count != null ? t.product_count : (t.products?.length||0);
+          const status = (t.is_active===false||t.status==='inactive') ? 'inactive' : 'active';
+          return `<tr class="hover:bg-gray-50">
+            <td class="px-6 py-4"><div class="text-sm font-medium text-gray-900">${name}</div><div class="text-sm text-gray-500">${esc(t.description||'')}</div></td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${type==='retail'?'bg-blue-100 text-blue-800':(type==='wholesale'?'bg-purple-100 text-purple-800':'bg-green-100 text-green-800')}">${type.charAt(0).toUpperCase()+type.slice(1)}</span></td>
+            <td class="px-6 py-4 text-sm text-gray-900">${cust.charAt(0).toUpperCase()+cust.slice(1)}</td>
+            <td class="px-6 py-4"><span class="text-sm font-medium text-green-600">${disc}%</span></td>
+            <td class="px-6 py-4 text-sm text-gray-900">${minq}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">${count}</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${status==='active'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+            <td class="px-6 py-4"><div class="flex items-center space-x-2">
+              <button type="button" class="text-blue-600 hover:text-blue-900" title="Edit">Edit</button>
+              <button type="button" class="text-green-600 hover:text-green-900" title="Duplicate">Duplicate</button>
+              <button type="button" class="text-red-600 hover:text-red-900" title="Delete">Delete</button>
+            </div></td>
+          </tr>`;
+        }).join('');
+      } catch (_) { /* ignore */ }
+    }
+    try {
+      window.addEventListener('realtime:table-changed', (e) => {
+        if (e && e.detail && e.detail.table === 'price_tiers') refreshTiers();
+      });
+    } catch(_) {}
+    refreshTiers();
+  });
+</script>
 @endsection
