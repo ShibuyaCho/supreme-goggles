@@ -156,6 +156,14 @@
     <script src="{{ asset('js/realtime.js') }}" defer></script>
     <script src="{{ asset('js/settings-client.js') }}" defer></script>
     <script src="{{ asset('js/auth.js') }}" defer></script>
+    <script>
+      (function(){
+        try{
+          const raw = localStorage.getItem('pos_store');
+          if(raw && (window.axios||window.axios)){ const s=JSON.parse(raw); const n=s && (s.name||s.store_name); if(n){ (window.axios||axios).defaults.headers.common['X-Store-Name']=n; }}
+        }catch(_){ }
+      })();
+    </script>
     <script src="{{ asset('js/pos.js') }}" defer></script>
     <script src="{{ asset('js/modal-keyboard-handler.js') }}" defer></script>
     <script src="{{ asset('js/store-manager.js') }}" defer></script>
