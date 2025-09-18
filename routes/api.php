@@ -449,6 +449,36 @@ Route::get('/price-tiers', function () {
             }
         } catch (\Throwable $e) { /* fall back below */ }
     }
+    // Fallback to local DB if Supabase unavailable
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('price_tiers')) {
+            $rows = \App\Models\PriceTier::query()->orderByDesc('updated_at')->get()->map(function($r){
+                $discount = 0.0;
+                if ($r->type === 'percentage') { $discount = (float)$r->adjustment_value; }
+                elseif ($r->type === 'fixed_amount') { $discount = (float)$r->adjustment_value; }
+                elseif ($r->type === 'fixed_price') { $discount = 0.0; }
+                $cust = 'recreational';
+                $ct = $r->customer_types;
+                if (is_string($ct) && $ct !== '') { $cust = 'recreational'; }
+                elseif (is_array($ct) && !empty($ct)) { $cust = (string)($ct[0] ?? 'recreational'); }
+                return [
+                    'id' => $r->id,
+                    'name' => $r->name,
+                    'description' => $r->description,
+                    'status' => $r->is_active ? 'active' : 'inactive',
+                    'type' => (string)$r->type,
+                    'customer_type' => $cust,
+                    'discount' => $discount,
+                    'min_quantity' => $r->minimum_quantity,
+                    'min_amount' => null,
+                    'product_count' => 0,
+                    'schedule' => [ 'start_date' => $r->valid_from, 'end_date' => $r->valid_until ],
+                    'updated_at' => optional($r->updated_at)->toISOString(),
+                ];
+            })->values()->all();
+            return response()->json(['success' => true, 'tiers' => $rows]);
+        }
+    } catch (\Throwable $e) { /* ignore and return empty */ }
     return response()->json(['success' => true, 'tiers' => []]);
 });
 Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
@@ -528,6 +558,13 @@ Route::prefix('auth')->group(function () {
 
 // TEMP: Open POS payment endpoint for end-to-end testing (no auth, no CSRF under API middleware)
 Route::post('/pos/process-payment-open', [\App\Http\Controllers\POSController::class, 'processPayment']);
+
+// Public analytics read-only aliases (no auth required)
+Route::prefix('analytics')->group(function () {
+    Route::get('/overview-open', [\App\Http\Controllers\AnalyticsController::class, 'overview']);
+    Route::get('/end-of-day-open', [\App\Http\Controllers\AnalyticsController::class, 'endOfDay']);
+    Route::get('/company-open', [\App\Http\Controllers\AnalyticsController::class, 'companyView']);
+});
 
 // Compatibility aliases (support clients using /api/* without /auth prefix)
 Route::post('/login', [AuthController::class, 'login']);
