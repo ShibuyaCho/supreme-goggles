@@ -225,11 +225,33 @@
   }
 
   async function getFromServer(sid, noCache = false) {
-    // Always use backend API as the single source of truth
-    return await httpGet("/api/settings/pos", {
-      store: sid,
-      nocache: noCache ? 1 : 0,
-    });
+    // Read directly from Supabase pos_settings (no API hop)
+    const tryIds = [sid];
+    if (!tryIds.includes('defaultstore') && sid === 'default') tryIds.push('defaultstore');
+    if (!tryIds.includes('default')) tryIds.push('default');
+    for (const id of tryIds) {
+      try {
+        const r = await supaReq(
+          `pos_settings?id=eq.${encodeURIComponent(id)}&select=*`,
+          {
+            method: 'GET',
+            headers: noCache ? { 'Cache-Control': 'no-cache' } : {},
+          },
+        );
+        if (!r.ok) continue;
+        const arr = await r.json();
+        const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+        if (row) {
+          let settings = {};
+          if (row.settings && typeof row.settings === 'object') settings = row.settings;
+          else if (row.settings && typeof row.settings === 'string') {
+            try { settings = JSON.parse(row.settings); } catch (_) { settings = {}; }
+          }
+          return { settings, updated_at: row.updated_at || null };
+        }
+      } catch (_) {}
+    }
+    return { settings: {}, updated_at: null };
   }
 
   const SettingsClient = {
