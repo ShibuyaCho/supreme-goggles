@@ -364,6 +364,8 @@
         </div>
     </div>
 </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="{{ asset('js/realtime.js') }}" defer></script>
 @endsection
 
 @push('scripts')
