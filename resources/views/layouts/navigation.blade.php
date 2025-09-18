@@ -122,7 +122,7 @@
                     </svg>
                     
                     <!-- Search Results Dropdown -->
-                    <div x-show="open && query.length > 2" x-transition class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded-md py-1 ring-1 ring-black ring-opacity-5 max-h-64 overflow-y-auto">
+                    <div x-show="open && query.length > 2" class="absolute z-50 mt-1 w-full bg-white shadow-lg rounded-md py-1 ring-1 ring-black ring-opacity-5 max-h-64 overflow-y-auto">
                         <div class="px-4 py-2 text-xs text-gray-500">Search results will appear here...</div>
                     </div>
                 </div>
