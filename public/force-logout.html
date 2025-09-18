@@ -77,11 +77,24 @@
         try {
           step("Revoking session…");
           try {
-            await fetch("/api/auth/logout", {
-              method: "POST",
-              headers: { Accept: "application/json" },
-              credentials: "include",
-            });
+            let ok = false;
+            try {
+              const r = await fetch("/api/auth/logout", {
+                method: "POST",
+                headers: { Accept: "application/json" },
+                credentials: "include",
+              });
+              ok = r.ok;
+            } catch (e1) {}
+            if (!ok) {
+              try {
+                await fetch("/api/logout", {
+                  method: "POST",
+                  headers: { Accept: "application/json" },
+                  credentials: "include",
+                });
+              } catch (e2) {}
+            }
           } catch (e) {}
           step("Clearing local data…");
           try {
