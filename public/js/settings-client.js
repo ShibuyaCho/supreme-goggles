@@ -175,51 +175,7 @@
     return r.data;
   }
   async function httpPost(path, body, params) {
-    // Special-case settings save: write directly to Supabase (no API hop)
-    if (path === "/api/settings/pos") {
-      const sid = currentStoreId();
-      const now = new Date().toISOString();
-      const merged = body || {};
-      // Upsert into pos_settings
-      const up = await supaReq(`pos_settings?on_conflict=id`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify([{ id: sid, settings: merged, updated_at: now }]),
-      });
-      if (!up.ok) {
-        let t = "";
-        try {
-          t = await up.text();
-        } catch (_) {}
-        throw new Error(t || `HTTP ${up.status}`);
-      }
-      // Verify read-after-write
-      try {
-        const ver = await supaReq(
-          `pos_settings?id=eq.${encodeURIComponent(sid)}&select=*`,
-          { method: "GET" },
-        );
-        if (ver.ok) {
-          const arr = await ver.json();
-          const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-          if (row) {
-            let settings = {};
-            if (row.settings && typeof row.settings === "object")
-              settings = row.settings;
-            else if (row.settings && typeof row.settings === "string") {
-              try {
-                settings = JSON.parse(row.settings);
-              } catch (_) {
-                settings = {};
-              }
-            }
-            return { settings, updated_at: row.updated_at || now };
-          }
-        }
-      } catch (_) {}
-      return { settings: merged, updated_at: now };
-    }
-    // Fallback for other endpoints (unchanged)
+    // Route settings save via Laravel API; no direct Supabase special-case
     if (window.posAuth) {
       const res = await window.posAuth.apiRequest(
         "post",
