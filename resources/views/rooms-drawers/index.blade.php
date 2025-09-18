@@ -362,6 +362,16 @@
         <div class="p-3 rounded bg-gray-50 border"><div class="text-xs text-gray-500">Debit Total (this till)</div><div id="rd-debit" class="text-xl font-semibold">$0.00</div></div>
         <div class="p-3 rounded bg-gray-50 border"><div class="text-xs text-gray-500">Variance</div><div id="rd-variance" class="text-xl font-semibold">$0.00</div></div>
       </div>
+      <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Counted By</label>
+          <input id="rd-counted-by" type="text" class="w-full px-3 py-2 border rounded" placeholder="Employee name" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Approved By (Manager)</label>
+          <input id="rd-approved-by" type="text" class="w-full px-3 py-2 border rounded" placeholder="Manager name" />
+        </div>
+      </div>
       <div class="mt-4 flex items-center justify-end gap-3">
         <button id="rd-count-cancel" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
         <button id="rd-count-save" class="px-4 py-2 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-md">Save Count</button>
