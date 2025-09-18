@@ -258,16 +258,26 @@ export default function Customers() {
     const results: Customer[] = [];
     // 1) Primary: PHP -> Supabase
     try {
-      const res = await fetch(`/api/customers-open${search ? `?search=${encodeURIComponent(search)}` : ""}`, { headers: { Accept: "application/json" } });
+      const res = await fetch(
+        `/api/customers-open${search ? `?search=${encodeURIComponent(search)}` : ""}`,
+        { headers: { Accept: "application/json" } },
+      );
       if (res.ok) {
         const data = await res.json();
-        const list = Array.isArray(data?.customers) ? data.customers : Array.isArray(data) ? data : [];
+        const list = Array.isArray(data?.customers)
+          ? data.customers
+          : Array.isArray(data)
+            ? data
+            : [];
         results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
     // 2) Fallback: Node alias -> Supabase (if Node server is present)
     try {
-      const res = await fetch(`/node/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`, { headers: { Accept: "application/json" } });
+      const res = await fetch(
+        `/node/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`,
+        { headers: { Accept: "application/json" } },
+      );
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data?.customers) ? data.customers : [];
@@ -277,12 +287,15 @@ export default function Customers() {
     // 3) Fallback: /api/customers (could be Node or Laravel depending on server)
     try {
       const token = localStorage.getItem("auth_token");
-      const res = await fetch(`/api/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`, {
-        headers: {
-          Accept: "application/json",
-          Authorization: token ? `Bearer ${token}` : "",
+      const res = await fetch(
+        `/api/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`,
+        {
+          headers: {
+            Accept: "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
+          },
         },
-      });
+      );
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data?.customers)
@@ -297,7 +310,10 @@ export default function Customers() {
     } catch (_) {}
     // 3) Last resort: Laravel web route JSON (if configured to respond with JSON)
     try {
-      const res = await fetch("/customers", { headers: { Accept: "application/json" }, credentials: "same-origin" });
+      const res = await fetch("/customers", {
+        headers: { Accept: "application/json" },
+        credentials: "same-origin",
+      });
       if (res.ok) {
         const data = await res.json();
         const list = Array.isArray(data?.data)
@@ -598,7 +614,9 @@ export default function Customers() {
     } catch (_) {}
     setCustomers((prev) =>
       prev.map((customer) =>
-        customer.id === customerId ? { ...customer, isActive: false } : customer,
+        customer.id === customerId
+          ? { ...customer, isActive: false }
+          : customer,
       ),
     );
   };

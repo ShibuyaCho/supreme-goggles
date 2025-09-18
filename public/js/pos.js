@@ -6285,7 +6285,9 @@ function cannabisPOS() {
     async _refreshCustomersFromApi() {
       // Prefer Supabase via PHP proxy
       try {
-        const r0 = await (window.axios || axios).get("/api/customers-open", { headers: { Accept: "application/json" } });
+        const r0 = await (window.axios || axios).get("/api/customers-open", {
+          headers: { Accept: "application/json" },
+        });
         const list = Array.isArray(r0?.data?.customers)
           ? r0.data.customers
           : Array.isArray(r0?.data)
@@ -6314,7 +6316,9 @@ function cannabisPOS() {
     async _refreshProductsFromApi() {
       // Prefer Supabase via PHP proxy
       try {
-        const res = await (window.axios || axios).get("/api/products-open", { headers: { Accept: "application/json" } });
+        const res = await (window.axios || axios).get("/api/products-open", {
+          headers: { Accept: "application/json" },
+        });
         const items = Array.isArray(res?.data?.products)
           ? res.data.products
           : Array.isArray(res?.data)
