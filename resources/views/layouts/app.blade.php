@@ -216,7 +216,7 @@
                             <span>Cannabis POS</span>
                             <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
                         </button>
-                        <div x-show="open" @click.outside="open=false" x-transition class="absolute z-50 mt-2 w-56 bg-white shadow-lg rounded-md ring-1 ring-black ring-opacity-5">
+                        <div x-show="open" @click.outside="open=false" class="absolute z-50 mt-2 w-56 bg-white shadow-lg rounded-md ring-1 ring-black ring-opacity-5">
                             <div class="py-1">
                                 <a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Point of Sale</a>
                                 <a href="{{ route('customers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Customers</a>
