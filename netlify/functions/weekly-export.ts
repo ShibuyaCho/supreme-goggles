@@ -95,7 +95,7 @@ export const handler = async () => {
     "metrc_logs",
     "activity_logs",
     "report_templates",
-    "settings",
+    "pos_settings",
   ];
 
   const results: Record<string, string> = {};
