@@ -40,8 +40,11 @@ class CheckPermission
             return $next($request);
         }
 
-        // Role-based permissions from POS settings
-        $settings = Cache::get('pos_settings', []);
+        // Role-based permissions from POS settings (store-scoped)
+        $sid = (string)($request->header('X-Store-ID') ?: 'default');
+        $sid = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $sid);
+        if ($sid === 'defaultstore') $sid = 'default';
+        $settings = Cache::get('pos_settings:' . $sid, Cache::get('pos_settings', []));
         $role = $user->role ?? null;
         $rolePerms = [];
         if ($role && isset($settings['role_permissions']) && is_array($settings['role_permissions'])) {
