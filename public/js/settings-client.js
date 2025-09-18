@@ -69,6 +69,7 @@
     metrc_user_key: "",
     metrc_vendor_key: "",
     metrc_facility: "",
+    metrc_auto_push_sales: false,
 
     // Hours
     business_hours: [
