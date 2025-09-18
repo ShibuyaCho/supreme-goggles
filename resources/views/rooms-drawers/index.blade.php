@@ -618,7 +618,9 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     }
     async function addActivity(title, details=''){
-      const entry = { at: new Date().toISOString(), by: currentUserName(), title, details };
+      const entry = { at: new Date().toISOString(), by: currentUserName(), title };
+      if (details && typeof details === 'object') { entry.type = details.type; entry.data = details.data; }
+      else if (details) { entry.details = details; }
       activityLog.push(entry);
       saveActivity();
       try { const k='pos_activity_log'; const prev=JSON.parse(localStorage.getItem(k)||'[]'); prev.push(entry); localStorage.setItem(k, JSON.stringify(prev)); } catch(_) {}
