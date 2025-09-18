@@ -180,7 +180,13 @@
     listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">Loading stores…</div>';
     try {
       let rows = [];
-      if (window.posAuth && typeof window.posAuth.apiRequest === 'function') {
+      // Try open endpoint first (works even when not logged in)
+      try {
+        const res = await (window.axios||axios).get('/api/settings/stores/open', { headers: { Accept: 'application/json' } });
+        rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
+      } catch(_) { rows = []; }
+      // Then try protected endpoint via posAuth if still empty
+      if ((!Array.isArray(rows) || rows.length === 0) && window.posAuth && typeof window.posAuth.apiRequest === 'function') {
         try {
           const r = await window.posAuth.apiRequest('get', '/settings/stores');
           const payload = (r && (r.data || r)) ? (r.data || r) : {};
@@ -189,7 +195,7 @@
       }
       if (!Array.isArray(rows) || rows.length === 0) {
         try {
-          const res = await (window.axios||axios).get('/api/settings/stores/open', { headers: { Accept: 'application/json' } });
+          const res = await (window.axios||axios).get('/api/settings/stores', { headers: { Accept: 'application/json' } });
           rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
         } catch(_) { rows = []; }
       }
