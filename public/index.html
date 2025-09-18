@@ -747,7 +747,9 @@
                 await axios.post("/api/auth/logout");
               } catch (e2) {
                 if (e2?.response?.status === 404) {
-                  try { await axios.post("/api/logout"); } catch (_) {}
+                  try {
+                    await axios.post("/api/logout");
+                  } catch (_) {}
                 }
               }
             } catch (e) {}
