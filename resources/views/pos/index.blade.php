@@ -411,10 +411,10 @@
           if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
           try {
             if (transfers.length) {
-              await fetch('/node/metrc/transfers', {
+              await fetch('/api/activity', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                body: JSON.stringify({ transfers })
+                body: JSON.stringify({ action: 'metrc_transfers_log', transfers })
               });
             }
           } catch (_) {}
