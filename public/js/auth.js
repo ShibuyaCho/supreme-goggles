@@ -294,7 +294,15 @@ class POSAuth {
   async logout() {
     try {
       if (this.token) {
-        await axios.post(`${this.baseUrl}/auth/logout`);
+        try {
+          await axios.post(`${this.baseUrl}/auth/logout`);
+        } catch (e) {
+          if (e?.response?.status === 404) {
+            await axios.post(`${this.baseUrl}/logout`);
+          } else {
+            throw e;
+          }
+        }
       }
     } catch (error) {
       console.error("Logout error:", error);
