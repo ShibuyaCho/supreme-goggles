@@ -405,10 +405,14 @@
       } catch (_) { /* ignore */ }
     }
     try {
-      window.addEventListener('realtime:table-changed', (e) => {
-        if (e && e.detail && e.detail.table === 'price_tiers') refreshTiers();
-      });
+      const onRt = (e) => {
+        const t = e && e.detail && e.detail.table;
+        if (t === 'price_tiers' || t === 'pos_settings') refreshTiers();
+      };
+      window.addEventListener('realtime:table-changed', onRt);
     } catch(_) {}
+    try { window.addEventListener('settings:updated', () => refreshTiers()); } catch(_) {}
+    try { window.addEventListener('settings-updated', () => refreshTiers()); } catch(_) {}
     refreshTiers();
   });
 </script>
