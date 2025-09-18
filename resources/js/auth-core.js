@@ -104,7 +104,16 @@ class AuthManager {
 
   async refreshToken() {
     try {
-      const response = await axios.post("/api/refresh");
+      let response;
+      try {
+        response = await axios.post("/api/auth/refresh");
+      } catch (e) {
+        if (e?.response?.status === 404) {
+          response = await axios.post("/api/refresh");
+        } else {
+          throw e;
+        }
+      }
 
       if (response.data.token) {
         this.setAuth(response.data.token, response.data.user || this.user);
