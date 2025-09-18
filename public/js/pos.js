@@ -1054,78 +1054,58 @@ function cannabisPOS() {
           is_gls: !!f.isGLS,
           metrc_tag: f.metrcTag || "",
         };
-        // Try protected API first
+        // Supabase-only insert (bypass unavailable API)
         let created = null;
         try {
-          const res = await (window.axios || axios).post(
-            "/api/products",
-            payload,
-            { headers: { Accept: "application/json" } },
-          );
-          created = res && res.data ? res.data.product || res.data : null;
-        } catch (e1) {
-          // Fallback: web route (will redirect on success, so prefer JSON)
-          try {
-            const res = await (window.axios || axios).post(
-              "/products",
-              payload,
-              { headers: { Accept: "application/json" } },
-            );
-            created = res && res.data ? res.data.product || res.data : null;
-          } catch (e2) {
-            // Final fallback: write directly to Supabase if configured
+          const base = (window.__SUPABASE_URL || "").replace(/\/$/, "");
+          const key = window.__SUPABASE_ANON_KEY || "";
+          if (!base || !key) throw new Error("Supabase not configured");
+          const body = [
+            {
+              name: payload.name,
+              category: payload.category,
+              price: payload.price,
+              cost: payload.cost,
+              quantity: payload.quantity,
+              stock: payload.quantity,
+              room: payload.room,
+              sku: payload.sku,
+              weight: payload.weight,
+              thc: payload.thc,
+              cbd: payload.cbd,
+              cbn: payload.cbn,
+              cbg: payload.cbg,
+              cbc: payload.cbc,
+              vendor: payload.vendor,
+              supplier: payload.supplier,
+              metrc_tag: payload.metrc_tag,
+              is_gls: payload.is_gls === true,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            },
+          ];
+          const r = await fetch(`${base}/rest/v1/products`, {
+            method: "POST",
+            headers: {
+              apikey: key,
+              Authorization: `Bearer ${key}`,
+              Accept: "application/json",
+              "Content-Type": "application/json",
+              Prefer: "return=representation",
+            },
+            body: JSON.stringify(body),
+          });
+          if (!r.ok) {
+            let emsg = "";
             try {
-              const base = (window.__SUPABASE_URL || "").replace(/\/$/, "");
-              const key = window.__SUPABASE_ANON_KEY || "";
-              if (!base || !key) throw e1.response || e2.response || e2 || e1;
-              const body = [
-                {
-                  name: payload.name,
-                  category: payload.category,
-                  price: payload.price,
-                  cost: payload.cost,
-                  quantity: payload.quantity,
-                  stock: payload.quantity,
-                  room: payload.room,
-                  sku: payload.sku,
-                  weight: payload.weight,
-                  thc: payload.thc,
-                  cbd: payload.cbd,
-                  cbn: payload.cbn,
-                  cbg: payload.cbg,
-                  cbc: payload.cbc,
-                  vendor: payload.vendor,
-                  supplier: payload.supplier,
-                  metrc_tag: payload.metrc_tag,
-                  is_gls: payload.is_gls === true,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString(),
-                },
-              ];
-              const r = await fetch(`${base}/rest/v1/products`, {
-                method: "POST",
-                headers: {
-                  apikey: key,
-                  Authorization: `Bearer ${key}`,
-                  Accept: "application/json",
-                  "Content-Type": "application/json",
-                  Prefer: "return=representation",
-                },
-                body: JSON.stringify(body),
-              });
-              if (!r.ok) {
-                let emsg = "";
-                try {
-                  emsg = await r.text();
-                } catch (_) {}
-                throw new Error(emsg || `HTTP ${r.status}`);
-              }
-              const arr = await r.json();
-              created = Array.isArray(arr) && arr[0] ? arr[0] : null;
-            } catch (e3) {
-              throw e3 || e2 || e1;
-            }
+              emsg = await r.text();
+            } catch (_) {}
+            throw new Error(emsg || `HTTP ${r.status}`);
           }
+          const arr = await r.json();
+          created = Array.isArray(arr) && arr[0] ? arr[0] : null;
+        } catch (e3) {
+          throw e3;
         }
         // Optimistically update UI
         if (created && typeof created === "object") {
