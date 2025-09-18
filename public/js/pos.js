@@ -12268,6 +12268,24 @@ function cannabisPOS() {
       this.showToast(`Duplicating ${report.name}...`, "info");
     },
 
+    async deleteReport(report) {
+      try {
+        if (!report || !report.id) return;
+        if (!confirm(`Delete ${report.name}?`)) return;
+        try {
+          await (window.axios || axios).delete(`/api/reports/templates/${encodeURIComponent(report.id)}`, { headers: { Accept: 'application/json' } });
+        } catch (e) {
+          // still proceed to update UI
+        }
+        const idx = this.recentReports.findIndex((r) => String(r.id) === String(report.id));
+        if (idx !== -1) {
+          this.recentReports.splice(idx, 1);
+          try { localStorage.setItem('cannabisPOS-reports', JSON.stringify(this.recentReports)); } catch (_) {}
+        }
+        this.showToast('Report deleted', 'success');
+      } catch (_) {}
+    },
+
     // Helpers for export
     async _askFormat(def = "pdf") {
       try {
