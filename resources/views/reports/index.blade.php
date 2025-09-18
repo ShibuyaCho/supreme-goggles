@@ -650,6 +650,23 @@ function generateCustomReport() {
     document.querySelector('[x-data="reportsManager()"]').__x.$data.showCustomModal = true;
 }
 </script>
+<script>
+// Global bridge so @click="deleteReport(report)" never errors
+(function(){
+  try {
+    if (typeof window.deleteReport !== 'function') {
+      window.deleteReport = function(report){
+        try {
+          var el = document.querySelector('[x-data="reportsManager()"]');
+          if (el && el.__x && el.__x.$data && typeof el.__x.$data.deleteReport === 'function') {
+            el.__x.$data.deleteReport(report);
+          }
+        } catch(_) {}
+      };
+    }
+  } catch(_) {}
+})();
+</script>
 
 @push('styles')
 <link href="{{ asset('css/report-export.css') }}" rel="stylesheet">
