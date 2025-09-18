@@ -851,6 +851,7 @@ function settingsManager() {
                 // Display & Inventory
                 inventory_view_mode: 'cards',
                 expandable_cart: true,
+                weight_threshold: 0,
 
                 // Auto Delete
                 auto_delete_zero_quantity: false,
