@@ -2088,6 +2088,7 @@ app.post("/api/activity", async (req, res) => {
           actor_user_id: user ? String(user.id) : null,
           action: req.body?.action || "event",
           payload: req.body || {},
+          created_at: new Date().toISOString(),
         },
       ],
     });
@@ -2098,6 +2099,21 @@ app.post("/api/activity", async (req, res) => {
     });
   } catch (_) {
     res.json({ success: true });
+  }
+});
+
+// Fetch recent activity logs (for Rooms & Drawers hydration)
+app.get("/node/activity", async (req, res) => {
+  try {
+    const limit = Math.min(Number(req.query?.limit || 100), 500) || 100;
+    const action = (req.query?.action || "").toString().trim();
+    let qp = `activity_logs?select=*&order=created_at.desc&limit=${encodeURIComponent(String(limit))}`;
+    if (action) qp += `&action=eq.${encodeURIComponent(action)}`;
+    const r = await supaFetch(qp, { method: "GET" });
+    const rows = r.ok ? await r.json() : [];
+    res.json({ success: true, logs: Array.isArray(rows) ? rows : [] });
+  } catch (e) {
+    res.json({ success: true, logs: [] });
   }
 });
 
