@@ -243,11 +243,26 @@
           this.saveLocal(sid, merged);
           try { localStorage.setItem('cannabisPOS-weightThreshold', String(merged.weight_threshold ?? 0)); } catch(_) {}
           try {
+            // Broadcast settings update
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
                 detail: { settings: merged, storeId: sid },
               }),
             );
+            // If settings include price tiers, persist to local backup for POS fallback
+            try {
+              const arr = Array.isArray(merged.price_tiers)
+                ? merged.price_tiers
+                : Array.isArray(merged.priceTiers)
+                ? merged.priceTiers
+                : [];
+              if (arr && arr.length) {
+                localStorage.setItem(
+                  "cannabisPOS-priceTiers-backup",
+                  JSON.stringify(arr),
+                );
+              }
+            } catch (_) {}
           } catch (_) {}
           return { success: true, settings: merged, updated_at: updatedAt };
         } catch (e) {
