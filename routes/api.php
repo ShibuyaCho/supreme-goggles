@@ -440,6 +440,7 @@ Route::get('/price-tiers', function () {
                 'Accept' => 'application/json',
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
                 'select' => '*',
+                'order' => 'updated_at.desc',
             ]);
             if ($resp->ok()) {
                 return response()->json([
