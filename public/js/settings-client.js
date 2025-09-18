@@ -44,6 +44,9 @@
     inventory_view_mode: "cards",
     expandable_cart: true,
 
+    // Inventory/scale
+    weight_threshold: 0,
+
     // Auto delete
     auto_delete_zero_quantity: false,
     auto_delete_zero_days: 1,
