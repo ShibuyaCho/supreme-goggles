@@ -3034,26 +3034,55 @@ function cannabisPOS() {
         // Supabase REST fallback (public, uses anon key)
         if (!Array.isArray(list) || list.length === 0) {
           try {
-            const url = (window.__SUPABASE_URL || '').replace(/\/$/, '') + '/rest/v1/sales';
-            const key = window.__SUPABASE_ANON_KEY || '';
+            const url =
+              (window.__SUPABASE_URL || "").replace(/\/$/, "") +
+              "/rest/v1/sales";
+            const key = window.__SUPABASE_ANON_KEY || "";
             if (url && key) {
-              const startIso = new Date(Date.UTC(first.getFullYear(), first.getMonth(), first.getDate(), 0, 0, 0)).toISOString();
-              const endIso = new Date(Date.UTC(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59, 59)).toISOString();
-              const resp = await fetch(`${url}?select=*&or=(status.eq.completed,status.eq.Completed,status.is.null)&and=(created_at.gte.${encodeURIComponent(startIso)},created_at.lte.${encodeURIComponent(endIso)})&limit=20000`, {
-                headers: { 'Accept':'application/json', 'apikey': key, 'Authorization': `Bearer ${key}` },
-              });
+              const startIso = new Date(
+                Date.UTC(
+                  first.getFullYear(),
+                  first.getMonth(),
+                  first.getDate(),
+                  0,
+                  0,
+                  0,
+                ),
+              ).toISOString();
+              const endIso = new Date(
+                Date.UTC(
+                  last.getFullYear(),
+                  last.getMonth(),
+                  last.getDate(),
+                  23,
+                  59,
+                  59,
+                ),
+              ).toISOString();
+              const resp = await fetch(
+                `${url}?select=*&or=(status.eq.completed,status.eq.Completed,status.is.null)&and=(created_at.gte.${encodeURIComponent(startIso)},created_at.lte.${encodeURIComponent(endIso)})&limit=20000`,
+                {
+                  headers: {
+                    Accept: "application/json",
+                    apikey: key,
+                    Authorization: `Bearer ${key}`,
+                  },
+                },
+              );
               if (resp.ok) {
                 const rows = await resp.json();
                 if (Array.isArray(rows)) {
-                  list = rows.map((r) => this.mapSaleToSpa({
-                    id: r.id,
-                    created_at: r.created_at,
-                    customer_type: r.customer_type,
-                    total_amount: r.total_amount ?? r.total,
-                    total: r.total ?? r.total_amount,
-                    payment_method: r.payment_method,
-                    sale_number: r.sale_number,
-                  }));
+                  list = rows.map((r) =>
+                    this.mapSaleToSpa({
+                      id: r.id,
+                      created_at: r.created_at,
+                      customer_type: r.customer_type,
+                      total_amount: r.total_amount ?? r.total,
+                      total: r.total ?? r.total_amount,
+                      payment_method: r.payment_method,
+                      sale_number: r.sale_number,
+                    }),
+                  );
                 }
               }
             }
@@ -3101,16 +3130,20 @@ function cannabisPOS() {
     updateMonthStatsFromSales() {
       try {
         // Only derive month stats from current sales list when that list represents the whole month
-        const dr = (this.salesFilter && this.salesFilter.dateRange) || 'today';
-        const isMonth = dr === 'month';
+        const dr = (this.salesFilter && this.salesFilter.dateRange) || "today";
+        const isMonth = dr === "month";
         // Or if explicit server date window matches the month
         let coversMonth = false;
         try {
           const d = new Date();
-          const first = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-01`;
-          const last = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()).padStart(2,'0')}`;
-          coversMonth = !!(this._serverDateFromKey === first && this._serverDateToKey === last);
-        } catch (_) { coversMonth = false; }
+          const first = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+          const last = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()).padStart(2, "0")}`;
+          coversMonth = !!(
+            this._serverDateFromKey === first && this._serverDateToKey === last
+          );
+        } catch (_) {
+          coversMonth = false;
+        }
         if (!isMonth && !coversMonth) return; // do not overwrite MTD with partial range (e.g., today)
 
         const d = new Date();
@@ -3118,20 +3151,36 @@ function cannabisPOS() {
         const nowYear = d.getFullYear();
         const list = Array.isArray(this.sales) ? this.sales : [];
         const monthList = list.filter((s) => {
-          const dt = new Date(s.date || s.created_at || s.createdAt || Date.now());
+          const dt = new Date(
+            s.date || s.created_at || s.createdAt || Date.now(),
+          );
           return dt.getFullYear() === nowYear && dt.getMonth() === nowMonth;
         });
-        const revenue = monthList.reduce((sum, s) => sum + Number(s.total || 0), 0);
-        const recCount = monthList.filter((s) => (s.customerType || '') !== 'medical').length;
+        const revenue = monthList.reduce(
+          (sum, s) => sum + Number(s.total || 0),
+          0,
+        );
+        const recCount = monthList.filter(
+          (s) => (s.customerType || "") !== "medical",
+        ).length;
         const medUnique = new Set(
-          monthList.filter((s) => (s.customerType || '') === 'medical').map((s) => s.customerMedicalCard || s.customer),
+          monthList
+            .filter((s) => (s.customerType || "") === "medical")
+            .map((s) => s.customerMedicalCard || s.customer),
         ).size;
         const customers = recCount + medUnique;
         const dayOfMonth = d.getDate();
-        const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+        const daysInMonth = new Date(
+          d.getFullYear(),
+          d.getMonth() + 1,
+          0,
+        ).getDate();
         this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
-        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        localStorage.setItem(`pos_month_stats_${ymKey}`, JSON.stringify({ ...this.monthStats, ts: Date.now() }));
+        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+        localStorage.setItem(
+          `pos_month_stats_${ymKey}`,
+          JSON.stringify({ ...this.monthStats, ts: Date.now() }),
+        );
       } catch (_) {}
     },
 
@@ -3861,7 +3910,9 @@ function cannabisPOS() {
             ).getDate();
       // Do NOT fall back to today's stats; if monthStats missing, show 0 and trigger async load
       if (!this.monthStats) {
-        try { this.loadMonthStats && this.loadMonthStats(); } catch (_) {}
+        try {
+          this.loadMonthStats && this.loadMonthStats();
+        } catch (_) {}
       }
       const mRev = m && m.revenue != null ? Number(m.revenue) : 0;
       const mCust = m && m.customers != null ? Number(m.customers) : 0;
@@ -12305,16 +12356,26 @@ function cannabisPOS() {
         if (!report || !report.id) return;
         if (!confirm(`Delete ${report.name}?`)) return;
         try {
-          await (window.axios || axios).delete(`/api/reports/templates/${encodeURIComponent(report.id)}`, { headers: { Accept: 'application/json' } });
+          await (window.axios || axios).delete(
+            `/api/reports/templates/${encodeURIComponent(report.id)}`,
+            { headers: { Accept: "application/json" } },
+          );
         } catch (e) {
           // still proceed to update UI
         }
-        const idx = this.recentReports.findIndex((r) => String(r.id) === String(report.id));
+        const idx = this.recentReports.findIndex(
+          (r) => String(r.id) === String(report.id),
+        );
         if (idx !== -1) {
           this.recentReports.splice(idx, 1);
-          try { localStorage.setItem('cannabisPOS-reports', JSON.stringify(this.recentReports)); } catch (_) {}
+          try {
+            localStorage.setItem(
+              "cannabisPOS-reports",
+              JSON.stringify(this.recentReports),
+            );
+          } catch (_) {}
         }
-        this.showToast('Report deleted', 'success');
+        this.showToast("Report deleted", "success");
       } catch (_) {}
     },
 
@@ -12874,33 +12935,60 @@ document.addEventListener("DOMContentLoaded", function () {
 })();
 
 // Fallback: make deleteReport globally available to Alpine expressions
-(function(){
+(function () {
   try {
-    if (typeof window.deleteReport !== 'function') {
-      window.deleteReport = async function(reportOrId){
+    if (typeof window.deleteReport !== "function") {
+      window.deleteReport = async function (reportOrId) {
         try {
-          const id = typeof reportOrId === 'object' && reportOrId ? (reportOrId.id ?? reportOrId.template_id ?? reportOrId.uuid ?? null) : reportOrId;
-          const name = typeof reportOrId === 'object' && reportOrId ? (reportOrId.name || 'this report') : 'this report';
+          const id =
+            typeof reportOrId === "object" && reportOrId
+              ? (reportOrId.id ??
+                reportOrId.template_id ??
+                reportOrId.uuid ??
+                null)
+              : reportOrId;
+          const name =
+            typeof reportOrId === "object" && reportOrId
+              ? reportOrId.name || "this report"
+              : "this report";
           if (!id) return;
           if (!confirm(`Delete ${name}?`)) return;
           try {
-            await fetch(`/api/reports/templates/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Accept: 'application/json' } });
+            await fetch(`/api/reports/templates/${encodeURIComponent(id)}`, {
+              method: "DELETE",
+              headers: { Accept: "application/json" },
+            });
           } catch (_) {}
           try {
-            document.querySelectorAll('[x-data]').forEach(function(root){
+            document.querySelectorAll("[x-data]").forEach(function (root) {
               try {
-                const scope = root.__x && root.__x.$data ? root.__x.$data : null;
+                const scope =
+                  root.__x && root.__x.$data ? root.__x.$data : null;
                 if (scope && Array.isArray(scope.recentReports)) {
-                  const idx = scope.recentReports.findIndex(function(r){ return String((r && (r.id ?? r.template_id ?? r.uuid))) === String(id); });
+                  const idx = scope.recentReports.findIndex(function (r) {
+                    return (
+                      String(r && (r.id ?? r.template_id ?? r.uuid)) ===
+                      String(id)
+                    );
+                  });
                   if (idx !== -1) {
-                    scope.recentReports.splice(idx,1);
-                    try { localStorage.setItem('cannabisPOS-reports', JSON.stringify(scope.recentReports)); } catch (_) {}
+                    scope.recentReports.splice(idx, 1);
+                    try {
+                      localStorage.setItem(
+                        "cannabisPOS-reports",
+                        JSON.stringify(scope.recentReports),
+                      );
+                    } catch (_) {}
                   }
                 }
               } catch (_) {}
             });
           } catch (_) {}
-          try { window.POS && typeof POS.showToast === 'function' ? POS.showToast('Report deleted', 'success') : null; } catch (_) {}
+          try {
+            window.POS && typeof POS.showToast === "function"
+              ? POS.showToast("Report deleted", "success")
+              : null;
+          } catch (_) {}
         } catch (_) {}
       };
     }

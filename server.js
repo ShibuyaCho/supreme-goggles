@@ -3456,7 +3456,9 @@ app.get("/api/analytics/aspd", async (req, res) => {
   try {
     // Force MTD (Month-To-Date) permanently, ignoring incoming timeframe
     const today = new Date();
-    const start = new Date(Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0));
+    const start = new Date(
+      Date.UTC(today.getFullYear(), today.getMonth(), 1, 0, 0, 0),
+    );
     const end = new Date(
       Date.UTC(
         today.getFullYear(),
@@ -3472,7 +3474,11 @@ app.get("/api/analytics/aspd", async (req, res) => {
     // Elapsed days this month
     const daysInRange = Math.max(
       1,
-      Math.round((Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1) - Date.UTC(today.getFullYear(), today.getMonth(), 1)) / (24 * 60 * 60 * 1000)),
+      Math.round(
+        (Date.UTC(today.getFullYear(), today.getMonth(), today.getDate() + 1) -
+          Date.UTC(today.getFullYear(), today.getMonth(), 1)) /
+          (24 * 60 * 60 * 1000),
+      ),
     );
 
     // Current window data (for table)

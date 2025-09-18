@@ -15376,9 +15376,24 @@
                                   >
                                     Duplicate
                                   </button>
-                                  <button @click="deleteReport(report)" class="p-1.5 rounded hover:bg-red-50" title="Delete" aria-label="Delete">
-                                    <svg class="w-4 h-4 text-red-600 hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                  <button
+                                    @click="deleteReport(report)"
+                                    class="p-1.5 rounded hover:bg-red-50"
+                                    title="Delete"
+                                    aria-label="Delete"
+                                  >
+                                    <svg
+                                      class="w-4 h-4 text-red-600 hover:text-red-700"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                      />
                                     </svg>
                                   </button>
                                 </div>
@@ -21795,10 +21810,9 @@
                 if (!r.ok) throw new Error("primary-endpoint-failed");
               } catch (_) {
                 try {
-                  const r2 = await fetch(
-                    `/api/analytics/aspd-open`,
-                    { headers: { Accept: "application/json" } },
-                  );
+                  const r2 = await fetch(`/api/analytics/aspd-open`, {
+                    headers: { Accept: "application/json" },
+                  });
                   d = r2.ok ? await r2.json() : null;
                 } catch (_) {}
               }
@@ -22164,29 +22178,49 @@
     </script>
     <script>
       // Global fallback for deleteReport used by Alpine @click handlers in SPA
-      (function(){
-        try{
-          if (typeof window.deleteReport !== 'function') {
-            window.deleteReport = async function(report){
-              try{
-                const id = (report && (report.id || report.template_id || report.uuid)) || null;
-                const name = (report && report.name) || 'this report';
+      (function () {
+        try {
+          if (typeof window.deleteReport !== "function") {
+            window.deleteReport = async function (report) {
+              try {
+                const id =
+                  (report &&
+                    (report.id || report.template_id || report.uuid)) ||
+                  null;
+                const name = (report && report.name) || "this report";
                 if (!id) return;
                 if (!confirm(`Delete ${name}?`)) return;
-                try { await fetch(`/api/reports/templates/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Accept: 'application/json' } }); } catch(_){ }
                 try {
-                  const root = document.getElementById('app');
-                  const scope = root && root.__x && root.__x.$data ? root.__x.$data : null;
+                  await fetch(
+                    `/api/reports/templates/${encodeURIComponent(id)}`,
+                    {
+                      method: "DELETE",
+                      headers: { Accept: "application/json" },
+                    },
+                  );
+                } catch (_) {}
+                try {
+                  const root = document.getElementById("app");
+                  const scope =
+                    root && root.__x && root.__x.$data ? root.__x.$data : null;
                   if (scope && Array.isArray(scope.recentReports)) {
-                    const idx = scope.recentReports.findIndex(r => String((r && (r.id || r.template_id || r.uuid))) === String(id));
-                    if (idx !== -1) { scope.recentReports.splice(idx,1); }
+                    const idx = scope.recentReports.findIndex(
+                      (r) =>
+                        String(r && (r.id || r.template_id || r.uuid)) ===
+                        String(id),
+                    );
+                    if (idx !== -1) {
+                      scope.recentReports.splice(idx, 1);
+                    }
                   }
-                } catch(_){ }
-                try { showToast && showToast('Report deleted','success'); } catch(_){ }
-              }catch(_){ }
+                } catch (_) {}
+                try {
+                  showToast && showToast("Report deleted", "success");
+                } catch (_) {}
+              } catch (_) {}
             };
           }
-        }catch(_){ }
+        } catch (_) {}
       })();
     </script>
   </body>
