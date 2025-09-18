@@ -3031,6 +3031,34 @@ function cannabisPOS() {
             continue;
           }
         }
+        // Supabase REST fallback (public, uses anon key)
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const url = (window.__SUPABASE_URL || '').replace(/\/$/, '') + '/rest/v1/sales';
+            const key = window.__SUPABASE_ANON_KEY || '';
+            if (url && key) {
+              const startIso = new Date(Date.UTC(first.getFullYear(), first.getMonth(), first.getDate(), 0, 0, 0)).toISOString();
+              const endIso = new Date(Date.UTC(last.getFullYear(), last.getMonth(), last.getDate(), 23, 59, 59)).toISOString();
+              const resp = await fetch(`${url}?select=*&or=(status.eq.completed,status.eq.Completed,status.is.null)&and=(created_at.gte.${encodeURIComponent(startIso)},created_at.lte.${encodeURIComponent(endIso)})&limit=20000`, {
+                headers: { 'Accept':'application/json', 'apikey': key, 'Authorization': `Bearer ${key}` },
+              });
+              if (resp.ok) {
+                const rows = await resp.json();
+                if (Array.isArray(rows)) {
+                  list = rows.map((r) => this.mapSaleToSpa({
+                    id: r.id,
+                    created_at: r.created_at,
+                    customer_type: r.customer_type,
+                    total_amount: r.total_amount ?? r.total,
+                    total: r.total ?? r.total_amount,
+                    payment_method: r.payment_method,
+                    sale_number: r.sale_number,
+                  }));
+                }
+              }
+            }
+          } catch (_) {}
+        }
         const revenue = (list || []).reduce(
           (sum, s) => sum + Number(s.total || 0),
           0,
@@ -3831,9 +3859,12 @@ function cannabisPOS() {
               new Date().getMonth() + 1,
               0,
             ).getDate();
-      const mRev = m && m.revenue != null ? Number(m.revenue) : revenue;
-      const mCust =
-        m && m.customers != null ? Number(m.customers) : customerCount;
+      // Do NOT fall back to today's stats; if monthStats missing, show 0 and trigger async load
+      if (!this.monthStats) {
+        try { this.loadMonthStats && this.loadMonthStats(); } catch (_) {}
+      }
+      const mRev = m && m.revenue != null ? Number(m.revenue) : 0;
+      const mCust = m && m.customers != null ? Number(m.customers) : 0;
       return {
         totalSales,
         totalRevenue: revenue,
