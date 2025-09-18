@@ -6352,6 +6352,22 @@ function cannabisPOS() {
             list = Array.isArray(d3?.tiers) ? d3.tiers : (Array.isArray(d3) ? d3 : []);
           } catch (_) {}
         }
+        // 4) Direct Supabase settings fallback (public anon key)
+        if ((!Array.isArray(list) || list.length === 0) && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+          try {
+            const url = new URL(String(window.__SUPABASE_URL).replace(/\/$/, '') + '/rest/v1/pos_settings');
+            url.searchParams.set('select','id,settings,updated_at');
+            url.searchParams.set('id','eq.default');
+            const r4 = await fetch(url.toString(), { headers: { 'apikey': window.__SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + window.__SUPABASE_ANON_KEY, 'Accept':'application/json' } });
+            if (r4.ok) {
+              const arr = await r4.json();
+              const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+              const s = row && typeof row.settings === 'object' ? row.settings : (row && typeof row.settings === 'string' ? JSON.parse(row.settings) : {});
+              const pt = (s && Array.isArray(s.price_tiers)) ? s.price_tiers : (s && Array.isArray(s.priceTiers) ? s.priceTiers : []);
+              list = Array.isArray(pt) ? pt.map((t)=>({ ...t })) : [];
+            }
+          } catch (_) {}
+        }
 
         // Load any locally-saved tiers (offline/optimistic) to merge with server
         let localBackup = [];
