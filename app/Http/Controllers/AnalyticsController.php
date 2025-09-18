@@ -447,8 +447,11 @@ class AnalyticsController extends Controller
     
     public function getASPDAnalytics(Request $request)
     {
-        $timeframe = $request->get('timeframe', 'week');
-        $dateRange = $this->getDateRange($timeframe, $request);
+        // Force ASPD (pace) to always use current calendar month, independent of page timeframe/date-range
+        $tz = $request->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
+        $start = \Carbon\Carbon::now($tz)->startOfMonth();
+        $end = \Carbon\Carbon::now($tz)->endOfDay();
+        $dateRange = [ 'start' => $start, 'end' => $end ];
         $items = $this->getASPDData($dateRange);
         $daysInRange = $dateRange['start']->diffInDays($dateRange['end']) + 1;
 
