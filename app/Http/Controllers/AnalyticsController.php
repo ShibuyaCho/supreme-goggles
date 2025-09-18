@@ -410,7 +410,57 @@ class AnalyticsController extends Controller
     private function getASPDData($dateRange)
     {
         $daysInRange = $dateRange['start']->diffInDays($dateRange['end']) + 1;
-        
+
+        // Prefer Supabase if configured
+        if ($this->supabaseEnabled()) {
+            try {
+                $rows = $this->supaSalesInRange($dateRange);
+                if (is_array($rows) && count($rows) > 0) {
+                    $map = [];
+                    foreach ($rows as $r) {
+                        $cart = isset($r['cart']) && is_array($r['cart']) ? $r['cart'] : [];
+                        foreach ($cart as $it) {
+                            $name = (string)($it['product_name'] ?? $it['name'] ?? 'Product');
+                            $category = (string)($it['product_category'] ?? $it['category'] ?? '');
+                            $key = $name . '||' . $category;
+                            $qty = (float)($it['quantity'] ?? 0);
+                            $line = isset($it['total_price']) ? (float)$it['total_price'] : ((float)($it['unit_price'] ?? 0) * $qty);
+                            if (!isset($map[$key])) {
+                                $map[$key] = [
+                                    'id' => null,
+                                    'name' => $name,
+                                    'category' => $category,
+                                    'totalSold' => 0.0,
+                                    'unitsSold' => 0.0,
+                                    'totalRevenue' => 0.0,
+                                ];
+                            }
+                            $map[$key]['totalSold'] += $qty;
+                            $map[$key]['unitsSold'] += $qty;
+                            $map[$key]['totalRevenue'] += $line;
+                        }
+                    }
+                    return collect(array_values($map))
+                        ->map(function($item) use ($daysInRange) {
+                            $aspd = $daysInRange > 0 ? ($item['unitsSold'] / $daysInRange) : 0;
+                            return [
+                                'id' => $item['id'],
+                                'name' => $item['name'],
+                                'category' => $item['category'],
+                                'totalSold' => $item['unitsSold'],
+                                'unitsSold' => $item['unitsSold'],
+                                'totalRevenue' => $item['totalRevenue'],
+                                'daysInRange' => $daysInRange,
+                                'aspd' => $aspd,
+                                'trend' => 'stagnant',
+                            ];
+                        })
+                        ->sortByDesc('aspd')
+                        ->values();
+                }
+            } catch (\Throwable $e) { /* fall back to DB */ }
+        }
+
         $aspdData = DB::table('sale_items')
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
@@ -441,7 +491,7 @@ class AnalyticsController extends Controller
             })
             ->sortByDesc('aspd')
             ->values();
-        
+
         return $aspdData;
     }
     
