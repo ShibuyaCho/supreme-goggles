@@ -1560,7 +1560,37 @@ app.get("/api/price-tiers", async (_req, res) => {
   try {
     const r = await supaFetch("price_tiers?select=*");
     const payload = r.ok ? await r.json() : [];
-    res.json({ success: true, tiers: payload });
+    let tiers = Array.isArray(payload) ? payload : [];
+    if (!tiers.length) {
+      try {
+        const sr = await supaFetch("pos_settings?select=settings");
+        const srows = sr.ok ? await sr.json() : [];
+        const fromSettings = [];
+        for (const row of Array.isArray(srows) ? srows : []) {
+          const s = row && row.settings && typeof row.settings === "object" ? row.settings : null;
+          if (!s) continue;
+          let list = Array.isArray(s.price_tiers) ? s.price_tiers : Array.isArray(s.priceTiers) ? s.priceTiers : [];
+          for (const t of list) {
+            if (!t || typeof t !== "object") continue;
+            const name = String(t.name || "").trim();
+            if (!name) continue;
+            const prices = t.prices || {};
+            const custom = Array.isArray(t.custom_weights) ? t.custom_weights : Array.isArray(t.customWeights) ? t.customWeights : [];
+            fromSettings.push({
+              id: t.id != null ? t.id : name,
+              name,
+              description: t.description || null,
+              is_active: t.is_active ?? t.isActive ?? true,
+              created_at: t.created_at || t.createdAt || new Date().toISOString(),
+              prices,
+              custom_weights: custom,
+            });
+          }
+        }
+        if (fromSettings.length) tiers = fromSettings;
+      } catch (_) {}
+    }
+    res.json({ success: true, tiers });
   } catch (_) {
     res.json({ success: true, tiers: [] });
   }
