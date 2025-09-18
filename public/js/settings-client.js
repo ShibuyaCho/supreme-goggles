@@ -187,7 +187,9 @@
       });
       if (!up.ok) {
         let t = "";
-        try { t = await up.text(); } catch (_) {}
+        try {
+          t = await up.text();
+        } catch (_) {}
         throw new Error(t || `HTTP ${up.status}`);
       }
       // Verify read-after-write
@@ -201,9 +203,14 @@
           const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
           if (row) {
             let settings = {};
-            if (row.settings && typeof row.settings === "object") settings = row.settings;
+            if (row.settings && typeof row.settings === "object")
+              settings = row.settings;
             else if (row.settings && typeof row.settings === "string") {
-              try { settings = JSON.parse(row.settings); } catch (_) { settings = {}; }
+              try {
+                settings = JSON.parse(row.settings);
+              } catch (_) {
+                settings = {};
+              }
             }
             return { settings, updated_at: row.updated_at || now };
           }
@@ -265,15 +272,16 @@
   async function getFromServer(sid, noCache = false) {
     // Read directly from Supabase pos_settings (no API hop)
     const tryIds = [sid];
-    if (!tryIds.includes('defaultstore') && sid === 'default') tryIds.push('defaultstore');
-    if (!tryIds.includes('default')) tryIds.push('default');
+    if (!tryIds.includes("defaultstore") && sid === "default")
+      tryIds.push("defaultstore");
+    if (!tryIds.includes("default")) tryIds.push("default");
     for (const id of tryIds) {
       try {
         const r = await supaReq(
           `pos_settings?id=eq.${encodeURIComponent(id)}&select=*`,
           {
-            method: 'GET',
-            headers: noCache ? { 'Cache-Control': 'no-cache' } : {},
+            method: "GET",
+            headers: noCache ? { "Cache-Control": "no-cache" } : {},
           },
         );
         if (!r.ok) continue;
@@ -281,9 +289,14 @@
         const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
         if (row) {
           let settings = {};
-          if (row.settings && typeof row.settings === 'object') settings = row.settings;
-          else if (row.settings && typeof row.settings === 'string') {
-            try { settings = JSON.parse(row.settings); } catch (_) { settings = {}; }
+          if (row.settings && typeof row.settings === "object")
+            settings = row.settings;
+          else if (row.settings && typeof row.settings === "string") {
+            try {
+              settings = JSON.parse(row.settings);
+            } catch (_) {
+              settings = {};
+            }
           }
           return { settings, updated_at: row.updated_at || null };
         }
