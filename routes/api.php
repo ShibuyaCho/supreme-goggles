@@ -311,6 +311,7 @@ Route::get('/settings/pos', function() {
                 'apikey' => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                 'id' => 'eq.' . $storeId,
                 'select' => 'id,settings,updated_at',
@@ -323,10 +324,11 @@ Route::get('/settings/pos', function() {
             // Legacy fallback: defaultstore
             if (!$row && $storeId === 'default') {
                 $resp2 = \Illuminate\Support\Facades\Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.defaultstore',
                     'select' => 'id,settings,updated_at',
                 ]);
@@ -397,10 +399,11 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         if ($supabaseUrl && $supabaseKey) {
             try {
                 $resp0 = \Illuminate\Support\Facades\Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
                 'select' => 'id,settings,updated_at',
                 ]);
@@ -474,6 +477,7 @@ Route::get('/settings/stores/open', function() {
                 'apikey' => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                 'select' => 'id,settings,updated_at',
                 'order' => 'updated_at.desc'
@@ -768,10 +772,11 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
             $cur = [];
             try {
                 $get = \Illuminate\Support\Facades\Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
                 'select' => 'id,settings,updated_at',
                 ]);
@@ -870,10 +875,11 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
                 $cur = [];
                 try {
                     $get = \Illuminate\Support\Facades\Http::withHeaders([
-                        'apikey' => $supabaseKey,
-                        'Authorization' => 'Bearer ' . $supabaseKey,
-                        'Accept' => 'application/json',
-                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                         'id' => 'eq.' . $storeId,
                 'select' => 'id,settings,updated_at',
                     ]);
@@ -1422,10 +1428,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     for ($i=0; $i<3; $i++) {
                         try {
                             $resp = \Illuminate\Support\Facades\Http::withHeaders([
-                                'apikey' => $supabaseKey,
-                                'Authorization' => 'Bearer ' . $supabaseKey,
-                                'Accept' => 'application/json',
-                            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                                 'id' => 'eq.' . $storeId,
                 'select' => 'id,settings,updated_at',
                             ]);
@@ -1594,10 +1601,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     $current = [];
                     if ($supabaseUrl && $supabaseKey) {
                         $resp0 = \Illuminate\Support\Facades\Http::withHeaders([
-                            'apikey' => $supabaseKey,
-                            'Authorization' => 'Bearer ' . $supabaseKey,
-                            'Accept' => 'application/json',
-                        ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
                 'select' => 'id,settings,updated_at',
                         ]);
@@ -1673,10 +1681,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 if ($supabaseUrl && $supabaseKey) {
                     try {
                         $verify = \Illuminate\Support\Facades\Http::withHeaders([
-                            'apikey' => $supabaseKey,
-                            'Authorization' => 'Bearer ' . $supabaseKey,
-                            'Accept' => 'application/json',
-                        ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
                 'select' => 'id,settings,updated_at',
                         ]);
@@ -1732,10 +1741,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
             if ($supabaseUrl && $supabaseKey) {
                 try {
                     $resp = \Illuminate\Support\Facades\Http::withHeaders([
-                        'apikey' => $supabaseKey,
-                        'Authorization' => 'Bearer ' . $supabaseKey,
-                        'Accept' => 'application/json',
-                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                 'select' => 'id,settings,updated_at',
                         'order' => 'updated_at.desc'
                     ]);
