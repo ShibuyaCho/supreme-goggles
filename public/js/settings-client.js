@@ -281,7 +281,7 @@
         try {
           const data = await httpPost(
             "/api/settings/pos",
-            Object.assign({ settings: merged }, merged),
+            merged,
             { store: sid },
           );
           const s =
