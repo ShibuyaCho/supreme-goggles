@@ -911,6 +911,7 @@ app.get("/api/settings/pos", async (req, res) => {
   };
   try {
     const qsStore = req?.query?.store;
+    const rawName = (req && (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"])) || "";
     const rawId =
       (req &&
         (req.header
@@ -921,10 +922,15 @@ app.get("/api/settings/pos", async (req, res) => {
     const storeId = String(rawId || "default")
       .trim()
       .replace(/[^A-Za-z0-9_.-]/g, "");
-    // Try primary id first
+    const storeName = String(rawName || "")
+      .trim()
+      .replace(/[^A-Za-z0-9_.\s-]/g, "");
+    // Try primary by name or id
     let settingsRow = null;
     let r = await supaFetch(
-      `pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`,
+      storeName
+        ? `pos_settings?or=(store_name.eq.${encodeURIComponent(storeName)},id.eq.${encodeURIComponent(storeId)})&select=*`
+        : `pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`,
       { method: "GET" },
     );
     if (r.ok) {
