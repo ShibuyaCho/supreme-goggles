@@ -270,7 +270,7 @@ class CustomersController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
-        $customer->update([
+        $updateData = [
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
@@ -280,17 +280,33 @@ class CustomersController extends Controller
             'address' => json_encode($request->address ?? []),
             'notes' => $request->notes,
             'is_veteran' => $request->is_veteran ?? false
-        ]);
-        
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Customer updated successfully',
-                'customer' => $customer
-            ]);
+        ];
+
+        $supa = app(SupabaseService::class);
+        if ($supa->enabled()) {
+            $payload = $updateData; $payload['updated_at'] = now()->toIso8601String();
+            $resp = $supa->update('customers', ['id' => $customer->id], $payload, ['prefer' => 'return=representation']);
+            if ($resp['ok'] ?? false) {
+                $rows = $resp['data'];
+                $updated = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                $customer->update($this->mapSupabaseCustomerToLocal($updated));
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Customer updated successfully', 'customer' => $customer]);
+                }
+                return redirect()->route('customers.index')->with('success', 'Customer updated successfully');
+            }
+            if (($resp['error'] ?? null) === 'RLS_DENIED') {
+                return response()->json(['error' => 'Supabase rejected the update due to Row Level Security. Please check policies for customers.'], 403);
+            }
+            Log::warning('Supabase update customer failed, falling back to local DB', ['status' => $resp['status'] ?? 0, 'error' => $resp['error'] ?? null]);
         }
-        
-        return redirect()->route('customers.index')
-                        ->with('success', 'Customer updated successfully');
+
+        // Fallback: local update
+        $customer->update($updateData);
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Customer updated locally (remote sync pending)', 'customer' => $customer]);
+        }
+        return redirect()->route('customers.index')->with('success', 'Customer updated locally (remote sync pending)');
     }
     
     public function destroy($id)
