@@ -936,7 +936,7 @@ document.addEventListener('DOMContentLoaded', function() {
         addActivity('Room created', `${name} (${type})`);
         try { const k='rd-activity-log'; const prev=JSON.parse(localStorage.getItem(k)||'[]'); prev.push({ at:new Date().toISOString(), by: currentUserName(), title:'Room created', details:`${name} (${type})` }); localStorage.setItem(k, JSON.stringify(prev)); } catch(_) {}
         closeAddRoomModal();
-        // Try server in background; on success, update local record
+        // Try Laravel in background
         try {
             const res = await fetch('/rooms', {
                 method: 'POST',
@@ -949,7 +949,6 @@ document.addEventListener('DOMContentLoaded', function() {
             let data = null;
             try { data = await res.json(); } catch(_) { data = null; }
             if (res.ok && data && data.room) {
-                // Replace temp entry with server entry
                 try {
                   const idx = localRooms.findIndex(r => r.id === tempId || (r.name||'').toLowerCase() === (name||'').toLowerCase());
                   const nr = { id: data.room.id, name: data.room.name, type: data.room.type, max_capacity: data.room.max_capacity ?? 0, room_id: data.room.room_id || null };
@@ -957,14 +956,23 @@ document.addEventListener('DOMContentLoaded', function() {
                   saveRooms(localRooms);
                 } catch(_) {}
                 toast('Room created successfully', 'success');
-            } else {
-                // Keep local entry; surface warning
-                toast('Saved locally (server unavailable)', 'warning');
             }
-        } catch(e) {
-            // Keep local entry; surface warning
-            toast('Saved locally (offline)', 'warning');
-        }
+        } catch(_) {}
+        // Also upsert to Supabase for persistence + realtime
+        try {
+          const base = String(window.__SUPABASE_URL||'').replace(/\/$/, '');
+          const key = window.__SUPABASE_ANON_KEY||'';
+          if (base && key) {
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default';
+            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : '';
+            const r = await fetch(`${base}/rest/v1/rooms?on_conflict=store_id,name`, {
+              method:'POST',
+              headers:{ 'Content-Type':'application/json', 'apikey': key, 'Authorization': `Bearer ${key}`, 'Prefer':'resolution=merge-duplicates,return=representation' },
+              body: JSON.stringify([{ store_id: sid, store_name: sname||null, name, type, max_capacity: max_capacity||0, description, is_active: true, updated_at: new Date().toISOString() }])
+            });
+            if (r.ok) { const arr = await r.json(); const row = Array.isArray(arr)&&arr[0]?arr[0]:null; if (row && row.id){ const idx = localRooms.findIndex(x => x.id===tempId || (x.name||'').toLowerCase()===name.toLowerCase()); const nr = { id: row.id, name: row.name, type: row.type||'storage', max_capacity: row.max_capacity||0, room_id: row.room_id||null }; if (idx>=0){ localRooms[idx]=nr; saveRooms(localRooms);} } }
+          }
+        } catch(_) {}
     });
 
     // Add Drawer Modal controls
@@ -1070,6 +1078,29 @@ document.addEventListener('DOMContentLoaded', function() {
             drawerEl.querySelector('div.text-xs.font-medium').textContent = name;
             grid.appendChild(drawerEl);
         }
+        // Persist to Supabase
+        try {
+          const base = String(window.__SUPABASE_URL||'').replace(/\/$/, '');
+          const key = window.__SUPABASE_ANON_KEY||'';
+          if (base && key) {
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default';
+            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : '';
+            let supaRoomId = null;
+            try {
+              const sel = document.getElementById('drawer-room-select');
+              const roomNameText = sel && sel.options ? (sel.options[sel.selectedIndex]?.textContent||'').trim() : '';
+              if (roomNameText) {
+                const rr = await fetch(`${base}/rest/v1/rooms?select=id,name&store_id=eq.${encodeURIComponent(sid)}&name=eq.${encodeURIComponent(roomNameText)}`, { headers:{ apikey:key, Authorization:`Bearer ${key}`, Accept:'application/json' } });
+                if (rr.ok) { const arr = await rr.json(); const row = Array.isArray(arr)&&arr[0]?arr[0]:null; if (row && row.id) supaRoomId = row.id; }
+              }
+            } catch(_) {}
+            await fetch(`${base}/rest/v1/drawers`, {
+              method:'POST',
+              headers:{ 'Content-Type':'application/json', apikey:key, Authorization:`Bearer ${key}`, Prefer:'return=representation' },
+              body: JSON.stringify([{ store_id: sid, store_name: sname||null, room_id: supaRoomId, name, status: 'open', starting_amount: 0, current_amount: 0, opened_at: new Date().toISOString() }])
+            });
+          }
+        } catch(_) {}
         toast('Drawer created', 'success');
         closeAddDrawerModal();
     });
