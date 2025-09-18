@@ -582,13 +582,39 @@ document.addEventListener('DOMContentLoaded', function() {
       if (!activityEl) return;
       activityEl.innerHTML = '';
       if (!activityLog.length){ activityEl.innerHTML = '<div class="text-gray-500">No activity yet</div>'; return; }
-      activityLog.slice().reverse().forEach(item => {
+      const reversed = activityLog.slice().reverse();
+      reversed.forEach((item, idx) => {
         const row = document.createElement('div');
         row.className = 'p-2 border rounded';
-        row.innerHTML = `<div class="flex justify-between"><span class="font-medium">${item.title}</span><span class="text-xs text-gray-500">${new Date(item.at).toLocaleString()}</span></div>
-                         <div class="text-xs text-gray-600">${item.by}</div>
-                         ${item.details ? `<div class="text-xs mt-1">${item.details}</div>` : ''}`;
+        const when = new Date(item.at).toLocaleString();
+        const who = item.by || '';
+        let detailsHtml = '';
+        if (item.type === 'drawer_count' && item.data) {
+          const d = item.data;
+          detailsHtml = `<div class=\"mt-1 text-xs\">
+            Drawer: <span class=\"font-semibold\">${d.drawerName||'-'}</span><br/>
+            Counted: <span class=\"font-semibold\">$${(d.countedTotal||0).toFixed(2)}</span> • Expected Cash: <span class=\"font-semibold\">$${(d.expectedCashTotal||0).toFixed(2)}</span> • Debit: <span class=\"font-semibold\">$${(d.debitTotal||0).toFixed(2)}</span> • Variance: <span class=\"font-semibold\">$${(d.variance||0).toFixed(2)}</span><br/>
+            By: ${d.countedBy||who||'-'} • Approved: ${d.approvedBy||'-'}
+          </div>`;
+        } else if (item.details) {
+          detailsHtml = `<div class=\"text-xs mt-1\">${item.details}</div>`;
+        }
+        row.innerHTML = `<div class=\"flex items-start justify-between gap-3\">
+          <div>
+            <div class=\"font-medium\">${item.title}</div>
+            <div class=\"text-xs text-gray-500\">${when} ${who?`• ${who}`:''}</div>
+            ${detailsHtml}
+          </div>
+          ${item.type==='drawer_count' ? `<button class=\"px-2 py-1 text-xs bg-blue-600 text-white rounded\" data-print-idx=\"${idx}\">Print</button>` : ''}
+        </div>`;
         activityEl.appendChild(row);
+      });
+      activityEl.querySelectorAll('button[data-print-idx]')?.forEach(btn => {
+        btn.addEventListener('click', () => {
+          const idx = parseInt(btn.getAttribute('data-print-idx'),10);
+          const entry = activityLog.slice().reverse()[idx];
+          if (entry && entry.type === 'drawer_count' && entry.data) printDrawerCount(entry);
+        });
       });
     }
     async function addActivity(title, details=''){
