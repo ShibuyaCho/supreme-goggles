@@ -377,11 +377,32 @@ Route::prefix('price-tiers')->name('price-tiers.')->group(function () {
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
                 ])->get($supabaseUrl . '/rest/v1/price_tiers', [
-                    'select' => '*',
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage',
                     'order' => 'updated_at.desc'
                 ]);
                 if ($resp->ok()) {
-                    return response()->json(['success'=>true,'tiers'=>$resp->json() ?? []]);
+                    $rows = $resp->json() ?? [];
+                    $list = collect($rows)->map(function($t){
+                        $prices = isset($t['prices']) && is_array($t['prices']) ? $t['prices'] : [];
+                        $custom = isset($t['custom_weights']) && is_array($t['custom_weights']) ? $t['custom_weights'] : [];
+                        return [
+                            'id' => $t['id'] ?? null,
+                            'name' => $t['name'] ?? 'Tier',
+                            'description' => $t['description'] ?? '',
+                            'prices' => $prices,
+                            'custom_weights' => $custom,
+                            'is_active' => array_key_exists('is_active', $t) ? (bool)$t['is_active'] : true,
+                            'created_at' => $t['created_at'] ?? null,
+                            'updated_at' => $t['updated_at'] ?? null,
+                            'type' => 'retail',
+                            'customer_type' => 'recreational',
+                            'discount' => isset($t['percentage']) ? (float)$t['percentage'] : 0,
+                            'min_quantity' => '-',
+                            'min_amount' => null,
+                            'product_count' => 0,
+                        ];
+                    })->values()->all();
+                    return response()->json(['success'=>true,'tiers'=>$list])->header('Cache-Control','no-store, no-cache, must-revalidate');
                 }
             } catch (\Throwable $e) { /* fall back below */ }
         }
