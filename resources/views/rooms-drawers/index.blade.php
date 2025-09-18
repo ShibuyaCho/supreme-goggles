@@ -643,7 +643,7 @@ document.addEventListener('DOMContentLoaded', function() {
     renderActivity();
     (async function hydrateActivityFromServer(){
       try {
-        const r = await fetch('/node/activity?action=rooms_drawers&limit=200', { headers: { Accept: 'application/json' } });
+        const r = await fetch('/api/activity?action=rooms_drawers&limit=200', { headers: { Accept: 'application/json' } });
         if (!r.ok) return;
         const data = await r.json();
         const rows = Array.isArray(data?.logs) ? data.logs : [];
@@ -718,7 +718,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Also merge from Supabase via Node alias
     try {
-      const r = await fetch('/node/rooms', { headers: { Accept: 'application/json' } });
+      const r = await fetch('/api/rooms-open', { headers: { Accept: 'application/json' } });
       if (r.ok) {
         const data = await r.json();
         const list = Array.isArray(data?.rooms) ? data.rooms : [];
@@ -938,11 +938,11 @@ document.addEventListener('DOMContentLoaded', function() {
         closeAddRoomModal();
         // Try Laravel in background
         try {
-            const res = await fetch('/rooms', {
+            const res = await fetch('/api/rooms-open', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'X-Store-ID': (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default', 'X-Store-Name': (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : ''
                 },
                 body: JSON.stringify({ name, type, max_capacity, description, is_active: true })
             });
@@ -1094,11 +1094,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (rr.ok) { const arr = await rr.json(); const row = Array.isArray(arr)&&arr[0]?arr[0]:null; if (row && row.id) supaRoomId = row.id; }
               }
             } catch(_) {}
-            await fetch(`${base}/rest/v1/drawers`, {
-              method:'POST',
-              headers:{ 'Content-Type':'application/json', apikey:key, Authorization:`Bearer ${key}`, Prefer:'return=representation' },
-              body: JSON.stringify([{ store_id: sid, store_name: sname||null, room_id: supaRoomId, name, status: 'open', starting_amount: 0, current_amount: 0, opened_at: new Date().toISOString() }])
-            });
+            await fetch('/api/drawers-open', { method:'POST', headers: { 'Content-Type':'application/json', Accept:'application/json', 'X-Store-ID': sid, 'X-Store-Name': sname||'' }, body: JSON.stringify({ room_id: supaRoomId, name, status:'open', starting_amount:0, current_amount:0, opened_at:new Date().toISOString() }) });
           }
         } catch(_) {}
         toast('Drawer created', 'success');
