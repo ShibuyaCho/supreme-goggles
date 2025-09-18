@@ -1558,7 +1558,9 @@ app.delete("/api/deals/:id", async (req, res) => {
 // Price tiers
 app.get("/api/price-tiers", async (_req, res) => {
   try {
-    const r = await supaFetch("price_tiers?select=id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage&order=updated_at.desc");
+    const r = await supaFetch(
+      "price_tiers?select=id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage&order=updated_at.desc",
+    );
     const payload = r.ok ? await r.json() : [];
     let tiers = Array.isArray(payload) ? payload : [];
     if (!tiers.length) {
@@ -1567,21 +1569,33 @@ app.get("/api/price-tiers", async (_req, res) => {
         const srows = sr.ok ? await sr.json() : [];
         const fromSettings = [];
         for (const row of Array.isArray(srows) ? srows : []) {
-          const s = row && row.settings && typeof row.settings === "object" ? row.settings : null;
+          const s =
+            row && row.settings && typeof row.settings === "object"
+              ? row.settings
+              : null;
           if (!s) continue;
-          let list = Array.isArray(s.price_tiers) ? s.price_tiers : Array.isArray(s.priceTiers) ? s.priceTiers : [];
+          let list = Array.isArray(s.price_tiers)
+            ? s.price_tiers
+            : Array.isArray(s.priceTiers)
+              ? s.priceTiers
+              : [];
           for (const t of list) {
             if (!t || typeof t !== "object") continue;
             const name = String(t.name || "").trim();
             if (!name) continue;
             const prices = t.prices || {};
-            const custom = Array.isArray(t.custom_weights) ? t.custom_weights : Array.isArray(t.customWeights) ? t.customWeights : [];
+            const custom = Array.isArray(t.custom_weights)
+              ? t.custom_weights
+              : Array.isArray(t.customWeights)
+                ? t.customWeights
+                : [];
             fromSettings.push({
               id: t.id != null ? t.id : name,
               name,
               description: t.description || null,
               is_active: t.is_active ?? t.isActive ?? true,
-              created_at: t.created_at || t.createdAt || new Date().toISOString(),
+              created_at:
+                t.created_at || t.createdAt || new Date().toISOString(),
               prices,
               custom_weights: custom,
             });
@@ -1606,27 +1620,49 @@ app.post("/api/price-tiers", async (req, res) => {
     const created = Array.isArray(payload) ? payload[0] : payload;
     // Mirror into pos_settings.settings.price_tiers for resilience (best-effort)
     try {
-      const rawId = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
-      const storeId = String(rawId || "default").trim().replace(/[^A-Za-z0-9_.-]/g, "");
+      const rawId =
+        (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) ||
+        "default";
+      const storeId = String(rawId || "default")
+        .trim()
+        .replace(/[^A-Za-z0-9_.-]/g, "");
       // Fetch current settings
       let cur = {};
       try {
-        const g = await supaFetch(`pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`, { method: "GET" });
+        const g = await supaFetch(
+          `pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`,
+          { method: "GET" },
+        );
         if (g.ok) {
           const arr = await g.json();
           const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-          if (row && row.settings && typeof row.settings === "object") cur = row.settings;
+          if (row && row.settings && typeof row.settings === "object")
+            cur = row.settings;
         }
       } catch (_) {}
-      const tiers = Array.isArray(cur.price_tiers) ? cur.price_tiers : Array.isArray(cur.priceTiers) ? cur.priceTiers : [];
+      const tiers = Array.isArray(cur.price_tiers)
+        ? cur.price_tiers
+        : Array.isArray(cur.priceTiers)
+          ? cur.priceTiers
+          : [];
       const copy = {
         id: created?.id ?? incoming?.id ?? incoming?.name ?? null,
         name: created?.name ?? incoming?.name ?? "Tier",
         description: created?.description ?? incoming?.description ?? "",
         prices: created?.prices ?? incoming?.prices ?? {},
-        custom_weights: created?.custom_weights ?? incoming?.custom_weights ?? incoming?.customWeights ?? [],
-        is_active: typeof created?.is_active === "boolean" ? created.is_active : (incoming?.is_active ?? incoming?.isActive ?? true),
-        created_at: created?.created_at ?? incoming?.created_at ?? new Date().toISOString(),
+        custom_weights:
+          created?.custom_weights ??
+          incoming?.custom_weights ??
+          incoming?.customWeights ??
+          [],
+        is_active:
+          typeof created?.is_active === "boolean"
+            ? created.is_active
+            : (incoming?.is_active ?? incoming?.isActive ?? true),
+        created_at:
+          created?.created_at ??
+          incoming?.created_at ??
+          new Date().toISOString(),
         updated_at: created?.updated_at ?? new Date().toISOString(),
       };
       let replaced = false;
@@ -1636,13 +1672,19 @@ app.post("/api/price-tiers", async (req, res) => {
         const cid = copy.id != null ? String(copy.id) : null;
         const tname = (t.name || "").trim().toLowerCase();
         const cname = (copy.name || "").trim().toLowerCase();
-        if ((cid && tid === cid) || (cname && tname === cname)) { tiers[i] = copy; replaced = true; break; }
+        if ((cid && tid === cid) || (cname && tname === cname)) {
+          tiers[i] = copy;
+          replaced = true;
+          break;
+        }
       }
       if (!replaced) tiers.push(copy);
       cur.price_tiers = tiers;
       await supaFetch("pos_settings", {
         method: "POST",
-        body: [{ id: storeId, settings: cur, updated_at: new Date().toISOString() }],
+        body: [
+          { id: storeId, settings: cur, updated_at: new Date().toISOString() },
+        ],
         query: { on_conflict: "id" },
       });
     } catch (_) {}

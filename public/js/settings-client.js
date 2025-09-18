@@ -241,7 +241,12 @@
               ? data.settings_updated_at || data.updated_at
               : null;
           this.saveLocal(sid, merged);
-          try { localStorage.setItem('cannabisPOS-weightThreshold', String(merged.weight_threshold ?? 0)); } catch(_) {}
+          try {
+            localStorage.setItem(
+              "cannabisPOS-weightThreshold",
+              String(merged.weight_threshold ?? 0),
+            );
+          } catch (_) {}
           try {
             // Broadcast settings update
             window.dispatchEvent(
@@ -254,8 +259,8 @@
               const arr = Array.isArray(merged.price_tiers)
                 ? merged.price_tiers
                 : Array.isArray(merged.priceTiers)
-                ? merged.priceTiers
-                : [];
+                  ? merged.priceTiers
+                  : [];
               if (arr && arr.length) {
                 localStorage.setItem(
                   "cannabisPOS-priceTiers-backup",
@@ -294,11 +299,9 @@
       let last = null;
       for (let i = 0; i < 3; i++) {
         try {
-          const data = await httpPost(
-            "/api/settings/pos",
-            merged,
-            { store: sid },
-          );
+          const data = await httpPost("/api/settings/pos", merged, {
+            store: sid,
+          });
           const s =
             data && (data.settings || data) ? data.settings || data : merged;
           let m = { ...DEFAULTS, ...s };
@@ -312,7 +315,12 @@
             if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
           } catch (_) {}
           this.saveLocal(sid, m);
-          try { localStorage.setItem('cannabisPOS-weightThreshold', String(m.weight_threshold ?? 0)); } catch(_) {}
+          try {
+            localStorage.setItem(
+              "cannabisPOS-weightThreshold",
+              String(m.weight_threshold ?? 0),
+            );
+          } catch (_) {}
           try {
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
@@ -323,8 +331,8 @@
               const arr = Array.isArray(m.price_tiers)
                 ? m.price_tiers
                 : Array.isArray(m.priceTiers)
-                ? m.priceTiers
-                : [];
+                  ? m.priceTiers
+                  : [];
               if (arr && arr.length) {
                 localStorage.setItem(
                   "cannabisPOS-priceTiers-backup",
@@ -343,14 +351,13 @@
       try {
         const sid = currentStoreId();
         const now = new Date().toISOString();
-        const r = await supaReq(
-          `pos_settings?on_conflict=id`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify([{ id: sid, settings: merged, updated_at: now }]),
-          },
-        );
+        const r = await supaReq(`pos_settings?on_conflict=id`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([
+            { id: sid, settings: merged, updated_at: now },
+          ]),
+        });
         if (r.ok) {
           // Verify read-after-write
           try {
@@ -364,15 +371,30 @@
               if (row && row.settings && typeof row.settings === "object") {
                 const m = { ...DEFAULTS, ...row.settings };
                 this.saveLocal(sid, m);
-                try { localStorage.setItem('cannabisPOS-weightThreshold', String(m.weight_threshold ?? 0)); } catch(_) {}
-                try { window.dispatchEvent(new CustomEvent('settings:updated', { detail: { settings: m, storeId: sid } })); } catch(_) {}
+                try {
+                  localStorage.setItem(
+                    "cannabisPOS-weightThreshold",
+                    String(m.weight_threshold ?? 0),
+                  );
+                } catch (_) {}
+                try {
+                  window.dispatchEvent(
+                    new CustomEvent("settings:updated", {
+                      detail: { settings: m, storeId: sid },
+                    }),
+                  );
+                } catch (_) {}
                 return { success: true, settings: m };
               }
             }
           } catch (_) {}
         }
       } catch (_) {}
-      return { success: false, settings: merged, error: last || new Error('settings save failed') };
+      return {
+        success: false,
+        settings: merged,
+        error: last || new Error("settings save failed"),
+      };
     },
   };
 
