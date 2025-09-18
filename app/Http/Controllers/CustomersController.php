@@ -193,17 +193,33 @@ class CustomersController extends Controller
             $customerData['is_veteran'] = true;
         }
         
-        $customer = Customer::create($customerData);
-        
-        if ($request->expectsJson()) {
-            return response()->json([
-                'message' => 'Customer created successfully',
-                'customer' => $customer
-            ]);
+        $supa = app(SupabaseService::class);
+        if ($supa->enabled()) {
+            $payload = $customerData;
+            $payload['created_at'] = now()->toIso8601String();
+            $payload['updated_at'] = now()->toIso8601String();
+            $resp = $supa->insert('customers', [ $payload ], ['prefer' => 'return=representation']);
+            if ($resp['ok'] ?? false) {
+                $rows = $resp['data'];
+                $created = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                $customer = Customer::create($this->mapSupabaseCustomerToLocal($created));
+                if ($request->expectsJson()) {
+                    return response()->json(['message' => 'Customer created successfully', 'customer' => $customer]);
+                }
+                return redirect()->route('customers.index')->with('success', 'Customer created successfully');
+            }
+            if (($resp['error'] ?? null) === 'RLS_DENIED') {
+                return response()->json(['error' => 'Supabase rejected the write due to Row Level Security. Please check policies for customers.'], 403);
+            }
+            Log::warning('Supabase create customer failed, falling back to local DB', ['status' => $resp['status'] ?? 0, 'error' => $resp['error'] ?? null]);
         }
-        
-        return redirect()->route('customers.index')
-                        ->with('success', 'Customer created successfully');
+
+        // Fallback: local create
+        $customer = Customer::create($customerData);
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Customer created locally (remote sync pending)', 'customer' => $customer]);
+        }
+        return redirect()->route('customers.index')->with('success', 'Customer created locally (remote sync pending)');
     }
     
     public function show($id)
