@@ -9,7 +9,8 @@
     if (!url || !key || !window.supabase) return;
 
     // Reuse a single client
-    const client = (window.__sbClient = window.__sbClient ||
+    const client = (window.__sbClient =
+      window.__sbClient ||
       window.supabase.createClient(url, key, {
         realtime: { params: { eventsPerSecond: 5 } },
       }));
@@ -58,13 +59,20 @@
         const key = `realtime:${table}`;
         const prev = state.channels[key];
         if (prev) {
-          try { client.removeChannel(prev); } catch (_) {}
+          try {
+            client.removeChannel(prev);
+          } catch (_) {}
         }
         const chan = client
           .channel(key)
           .on(
             "postgres_changes",
-            { event: "*", schema: "public", table, filter: filter || undefined },
+            {
+              event: "*",
+              schema: "public",
+              table,
+              filter: filter || undefined,
+            },
             (payload) => {
               const info = {
                 table,
@@ -79,7 +87,10 @@
               dispatch(`realtime:${table}`, info);
               // Type-specific event
               if (payload.eventType) {
-                dispatch(`realtime:${table}:${String(payload.eventType).toLowerCase()}` , info);
+                dispatch(
+                  `realtime:${table}:${String(payload.eventType).toLowerCase()}`,
+                  info,
+                );
               }
             },
           )
@@ -89,7 +100,11 @@
         state.channels[key] = chan;
         return chan;
       } catch (e) {
-        dispatch("realtime:status", { table, status: "ERROR", error: String(e && e.message || e) });
+        dispatch("realtime:status", {
+          table,
+          status: "ERROR",
+          error: String((e && e.message) || e),
+        });
         return null;
       }
     };
@@ -97,7 +112,9 @@
     const resubscribeAll = () => {
       try {
         Object.values(state.channels).forEach((c) => {
-          try { client.removeChannel(c); } catch (_) {}
+          try {
+            client.removeChannel(c);
+          } catch (_) {}
         });
         state.channels = {};
       } catch (_) {}
