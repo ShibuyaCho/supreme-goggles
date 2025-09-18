@@ -29,8 +29,72 @@
   ],
   "nextUserId": 2,
   "nextEmployeeId": 2,
-  "devTemplates": [],
-  "nextTemplateId": 1,
+  "devTemplates": [
+    {
+      "id": 1,
+      "user_id": 1,
+      "name": "test",
+      "description": "",
+      "report_type": "inventory",
+      "format": "pdf",
+      "include_charts": false,
+      "orientation": "portrait",
+      "paper_size": "a4",
+      "config": {
+        "date_range": "last-30-days",
+        "start_date": null,
+        "end_date": null,
+        "selected_metrics": [
+          "total-revenue",
+          "gross-sales",
+          "net-sales",
+          "transaction-count",
+          "units-sold",
+          "sales-by-category",
+          "top-selling-products",
+          "aging-inventory",
+          "inventory-turnover",
+          "inventory-value",
+          "current-stock-levels",
+          "gross-profit",
+          "profit-margin",
+          "cost-of-goods-sold",
+          "tax-collected",
+          "payment-method-breakdown",
+          "discount-impact",
+          "commission-payments",
+          "total-customers"
+        ],
+        "filters": {
+          "categoryFilters": [
+            "Flower",
+            "Pre-Rolls",
+            "Infused",
+            "Edibles"
+          ],
+          "employeeFilter": "",
+          "customerType": "",
+          "paymentMethod": ""
+        },
+        "data_sources": [
+          "inventory",
+          "products",
+          "metrc",
+          "rooms"
+        ],
+        "chart_type": "table",
+        "color_scheme": "cannabis",
+        "schedule": {
+          "enabled": false,
+          "frequency": "weekly",
+          "email": ""
+        }
+      },
+      "created_at": "2025-09-18T18:38:01.007Z",
+      "updated_at": "2025-09-18T18:38:01.007Z"
+    }
+  ],
+  "nextTemplateId": 2,
   "devTimeEntries": [],
   "nextTimeEntryId": 1
 }

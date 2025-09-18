@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\Room;
 use App\Services\MetrcService;
+use App\Services\SupabaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use PDF;
 
 class ProductsController extends Controller
@@ -167,23 +169,30 @@ class ProductsController extends Controller
             $data['image'] = Storage::url($imagePath);
         }
 
-        $product = Product::create($data);
+        // Normalize payload for Supabase
+        $sbPayload = $data;
+        $sbPayload['created_at'] = now()->toIso8601String();
+        $sbPayload['updated_at'] = now()->toIso8601String();
 
-        // Mirror to Supabase (best-effort)
-        try {
-            $supabaseUrl = env('SUPABASE_URL');
-            $supabaseKey = env('SUPABASE_ANON_KEY');
-            if ($supabaseUrl && $supabaseKey) {
-                Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                    'Prefer' => 'return=representation'
-                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/products', [ $product->toArray() ]);
+        $supa = app(SupabaseService::class);
+        if ($supa->enabled()) {
+            $resp = $supa->insert('products', [ $sbPayload ], ['prefer' => 'return=representation']);
+            if ($resp['ok'] ?? false) {
+                $rows = $resp['data'];
+                $created = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                // Mirror to local DB using returned representation
+                $product = Product::create($this->mapSupabaseProductToLocal($created));
+                return redirect()->route('products.index')->with('success', 'Product created successfully');
             }
-        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+            if (($resp['error'] ?? null) === 'RLS_DENIED') {
+                return back()->withErrors(['error' => 'Supabase rejected the write due to Row Level Security. Please check policies for products.'])->withInput();
+            }
+            Log::warning('Supabase create product failed, falling back to local DB', ['status' => $resp['status'] ?? 0, 'error' => $resp['error'] ?? null]);
+        }
 
-        return redirect()->route('products.index')->with('success', 'Product created successfully');
+        // Fallback: create locally
+        $product = Product::create($data);
+        return redirect()->route('products.index')->with('success', 'Product created locally (remote sync pending)');
     }
 
     public function edit($id)
@@ -218,23 +227,27 @@ class ProductsController extends Controller
             $productData['image'] = Storage::url($imagePath);
         }
 
-        $product->update($productData);
-
-        // Mirror update to Supabase (best-effort)
-        try {
-            $supabaseUrl = env('SUPABASE_URL');
-            $supabaseKey = env('SUPABASE_ANON_KEY');
-            if ($supabaseUrl && $supabaseKey) {
-                Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json',
-                    'Prefer' => 'return=representation'
-                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=eq.' . urlencode($product->id), $product->toArray());
+        // Supabase-first update
+        $supa = app(SupabaseService::class);
+        if ($supa->enabled()) {
+            $payload = $productData;
+            $payload['updated_at'] = now()->toIso8601String();
+            $resp = $supa->update('products', ['id' => $product->id], $payload, ['prefer' => 'return=representation']);
+            if ($resp['ok'] ?? false) {
+                $rows = $resp['data'];
+                $updated = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
+                $product->update($this->mapSupabaseProductToLocal($updated));
+                return redirect()->route('products.index')->with('success', 'Product updated successfully');
             }
-        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+            if (($resp['error'] ?? null) === 'RLS_DENIED') {
+                return back()->withErrors(['error' => 'Supabase rejected the update due to Row Level Security. Please check policies for products.'])->withInput();
+            }
+            Log::warning('Supabase update product failed, falling back to local DB', ['status' => $resp['status'] ?? 0, 'error' => $resp['error'] ?? null]);
+        }
 
-        return redirect()->route('products.index')->with('success', 'Product updated successfully');
+        // Fallback: local update
+        $product->update($productData);
+        return redirect()->route('products.index')->with('success', 'Product updated locally (remote sync pending)');
     }
 
     public function destroy($id)
@@ -252,25 +265,23 @@ class ProductsController extends Controller
             Storage::disk('public')->delete($imagePath);
         }
 
-        $id = $product->id;
-        $product->delete();
-
-        // Mirror delete to Supabase (best-effort)
-        try {
-            $supabaseUrl = env('SUPABASE_URL');
-            $supabaseKey = env('SUPABASE_ANON_KEY');
-            if ($supabaseUrl && $supabaseKey) {
-                Http::withHeaders([
-                    'apikey' => $supabaseKey,
-                    'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json'
-                ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/products?id=eq.' . urlencode($id));
+        // Supabase-first delete
+        $supa = app(SupabaseService::class);
+        if ($supa->enabled()) {
+            $resp = $supa->delete('products', ['id' => $product->id]);
+            if (($resp['ok'] ?? false) || ($resp['status'] ?? 0) === 404) {
+                $product->delete();
+                return response()->json(['message' => 'Product deleted successfully']);
             }
-        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+            if (($resp['error'] ?? null) === 'RLS_DENIED') {
+                return response()->json(['error' => 'Supabase rejected the delete due to Row Level Security. Please check policies for products.'], 403);
+            }
+            Log::warning('Supabase delete product failed, falling back to local DB', ['status' => $resp['status'] ?? 0, 'error' => $resp['error'] ?? null]);
+        }
 
-        return response()->json([
-            'message' => 'Product deleted successfully'
-        ]);
+        // Fallback: local delete
+        $product->delete();
+        return response()->json(['message' => 'Product deleted locally (remote sync pending)']);
     }
 
     public function transferRoom(Request $request, $id)
@@ -575,5 +586,61 @@ class ProductsController extends Controller
         $totalSold = $product->total_sold;
         $averageInventory = ($product->quantity + $totalSold) / 2;
         return $averageInventory > 0 ? $totalSold / $averageInventory : 0.0;
+    }
+
+    private function mapSupabaseProductToLocal(array $row): array
+    {
+        // Map Supabase product representation to local columns. Unknown keys are ignored by mass assignment if not fillable.
+        return [
+            'id' => $row['id'] ?? null,
+            'name' => $row['name'] ?? null,
+            'category' => $row['category'] ?? null,
+            'price' => $row['price'] ?? null,
+            'cost' => $row['cost'] ?? null,
+            'quantity' => $row['quantity'] ?? ($row['stock'] ?? null),
+            'stock' => $row['stock'] ?? ($row['quantity'] ?? null),
+            'room' => $row['room'] ?? null,
+            'sku' => $row['sku'] ?? null,
+            'weight' => $row['weight'] ?? null,
+            'thc' => $row['thc'] ?? null,
+            'cbd' => $row['cbd'] ?? null,
+            'cbg' => $row['cbg'] ?? null,
+            'cbn' => $row['cbn'] ?? null,
+            'cbc' => $row['cbc'] ?? null,
+            'thc_mg' => $row['thc_mg'] ?? null,
+            'cbd_mg' => $row['cbd_mg'] ?? null,
+            'cbg_mg' => $row['cbg_mg'] ?? null,
+            'cbn_mg' => $row['cbn_mg'] ?? null,
+            'cbc_mg' => $row['cbc_mg'] ?? null,
+            'strain' => $row['strain'] ?? null,
+            'metrc_tag' => $row['metrc_tag'] ?? null,
+            'batch_id' => $row['batch_id'] ?? null,
+            'harvest_date' => $row['harvest_date'] ?? null,
+            'source_harvest' => $row['source_harvest'] ?? null,
+            'supplier' => $row['supplier'] ?? null,
+            'supplier_uid' => $row['supplier_uid'] ?? null,
+            'grower' => $row['grower'] ?? null,
+            'vendor' => $row['vendor'] ?? null,
+            'farm' => $row['farm'] ?? null,
+            'administrative_hold' => $row['administrative_hold'] ?? false,
+            'is_tested' => $row['is_tested'] ?? false,
+            'lab_name' => $row['lab_name'] ?? null,
+            'test_date' => $row['test_date'] ?? null,
+            'contaminants_passed' => $row['contaminants_passed'] ?? false,
+            'packaged_date' => $row['packaged_date'] ?? null,
+            'expiration_date' => $row['expiration_date'] ?? null,
+            'is_untaxed' => $row['is_untaxed'] ?? false,
+            'is_gls' => $row['is_gls'] ?? false,
+            'minimum_price' => $row['minimum_price'] ?? null,
+            'weight_threshold' => $row['weight_threshold'] ?? null,
+            'description' => $row['description'] ?? null,
+            'image' => $row['image'] ?? null,
+            'reorder_point' => $row['reorder_point'] ?? null,
+            'test_status' => $row['test_status'] ?? null,
+            'lab_results' => isset($row['lab_results']) ? (is_string($row['lab_results']) ? $row['lab_results'] : json_encode($row['lab_results'])) : null,
+            'batch_notes' => $row['batch_notes'] ?? null,
+            'created_at' => $row['created_at'] ?? now(),
+            'updated_at' => $row['updated_at'] ?? now(),
+        ];
     }
 }
