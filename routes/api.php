@@ -243,6 +243,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Prefer' => 'resolution=merge-duplicates,return=representation',
             ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
+                'store_name' => $merged['store_name'] ?? null,
                 'settings' => $merged,
                 'updated_at' => now()->toIso8601String(),
             ]]);
