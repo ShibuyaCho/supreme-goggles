@@ -425,7 +425,7 @@ document.addEventListener('DOMContentLoaded', function() {
         try{
           const timeframe = document.getElementById('timeframe-selector').value || 'today';
           const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
-          const res = await (window.axios||axios).get('/api/analytics/overview', { params: { timeframe, tz } });
+          const res = await (window.axios||axios).get('/api/analytics/overview-open', { params: { timeframe, tz } });
           const data = res?.data || {};
           // Headline metrics
           const m = data.sales || {};
@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Hydrate End of Day from Supabase-backed API
     try {
-        (function(){ const tz=(Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone)||''; fetch(`/api/analytics/end-of-day?tz=${encodeURIComponent(tz)}`, { headers: { 'Accept': 'application/json' }})
+        (function(){ const tz=(Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone)||''; fetch(`/api/analytics/end-of-day-open?tz=${encodeURIComponent(tz)}`, { headers: { 'Accept': 'application/json' }})
             .then(r => r.ok ? r.json() : null)
             .then(data => {
                 if (!data) return;
