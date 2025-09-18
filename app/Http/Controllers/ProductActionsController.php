@@ -315,7 +315,6 @@ class ProductActionsController extends Controller
     public function deleteProduct(Product $product)
     {
         try {
-            // Check if product is in any active sales
             if ($product->cartItems()->exists()) {
                 return response()->json([
                     'success' => false,
@@ -324,24 +323,30 @@ class ProductActionsController extends Controller
             }
 
             $productData = $product->toArray();
-            
-            // Update METRC if enabled
+
             if (config('pos.metrc_enabled', false) && $product->metrc_tag) {
                 $this->metrcService->finishPackage($product->metrc_tag, 'Destroyed');
             }
 
+            // Supabase-first delete
+            $supa = app(\App\Services\SupabaseService::class);
+            if ($supa->enabled()) {
+                $resp = $supa->delete('products', ['id' => $product->id]);
+                if (($resp['ok'] ?? false) || ($resp['status'] ?? 0) === 404) {
+                    $product->delete();
+                    Log::info('Product deleted (Supabase-first)', ['product_id' => $productData['id'] ?? null, 'user_id' => auth()->id()]);
+                    return response()->json(['success' => true, 'message' => 'Product deleted successfully']);
+                }
+                if (($resp['error'] ?? null) === 'RLS_DENIED') {
+                    return response()->json(['success' => false, 'message' => 'Supabase rejected the delete due to Row Level Security. Please check policies for products.'], 403);
+                }
+                Log::warning('Supabase delete product failed, falling back to local DB', ['status' => $resp['status'] ?? 0, 'error' => $resp['error'] ?? null]);
+            }
+
+            // Fallback: local delete
             $product->delete();
-
-            // Log the deletion
-            Log::info('Product deleted', [
-                'product_data' => $productData,
-                'user_id' => auth()->id()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Product deleted successfully'
-            ]);
+            Log::info('Product deleted locally (fallback)', ['product_id' => $productData['id'] ?? null, 'user_id' => auth()->id()]);
+            return response()->json(['success' => true, 'message' => 'Product deleted locally (remote sync pending)']);
 
         } catch (\Exception $e) {
             Log::error('Error deleting product', [
