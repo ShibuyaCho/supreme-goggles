@@ -1065,6 +1065,59 @@ Route::middleware(['auth:sanctum'])->group(function () {
         // Existing endpoints (keep for compatibility)
         Route::get('/aspd', [AnalyticsController::class, 'getASPDAnalytics']);
         Route::get('/aspd-open', [AnalyticsController::class, 'getASPDAnalyticsOpen']);
+
+    // Supabase-backed open reads (primary source)
+    Route::get('/customers-open', function(\Illuminate\Http\Request $request) {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        $search = trim((string)$request->query('search', ''));
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $params = [ 'select' => '*' ];
+                if ($search !== '') {
+                    $q = '*' . $search . '*';
+                    $params['or'] = '(name.ilike.' . $q . ',email.ilike.' . $q . ',phone.ilike.' . $q . ')';
+                }
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get($supabaseUrl . '/rest/v1/customers', $params);
+                if ($resp->ok()) {
+                    $rows = $resp->json() ?? [];
+                    return response()->json(['customers' => is_array($rows) ? $rows : []]);
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+        return response()->json(['customers' => []]);
+    });
+
+    Route::get('/products-open', function(\Illuminate\Http\Request $request) {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        $search = trim((string)$request->query('search', ''));
+        $category = trim((string)$request->query('category', ''));
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $params = [ 'select' => '*' ];
+                if ($search !== '') {
+                    $q = '*' . $search . '*';
+                    $params['or'] = '(name.ilike.' . $q . ',sku.ilike.' . $q . ',metrc_tag.ilike.' . $q . ')';
+                }
+                if ($category !== '') { $params['category'] = 'eq.' . $category; }
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get($supabaseUrl . '/rest/v1/products', $params);
+                if ($resp->ok()) {
+                    $rows = $resp->json() ?? [];
+                    return response()->json(['products' => is_array($rows) ? $rows : []]);
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+        return response()->json(['products' => []]);
+    });
     });
 
     /*
