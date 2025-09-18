@@ -24,7 +24,13 @@ class MetrcService
 
         // Fallback to cached settings if env not populated yet
         if (empty($this->userKey) || empty($this->vendorKey) || empty($this->facilityLicense)) {
-            $cached = Cache::get('pos_settings', []);
+            $sid = null;
+            try { $sid = request()->header('X-Store-ID'); } catch (\Throwable $e) { $sid = null; }
+            $sid = is_string($sid) ? trim($sid) : '';
+            if ($sid === '' || $sid === null) $sid = 'default';
+            $sid = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $sid);
+            if ($sid === 'defaultstore') $sid = 'default';
+            $cached = Cache::get('pos_settings:' . $sid, Cache::get('pos_settings', []));
             $this->userKey = $this->userKey ?: ($cached['metrc_user_key'] ?? null);
             $this->vendorKey = $this->vendorKey ?: ($cached['metrc_vendor_key'] ?? null);
             $this->facilityLicense = $this->facilityLicense ?: ($cached['metrc_facility'] ?? null);
