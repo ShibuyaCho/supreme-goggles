@@ -417,6 +417,39 @@ document.addEventListener('DOMContentLoaded', function() {
     // Filter functionality
     document.getElementById('type-filter').addEventListener('change', applyFilters);
     document.getElementById('active-filter').addEventListener('change', applyFilters);
+
+    // Supabase hydration for grid when present + realtime refresh
+    (function(){
+      const grid = document.getElementById('customers-grid');
+      if (!grid) return;
+      async function hydrate(){
+        try{
+          const q = document.getElementById('customer-search')?.value || '';
+          const res = await fetch('/api/customers-open' + (q?`?search=${encodeURIComponent(q)}`:''), { headers: { Accept:'application/json' } });
+          if(!res.ok) return; const data = await res.json(); const list = Array.isArray(data?.customers)?data.customers:[];
+          const esc=(s)=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+          grid.innerHTML = list.map(c=>{
+            const full = esc(c.name || `${c.first_name||''} ${c.last_name||''}`.trim() || 'Customer');
+            const email = esc(c.email||''); const phone = esc(c.phone||''); const active = (c.is_active!==false);
+            const type = (c.customer_type||'recreational');
+            return `<div class=\"bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow\"><div class=\"p-6\">`
+              + `<div class=\"flex items-start justify-between mb-4\"><div class=\"flex items-center space-x-3\">`
+              + `<div class=\"w-12 h-12 bg-green-100 rounded-full flex items-center justify-center\"><svg class=\"w-6 h-6 text-green-600\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\"/></svg></div>`
+              + `<div><h3 class=\"text-lg font-semibold text-gray-900\">${full}</h3><p class=\"text-sm text-gray-600\">${email||phone||'Walk-in Customer'}</p></div></div>`
+              + `<span class=\"inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${active?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}\">${active?'Active':'Inactive'}</span></div>`
+              + `<div class=\"space-y-2 mb-4\">`
+              + (email?`<div class=\"flex items-center text-sm text-gray-600\"><svg class=\"w-4 h-4 mr-2\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z\"/></svg>${email}</div>`:'')
+              + (phone?`<div class=\"flex items-center text-sm text-gray-600\"><svg class=\"w-4 h-4 mr-2\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z\"/></svg>${phone}</div>`:'')
+              + `<div class=\"flex items-center text-sm\">${type==='medical'?`<svg class=\"w-4 h-4 mr-2 text-blue-500\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z\"/></svg><span class=\"text-blue-600 font-medium\">Medical Patient</span>`:`<svg class=\"w-4 h-4 mr-2 text-green-500\" fill=\"none\" stroke=\"currentColor\" viewBox=\"0 0 24 24\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z\"/></svg><span class=\"text-green-600 font-medium\">Recreational</span>`}</div>`
+              + `</div><div class=\"flex space-x-2\"><button class=\"flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors\">View</button>`
+              + `<button class=\"flex-1 bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors\">Edit</button>`
+              + `<button class=\"flex-1 bg-green-100 hover:bg-green-200 text-green-700 px-3 py-2 rounded-lg text-sm font-medium transition-colors\">Start Sale</button></div></div></div>`;
+          }).join('');
+        }catch(_){ }
+      }
+      hydrate();
+      try{ window.addEventListener('realtime:table-changed', (e)=>{ if ((e?.detail?.table)==='customers') hydrate(); }); }catch(_){ }
+    })();
 });
 
 function switchTab(tabName) {
