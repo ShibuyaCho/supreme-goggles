@@ -12117,7 +12117,7 @@ document.addEventListener("DOMContentLoaded", function () {
         (Intl.DateTimeFormat &&
           Intl.DateTimeFormat().resolvedOptions().timeZone) ||
         "";
-      const res = await (window.axios || axios).get("/api/analytics/overview", {
+      const res = await (window.axios || axios).get("/api/analytics/overview-open", {
         params: { timeframe: tf, tz },
       });
       const d = res?.data || {};
