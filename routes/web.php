@@ -433,6 +433,82 @@ Route::prefix('price-tiers')->name('price-tiers.')->group(function () {
                 }
             } catch (\Throwable $e) { /* fall back below */ }
         }
+        // Fallback 1: read from Supabase pos_settings.settings.price_tiers
+        try {
+            $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $tryIds = ['default','defaultstore'];
+                foreach ($tryIds as $sid) {
+                    try {
+                        $rset = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                        ])->get($supabaseUrl . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $sid,
+                            'select' => 'id,settings,updated_at',
+                        ]);
+                        if ($rset->ok()) {
+                            $arr = $rset->json() ?? [];
+                            $row = is_array($arr) && isset($arr[0]) ? $arr[0] : null;
+                            if ($row && isset($row['settings'])) {
+                                $settings = is_array($row['settings']) ? $row['settings'] : (is_string($row['settings']) ? json_decode($row['settings'], true) : []);
+                                if (json_last_error() !== JSON_ERROR_NONE) { $settings = []; }
+                                $tiers = [];
+                                if (isset($settings['price_tiers']) && is_array($settings['price_tiers'])) $tiers = $settings['price_tiers'];
+                                elseif (isset($settings['priceTiers']) && is_array($settings['priceTiers'])) $tiers = $settings['priceTiers'];
+                                if (!empty($tiers)) {
+                                    $list = collect($tiers)->map(function($t){
+                                        $decode = function($v){
+                                            if (is_array($v)) return $v;
+                                            if (is_string($v)) { $d = json_decode($v, true); if (json_last_error()===JSON_ERROR_NONE && is_array($d)) return $d; }
+                                            return [];
+                                        };
+                                        $prices = $decode($t['prices'] ?? null);
+                                        $custom = $decode($t['custom_weights'] ?? ($t['customWeights'] ?? null));
+                                        $rules  = $decode($t['rules'] ?? null);
+                                        if ((empty($prices) || count($prices)===0) && is_array($rules) && array_keys($rules)!==range(0, count($rules)-1)) {
+                                            $keys=['weight_1g','weight_3_5g','weight_7g','weight_14g','weight_28g'];
+                                            $p=[]; foreach($keys as $k){ if (array_key_exists($k,$rules)) $p[$k]=$rules[$k]; }
+                                            $prices=$p;
+                                        }
+                                        if (is_array($rules) && array_keys($rules)===range(0, count($rules)-1)) {
+                                            $norm = collect($rules)->map(function($w){
+                                                return [
+                                                    'weight' => isset($w['grams']) ? (float)$w['grams'] : (float)($w['weight'] ?? 0),
+                                                    'price' => (float)($w['price'] ?? 0),
+                                                ];
+                                            })->filter(function($w){ return $w['weight']>0 && $w['price']>0; })->values()->all();
+                                            if (!empty($norm)) $custom = array_merge($custom, $norm);
+                                        }
+                                        return [
+                                            'id' => $t['id'] ?? ($t['name'] ?? null),
+                                            'name' => $t['name'] ?? 'Tier',
+                                            'description' => $t['description'] ?? '',
+                                            'prices' => $prices,
+                                            'custom_weights' => $custom,
+                                            'rules' => $rules,
+                                            'is_active' => array_key_exists('is_active', $t) ? (bool)$t['is_active'] : (array_key_exists('isActive',$t) ? (bool)$t['isActive'] : true),
+                                            'created_at' => $t['created_at'] ?? ($t['createdAt'] ?? null),
+                                            'updated_at' => $t['updated_at'] ?? ($t['updatedAt'] ?? null),
+                                            'type' => 'retail',
+                                            'customer_type' => 'recreational',
+                                            'discount' => 0,
+                                            'min_quantity' => '-',
+                                            'min_amount' => null,
+                                            'product_count' => is_array($t['products'] ?? null) ? count($t['products']) : 0,
+                                        ];
+                                    })->values()->all();
+                                    return response()->json(['success'=>true,'tiers'=>$list])->header('Cache-Control','no-store, no-cache, must-revalidate');
+                                }
+                            }
+                        }
+                    } catch (\Throwable $e) { /* try next id */ }
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Fallback 2: local DB model
         try {
             if (\Illuminate\Support\Facades\Schema::hasTable('price_tiers')) {
                 $rows = \App\Models\PriceTier::query()->orderByDesc('updated_at')->get()->map(function($r){
