@@ -207,5 +207,4 @@ if (!function_exists('navLinkComponent')) {
 }
 @endphp
 
-<!-- Include Alpine.js for dropdowns -->
-<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<!-- Alpine is loaded once globally in layouts/app.blade.php -->
