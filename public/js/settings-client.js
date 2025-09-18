@@ -241,6 +241,7 @@
               ? data.settings_updated_at || data.updated_at
               : null;
           this.saveLocal(sid, merged);
+          try { localStorage.setItem('cannabisPOS-weightThreshold', String(merged.weight_threshold ?? 0)); } catch(_) {}
           try {
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
