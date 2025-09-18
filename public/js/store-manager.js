@@ -233,7 +233,9 @@
         } catch(_) { rows = []; }
       }
       if (!Array.isArray(rows) || rows.length === 0) {
-        listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">No stores found. Use Add Store.</div>';
+        const hasSupa = !!(window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY);
+        const hint = hasSupa ? '' : '<div class="mt-1 text-xs text-amber-600">Supabase URL/Anon Key not detected on this page; using offline/local only.</div>';
+        listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">No stores found. Use Add Store.</div>' + hint;
         return;
       }
       listEl.innerHTML = rows.map((r)=>{
