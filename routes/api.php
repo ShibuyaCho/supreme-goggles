@@ -296,14 +296,15 @@ Route::get('/settings/pos', function() {
     ];
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
-    $settings = [];
+    $settingsRemote = [];
+    $settingsLocal = [];
     // Multi-store: scope by X-Store-ID header when present
     $storeId = request()->header('X-Store-ID');
     $storeId = is_string($storeId) ? trim($storeId) : '';
     if ($storeId === '' || $storeId === null) $storeId = 'default';
     // sanitize id for safety
     $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
-    $rowMeta = null;
+    $updatedAtRemote = null; $updatedAtLocal = null;
     if ($supabaseUrl && $supabaseKey) {
         try {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
@@ -335,32 +336,39 @@ Route::get('/settings/pos', function() {
                 }
             }
             if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
-                $settings = $row['settings'];
-                $rowMeta = $row;
+                $settingsRemote = $row['settings'];
+                $updatedAtRemote = $row['updated_at'] ?? null;
             }
         } catch (\Throwable $e) {}
     }
-    // Fallback to local DB if Supabase empty/unavailable
-    if (empty($settings)) {
-        try {
-            $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
-            if (!$local && $storeId === 'default') {
-                $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', 'defaultstore')->first();
+    // Local DB overlay (fills gaps and provides fallback)
+    try {
+        $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
+        if (!$local && $storeId === 'default') {
+            $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', 'defaultstore')->first();
+        }
+        if ($local && isset($local->settings)) {
+            $decoded = json_decode($local->settings, true);
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                $settingsLocal = $decoded;
+                $updatedAtLocal = $local->updated_at ?? null;
             }
-            if ($local && isset($local->settings)) {
-                $decoded = json_decode($local->settings, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                    $settings = $decoded;
-                    $rowMeta = [ 'updated_at' => $local->updated_at ?? null ];
-                }
-            }
-        } catch (\Throwable $e) {}
-    }
-    $settings = array_merge($defaults, is_array($settings) ? $settings : []);
+        }
+    } catch (\Throwable $e) {}
+
+    // Compose final settings: defaults -> remote -> local
+    $settings = array_merge($defaults, is_array($settingsRemote)?$settingsRemote:[], is_array($settingsLocal)?$settingsLocal:[]);
+    $settingsUpdatedAt = $updatedAtRemote ?? $updatedAtLocal;
+    try {
+        if ($updatedAtRemote && $updatedAtLocal) {
+            $settingsUpdatedAt = strcmp((string)$updatedAtRemote, (string)$updatedAtLocal) >= 0 ? $updatedAtRemote : $updatedAtLocal;
+        }
+    } catch (\Throwable $e) {}
+
     return response()->json([
         'success' => true,
         'settings' => $settings,
-        'settings_updated_at' => is_array($rowMeta) && isset($rowMeta['updated_at']) ? $rowMeta['updated_at'] : null,
+        'settings_updated_at' => $settingsUpdatedAt,
         'tax_rate' => $settings['sales_tax'] ?? 20.0,
         'medical_tax_rate' => 0.0,
         'currency' => 'USD',
