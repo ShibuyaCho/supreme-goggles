@@ -9195,60 +9195,25 @@ function cannabisPOS() {
     },
 
     // METRC Integration Functions
-    testMetrcConnection() {
-      console.log(
-        "Testing METRC connection with settings:",
-        this.metrcSettings,
-      );
-
-      // Validate required fields
-      if (!this.metrcSettings.apiKey || !this.metrcSettings.userKey) {
-        this.showToast(
-          "Please enter both API Key and User Key to test connection",
-          "error",
-        );
-        return;
-      }
-
-      if (!this.metrcSettings.facilityLicense) {
-        this.showToast("Please enter your Facility License Number", "error");
-        return;
-      }
-
-      // Show loading state
-      this.showToast("Testing METRC connection...", "info");
-
-      // Simulate API call to test METRC connection
-      // In a real implementation, this would make an actual HTTP request to METRC API
-      setTimeout(() => {
-        try {
-          // Simulate successful connection test
-          const isValid =
-            this.metrcSettings.apiKey.length > 10 &&
-            this.metrcSettings.userKey.length > 10 &&
-            this.metrcSettings.facilityLicense.length > 3;
-
-          if (isValid) {
-            this.showToast(
-              "METRC connection successful! API credentials verified.",
-              "success",
-            );
-            console.log("METRC connection test passed:", {
-              facilityLicense: this.metrcSettings.facilityLicense,
-              state: this.metrcSettings.state,
-              timestamp: new Date().toISOString(),
-            });
-          } else {
-            this.showToast(
-              "METRC connection failed: Invalid credentials. Please check your API keys.",
-              "error",
-            );
-          }
-        } catch (error) {
-          this.showToast("METRC connection error: " + error.message, "error");
-          console.error("METRC connection test failed:", error);
+    async testMetrcConnection() {
+      try {
+        this.showToast("Testing METRC connection...", "info");
+        let res = null;
+        if (window.posAuth && typeof posAuth.apiRequest === 'function') {
+          res = await posAuth.apiRequest('get', '/metrc/test-connection');
+        } else if (window.axios) {
+          const r = await axios.get('/api/metrc/test-connection');
+          res = { success: r.status >= 200 && r.status < 300, data: r.data };
+        } else {
+          const r = await fetch('/api/metrc/test-connection', { headers: { Accept: 'application/json' } });
+          const data = await r.json().catch(() => ({}));
+          res = { success: r.ok, data };
         }
-      }, 1500); // Simulate network delay
+        const ok = !!(res && res.success && res.data && res.data.connection_test && res.data.connection_test.success);
+        this.showToast(ok ? 'METRC connection successful' : 'METRC connection failed', ok ? 'success' : 'error');
+      } catch (e) {
+        this.showToast('Failed to test METRC connection', 'error');
+      }
     },
 
     async syncMetrcInventory() {
