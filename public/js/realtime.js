@@ -30,6 +30,8 @@
       "sales",
       "deals",
       "pos_settings",
+      "rooms",
+      "drawers",
     ];
 
     const subscribe = (table) => {
