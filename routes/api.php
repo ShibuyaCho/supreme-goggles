@@ -633,6 +633,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
                 'Prefer' => 'resolution=merge-duplicates,return=representation',
             ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
+                'store_name' => $cur['store_name'] ?? null,
                 'settings' => $cur,
                 'updated_at' => now()->toIso8601String(),
             ]]);
@@ -731,10 +732,11 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
                     'Accept' => 'application/json',
                     'Prefer' => 'resolution=merge-duplicates,return=representation',
                 ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
-                    'id' => $storeId,
-                    'settings' => $cur,
-                    'updated_at' => now()->toIso8601String(),
-                ]]);
+                'id' => $storeId,
+                'store_name' => $cur['store_name'] ?? null,
+                'settings' => $cur,
+                'updated_at' => now()->toIso8601String(),
+            ]]);
             } catch (\Throwable $e) { /* ignore */ }
             return response()->json(['success' => true, 'tier' => $updated]);
         }
@@ -1410,6 +1412,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                                     'Prefer' => 'resolution=merge-duplicates,return=representation',
                                 ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                                     'id' => $storeId,
+                                    'store_name' => $settings['store_name'] ?? null,
                                     'settings' => $settings,
                                     'updated_at' => now()->toIso8601String(),
                                 ]]);
