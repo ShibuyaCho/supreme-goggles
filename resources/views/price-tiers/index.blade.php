@@ -404,7 +404,7 @@
       };
       try {
         // 1) Primary: Supabase-backed API
-        const r = await (window.axios||axios).get('/api/price-tiers', { headers: { Accept: 'application/json' } });
+        const r = await (window.axios||axios).get('/price-tiers/json', { headers: { Accept: 'application/json' } });
         let list = (r && r.data && (r.data.tiers||r.data)) || [];
         if (Array.isArray(list) && list.length) { render(list); return; }
       } catch (_) {}
