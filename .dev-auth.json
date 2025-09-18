@@ -22,7 +22,7 @@
         "first_name": "thccodys",
         "last_name": ""
       },
-      "password": "Hms2019!",
+      "password": "hMS2019!",
       "pin": "1234",
       "status": "inactive"
     }
@@ -30,5 +30,7 @@
   "nextUserId": 2,
   "nextEmployeeId": 2,
   "devTemplates": [],
-  "nextTemplateId": 1
+  "nextTemplateId": 1,
+  "devTimeEntries": [],
+  "nextTimeEntryId": 1
 }
