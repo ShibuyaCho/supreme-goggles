@@ -160,7 +160,7 @@
 
             @if($viewMode === 'grid')
                 <!-- Grid View -->
-                <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div id="products-grid" class="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     @foreach($products as $product)
                     @include('products.partials.product-card', ['product' => $product])
                     @endforeach
