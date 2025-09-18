@@ -24,7 +24,15 @@
     auto_print_receipt: false,
     receipt_autoprint: false,
     receipt_categories_autoprint: [],
+    receipt_show_tax_breakdown: true,
+    receipt_show_metrc: true,
+    receipt_show_loyalty: true,
+    receipt_show_qr_code: false,
+    default_receipt_printer: "",
     receipt_paper_size: "80mm",
+    receipt_footer:
+      "Thank you for your business!\nKeep receipt for returns and warranty.",
+    exit_label_categories: ["Flower", "Pre-Rolls", "Concentrates", "Edibles"],
 
     // POS behavior / payments
     require_customer: true,
@@ -43,6 +51,10 @@
     // Display & inventory
     inventory_view_mode: "cards",
     expandable_cart: true,
+    theme_color: "green",
+    font_size: "medium",
+    high_contrast: false,
+    reduce_motion: false,
 
     // Inventory/scale
     weight_threshold: 0,
@@ -50,6 +62,13 @@
     // Auto delete
     auto_delete_zero_quantity: false,
     auto_delete_zero_days: 1,
+    round_to_nearest: false,
+
+    // METRC Integration
+    metrc_enabled: true,
+    metrc_user_key: "",
+    metrc_vendor_key: "",
+    metrc_facility: "",
 
     // Hours
     business_hours: [
