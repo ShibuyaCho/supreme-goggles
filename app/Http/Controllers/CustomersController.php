@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Customer;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use App\Services\SupabaseService;
 use Carbon\Carbon;
 
 class CustomersController extends Controller
