@@ -377,20 +377,47 @@ Route::prefix('price-tiers')->name('price-tiers.')->group(function () {
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
                 ])->get($supabaseUrl . '/rest/v1/price_tiers', [
-                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage',
+                    'select' => 'id,name,description,prices,custom_weights,rules,is_active,created_at,updated_at,percentage',
                     'order' => 'updated_at.desc'
                 ]);
                 if ($resp->ok()) {
                     $rows = $resp->json() ?? [];
                     $list = collect($rows)->map(function($t){
-                        $prices = isset($t['prices']) && is_array($t['prices']) ? $t['prices'] : [];
-                        $custom = isset($t['custom_weights']) && is_array($t['custom_weights']) ? $t['custom_weights'] : [];
+                        $decode = function($v) {
+                            if (is_array($v)) return $v;
+                            if (is_string($v)) {
+                                $d = json_decode($v, true);
+                                if (json_last_error() === JSON_ERROR_NONE && is_array($d)) return $d;
+                            }
+                            return [];
+                        };
+                        $prices = $decode($t['prices'] ?? null);
+                        $custom = $decode($t['custom_weights'] ?? null);
+                        $rules  = $decode($t['rules'] ?? null);
+                        // Fallback: map legacy rules into prices/custom_weights
+                        if ((empty($prices) || count($prices) === 0) && is_array($rules) && array_keys($rules) !== range(0, count($rules) - 1)) {
+                            $keys = ['weight_1g','weight_3_5g','weight_7g','weight_14g','weight_28g'];
+                            $p = [];
+                            foreach ($keys as $k) { if (array_key_exists($k, $rules)) $p[$k] = $rules[$k]; }
+                            $prices = $p;
+                        }
+                        if (is_array($rules) && array_keys($rules) === range(0, count($rules) - 1)) {
+                            // rules is an array of custom weights
+                            $norm = collect($rules)->map(function($w){
+                                return [
+                                    'weight' => isset($w['grams']) ? (float)$w['grams'] : (float)($w['weight'] ?? 0),
+                                    'price' => (float)($w['price'] ?? 0),
+                                ];
+                            })->filter(function($w){ return $w['weight'] > 0 && $w['price'] > 0; })->values()->all();
+                            if (!empty($norm)) $custom = array_merge($custom, $norm);
+                        }
                         return [
                             'id' => $t['id'] ?? null,
                             'name' => $t['name'] ?? 'Tier',
                             'description' => $t['description'] ?? '',
                             'prices' => $prices,
                             'custom_weights' => $custom,
+                            'rules' => $rules,
                             'is_active' => array_key_exists('is_active', $t) ? (bool)$t['is_active'] : true,
                             'created_at' => $t['created_at'] ?? null,
                             'updated_at' => $t['updated_at'] ?? null,
