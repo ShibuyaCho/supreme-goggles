@@ -118,6 +118,14 @@ function cannabisPOS() {
               break;
           }
         });
+        try {
+          window.addEventListener("settings:updated", () => {
+            this.loadPriceTiers && this.loadPriceTiers();
+          });
+          window.addEventListener("settings-updated", () => {
+            this.loadPriceTiers && this.loadPriceTiers();
+          });
+        } catch (_) {}
       } catch (_) {}
     },
 
