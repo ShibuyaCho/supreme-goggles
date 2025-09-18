@@ -1023,6 +1023,70 @@ function cannabisPOS() {
         } catch (_) {}
       }
     },
+
+    async addProduct() {
+      try {
+        const f = this.productForm || {};
+        // Minimal validation
+        const name = (f.name || "").toString().trim();
+        const category = (f.category || "").toString().trim();
+        if (!name || !category) {
+          this.showToast("Product name and category are required", "error");
+          return;
+        }
+        const payload = {
+          name,
+          category,
+          price: Number(f.price || 0),
+          cost: Number(f.cost || 0),
+          quantity: Number(f.stock || 0),
+          weight: f.weight || "",
+          thc: Number(f.thc || 0),
+          cbd: Number(f.cbd || 0),
+          cbn: Number(f.cbn || 0),
+          cbg: Number(f.cbg || 0),
+          cbc: Number(f.cbc || 0),
+          sku: f.sku || "",
+          vendor: f.vendor || "",
+          supplier: f.supplier || "",
+          room: f.room || "Sales Floor",
+          on_sales_floor: !!f.onSalesFloor,
+          is_gls: !!f.isGLS,
+          metrc_tag: f.metrcTag || "",
+        };
+        // Try protected API first
+        let created = null;
+        try {
+          const res = await (window.axios || axios).post("/api/products", payload, { headers: { Accept: "application/json" } });
+          created = (res && res.data) ? (res.data.product || res.data) : null;
+        } catch (e1) {
+          // Fallback: web route (will redirect on success, so prefer JSON)
+          try {
+            const res = await (window.axios || axios).post("/products", payload, { headers: { Accept: "application/json" } });
+            created = (res && res.data) ? (res.data.product || res.data) : null;
+          } catch (e2) {
+            throw (e1.response || e2.response || e2 || e1);
+          }
+        }
+        // Optimistically update UI
+        if (created && typeof created === "object") {
+          this.products = Array.isArray(this.products) ? this.products.slice() : [];
+          this.products.unshift(created);
+          try {
+            localStorage.setItem("cannabisPOS-products", JSON.stringify({ data: this.products }));
+          } catch (_) {}
+        }
+        this.showToast("Product created", "success");
+        this.showAddProductModal = false;
+        this.resetProductForm();
+        // Refresh list from server (best-effort)
+        try { await this._refreshProductsFromApi(); } catch (_) {}
+        try { this.normalizeCollections(); this.filterProducts(); } catch (_) {}
+      } catch (err) {
+        const msg = err?.data?.message || err?.data?.error || err?.message || "Failed to create product";
+        this.showToast(msg, "error");
+      }
+    },
     employeeForm: {
       name: "",
       email: "",
