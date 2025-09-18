@@ -59,14 +59,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="/js/realtime.js"></script>
     <script src="/js/settings-client.js"></script>
-    <script src="/js/store-manager.js"></script>
+    <script src="/js/store-manager.js?v=2"></script>
     <script>
       (function(){
         if (!window.addOrSwitchStore) {
           window.addOrSwitchStore = function(){
             function open(){ if (window.mainMenu) { window.mainMenu(); } }
             try { open(); } catch(_) {}
-            var s=document.createElement('script'); s.src='/js/store-manager.js'; s.onload=function(){ try{ open(); }catch(_){} }; document.head.appendChild(s);
+            var s=document.createElement('script'); s.src='/js/store-manager.js?v=' + Date.now(); s.onload=function(){ try{ open(); }catch(_){} }; document.head.appendChild(s);
           };
         }
       })();
