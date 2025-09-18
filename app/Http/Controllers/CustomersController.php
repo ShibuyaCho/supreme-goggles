@@ -320,11 +320,21 @@ class CustomersController extends Controller
             ], 400);
         }
         
+        $supa = app(SupabaseService::class);
+        if ($supa->enabled()) {
+            $resp = $supa->delete('customers', ['id' => $customer->id]);
+            if (($resp['ok'] ?? false) || ($resp['status'] ?? 0) === 404) {
+                $customer->delete();
+                return response()->json(['message' => 'Customer deleted successfully']);
+            }
+            if (($resp['error'] ?? null) === 'RLS_DENIED') {
+                return response()->json(['error' => 'Supabase rejected the delete due to Row Level Security. Please check policies for customers.'], 403);
+            }
+            Log::warning('Supabase delete customer failed, falling back to local DB', ['status' => $resp['status'] ?? 0, 'error' => $resp['error'] ?? null]);
+        }
+
         $customer->delete();
-        
-        return response()->json([
-            'message' => 'Customer deleted successfully'
-        ]);
+        return response()->json(['message' => 'Customer deleted locally (remote sync pending)']);
     }
     
     public function activate($id)
