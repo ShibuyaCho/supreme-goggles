@@ -1901,12 +1901,16 @@ function cannabisPOS() {
           await this.loadInitialData();
           this.ensureMyEmployeeListed();
         } else {
-          // Load local data as fallback
+          // Load local data as fallback (still load tiers from public JSON)
           this.loadSettings();
           this.loadProducts();
           this.loadCustomers();
           this.loadEmployees();
+          try { await this.loadPriceTiers(); } catch (_) {}
         }
+
+        // Always ensure tiers are available even if auth state flips late
+        try { if (!Array.isArray(this.priceTiers) || this.priceTiers.length === 0) await this.loadPriceTiers(); } catch (_) {}
 
         this.calculateTotals();
         try {
@@ -6323,11 +6327,31 @@ function cannabisPOS() {
 
     async loadPriceTiers() {
       try {
-        const res = await (window.axios || axios).get("/price-tiers/json", {
-          headers: { Accept: "application/json" },
-          withCredentials: true,
-        });
-        const list = res?.data?.tiers || [];
+        let list = [];
+        // 1) Primary: Laravel web route with normalization and legacy support
+        try {
+          const r1 = await (window.axios || axios).get("/price-tiers/json", {
+            headers: { Accept: "application/json" },
+            withCredentials: true,
+          });
+          list = Array.isArray(r1?.data?.tiers) ? r1.data.tiers : (Array.isArray(r1?.data) ? r1.data : []);
+        } catch (_) {}
+        // 2) Fallback: API route proxied to Supabase
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const r2 = await (window.axios || axios).get("/api/price-tiers", { headers: { Accept: "application/json" } });
+            const d2 = r2?.data;
+            list = Array.isArray(d2?.tiers) ? d2.tiers : (Array.isArray(d2) ? d2 : []);
+          } catch (_) {}
+        }
+        // 3) Open alias
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const r3 = await (window.axios || axios).get("/api/price-tiers-open", { headers: { Accept: "application/json" } });
+            const d3 = r3?.data;
+            list = Array.isArray(d3?.tiers) ? d3.tiers : (Array.isArray(d3) ? d3 : []);
+          } catch (_) {}
+        }
 
         // Load any locally-saved tiers (offline/optimistic) to merge with server
         let localBackup = [];
