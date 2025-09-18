@@ -197,7 +197,7 @@ class SettingsController extends Controller
             }
 
             // Store remaining settings in cache with a long TTL
-            Cache::put('pos_settings', $settings, now()->addDays(30));
+            Cache::put($this->cacheKeyForStore(), $settings, now()->addDays(30));
 
             // Persist to Supabase (store-scoped) with DB fallback
             try {
@@ -273,7 +273,7 @@ class SettingsController extends Controller
         try {
             $defaultSettings = $this->getDefaultSettings();
             
-            Cache::put('pos_settings', $defaultSettings, now()->addDays(30));
+            Cache::put($this->cacheKeyForStore(), $defaultSettings, now()->addDays(30));
 
             Log::info('POS settings reset to defaults', ['user_id' => auth()->id()]);
 
@@ -345,7 +345,7 @@ class SettingsController extends Controller
      */
     private function getCurrentSettings()
     {
-        return Cache::get('pos_settings', $this->getDefaultSettings());
+        return Cache::get($this->cacheKeyForStore(), $this->getDefaultSettings());
     }
 
     /**
@@ -432,6 +432,31 @@ class SettingsController extends Controller
                 ['day' => 'Sunday', 'is_open' => true, 'open_time' => '11:00', 'close_time' => '19:00'],
             ],
         ];
+    }
+
+    /**
+     * Determine current store ID from request header (defaults to 'default').
+     */
+    private function currentStoreIdFromRequest(): string
+    {
+        try {
+            $sid = request()->header('X-Store-ID');
+            $sid = is_string($sid) ? trim($sid) : '';
+            if ($sid === '' || $sid === null) $sid = 'default';
+            $sid = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $sid);
+            if ($sid === 'defaultstore') $sid = 'default';
+            return $sid ?: 'default';
+        } catch (\Throwable $e) {
+            return 'default';
+        }
+    }
+
+    /**
+     * Cache key for store-scoped POS settings
+     */
+    private function cacheKeyForStore(): string
+    {
+        return 'pos_settings:' . $this->currentStoreIdFromRequest();
     }
 
     /**
@@ -530,7 +555,7 @@ class SettingsController extends Controller
                 }
             }
 
-            Cache::put('pos_settings', $validatedSettings, now()->addDays(30));
+            Cache::put($this->cacheKeyForStore(), $validatedSettings, now()->addDays(30));
 
             Log::info('POS settings imported', [
                 'imported_keys' => array_keys($settings),
