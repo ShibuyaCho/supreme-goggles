@@ -293,18 +293,32 @@
                       (function(){
                         function setLabel(name){
                           try{ document.getElementById('header-store-label').textContent = name ? `Store: ${name}` : ''; }catch(_){}}
-                        try{
-                          const raw = localStorage.getItem('cannabisPOS-storeSettings');
-                          if(raw){ const s = JSON.parse(raw||'{}'); if(s && s.name) setLabel(s.name); }
-                        }catch(_){}
-                        // also try settings client if available
-                        try {
-                          (window.SettingsClient? SettingsClient.get(true) : Promise.reject()).then(g=>{
-                            const s = g && g.settings ? g.settings : {};
-                            const n = s.store_name || s.storeName || '';
-                            if(n) setLabel(n);
-                          }).catch(()=>{});
-                        } catch(_) {}
+                        function initial(){
+                          try{
+                            const raw = localStorage.getItem('cannabisPOS-storeSettings');
+                            if(raw){ const s = JSON.parse(raw||'{}'); if(s && (s.name||s.store_name)) setLabel(s.name||s.store_name); }
+                          }catch(_){}
+                        }
+                        function trySettingsClient(){
+                          if (window.SettingsClient && typeof SettingsClient.get==='function') {
+                            SettingsClient.get(true).then(g=>{
+                              const s = g && g.settings ? g.settings : {};
+                              const n = s.store_name || s.storeName || '';
+                              if(n) setLabel(n);
+                            }).catch(()=>{});
+                            return true;
+                          }
+                          return false;
+                        }
+                        document.addEventListener('DOMContentLoaded', function(){
+                          initial();
+                          if (!trySettingsClient()) {
+                            let tries=0; const t=setInterval(function(){ tries++; if (trySettingsClient() || tries>20) clearInterval(t); }, 150);
+                          }
+                        });
+                        window.addEventListener('settings:updated', function(e){
+                          try{ const s=e && e.detail && e.detail.settings ? e.detail.settings : {}; const n=s.store_name||s.storeName||''; if(n) setLabel(n); }catch(_){}}
+                        );
                       })();
                     </script>
                     <!-- Current Employee -->
