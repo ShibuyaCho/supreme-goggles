@@ -189,7 +189,7 @@
       }
       if (!Array.isArray(rows) || rows.length === 0) {
         try {
-          const res = await (window.axios||axios).get('/api/settings/stores', { headers: { Accept: 'application/json' } });
+          const res = await (window.axios||axios).get('/api/settings/stores/open', { headers: { Accept: 'application/json' } });
           rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
         } catch(_) { rows = []; }
       }
