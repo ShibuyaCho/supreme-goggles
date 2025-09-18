@@ -3,6 +3,14 @@
 @section('title', 'Product Management - Cannabis POS')
 
 @section('content')
+<script>
+  (function(){
+    try {
+      window.__SUPABASE_URL = window.__SUPABASE_URL || "{{ env('SUPABASE_URL') }}" || window.__SUPABASE_URL || "";
+      window.__SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY || "{{ env('SUPABASE_ANON_KEY') }}" || window.__SUPABASE_ANON_KEY || "";
+    } catch(_) {}
+  })();
+</script>
 <div class="min-h-screen bg-gray-50">
     <!-- Header -->
     <div class="bg-white shadow-sm border-b border-gray-200">
