@@ -6006,6 +6006,17 @@ function cannabisPOS() {
           this.storeSettings.email = s.store_email || this.storeSettings.email;
           this.storeSettings.licenseNumber =
             s.license_number || this.storeSettings.licenseNumber;
+          // Hydrate weight threshold from server settings
+          if (s.weight_threshold != null) {
+            const n = Number(s.weight_threshold);
+            this.weightThreshold = isFinite(n) ? Math.max(0, Number(n)) : 0;
+            try {
+              localStorage.setItem(
+                "cannabisPOS-weightThreshold",
+                String(this.weightThreshold),
+              );
+            } catch (_) {}
+          }
         }
         // Map business hours back to UI structure if present
         if (
