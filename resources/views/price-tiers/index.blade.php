@@ -425,7 +425,15 @@
               product_count: Array.isArray(t.products)?t.products.length:0,
               status: (t.is_active===false)?'inactive':'active'
             }));
-            render(mapped); return;
+            render(mapped);
+            // Persist to Supabase so future loads are reliable
+            try {
+              for (const t of arr) {
+                const payload = { name: t.name, description: t.description||'', prices: t.prices||{}, custom_weights: t.custom_weights||t.customWeights||[], is_active: t.is_active ?? t.isActive ?? true, created_at: t.created_at || new Date().toISOString(), updated_at: new Date().toISOString() };
+                await (window.axios||axios).post('/api/price-tiers', payload, { headers: { Accept: 'application/json' } });
+              }
+            } catch(_) {}
+            return;
           }
         }
       } catch(_) {}
@@ -444,7 +452,15 @@
             product_count: Array.isArray(t.products)?t.products.length:0,
             status: (t.is_active===false)?'inactive':'active'
           }));
-          render(mapped); return;
+          render(mapped);
+          // Persist backup to Supabase
+          try {
+            for (const t of arr) {
+              const payload = { name: t.name, description: t.description||'', prices: t.prices||{}, custom_weights: t.custom_weights||t.customWeights||[], is_active: t.is_active ?? t.isActive ?? true, created_at: t.created_at || new Date().toISOString(), updated_at: new Date().toISOString() };
+              await (window.axios||axios).post('/api/price-tiers', payload, { headers: { Accept: 'application/json' } });
+            }
+          } catch(_) {}
+          return;
         }
       } catch(_) {}
     }
