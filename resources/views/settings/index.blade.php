@@ -567,6 +567,17 @@
                         </div>
                     </div>
 
+                    <div class="p-4 border rounded-lg space-y-4">
+                        <div>
+                            <h4 class="font-medium mb-2">Weight Threshold (grams)</h4>
+                            <p class="text-sm text-gray-600 mb-3">Minimum detected weight change before prompting scale-related actions.</p>
+                            <div class="max-w-xs">
+                                <input type="number" x-model.number="settings.weight_threshold" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Saved per store and used across POS.</p>
+                        </div>
+                    </div>
+
                     <div x-show="settings.auto_delete_zero_quantity" class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
                         <p class="text-sm text-yellow-800">
                             ⚠️ Warning: Items will be permanently removed from inventory after staying at zero quantity for the specified number of days. This action cannot be undone.
