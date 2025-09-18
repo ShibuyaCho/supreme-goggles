@@ -741,6 +741,12 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Facility License</label>
                         <input type="text" x-model="settings.metrc_facility" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                     </div>
+                    <div class="md:col-span-3">
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                            <input type="checkbox" x-model="settings.metrc_auto_push_sales" class="rounded border-gray-300 text-cannabis-green focus:ring-cannabis-green">
+                            <span>Automatically push completed sales to METRC</span>
+                        </label>
+                    </div>
                     <div class="md:col-span-3 flex items-center gap-3">
                         <button @click="syncMetrcNow" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-700">
                             Sync Now
@@ -862,6 +868,7 @@ function settingsManager() {
                 metrc_user_key: '',
                 metrc_vendor_key: '',
                 metrc_facility: '',
+                metrc_auto_push_sales: false,
 
                 // Appearance
                 dark_mode: false,
