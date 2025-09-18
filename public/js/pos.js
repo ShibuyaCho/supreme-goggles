@@ -2651,7 +2651,8 @@ function cannabisPOS() {
           let localId = null;
           try {
             const sid = result?.data?.sale_id || result?.sale_id;
-            localId = result?.data?.local_sale_id || result?.local_sale_id || null;
+            localId =
+              result?.data?.local_sale_id || result?.local_sale_id || null;
             if (sid) {
               await this.appendSaleById(sid);
               try {
@@ -2680,22 +2681,39 @@ function cannabisPOS() {
           try {
             let auto = false;
             try {
-              if (window.SettingsClient && typeof SettingsClient.get === 'function') {
+              if (
+                window.SettingsClient &&
+                typeof SettingsClient.get === "function"
+              ) {
                 const resp = await SettingsClient.get();
-                const s = resp && (resp.settings || resp) ? (resp.settings || {}) : {};
+                const s =
+                  resp && (resp.settings || resp) ? resp.settings || {} : {};
                 auto = !!s.metrc_auto_push_sales;
               }
             } catch (_) {}
-            if (auto && this.metrcConnected && this.hasPermission && this.hasPermission('metrc:sales') && localId) {
-              const push = await (window.posAuth ? posAuth.apiRequest('post', `/metrc/sales/deliveries/from-sale/${encodeURIComponent(localId)}`) : Promise.resolve({ success:false }));
+            if (
+              auto &&
+              this.metrcConnected &&
+              this.hasPermission &&
+              this.hasPermission("metrc:sales") &&
+              localId
+            ) {
+              const push = await (window.posAuth
+                ? posAuth.apiRequest(
+                    "post",
+                    `/metrc/sales/deliveries/from-sale/${encodeURIComponent(localId)}`,
+                  )
+                : Promise.resolve({ success: false }));
               if (push && push.success) {
-                this.showToast('Pushed sale to METRC', 'success');
+                this.showToast("Pushed sale to METRC", "success");
               } else if (push && push.message) {
-                this.showToast(`METRC push failed: ${push.message}`, 'error');
+                this.showToast(`METRC push failed: ${push.message}`, "error");
               }
             }
           } catch (e) {
-            try { console.warn('METRC push failed', e); } catch(_) {}
+            try {
+              console.warn("METRC push failed", e);
+            } catch (_) {}
           }
           this.clearCart();
           return result.data;
@@ -9222,20 +9240,31 @@ function cannabisPOS() {
       try {
         this.showToast("Testing METRC connection...", "info");
         let res = null;
-        if (window.posAuth && typeof posAuth.apiRequest === 'function') {
-          res = await posAuth.apiRequest('get', '/metrc/test-connection');
+        if (window.posAuth && typeof posAuth.apiRequest === "function") {
+          res = await posAuth.apiRequest("get", "/metrc/test-connection");
         } else if (window.axios) {
-          const r = await axios.get('/api/metrc/test-connection');
+          const r = await axios.get("/api/metrc/test-connection");
           res = { success: r.status >= 200 && r.status < 300, data: r.data };
         } else {
-          const r = await fetch('/api/metrc/test-connection', { headers: { Accept: 'application/json' } });
+          const r = await fetch("/api/metrc/test-connection", {
+            headers: { Accept: "application/json" },
+          });
           const data = await r.json().catch(() => ({}));
           res = { success: r.ok, data };
         }
-        const ok = !!(res && res.success && res.data && res.data.connection_test && res.data.connection_test.success);
-        this.showToast(ok ? 'METRC connection successful' : 'METRC connection failed', ok ? 'success' : 'error');
+        const ok = !!(
+          res &&
+          res.success &&
+          res.data &&
+          res.data.connection_test &&
+          res.data.connection_test.success
+        );
+        this.showToast(
+          ok ? "METRC connection successful" : "METRC connection failed",
+          ok ? "success" : "error",
+        );
       } catch (e) {
-        this.showToast('Failed to test METRC connection', 'error');
+        this.showToast("Failed to test METRC connection", "error");
       }
     },
 
