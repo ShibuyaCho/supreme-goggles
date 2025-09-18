@@ -100,6 +100,15 @@
       return "default";
     }
   }
+  function currentStoreName() {
+    try {
+      const raw = localStorage.getItem("pos_store");
+      if (!raw) return "";
+      const s = JSON.parse(raw);
+      const n = s && (s.name || s.store_name) ? String(s.name || s.store_name) : "";
+      return n.trim();
+    } catch (_) { return ""; }
+  }
   function readCookie(name) {
     try {
       const m = document.cookie.match(
@@ -132,7 +141,9 @@
       if (res && res.data) return res.data;
     }
     const sid = currentStoreId();
+    const sname = currentStoreName();
     const cfg = { headers: { Accept: "application/json", "X-Store-ID": sid } };
+    if (sname) cfg.headers["X-Store-Name"] = sname;
     if (params) {
       cfg.params = params;
       if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
@@ -151,11 +162,13 @@
       if (res && res.data) return res.data;
     }
     const sid = currentStoreId();
+    const sname = currentStoreName();
     const cfg = {
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
         "X-Store-ID": sid,
+        ...(sname ? { "X-Store-Name": sname } : {}),
       },
     };
     try {
@@ -398,5 +411,6 @@
     },
   };
 
+  SettingsClient.currentStoreName = currentStoreName;
   window.SettingsClient = SettingsClient;
 })();
