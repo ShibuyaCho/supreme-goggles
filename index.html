@@ -21796,7 +21796,7 @@
               } catch (_) {
                 try {
                   const r2 = await fetch(
-                    `/analytics/aspd-open?timeframe=${encodeURIComponent(tf)}`,
+                    `/api/analytics/aspd-open`,
                     { headers: { Accept: "application/json" } },
                   );
                   d = r2.ok ? await r2.json() : null;
