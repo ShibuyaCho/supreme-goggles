@@ -188,7 +188,7 @@ class AnalyticsController extends Controller
         $end = $dateRange['end']->toISOString();
         $resp = Http::withHeaders($this->supaHeaders())->get($url, [
             'select' => 'id,customer,customer_id,employee_id,total,total_amount,created_at,store_id,cart,payment_method,tax,discount_amount',
-            'status' => 'eq.completed',
+            'or' => '(status.eq.completed,status.eq.Completed,status.eq.COMPLETED,status.is.null)',
             'and' => '(created_at.gte.' . $start . ',created_at.lte.' . $end . ')',
         ]);
         if (!$resp->ok()) return [];
