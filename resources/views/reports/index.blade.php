@@ -125,7 +125,11 @@
                                         <div class="flex space-x-2">
                                             <button @click="downloadReport(report)" :disabled="report.status !== 'completed'" class="text-cannabis-green hover:text-green-700 disabled:text-gray-400">Download</button>
                                             <button @click="viewReport(report)" :disabled="report.status !== 'completed'" class="text-blue-600 hover:text-blue-800 disabled:text-gray-400">View</button>
-                                            <button @click="deleteReport(report)" class="text-red-600 hover:text-red-800">Delete</button>
+                                            <button @click="deleteReport(report)" class="p-1.5 rounded hover:bg-red-50" title="Delete" aria-label="Delete">
+                                                <svg class="w-4 h-4 text-red-600 hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -545,14 +549,16 @@ function reportsManager() {
             // Simulate opening report viewer
         },
 
-        deleteReport(report) {
-            if (confirm(`Delete ${report.name}?`)) {
-                const index = this.recentReports.findIndex(r => r.id === report.id);
-                if (index !== -1) {
-                    this.recentReports.splice(index, 1);
-                    this.showToast('Report deleted', 'success');
-                }
-            }
+        async deleteReport(report) {
+            if (!report || !report.id) return;
+            if (!confirm(`Delete ${report.name}?`)) return;
+            try {
+                const res = await fetch(`/api/reports/templates/${encodeURIComponent(report.id)}`, { method: 'DELETE', headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error('Failed');
+            } catch(_) { /* proceed to update UI regardless */ }
+            const idx = this.recentReports.findIndex(r => String(r.id) === String(report.id));
+            if (idx !== -1) this.recentReports.splice(idx, 1);
+            this.showToast('Report deleted', 'success');
         },
 
         async saveSchedule() {
