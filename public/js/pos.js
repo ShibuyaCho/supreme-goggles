@@ -2331,6 +2331,8 @@ function cannabisPOS() {
             Object.assign(this.storeSettings, settings);
             this.storeSettings.name =
               settings.store_name || this.storeSettings.name;
+            try { (window.axios||axios).defaults.headers.common['X-Store-Name'] = this.storeSettings.name || ''; } catch(_) {}
+            try { localStorage.setItem('pos_store', JSON.stringify({ id: (SettingsClient?.currentStoreId?.()||'default'), name: this.storeSettings.name || '' })); } catch(_) {}
             this.storeSettings.manager =
               settings.store_manager || this.storeSettings.manager;
             this.storeSettings.address =
