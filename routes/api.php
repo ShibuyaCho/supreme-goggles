@@ -1007,9 +1007,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('metrc')->middleware(['permission:metrc:access','throttle:60,1'])->group(function () {
         Route::get('/status', function() {
             $svc = app(\App\Services\MetrcService::class);
+            $configured = $svc->isConfigured();
+            $test = null; $ok = false;
+            try { $test = $svc->testConnection(); $ok = (bool)($test['success'] ?? false); } catch (\Throwable $e) { $ok = false; }
             return response()->json([
-                'connected' => $svc->isConfigured(),
+                'connected' => $configured && $ok,
+                'configured' => $configured,
+                'test' => $test,
                 'facility' => env('METRC_FACILITY') ?: (\Illuminate\Support\Facades\Cache::get('pos_settings')['metrc_facility'] ?? null),
+                'timestamp' => now()->toIso8601String(),
             ]);
         });
         Route::get('/test-connection', [MetrcController::class, 'testConnection']);
