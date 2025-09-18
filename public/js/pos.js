@@ -6427,16 +6427,31 @@ function cannabisPOS() {
 
         // Map server rows to UI model
         const mapped = list.map((t) => {
-          const prices = t.prices || {
-            weight_1g: 0,
-            weight_3_5g: 0,
-            weight_7g: 0,
-            weight_14g: 0,
-            weight_28g: 0,
+          // Prefer explicit prices; fallback to legacy rules
+          let prices = (t && typeof t.prices === "object" && !Array.isArray(t.prices)) ? t.prices : {};
+          const legacyRulesObj = (t && typeof t.rules === "object" && !Array.isArray(t.rules)) ? t.rules : null;
+          const legacyRulesArr = Array.isArray(t?.rules) ? t.rules : [];
+          if ((!prices || Object.keys(prices).length === 0) && legacyRulesObj) {
+            const keys = ["weight_1g","weight_3_5g","weight_7g","weight_14g","weight_28g"];
+            const p = {};
+            for (const k of keys) { if (legacyRulesObj[k] != null) p[k] = legacyRulesObj[k]; }
+            prices = p;
+          }
+          prices = {
+            weight_1g: Number((prices && prices.weight_1g) || 0),
+            weight_3_5g: Number((prices && prices.weight_3_5g) || 0),
+            weight_7g: Number((prices && prices.weight_7g) || 0),
+            weight_14g: Number((prices && prices.weight_14g) || 0),
+            weight_28g: Number((prices && prices.weight_28g) || 0),
           };
-          const custom = Array.isArray(t.custom_weights)
-            ? t.custom_weights
-            : [];
+          let custom = Array.isArray(t.custom_weights) ? t.custom_weights : [];
+          if (Array.isArray(legacyRulesArr) && legacyRulesArr.length) {
+            try {
+              const norm = legacyRulesArr.map((w)=>({ weight: Number(w.weight||w.grams||0), price: Number(w.price||0) }))
+                .filter((w)=> isFinite(w.weight) && w.weight>0 && isFinite(w.price) && w.price>0);
+              if (norm.length) custom = (custom||[]).concat(norm);
+            } catch(_) {}
+          }
           const std = [
             { weight: 1, price: Number(prices.weight_1g || 0) },
             { weight: 3.5, price: Number(prices.weight_3_5g || 0) },
