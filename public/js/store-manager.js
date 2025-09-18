@@ -188,8 +188,43 @@
         } catch(_) {}
       }
       if (!Array.isArray(rows) || rows.length === 0) {
-        const res = await (window.axios||axios).get('/api/settings/stores', { headers: { Accept: 'application/json' } });
-        rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
+        try {
+          const res = await (window.axios||axios).get('/api/settings/stores', { headers: { Accept: 'application/json' } });
+          rows = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
+        } catch(_) { rows = []; }
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
+        try {
+          const base = (window.__SUPABASE_URL||'').replace(/\/$/,'');
+          const key = window.__SUPABASE_ANON_KEY||'';
+          if (base && key) {
+            const url = `${base}/rest/v1/pos_settings?select=id,settings,updated_at&order=updated_at.desc`;
+            const r = await fetch(url, { headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Accept': 'application/json' } });
+            if (r.ok) {
+              const arr = await r.json();
+              rows = (arr||[]).map((row)=>{
+                const id = String(row.id||'');
+                const name = row?.settings?.store_name ? String(row.settings.store_name) : id;
+                return { id, name, updated_at: row.updated_at||null };
+              });
+            }
+          }
+        } catch(_) { rows = []; }
+      }
+      if (!Array.isArray(rows) || rows.length === 0) {
+        try {
+          const cands = [];
+          for (let i=0; i<localStorage.length; i++) {
+            const k = localStorage.key(i) || '';
+            if (k.startsWith('cpos_settings_')) cands.push(k);
+          }
+          rows = cands.map((k)=>{
+            const sid = k.replace('cpos_settings_','');
+            let name = sid;
+            try { const st = JSON.parse(localStorage.getItem(k)||'{}'); if (st && st.store_name) name = String(st.store_name); } catch(_){}
+            return { id: sid, name, updated_at: null };
+          });
+        } catch(_) { rows = []; }
       }
       if (!Array.isArray(rows) || rows.length === 0) {
         listEl.innerHTML = '<div class="p-4 text-sm text-gray-500">No stores found. Use Add Store.</div>';
