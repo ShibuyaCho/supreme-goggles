@@ -1558,7 +1558,7 @@ app.delete("/api/deals/:id", async (req, res) => {
 // Price tiers
 app.get("/api/price-tiers", async (_req, res) => {
   try {
-    const r = await supaFetch("price_tiers?select=*");
+    const r = await supaFetch("price_tiers?select=id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage&order=updated_at.desc");
     const payload = r.ok ? await r.json() : [];
     let tiers = Array.isArray(payload) ? payload : [];
     if (!tiers.length) {
