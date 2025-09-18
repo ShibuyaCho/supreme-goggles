@@ -13058,3 +13058,21 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   } catch (_) {}
 })();
+
+// Fallback: make addProduct globally available to Alpine expressions
+(function () {
+  try {
+    if (typeof window.addProduct !== "function") {
+      window.addProduct = async function () {
+        try {
+          const app = document.getElementById("app");
+          const scope = app && app.__x && app.__x.$data ? app.__x.$data : null;
+
+          if (scope && typeof scope.addProduct === "function") {
+            return await scope.addProduct.call(scope);
+          }
+        } catch (_) {}
+      };
+    }
+  } catch (_) {}
+})();
