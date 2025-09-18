@@ -101,6 +101,14 @@
     </script>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="/lib/axios/axios.min.js"></script>
+    <script>
+      if (!window.__SUPABASE_URL) {
+        window.__SUPABASE_URL = "https://yyitwchajkruipsjvifn.supabase.co";
+      }
+      if (!window.__SUPABASE_ANON_KEY) {
+        window.__SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aXR3Y2hhamtydWlwc2p2aWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2OTQwNDUsImV4cCI6MjA3MzI3MDA0NX0.-fKS2ODSPNjLEx6HPrTlvXSV6hZqjdyFweIz8_f2ao8";
+      }
+    </script>
     <script src="/js/auth.js"></script>
     <script src="/js/pos.js"></script>
     <script src="/js/modal-keyboard-handler.js"></script>
@@ -5936,7 +5944,7 @@
                   @click="showPrintTypeModal = false"
                   class="text-gray-400 hover:text-gray-600 text-2xl"
                 >
-                  ×
+                  ��
                 </button>
               </div>
 
