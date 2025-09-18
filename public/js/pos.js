@@ -1906,11 +1906,16 @@ function cannabisPOS() {
           this.loadProducts();
           this.loadCustomers();
           this.loadEmployees();
-          try { await this.loadPriceTiers(); } catch (_) {}
+          try {
+            await this.loadPriceTiers();
+          } catch (_) {}
         }
 
         // Always ensure tiers are available even if auth state flips late
-        try { if (!Array.isArray(this.priceTiers) || this.priceTiers.length === 0) await this.loadPriceTiers(); } catch (_) {}
+        try {
+          if (!Array.isArray(this.priceTiers) || this.priceTiers.length === 0)
+            await this.loadPriceTiers();
+        } catch (_) {}
 
         this.calculateTotals();
         try {
@@ -2331,8 +2336,19 @@ function cannabisPOS() {
             Object.assign(this.storeSettings, settings);
             this.storeSettings.name =
               settings.store_name || this.storeSettings.name;
-            try { (window.axios||axios).defaults.headers.common['X-Store-Name'] = this.storeSettings.name || ''; } catch(_) {}
-            try { localStorage.setItem('pos_store', JSON.stringify({ id: (SettingsClient?.currentStoreId?.()||'default'), name: this.storeSettings.name || '' })); } catch(_) {}
+            try {
+              (window.axios || axios).defaults.headers.common["X-Store-Name"] =
+                this.storeSettings.name || "";
+            } catch (_) {}
+            try {
+              localStorage.setItem(
+                "pos_store",
+                JSON.stringify({
+                  id: SettingsClient?.currentStoreId?.() || "default",
+                  name: this.storeSettings.name || "",
+                }),
+              );
+            } catch (_) {}
             this.storeSettings.manager =
               settings.store_manager || this.storeSettings.manager;
             this.storeSettings.address =
@@ -6336,55 +6352,119 @@ function cannabisPOS() {
             headers: { Accept: "application/json" },
             withCredentials: true,
           });
-          list = Array.isArray(r1?.data?.tiers) ? r1.data.tiers : (Array.isArray(r1?.data) ? r1.data : []);
+          list = Array.isArray(r1?.data?.tiers)
+            ? r1.data.tiers
+            : Array.isArray(r1?.data)
+              ? r1.data
+              : [];
         } catch (_) {}
         // 2) Fallback: API route proxied to Supabase
         if (!Array.isArray(list) || list.length === 0) {
           try {
-            const r2 = await (window.axios || axios).get("/api/price-tiers", { headers: { Accept: "application/json" } });
+            const r2 = await (window.axios || axios).get("/api/price-tiers", {
+              headers: { Accept: "application/json" },
+            });
             const d2 = r2?.data;
-            list = Array.isArray(d2?.tiers) ? d2.tiers : (Array.isArray(d2) ? d2 : []);
+            list = Array.isArray(d2?.tiers)
+              ? d2.tiers
+              : Array.isArray(d2)
+                ? d2
+                : [];
           } catch (_) {}
         }
         // 3) Open alias
         if (!Array.isArray(list) || list.length === 0) {
           try {
-            const r3 = await (window.axios || axios).get("/api/price-tiers-open", { headers: { Accept: "application/json" } });
+            const r3 = await (window.axios || axios).get(
+              "/api/price-tiers-open",
+              { headers: { Accept: "application/json" } },
+            );
             const d3 = r3?.data;
-            list = Array.isArray(d3?.tiers) ? d3.tiers : (Array.isArray(d3) ? d3 : []);
+            list = Array.isArray(d3?.tiers)
+              ? d3.tiers
+              : Array.isArray(d3)
+                ? d3
+                : [];
           } catch (_) {}
         }
         // 4) Node alias (always normalized)
         if (!Array.isArray(list) || list.length === 0) {
           try {
-            const r4 = await (window.axios || axios).get('/node/price-tiers', { headers: { Accept: 'application/json' } });
+            const r4 = await (window.axios || axios).get("/node/price-tiers", {
+              headers: { Accept: "application/json" },
+            });
             const d4 = r4?.data;
-            list = Array.isArray(d4?.price_tiers) ? d4.price_tiers : (Array.isArray(d4?.tiers) ? d4.tiers : (Array.isArray(d4) ? d4 : []));
+            list = Array.isArray(d4?.price_tiers)
+              ? d4.price_tiers
+              : Array.isArray(d4?.tiers)
+                ? d4.tiers
+                : Array.isArray(d4)
+                  ? d4
+                  : [];
           } catch (_) {}
         }
         // 5) Direct Supabase settings fallback (public anon key)
-        if ((!Array.isArray(list) || list.length === 0) && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+        if (
+          (!Array.isArray(list) || list.length === 0) &&
+          window.__SUPABASE_URL &&
+          window.__SUPABASE_ANON_KEY
+        ) {
           try {
-            const url = new URL(String(window.__SUPABASE_URL).replace(/\/$/, '') + '/rest/v1/pos_settings');
-            url.searchParams.set('select','id,settings,updated_at');
-            url.searchParams.set('id','eq.default');
-            const r5 = await fetch(url.toString(), { headers: { 'apikey': window.__SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + window.__SUPABASE_ANON_KEY, 'Accept':'application/json' } });
+            const url = new URL(
+              String(window.__SUPABASE_URL).replace(/\/$/, "") +
+                "/rest/v1/pos_settings",
+            );
+            url.searchParams.set("select", "id,settings,updated_at");
+            url.searchParams.set("id", "eq.default");
+            const r5 = await fetch(url.toString(), {
+              headers: {
+                apikey: window.__SUPABASE_ANON_KEY,
+                Authorization: "Bearer " + window.__SUPABASE_ANON_KEY,
+                Accept: "application/json",
+              },
+            });
             if (r5.ok) {
               const arr = await r5.json();
               const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-              const s = row && typeof row.settings === 'object' ? row.settings : (row && typeof row.settings === 'string' ? JSON.parse(row.settings) : {});
-              const pt = (s && Array.isArray(s.price_tiers)) ? s.price_tiers : (s && Array.isArray(s.priceTiers) ? s.priceTiers : []);
-              list = Array.isArray(pt) ? pt.map((t)=>({ ...t })) : [];
+              const s =
+                row && typeof row.settings === "object"
+                  ? row.settings
+                  : row && typeof row.settings === "string"
+                    ? JSON.parse(row.settings)
+                    : {};
+              const pt =
+                s && Array.isArray(s.price_tiers)
+                  ? s.price_tiers
+                  : s && Array.isArray(s.priceTiers)
+                    ? s.priceTiers
+                    : [];
+              list = Array.isArray(pt) ? pt.map((t) => ({ ...t })) : [];
             }
           } catch (_) {}
         }
         // 6) Direct Supabase price_tiers table (public anon key)
-        if ((!Array.isArray(list) || list.length === 0) && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
+        if (
+          (!Array.isArray(list) || list.length === 0) &&
+          window.__SUPABASE_URL &&
+          window.__SUPABASE_ANON_KEY
+        ) {
           try {
-            const url = new URL(String(window.__SUPABASE_URL).replace(/\/$/, '') + '/rest/v1/price_tiers');
-            url.searchParams.set('select','id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules');
-            url.searchParams.set('order','updated_at.desc');
-            const r6 = await fetch(url.toString(), { headers: { 'apikey': window.__SUPABASE_ANON_KEY, 'Authorization': 'Bearer ' + window.__SUPABASE_ANON_KEY, 'Accept':'application/json' } });
+            const url = new URL(
+              String(window.__SUPABASE_URL).replace(/\/$/, "") +
+                "/rest/v1/price_tiers",
+            );
+            url.searchParams.set(
+              "select",
+              "id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules",
+            );
+            url.searchParams.set("order", "updated_at.desc");
+            const r6 = await fetch(url.toString(), {
+              headers: {
+                apikey: window.__SUPABASE_ANON_KEY,
+                Authorization: "Bearer " + window.__SUPABASE_ANON_KEY,
+                Accept: "application/json",
+              },
+            });
             if (r6.ok) {
               const arr = await r6.json();
               list = Array.isArray(arr) ? arr : [];
@@ -6394,9 +6474,15 @@ function cannabisPOS() {
         // 7) Protected settings API (returns settings.price_tiers)
         if (!Array.isArray(list) || list.length === 0) {
           try {
-            const rsp = await (window.axios || axios).get('/api/settings/pos', { headers: { Accept: 'application/json' } });
+            const rsp = await (window.axios || axios).get("/api/settings/pos", {
+              headers: { Accept: "application/json" },
+            });
             const s = rsp?.data?.settings || {};
-            const pt = Array.isArray(s.price_tiers) ? s.price_tiers : (Array.isArray(s.priceTiers) ? s.priceTiers : []);
+            const pt = Array.isArray(s.price_tiers)
+              ? s.price_tiers
+              : Array.isArray(s.priceTiers)
+                ? s.priceTiers
+                : [];
             if (Array.isArray(pt) && pt.length) list = pt;
           } catch (_) {}
         }
@@ -6500,17 +6586,46 @@ function cannabisPOS() {
         // Map server rows to UI model
         const mapped = list.map((t) => {
           // Decode stringified JSON if needed
-          try { if (t && typeof t.prices === 'string') { const d = JSON.parse(t.prices); if (d && typeof d === 'object') t.prices = d; } } catch(_) {}
-          try { if (t && typeof t.custom_weights === 'string') { const d = JSON.parse(t.custom_weights); if (Array.isArray(d)) t.custom_weights = d; } } catch(_) {}
-          try { if (t && typeof t.rules === 'string') { const d = JSON.parse(t.rules); if (d) t.rules = d; } } catch(_) {}
+          try {
+            if (t && typeof t.prices === "string") {
+              const d = JSON.parse(t.prices);
+              if (d && typeof d === "object") t.prices = d;
+            }
+          } catch (_) {}
+          try {
+            if (t && typeof t.custom_weights === "string") {
+              const d = JSON.parse(t.custom_weights);
+              if (Array.isArray(d)) t.custom_weights = d;
+            }
+          } catch (_) {}
+          try {
+            if (t && typeof t.rules === "string") {
+              const d = JSON.parse(t.rules);
+              if (d) t.rules = d;
+            }
+          } catch (_) {}
           // Prefer explicit prices; fallback to legacy rules
-          let prices = (t && typeof t.prices === "object" && !Array.isArray(t.prices)) ? t.prices : {};
-          const legacyRulesObj = (t && typeof t.rules === "object" && !Array.isArray(t.rules)) ? t.rules : null;
+          let prices =
+            t && typeof t.prices === "object" && !Array.isArray(t.prices)
+              ? t.prices
+              : {};
+          const legacyRulesObj =
+            t && typeof t.rules === "object" && !Array.isArray(t.rules)
+              ? t.rules
+              : null;
           const legacyRulesArr = Array.isArray(t?.rules) ? t.rules : [];
           if ((!prices || Object.keys(prices).length === 0) && legacyRulesObj) {
-            const keys = ["weight_1g","weight_3_5g","weight_7g","weight_14g","weight_28g"];
+            const keys = [
+              "weight_1g",
+              "weight_3_5g",
+              "weight_7g",
+              "weight_14g",
+              "weight_28g",
+            ];
             const p = {};
-            for (const k of keys) { if (legacyRulesObj[k] != null) p[k] = legacyRulesObj[k]; }
+            for (const k of keys) {
+              if (legacyRulesObj[k] != null) p[k] = legacyRulesObj[k];
+            }
             prices = p;
           }
           prices = {
@@ -6523,10 +6638,20 @@ function cannabisPOS() {
           let custom = Array.isArray(t.custom_weights) ? t.custom_weights : [];
           if (Array.isArray(legacyRulesArr) && legacyRulesArr.length) {
             try {
-              const norm = legacyRulesArr.map((w)=>({ weight: Number(w.weight||w.grams||0), price: Number(w.price||0) }))
-                .filter((w)=> isFinite(w.weight) && w.weight>0 && isFinite(w.price) && w.price>0);
-              if (norm.length) custom = (custom||[]).concat(norm);
-            } catch(_) {}
+              const norm = legacyRulesArr
+                .map((w) => ({
+                  weight: Number(w.weight || w.grams || 0),
+                  price: Number(w.price || 0),
+                }))
+                .filter(
+                  (w) =>
+                    isFinite(w.weight) &&
+                    w.weight > 0 &&
+                    isFinite(w.price) &&
+                    w.price > 0,
+                );
+              if (norm.length) custom = (custom || []).concat(norm);
+            } catch (_) {}
           }
           const std = [
             { weight: 1, price: Number(prices.weight_1g || 0) },

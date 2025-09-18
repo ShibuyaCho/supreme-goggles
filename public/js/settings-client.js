@@ -105,9 +105,12 @@
       const raw = localStorage.getItem("pos_store");
       if (!raw) return "";
       const s = JSON.parse(raw);
-      const n = s && (s.name || s.store_name) ? String(s.name || s.store_name) : "";
+      const n =
+        s && (s.name || s.store_name) ? String(s.name || s.store_name) : "";
       return n.trim();
-    } catch (_) { return ""; }
+    } catch (_) {
+      return "";
+    }
   }
   function readCookie(name) {
     try {

@@ -911,7 +911,12 @@ app.get("/api/settings/pos", async (req, res) => {
   };
   try {
     const qsStore = req?.query?.store;
-    const rawName = (req && (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"])) || "";
+    const rawName =
+      (req &&
+        (req.header
+          ? req.header("X-Store-Name")
+          : req.headers?.["x-store-name"])) ||
+      "";
     const rawId =
       (req &&
         (req.header
