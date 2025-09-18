@@ -98,7 +98,7 @@
         <!-- Recent Reports -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
             <div class="p-6 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Recent Reports</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Created Reports</h3>
             </div>
             <div class="p-6">
                 <div class="overflow-x-auto">
