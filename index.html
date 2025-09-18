@@ -22162,5 +22162,32 @@
         };
       })();
     </script>
+    <script>
+      // Global fallback for deleteReport used by Alpine @click handlers in SPA
+      (function(){
+        try{
+          if (typeof window.deleteReport !== 'function') {
+            window.deleteReport = async function(report){
+              try{
+                const id = (report && (report.id || report.template_id || report.uuid)) || null;
+                const name = (report && report.name) || 'this report';
+                if (!id) return;
+                if (!confirm(`Delete ${name}?`)) return;
+                try { await fetch(`/api/reports/templates/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Accept: 'application/json' } }); } catch(_){ }
+                try {
+                  const root = document.getElementById('app');
+                  const scope = root && root.__x && root.__x.$data ? root.__x.$data : null;
+                  if (scope && Array.isArray(scope.recentReports)) {
+                    const idx = scope.recentReports.findIndex(r => String((r && (r.id || r.template_id || r.uuid))) === String(id));
+                    if (idx !== -1) { scope.recentReports.splice(idx,1); }
+                  }
+                } catch(_){ }
+                try { showToast && showToast('Report deleted','success'); } catch(_){ }
+              }catch(_){ }
+            };
+          }
+        }catch(_){ }
+      })();
+    </script>
   </body>
 </html>
