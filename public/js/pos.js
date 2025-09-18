@@ -2763,6 +2763,10 @@ function cannabisPOS() {
       try {
         this.updateMonthStatsFromSales && this.updateMonthStatsFromSales();
       } catch (_) {}
+      // Always refresh persisted MTD from server so pace uses true MTD regardless of current filters
+      try {
+        this.loadMonthStats && this.loadMonthStats();
+      } catch (_) {}
       try {
         const nowTs2 = Date.now();
         if (
@@ -3068,41 +3072,38 @@ function cannabisPOS() {
 
     updateMonthStatsFromSales() {
       try {
+        // Only derive month stats from current sales list when that list represents the whole month
+        const dr = (this.salesFilter && this.salesFilter.dateRange) || 'today';
+        const isMonth = dr === 'month';
+        // Or if explicit server date window matches the month
+        let coversMonth = false;
+        try {
+          const d = new Date();
+          const first = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-01`;
+          const last = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2,'0')}-${String(new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()).padStart(2,'0')}`;
+          coversMonth = !!(this._serverDateFromKey === first && this._serverDateToKey === last);
+        } catch (_) { coversMonth = false; }
+        if (!isMonth && !coversMonth) return; // do not overwrite MTD with partial range (e.g., today)
+
         const d = new Date();
         const nowMonth = d.getMonth();
         const nowYear = d.getFullYear();
         const list = Array.isArray(this.sales) ? this.sales : [];
         const monthList = list.filter((s) => {
-          const dt = new Date(
-            s.date || s.created_at || s.createdAt || Date.now(),
-          );
+          const dt = new Date(s.date || s.created_at || s.createdAt || Date.now());
           return dt.getFullYear() === nowYear && dt.getMonth() === nowMonth;
         });
-        const revenue = monthList.reduce(
-          (sum, s) => sum + Number(s.total || 0),
-          0,
-        );
-        const recCount = monthList.filter(
-          (s) => (s.customerType || "") !== "medical",
-        ).length;
+        const revenue = monthList.reduce((sum, s) => sum + Number(s.total || 0), 0);
+        const recCount = monthList.filter((s) => (s.customerType || '') !== 'medical').length;
         const medUnique = new Set(
-          monthList
-            .filter((s) => (s.customerType || "") === "medical")
-            .map((s) => s.customerMedicalCard || s.customer),
+          monthList.filter((s) => (s.customerType || '') === 'medical').map((s) => s.customerMedicalCard || s.customer),
         ).size;
         const customers = recCount + medUnique;
         const dayOfMonth = d.getDate();
-        const daysInMonth = new Date(
-          d.getFullYear(),
-          d.getMonth() + 1,
-          0,
-        ).getDate();
+        const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
         this.monthStats = { revenue, customers, dayOfMonth, daysInMonth };
-        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-        localStorage.setItem(
-          `pos_month_stats_${ymKey}`,
-          JSON.stringify({ ...this.monthStats, ts: Date.now() }),
-        );
+        const ymKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        localStorage.setItem(`pos_month_stats_${ymKey}`, JSON.stringify({ ...this.monthStats, ts: Date.now() }));
       } catch (_) {}
     },
 
