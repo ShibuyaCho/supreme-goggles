@@ -323,7 +323,7 @@ function reportsManager() {
 
         async init() {
             try {
-                const res = await fetch('/node/report-templates', { headers: { Accept: 'application/json' } });
+                const res = await fetch('/api/reports/templates', { headers: { Accept: 'application/json' } });
                 if (res.ok) {
                     const data = await res.json();
                     const templates = Array.isArray(data?.templates) ? data.templates : [];
@@ -472,7 +472,7 @@ function reportsManager() {
                             }
                         }
                     };
-                    await fetch('/node/report-templates', {
+                    await fetch('/api/reports/templates', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                         body: JSON.stringify(tpl)
