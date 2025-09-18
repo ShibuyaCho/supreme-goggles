@@ -50,6 +50,178 @@ Route::get('/health', function () {
 
 // Public deals API for SPA compatibility
 Route::get('/deals', [DealsController::class, 'index']);
+
+// Supabase-backed open reads and writes (no auth) for SPA compatibility
+// Customers (read-only open endpoint)
+Route::get('/customers-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $search = trim((string)$request->query('search', ''));
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($search !== '') {
+                $q = '*' . $search . '*';
+                $params['or'] = '(name.ilike.' . $q . ',email.ilike.' . $q . ',phone.ilike.' . $q . ')';
+            }
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get($supabaseUrl . '/rest/v1/customers', $params);
+            if ($resp->ok()) {
+                $rows = $resp->json() ?? [];
+                return response()->json(['customers' => is_array($rows) ? $rows : []]);
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['customers' => []]);
+});
+
+// Products (read-only open endpoint)
+Route::get('/products-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $search = trim((string)$request->query('search', ''));
+    $category = trim((string)$request->query('category', ''));
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($search !== '') {
+                $q = '*' . $search . '*';
+                $params['or'] = '(name.ilike.' . $q . ',sku.ilike.' . $q . ',metrc_tag.ilike.' . $q . ')';
+            }
+            if ($category !== '') { $params['category'] = 'eq.' . $category; }
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get($supabaseUrl . '/rest/v1/products', $params);
+            if ($resp->ok()) {
+                $rows = $resp->json() ?? [];
+                return response()->json(['products' => is_array($rows) ? $rows : []]);
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['products' => []]);
+});
+
+// Rooms (open read and create for SPA management)
+Route::get('/rooms-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($storeId) $params['store_id'] = 'eq.' . $storeId;
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get($supabaseUrl . '/rest/v1/rooms', $params);
+            if ($resp->ok()) return response()->json(['rooms' => $resp->json() ?? []]);
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['rooms' => []]);
+});
+Route::post('/rooms-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) return response()->json(['success'=>false,'message'=>'Supabase not configured'],503);
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeName = (string)($request->header('X-Store-Name') ?: '');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    $b = $request->all();
+    $row = [
+        'store_id' => $storeId,
+        'store_name' => $storeName ?: null,
+        'name' => $b['name'] ?? ($b['room_name'] ?? 'Room'),
+        'type' => $b['type'] ?? ($b['category'] ?? 'storage'),
+        'max_capacity' => isset($b['max_capacity']) ? (int)$b['max_capacity'] : null,
+        'description' => $b['description'] ?? null,
+        'is_active' => array_key_exists('is_active', $b) ? (bool)$b['is_active'] : true,
+        'updated_at' => now()->toIso8601String(),
+    ];
+    try {
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+        ])->post($supabaseUrl . '/rest/v1/rooms?on_conflict=store_id,name', [ $row ]);
+        if ($resp->successful()) {
+            $arr = $resp->json(); $created = is_array($arr)&&isset($arr[0])?$arr[0]:$arr; return response()->json(['success'=>true,'room'=>$created],201);
+        }
+        return response()->json(['success'=>false,'message'=>$resp->body()],400);
+    } catch (\Throwable $e) {
+        return response()->json(['success'=>false,'message'=>$e->getMessage()],500);
+    }
+});
+
+// Drawers (open read and create)
+Route::get('/drawers-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    $roomId = $request->query('room_id');
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($storeId) $params['store_id'] = 'eq.' . $storeId;
+            if ($roomId) $params['room_id'] = 'eq.' . $roomId;
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get($supabaseUrl . '/rest/v1/drawers', $params);
+            if ($resp->ok()) return response()->json(['drawers' => $resp->json() ?? []]);
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['drawers' => []]);
+});
+Route::post('/drawers-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) return response()->json(['success'=>false,'message'=>'Supabase not configured'],503);
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeName = (string)($request->header('X-Store-Name') ?: '');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    $b = $request->all();
+    $row = [
+        'store_id' => $storeId,
+        'store_name' => $storeName ?: null,
+        'room_id' => $b['room_id'] ?? null,
+        'name' => $b['name'] ?? 'Drawer',
+        'status' => $b['status'] ?? 'open',
+        'starting_amount' => isset($b['starting_amount']) ? (float)$b['starting_amount'] : 0,
+        'current_amount' => isset($b['current_amount']) ? (float)$b['current_amount'] : 0,
+        'opened_at' => $b['opened_at'] ?? now()->toIso8601String(),
+        'updated_at' => now()->toIso8601String(),
+    ];
+    try {
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'return=representation',
+        ])->post($supabaseUrl . '/rest/v1/drawers', [ $row ]);
+        if ($resp->successful()) {
+            $arr = $resp->json(); $created = is_array($arr)&&isset($arr[0])?$arr[0]:$arr; return response()->json(['success'=>true,'drawer'=>$created],201);
+        }
+        return response()->json(['success'=>false,'message'=>$resp->body()],400);
+    } catch (\Throwable $e) {
+        return response()->json(['success'=>false,'message'=>$e->getMessage()],500);
+    }
+});
+
+// Activity logging (best-effort; may be a no-op)
+Route::post('/activity', function(\Illuminate\Http\Request $request){
+    try { \Illuminate\Support\Facades\Log::info('Activity', ['payload'=>$request->all()]); } catch (\Throwable $e) {}
+    return response()->json(['success'=>true]);
+});
 Route::post('/deals', [DealsController::class, 'store']);
 Route::put('/deals/{id}', [DealsController::class, 'update']);
 Route::patch('/deals/{id}', [DealsController::class, 'update']);
