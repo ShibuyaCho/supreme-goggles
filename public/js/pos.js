@@ -6389,6 +6389,15 @@ function cannabisPOS() {
             }
           } catch (_) {}
         }
+        // 7) Protected settings API (returns settings.price_tiers)
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const rsp = await (window.axios || axios).get('/api/settings/pos', { headers: { Accept: 'application/json' } });
+            const s = rsp?.data?.settings || {};
+            const pt = Array.isArray(s.price_tiers) ? s.price_tiers : (Array.isArray(s.priceTiers) ? s.priceTiers : []);
+            if (Array.isArray(pt) && pt.length) list = pt;
+          } catch (_) {}
+        }
 
         // Load any locally-saved tiers (offline/optimistic) to merge with server
         let localBackup = [];
