@@ -6283,13 +6283,15 @@ function cannabisPOS() {
     },
 
     async _refreshCustomersFromApi() {
+      // Prefer Supabase via PHP proxy
       try {
-        const res = await (window.posAuth
-          ? posAuth.apiRequest("get", "/customers")
-          : axios.get("/api/customers"));
-        const list =
-          res?.data?.customers || res?.data?.data || res?.customers || [];
-        if (Array.isArray(list)) {
+        const r0 = await (window.axios || axios).get("/api/customers-open", { headers: { Accept: "application/json" } });
+        const list = Array.isArray(r0?.data?.customers)
+          ? r0.data.customers
+          : Array.isArray(r0?.data)
+            ? r0.data
+            : [];
+        if (Array.isArray(list) && list.length) {
           this.customers = list.map((c) => ({
             id: c.id || c.customer_id || c.email || c.phone || Math.random(),
             name:
@@ -6310,12 +6312,15 @@ function cannabisPOS() {
     },
 
     async _refreshProductsFromApi() {
+      // Prefer Supabase via PHP proxy
       try {
-        const res = await (window.axios || axios).get("/node/products", {
-          headers: { Accept: "application/json" },
-        });
-        const items = res?.data?.products || [];
-        if (Array.isArray(items)) {
+        const res = await (window.axios || axios).get("/api/products-open", { headers: { Accept: "application/json" } });
+        const items = Array.isArray(res?.data?.products)
+          ? res.data.products
+          : Array.isArray(res?.data)
+            ? res.data
+            : [];
+        if (Array.isArray(items) && items.length) {
           this.products = items;
           // Apply locally persisted product->tier assignments
           try {
