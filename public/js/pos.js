@@ -6396,7 +6396,13 @@ function cannabisPOS() {
               })
               .filter(Boolean);
             this.priceTiers = safe;
-            // Do not overwrite backup here; assume it's already local
+            // Persist backup to server for future reliability
+            try {
+              for (const t of localBackup) {
+                const payload = { name: t.name, description: t.description||'', prices: t.prices||{}, custom_weights: t.custom_weights||t.customWeights||[], is_active: t.is_active ?? t.isActive ?? true, created_at: t.created_at || new Date().toISOString(), updated_at: new Date().toISOString() };
+                await (window.axios||axios).post('/api/price-tiers', payload, { headers: { Accept: 'application/json' } });
+              }
+            } catch(_) {}
             return;
           }
           // Keep defaults if no backup exists
