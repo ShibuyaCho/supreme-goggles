@@ -211,11 +211,13 @@
     const key = window.__SUPABASE_ANON_KEY || "";
     if (!base || !key) throw new Error("supabase not configured");
     const url = `${base}/rest/v1/${path}`;
+    const sid = currentStoreId();
     const headers = Object.assign(
       {
         apikey: key,
         Authorization: `Bearer ${key}`,
         Accept: "application/json",
+        "X-Store-ID": sid,
       },
       (init && init.headers) || {},
     );
