@@ -6451,6 +6451,10 @@ function cannabisPOS() {
 
         // Map server rows to UI model
         const mapped = list.map((t) => {
+          // Decode stringified JSON if needed
+          try { if (t && typeof t.prices === 'string') { const d = JSON.parse(t.prices); if (d && typeof d === 'object') t.prices = d; } } catch(_) {}
+          try { if (t && typeof t.custom_weights === 'string') { const d = JSON.parse(t.custom_weights); if (Array.isArray(d)) t.custom_weights = d; } } catch(_) {}
+          try { if (t && typeof t.rules === 'string') { const d = JSON.parse(t.rules); if (d) t.rules = d; } } catch(_) {}
           // Prefer explicit prices; fallback to legacy rules
           let prices = (t && typeof t.prices === "object" && !Array.isArray(t.prices)) ? t.prices : {};
           const legacyRulesObj = (t && typeof t.rules === "object" && !Array.isArray(t.rules)) ? t.rules : null;
