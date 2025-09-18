@@ -256,7 +256,16 @@ export default function Customers() {
 
   const fetchServerCustomers = async (search?: string): Promise<Customer[]> => {
     const results: Customer[] = [];
-    // 1) Primary: Node alias -> Supabase
+    // 1) Primary: PHP -> Supabase
+    try {
+      const res = await fetch(`/api/customers-open${search ? `?search=${encodeURIComponent(search)}` : ""}`, { headers: { Accept: "application/json" } });
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data?.customers) ? data.customers : Array.isArray(data) ? data : [];
+        results.push(...list.map(mapServerToCustomer));
+      }
+    } catch (_) {}
+    // 2) Fallback: Node alias -> Supabase (if Node server is present)
     try {
       const res = await fetch(`/node/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`, { headers: { Accept: "application/json" } });
       if (res.ok) {
@@ -265,7 +274,7 @@ export default function Customers() {
         results.push(...list.map(mapServerToCustomer));
       }
     } catch (_) {}
-    // 2) Fallback: /api/customers (could be Node or Laravel depending on server)
+    // 3) Fallback: /api/customers (could be Node or Laravel depending on server)
     try {
       const token = localStorage.getItem("auth_token");
       const res = await fetch(`/api/customers${search ? `?search=${encodeURIComponent(search)}` : ""}`, {
