@@ -544,18 +544,98 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
         return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
     }
     try {
-        $payload = [$request->all()];
+        $incoming = $request->all();
+        $payload = [$incoming];
         $resp = \Illuminate\Support\Facades\Http::withHeaders([
             'apikey' => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', $payload);
+        $created = null;
         if ($resp->successful()) {
             $arr = $resp->json();
-            return response()->json(['success' => true, 'tier' => is_array($arr) && isset($arr[0]) ? $arr[0] : $arr], 201);
+            $created = is_array($arr) && isset($arr[0]) ? $arr[0] : $arr;
+        } else {
+            return response()->json(['success' => false, 'message' => $resp->body()], 500);
         }
-        return response()->json(['success' => false, 'message' => $resp->body()], 500);
+        // Read-after-write verification (best-effort)
+        try {
+            if (isset($created['id'])) {
+                $verify = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
+                    'id' => 'eq.' . $created['id'],
+                    'select' => '*',
+                ]);
+                if ($verify->ok()) {
+                    $va = $verify->json();
+                    $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                    if ($vr) { $created = $vr; }
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Mirror into pos_settings.settings.price_tiers for resilience
+        try {
+            $storeId = $request->header('X-Store-ID');
+            $storeId = is_string($storeId) ? trim($storeId) : '';
+            if ($storeId === '' || $storeId === null) $storeId = 'default';
+            $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+            $cur = [];
+            try {
+                $get = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                    'id' => 'eq.' . $storeId,
+                    'select' => '*',
+                ]);
+                if ($get->ok()) {
+                    $ga = $get->json();
+                    $gr = (is_array($ga) && isset($ga[0])) ? $ga[0] : null;
+                    if ($gr && isset($gr['settings']) && is_array($gr['settings'])) $cur = $gr['settings'];
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+            $tiersArr = [];
+            if (isset($cur['price_tiers']) && is_array($cur['price_tiers'])) $tiersArr = $cur['price_tiers'];
+            elseif (isset($cur['priceTiers']) && is_array($cur['priceTiers'])) $tiersArr = $cur['priceTiers'];
+            // Normalize the created/incoming tier into settings format
+            $copy = [
+                'id' => $created['id'] ?? ($incoming['id'] ?? ($incoming['name'] ?? null)),
+                'name' => $created['name'] ?? ($incoming['name'] ?? 'Tier'),
+                'description' => $created['description'] ?? ($incoming['description'] ?? ''),
+                'prices' => $created['prices'] ?? ($incoming['prices'] ?? []),
+                'custom_weights' => $created['custom_weights'] ?? ($incoming['custom_weights'] ?? ($incoming['customWeights'] ?? [])),
+                'is_active' => array_key_exists('is_active', $created) ? $created['is_active'] : ($incoming['is_active'] ?? ($incoming['isActive'] ?? true)),
+                'created_at' => $created['created_at'] ?? ($incoming['created_at'] ?? now()->toIso8601String()),
+                'updated_at' => $created['updated_at'] ?? now()->toIso8601String(),
+            ];
+            // Upsert into array by id or name
+            $didReplace = false;
+            foreach ($tiersArr as $i => $t) {
+                $tid = $t['id'] ?? null; $tname = isset($t['name']) ? strtolower(trim((string)$t['name'])) : null;
+                $cid = $copy['id'] ?? null; $cname = isset($copy['name']) ? strtolower(trim((string)$copy['name'])) : null;
+                if (($cid !== null && (string)$tid === (string)$cid) || ($cname && $tname === $cname)) {
+                    $tiersArr[$i] = $copy; $didReplace = true; break;
+                }
+            }
+            if (!$didReplace) { $tiersArr[] = $copy; }
+            $cur['price_tiers'] = $tiersArr;
+            \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'Prefer' => 'resolution=merge-duplicates,return=representation',
+            ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                'id' => $storeId,
+                'settings' => $cur,
+                'updated_at' => now()->toIso8601String(),
+            ]]);
+        } catch (\Throwable $e) { /* ignore */ }
+        return response()->json(['success' => true, 'tier' => $created], 201);
     } catch (\Throwable $e) {
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
@@ -568,14 +648,16 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
         return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
     }
     try {
+        $body = $request->all();
         $url = rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers?id=eq.' . urlencode($id);
         $resp = \Illuminate\Support\Facades\Http::withHeaders([
             'apikey' => $supabaseKey,
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
-        ])->patch($url, $request->all());
+        ])->patch($url, $body);
         if ($resp->successful()) {
+            $updated = null;
             // Fetch the updated row to ensure consistency
             try {
                 $verify = \Illuminate\Support\Facades\Http::withHeaders([
@@ -589,13 +671,70 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
                 if ($verify->ok()) {
                     $va = $verify->json();
                     $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
-                    if ($vr) {
-                        return response()->json(['success' => true, 'tier' => $vr]);
-                    }
+                    if ($vr) { $updated = $vr; }
                 }
             } catch (\Throwable $e) { /* ignore */ }
-            $arr = $resp->json();
-            return response()->json(['success' => true, 'tier' => is_array($arr) && isset($arr[0]) ? $arr[0] : $arr]);
+            if ($updated === null) {
+                $arr = $resp->json();
+                $updated = is_array($arr) && isset($arr[0]) ? $arr[0] : $arr;
+            }
+            // Mirror into pos_settings.settings.price_tiers for resilience
+            try {
+                $storeId = $request->header('X-Store-ID');
+                $storeId = is_string($storeId) ? trim($storeId) : '';
+                if ($storeId === '' || $storeId === null) $storeId = 'default';
+                $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+                $cur = [];
+                try {
+                    $get = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'id' => 'eq.' . $storeId,
+                        'select' => '*',
+                    ]);
+                    if ($get->ok()) {
+                        $ga = $get->json();
+                        $gr = (is_array($ga) && isset($ga[0])) ? $ga[0] : null;
+                        if ($gr && isset($gr['settings']) && is_array($gr['settings'])) $cur = $gr['settings'];
+                    }
+                } catch (\Throwable $e) { /* ignore */ }
+                $tiersArr = [];
+                if (isset($cur['price_tiers']) && is_array($cur['price_tiers'])) $tiersArr = $cur['price_tiers'];
+                elseif (isset($cur['priceTiers']) && is_array($cur['priceTiers'])) $tiersArr = $cur['priceTiers'];
+                $copy = [
+                    'id' => $updated['id'] ?? $id,
+                    'name' => $updated['name'] ?? ($body['name'] ?? 'Tier'),
+                    'description' => $updated['description'] ?? ($body['description'] ?? ''),
+                    'prices' => $updated['prices'] ?? ($body['prices'] ?? []),
+                    'custom_weights' => $updated['custom_weights'] ?? ($body['custom_weights'] ?? ($body['customWeights'] ?? [])),
+                    'is_active' => array_key_exists('is_active', $updated) ? $updated['is_active'] : ($body['is_active'] ?? ($body['isActive'] ?? true)),
+                    'created_at' => $updated['created_at'] ?? ($body['created_at'] ?? now()->toIso8601String()),
+                    'updated_at' => $updated['updated_at'] ?? now()->toIso8601String(),
+                ];
+                $didReplace = false;
+                foreach ($tiersArr as $i => $t) {
+                    $tid = $t['id'] ?? null; $tname = isset($t['name']) ? strtolower(trim((string)$t['name'])) : null;
+                    $cid = $copy['id'] ?? null; $cname = isset($copy['name']) ? strtolower(trim((string)$copy['name'])) : null;
+                    if (($cid !== null && (string)$tid === (string)$cid) || ($cname && $tname === $cname)) {
+                        $tiersArr[$i] = $copy; $didReplace = true; break;
+                    }
+                }
+                if (!$didReplace) { $tiersArr[] = $copy; }
+                $cur['price_tiers'] = $tiersArr;
+                \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'resolution=merge-duplicates,return=representation',
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                    'id' => $storeId,
+                    'settings' => $cur,
+                    'updated_at' => now()->toIso8601String(),
+                ]]);
+            } catch (\Throwable $e) { /* ignore */ }
+            return response()->json(['success' => true, 'tier' => $updated]);
         }
         return response()->json(['success' => false, 'message' => $resp->body()], 500);
     } catch (\Throwable $e) {
