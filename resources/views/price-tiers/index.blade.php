@@ -374,7 +374,7 @@
   document.addEventListener('DOMContentLoaded', function(){
     async function refreshTiers(){
       try {
-        const r = await (window.axios||axios).get('/api/price-tiers', { headers: { Accept: 'application/json' } });
+        const r = await (window.axios||axios).get('/api/price-tiers-open', { headers: { Accept: 'application/json' } });
         const list = (r && r.data && (r.data.tiers||r.data)) || [];
         const tb = document.getElementById('tiers-table-body');
         if (!tb || !Array.isArray(list)) return;
