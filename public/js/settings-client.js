@@ -311,12 +311,40 @@
           await new Promise((r) => setTimeout(r, 200 * (i + 1)));
         }
       }
-      // Backend failed: do not fallback to direct Supabase; keep single source of truth
-      return {
-        success: false,
-        settings: merged,
-        error: last || new Error("settings save failed"),
-      };
+      // Backend failed: last-resort direct Supabase upsert to avoid data loss
+      try {
+        const sid = currentStoreId();
+        const now = new Date().toISOString();
+        const r = await supaReq(
+          `pos_settings?on_conflict=id`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify([{ id: sid, settings: merged, updated_at: now }]),
+          },
+        );
+        if (r.ok) {
+          // Verify read-after-write
+          try {
+            const ver = await supaReq(
+              `pos_settings?id=eq.${encodeURIComponent(sid)}&select=*`,
+              { method: "GET" },
+            );
+            if (ver.ok) {
+              const arr = await ver.json();
+              const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
+              if (row && row.settings && typeof row.settings === "object") {
+                const m = { ...DEFAULTS, ...row.settings };
+                this.saveLocal(sid, m);
+                try { localStorage.setItem('cannabisPOS-weightThreshold', String(m.weight_threshold ?? 0)); } catch(_) {}
+                try { window.dispatchEvent(new CustomEvent('settings:updated', { detail: { settings: m, storeId: sid } })); } catch(_) {}
+                return { success: true, settings: m };
+              }
+            }
+          } catch (_) {}
+        }
+      } catch (_) {}
+      return { success: false, settings: merged, error: last || new Error('settings save failed') };
     },
   };
 
