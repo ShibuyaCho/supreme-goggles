@@ -6516,14 +6516,18 @@ function cannabisPOS() {
     async _refreshProductsFromApi() {
       // Supabase-first refresh (bypass API proxy)
       try {
-        const base = String(window.__SUPABASE_URL || '').replace(/\/$/, '');
-        const key = window.__SUPABASE_ANON_KEY || '';
+        const base = String(window.__SUPABASE_URL || "").replace(/\/$/, "");
+        const key = window.__SUPABASE_ANON_KEY || "";
         if (!base || !key) return;
         const url = new URL(base + "/rest/v1/products");
         url.searchParams.set("select", "*");
         url.searchParams.set("order", "updated_at.desc");
         const r = await fetch(url.toString(), {
-          headers: { apikey: key, Authorization: "Bearer " + key, Accept: "application/json" },
+          headers: {
+            apikey: key,
+            Authorization: "Bearer " + key,
+            Accept: "application/json",
+          },
         });
         if (r.ok) {
           const arr = await r.json();
@@ -6537,7 +6541,8 @@ function cannabisPOS() {
                 this.products = this.products.map((p) => ({
                   ...p,
                   priceTier:
-                    map[String(p.id)] !== undefined && map[String(p.id)] !== null
+                    map[String(p.id)] !== undefined &&
+                    map[String(p.id)] !== null
                       ? map[String(p.id)]
                       : p.priceTier || null,
                 }));
