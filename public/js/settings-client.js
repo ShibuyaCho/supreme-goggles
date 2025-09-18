@@ -297,6 +297,7 @@
             if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
           } catch (_) {}
           this.saveLocal(sid, m);
+          try { localStorage.setItem('cannabisPOS-weightThreshold', String(m.weight_threshold ?? 0)); } catch(_) {}
           try {
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
