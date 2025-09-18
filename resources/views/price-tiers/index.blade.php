@@ -373,13 +373,12 @@
 <script>
   document.addEventListener('DOMContentLoaded', function(){
     async function refreshTiers(){
-      try {
-        const r = await (window.axios||axios).get('/api/price-tiers', { headers: { Accept: 'application/json' } });
-        const list = (r && r.data && (r.data.tiers||r.data)) || [];
-        const tb = document.getElementById('tiers-table-body');
-        if (!tb || !Array.isArray(list)) return;
-        const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-        tb.innerHTML = list.map(t => {
+      const tb = document.getElementById('tiers-table-body');
+      if (!tb) return;
+      const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const render = (arr)=>{
+        if (!Array.isArray(arr)) return;
+        tb.innerHTML = arr.map(t => {
           const name = esc(t.name || 'Tier');
           const type = esc(t.type || 'retail');
           const cust = esc(t.customer_type || 'recreational');
@@ -402,7 +401,52 @@
             </div></td>
           </tr>`;
         }).join('');
-      } catch (_) { /* ignore */ }
+      };
+      try {
+        // 1) Primary: Supabase-backed API
+        const r = await (window.axios||axios).get('/api/price-tiers', { headers: { Accept: 'application/json' } });
+        let list = (r && r.data && (r.data.tiers||r.data)) || [];
+        if (Array.isArray(list) && list.length) { render(list); return; }
+      } catch (_) {}
+      // 2) Fallback: SettingsClient price_tiers
+      try {
+        if (window.SettingsClient && typeof SettingsClient.get === 'function') {
+          const g = await SettingsClient.get(true);
+          const s = g && g.settings ? g.settings : {};
+          const arr = Array.isArray(s.price_tiers) ? s.price_tiers : (Array.isArray(s.priceTiers) ? s.priceTiers : []);
+          if (Array.isArray(arr) && arr.length) {
+            const mapped = arr.map(t=>({
+              name: t.name,
+              description: t.description||'',
+              type: 'retail',
+              customer_type: 'recreational',
+              discount: 0,
+              min_quantity: '-',
+              product_count: Array.isArray(t.products)?t.products.length:0,
+              status: (t.is_active===false)?'inactive':'active'
+            }));
+            render(mapped); return;
+          }
+        }
+      } catch(_) {}
+      // 3) Fallback: localStorage backup
+      try {
+        const raw = localStorage.getItem('cannabisPOS-priceTiers-backup') || '[]';
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) {
+          const mapped = arr.map(t=>({
+            name: t.name,
+            description: t.description||'',
+            type: 'retail',
+            customer_type: 'recreational',
+            discount: 0,
+            min_quantity: '-',
+            product_count: Array.isArray(t.products)?t.products.length:0,
+            status: (t.is_active===false)?'inactive':'active'
+          }));
+          render(mapped); return;
+        }
+      } catch(_) {}
     }
     try {
       const onRt = (e) => {
