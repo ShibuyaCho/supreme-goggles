@@ -9946,8 +9946,71 @@ function cannabisPOS() {
       try {
         const modal = document.getElementById("rd-count-modal");
         if (modal) {
+          this._activeDrawerForCount = drawer || null;
           modal.classList.remove("hidden");
           modal.classList.add("flex");
+          // Reset inputs
+          modal.querySelectorAll('.rd-denom').forEach((i)=> (i.value = ''));
+          const countedBy = document.getElementById('rd-counted-by');
+          if (countedBy) countedBy.value = this.currentUser?.name || '';
+          const approvedBy = document.getElementById('rd-approved-by');
+          if (approvedBy) approvedBy.value = '';
+          const calcDebit = () => {
+            try {
+              const uid = this.currentUser?.id || null;
+              const key = uid ? `cannabisPOS-sales-${uid}` : null;
+              const list = key ? JSON.parse(localStorage.getItem(key) || '[]') : [];
+              const total = (Array.isArray(list)?list:[]).filter(s=>s?.method==='debit').reduce((sum,s)=> sum + (parseFloat(s.amount)||parseFloat(s.total)||0), 0);
+              return +(+total).toFixed(2);
+            } catch(_) { return 0; }
+          };
+          const calcCounted = () => {
+            let total = 0;
+            modal.querySelectorAll('.rd-denom').forEach(input => {
+              const denom = parseFloat(input.dataset.denom);
+              const qty = parseInt(input.value||'0',10)||0;
+              if (!isNaN(denom) && qty>0){ total += denom*qty; }
+            });
+            return +(+total).toFixed(2);
+          };
+          const update = () => {
+            const d = this._activeDrawerForCount || { currentAmount: 0 };
+            const counted = calcCounted();
+            const debit = calcDebit();
+            const variance = +(counted - (d.currentAmount||0)).toFixed(2);
+            const countedEl = document.getElementById('rd-counted');
+            const debitEl = document.getElementById('rd-debit');
+            const varEl = document.getElementById('rd-variance');
+            if (countedEl) countedEl.textContent = `$${counted.toFixed(2)}`;
+            if (debitEl) debitEl.textContent = `$${debit.toFixed(2)}`;
+            if (varEl) {
+              varEl.textContent = `${variance<0?'-':''}$${Math.abs(variance).toFixed(2)}`;
+              varEl.className = `text-xl font-semibold ${variance<0?'text-red-600':variance>0?'text-green-600':'text-gray-900'}`;
+            }
+          };
+          if (!modal._countBound) {
+            modal.querySelectorAll('.rd-denom').forEach(inp=> inp.addEventListener('input', update));
+            document.getElementById('rd-count-close')?.addEventListener('click', ()=>{ modal.classList.add('hidden'); modal.classList.remove('flex'); this._activeDrawerForCount = null; });
+            document.getElementById('rd-count-cancel')?.addEventListener('click', ()=>{ modal.classList.add('hidden'); modal.classList.remove('flex'); this._activeDrawerForCount = null; });
+            document.getElementById('rd-count-save')?.addEventListener('click', ()=>{
+              const d = this._activeDrawerForCount;
+              if (!d) { modal.classList.add('hidden'); modal.classList.remove('flex'); return; }
+              const counted = (document.getElementById('rd-counted')?.textContent||'$0').replace(/[^0-9.\-]/g,'');
+              const debit = (document.getElementById('rd-debit')?.textContent||'$0').replace(/[^0-9.\-]/g,'');
+              const countedNum = parseFloat(counted)||0;
+              const debitNum = parseFloat(debit)||0;
+              const expected = +(d.currentAmount||0);
+              const variance = +(countedNum - expected).toFixed(2);
+              d.currentAmount = countedNum;
+              try { localStorage.setItem('pos_drawers', JSON.stringify(this.cashDrawers)); } catch(_) {}
+              const by = (document.getElementById('rd-counted-by')?.value||'').trim() || (this.currentUser?.name||'');
+              this.logActivity && this.logActivity('drawer', 'counted', d.name, `counted $${countedNum.toFixed(2)}, debit $${debitNum.toFixed(2)}, variance ${variance<0?'-':''}$${Math.abs(variance).toFixed(2)} by ${by}`);
+              this.showToast('Cash count saved', 'success');
+              modal.classList.add('hidden'); modal.classList.remove('flex'); this._activeDrawerForCount = null;
+            });
+            modal._countBound = true;
+          }
+          update();
           return;
         }
       } catch (_) {}
