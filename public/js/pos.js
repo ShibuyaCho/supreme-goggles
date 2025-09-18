@@ -6514,75 +6514,46 @@ function cannabisPOS() {
     },
 
     async _refreshProductsFromApi() {
-      // Prefer Supabase via PHP proxy
-      let loaded = false;
+      // Supabase-first refresh (bypass API proxy)
       try {
-        const res = await (window.axios || axios).get("/api/products-open", {
-          headers: { Accept: "application/json" },
+        const base = String(window.__SUPABASE_URL || '').replace(/\/$/, '');
+        const key = window.__SUPABASE_ANON_KEY || '';
+        if (!base || !key) return;
+        const url = new URL(base + "/rest/v1/products");
+        url.searchParams.set("select", "*");
+        url.searchParams.set("order", "updated_at.desc");
+        const r = await fetch(url.toString(), {
+          headers: { apikey: key, Authorization: "Bearer " + key, Accept: "application/json" },
         });
-        const items = Array.isArray(res?.data?.products)
-          ? res.data.products
-          : Array.isArray(res?.data)
-            ? res.data
-            : [];
-        if (Array.isArray(items) && items.length) {
-          this.products = items;
-          loaded = true;
-          // Apply locally persisted product->tier assignments
-          try {
-            const mapRaw = localStorage.getItem("cannabisPOS-productTierMap");
-            const map = mapRaw ? JSON.parse(mapRaw) : {};
-            if (map && typeof map === "object") {
-              this.products = this.products.map((p) => ({
-                ...p,
-                priceTier:
-                  map[String(p.id)] !== undefined && map[String(p.id)] !== null
-                    ? map[String(p.id)]
-                    : p.priceTier || null,
-              }));
-            }
-          } catch (_) {}
-          try {
-            localStorage.setItem(
-              "cannabisPOS-products",
-              JSON.stringify({ data: this.products }),
-            );
-          } catch (_) {}
-          this.normalizeCollections && this.normalizeCollections();
-          this.filterProducts && this.filterProducts();
+        if (r.ok) {
+          const arr = await r.json();
+          if (Array.isArray(arr)) {
+            this.products = arr;
+            // Apply locally persisted product->tier assignments
+            try {
+              const mapRaw = localStorage.getItem("cannabisPOS-productTierMap");
+              const map = mapRaw ? JSON.parse(mapRaw) : {};
+              if (map && typeof map === "object") {
+                this.products = this.products.map((p) => ({
+                  ...p,
+                  priceTier:
+                    map[String(p.id)] !== undefined && map[String(p.id)] !== null
+                      ? map[String(p.id)]
+                      : p.priceTier || null,
+                }));
+              }
+            } catch (_) {}
+            try {
+              localStorage.setItem(
+                "cannabisPOS-products",
+                JSON.stringify({ data: this.products }),
+              );
+            } catch (_) {}
+            this.normalizeCollections && this.normalizeCollections();
+            this.filterProducts && this.filterProducts();
+          }
         }
       } catch (_) {}
-      // Fallback: direct Supabase REST if proxy is unavailable
-      if (!loaded && window.__SUPABASE_URL && window.__SUPABASE_ANON_KEY) {
-        try {
-          const base = String(window.__SUPABASE_URL).replace(/\/$/, "");
-          const key = window.__SUPABASE_ANON_KEY;
-          const url = new URL(base + "/rest/v1/products");
-          url.searchParams.set("select", "*");
-          url.searchParams.set("order", "updated_at.desc");
-          const r = await fetch(url.toString(), {
-            headers: {
-              apikey: key,
-              Authorization: "Bearer " + key,
-              Accept: "application/json",
-            },
-          });
-          if (r.ok) {
-            const arr = await r.json();
-            if (Array.isArray(arr)) {
-              this.products = arr;
-              try {
-                localStorage.setItem(
-                  "cannabisPOS-products",
-                  JSON.stringify({ data: this.products }),
-                );
-              } catch (_) {}
-              this.normalizeCollections && this.normalizeCollections();
-              this.filterProducts && this.filterProducts();
-            }
-          }
-        } catch (_) {}
-      }
     },
 
     async loadPriceTiers() {
