@@ -524,7 +524,7 @@ class AnalyticsController extends Controller
         $cashSales = $todaysSales->where('payment_method', 'cash')->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $debitSales = $todaysSales->where('payment_method', 'debit')->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $creditSales = $todaysSales->where('payment_method', 'credit')->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
-        $monthlySales = Sale::whereMonth('created_at', $today->month)->whereYear('created_at', $today->year)->where('status', 'completed')->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
+        $monthlySales = Sale::whereBetween('created_at', [$today->copy()->startOfMonth(), $today->copy()->endOfDay()])->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',['Completed','COMPLETED']); })->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         return [ 'totalSales'=>$totalSales, 'totalTax'=>$totalTax, 'customerCount'=>$customerCount, 'cashSales'=>$cashSales, 'debitSales'=>$debitSales, 'creditSales'=>$creditSales, 'monthlySalesTotal'=>$monthlySales, 'dayOfMonth'=>$today->day, 'daysInMonth'=>$today->daysInMonth, 'storeName'=> config('app.store_name','Cannabis Dispensary'), 'generatedBy'=> auth()->user()->name ?? 'System' ];
     }
     
