@@ -985,6 +985,11 @@ Route::middleware(['auth:sanctum'])->group(function () {
             ->name('api.verification.send');
     });
 
+    // Compatibility aliases for clients calling /api/logout and /api/refresh
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+    Route::post('/refresh', [AuthController::class, 'refresh']);
+
     // User management
     Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
         return $request->user();
