@@ -934,6 +934,8 @@ Route::prefix('analytics')->group(function () {
     Route::get('/overview-open', [\App\Http\Controllers\AnalyticsController::class, 'overview']);
     Route::get('/end-of-day-open', [\App\Http\Controllers\AnalyticsController::class, 'endOfDay']);
     Route::get('/company-open', [\App\Http\Controllers\AnalyticsController::class, 'companyView']);
+    // Public ASPD (pace) endpoint - always Month-To-Date
+    Route::get('/aspd-open', [\App\Http\Controllers\AnalyticsController::class, 'getASPDAnalyticsOpen']);
 });
 
 // Compatibility aliases (support clients using /api/* without /auth prefix)
