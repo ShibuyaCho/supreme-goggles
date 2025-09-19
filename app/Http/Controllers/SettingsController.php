@@ -275,7 +275,7 @@ class SettingsController extends Controller
                     $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
                 }
                 if (array_key_exists('metrc_vendor_key', $responseSettings)) {
-                    $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••••' : '';
+                    $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••���•' : '';
                 }
             }
             return response()->json([
@@ -435,6 +435,7 @@ class SettingsController extends Controller
             // Display & Inventory
             'inventory_view_mode' => 'cards',
             'expandable_cart' => true,
+            'weight_threshold' => 0,
 
             // Auto Delete
             'auto_delete_zero_quantity' => false,
