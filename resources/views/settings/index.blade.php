@@ -793,6 +793,21 @@ function settingsManager() {
 
             // Load settings from localStorage if available
             this.loadSettingsFromStorage();
+            // Backfill tax from header display if both are zero/empty (align with topbar)
+            try {
+                const el = document.getElementById('tax-display');
+                if (el) {
+                    const txt = String(el.textContent || '');
+                    const m = txt.match(/([0-9]+(?:\.[0-9]+)?)/);
+                    if (m) {
+                        const v = Number(m[1]);
+                        if (Number.isFinite(v)) {
+                            if (!Number.isFinite(Number(this.settings.sales_tax)) || Number(this.settings.sales_tax) === 0) this.settings.sales_tax = v;
+                            if (!Number.isFinite(Number(this.settings.cannabis_tax)) || Number(this.settings.cannabis_tax) === 0) this.settings.cannabis_tax = v;
+                        }
+                    }
+                }
+            } catch (_) {}
             // Snapshot to avoid pushing defaults to server before hydration
             try { this._lastPersistedJSON = JSON.stringify(this.settings); } catch (_) {}
 
