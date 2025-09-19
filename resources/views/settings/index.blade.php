@@ -1130,7 +1130,6 @@ function settingsManager() {
                 if (resp && (resp.success || resp.settings)) {
                     const srv = resp.settings || {};
                     if (srv && typeof srv === 'object') {
-                    if (srv && typeof srv === 'object') {
                         const sensitive = new Set(['metrc_user_key','metrc_vendor_key','metrc_facility']);
                         const merged = { ...this.settings };
                         Object.keys(srv).forEach((k) => {
@@ -1143,6 +1142,13 @@ function settingsManager() {
                                 if (!isNullish) merged[k] = v;
                             }
                         });
+                        // If API provides tax_rate but settings.sales_tax is 0, sync it
+                        try {
+                            const apiTax = Number(resp.tax_rate ?? srv.sales_tax ?? NaN);
+                            if (isFinite(apiTax) && apiTax >= 0 && (!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0)) {
+                                merged.sales_tax = apiTax;
+                            }
+                        } catch (_) {}
                         // Map legacy keys
                         if (Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt') && !Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint')) {
                             merged.receipt_autoprint = !!merged.auto_print_receipt;
