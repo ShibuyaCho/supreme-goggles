@@ -151,6 +151,7 @@ Route::post('/rooms-open', function(\Illuminate\Http\Request $request) {
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
         ])->post($supabaseUrl . '/rest/v1/rooms?on_conflict=store_id,name', [ $row ]);
         if ($resp->successful()) {
             $arr = $resp->json(); $created = is_array($arr)&&isset($arr[0])?$arr[0]:$arr; return response()->json(['success'=>true,'room'=>$created],201);
