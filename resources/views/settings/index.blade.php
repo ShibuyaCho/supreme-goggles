@@ -811,10 +811,11 @@ function settingsManager() {
                 this.saveSettings();
             });
 
-            // Auto-save on change
+            // Auto-save on change (persist locally and to server, debounced)
             this.$watch('settings', () => {
                 this.saveSettingsToStorage();
                 this.dispatchSettingsUpdate();
+                this._saveSettingsDebounced();
             }, { deep: true });
         },
 
@@ -950,10 +951,46 @@ function settingsManager() {
             }
         },
 
+        _saveTimer: null,
+        _lastPersistedJSON: '',
+        _saveSettingsDebounced() {
+            try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
+            this._saveTimer = setTimeout(() => this._persistSettings(), 500);
+        },
+        _computePatch(cur, prev) {
+            const patch = {};
+            try {
+                const a = cur || {};
+                const b = prev || {};
+                const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+                keys.forEach((k) => {
+                    const va = a[k];
+                    const vb = b[k];
+                    const same = JSON.stringify(va) === JSON.stringify(vb);
+                    if (!same) patch[k] = va;
+                });
+            } catch (_) {}
+            return patch;
+        },
+        async _persistSettings() {
+            try {
+                const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
+                const patch = this._computePatch(this.settings, prev);
+                if (Object.keys(patch).length === 0) return;
+                const res = await (window.SettingsClient ? SettingsClient.save(patch) : Promise.resolve({ success:false }));
+                if (res && res.success && res.settings) {
+                    this.settings = Object.assign({}, this.settings, res.settings);
+                    this.saveSettingsToStorage();
+                }
+                this._lastPersistedJSON = JSON.stringify(this.settings);
+            } catch (_) {}
+        },
+
         async saveSettings() {
             try {
                 const res = await (window.SettingsClient ? SettingsClient.save(this.settings) : Promise.resolve({ success:false }));
                 if (res && res.success) {
+                    this._lastPersistedJSON = JSON.stringify(this.settings);
                     this.showToast('Settings saved successfully!', 'success');
                 } else {
                     this.showToast('Error saving settings', 'error');
@@ -1072,6 +1109,7 @@ function settingsManager() {
                         });
                         this.settings = merged;
                         this.saveSettingsToStorage();
+                        this._lastPersistedJSON = JSON.stringify(this.settings);
                     }
                 }
             } catch (e) {
