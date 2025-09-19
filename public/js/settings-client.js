@@ -175,49 +175,7 @@
     return r.data;
   }
   async function httpPost(path, body, params) {
-    // Special-case settings save: write directly to Supabase (no API hop)
-    if (path === "/api/settings/pos") {
-      const sid = currentStoreId();
-      const now = new Date().toISOString();
-      const merged = body || {};
-      const up = await supaReq(`pos_settings?on_conflict=id`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify([{ id: sid, settings: merged, updated_at: now }]),
-      });
-      if (!up.ok) {
-        let t = "";
-        try {
-          t = await up.text();
-        } catch (_) {}
-        throw new Error(t || `HTTP ${up.status}`);
-      }
-      // Verify read-after-write
-      try {
-        const ver = await supaReq(
-          `pos_settings?id=eq.${encodeURIComponent(sid)}&select=*`,
-          { method: "GET" },
-        );
-        if (ver.ok) {
-          const arr = await ver.json();
-          const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-          if (row) {
-            let settings = {};
-            if (row.settings && typeof row.settings === "object")
-              settings = row.settings;
-            else if (row.settings && typeof row.settings === "string") {
-              try {
-                settings = JSON.parse(row.settings);
-              } catch (_) {
-                settings = {};
-              }
-            }
-            return { settings, updated_at: row.updated_at || now };
-          }
-        }
-      } catch (_) {}
-      return { settings: merged, updated_at: now };
-    }
+    // Use backend API for settings to leverage Laravel cache/validation
     // Fallback for other endpoints (unchanged)
     if (window.posAuth) {
       const res = await window.posAuth.apiRequest(
@@ -372,6 +330,45 @@
         if (local)
           return { success: true, settings: { ...DEFAULTS, ...local } };
       }
+      // Try Laravel API first (uses cache/merge)
+      try {
+        const resp = await httpGet("/api/settings/pos", { nocache: true });
+        const data = resp && typeof resp === "object" ? (resp.settings || resp) : {};
+        const merged = { ...DEFAULTS, ...data };
+        const updatedAt =
+          resp && (resp.settings_updated_at || resp.updated_at)
+            ? resp.settings_updated_at || resp.updated_at
+            : null;
+        this.saveLocal(sid, merged);
+        try {
+          localStorage.setItem(
+            "cannabisPOS-weightThreshold",
+            String(merged.weight_threshold ?? 0),
+          );
+        } catch (_) {}
+        try { writeUiCachesFromSettings(merged); } catch (_) {}
+        try {
+          window.dispatchEvent(
+            new CustomEvent("settings:updated", {
+              detail: { settings: merged, storeId: sid },
+            }),
+          );
+          try {
+            const arr = Array.isArray(merged.price_tiers)
+              ? merged.price_tiers
+              : Array.isArray(merged.priceTiers)
+                ? merged.priceTiers
+                : [];
+            if (arr && arr.length) {
+              localStorage.setItem(
+                "cannabisPOS-priceTiers-backup",
+                JSON.stringify(arr),
+              );
+            }
+          } catch (_) {}
+        } catch (_) {}
+        return { success: true, settings: merged, updated_at: updatedAt };
+      } catch (_) {}
       // Server with retries
       let last = null;
       for (let i = 0; i < 3; i++) {
