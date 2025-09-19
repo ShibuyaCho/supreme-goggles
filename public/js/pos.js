@@ -6227,6 +6227,11 @@ function cannabisPOS() {
           localRate: isFinite(loc) ? loc : currentTax.localRate || 0,
           stateRate: isFinite(st) ? st : currentTax.stateRate || 0,
         };
+        // Sync primitive fields used elsewhere
+        try {
+          this.taxRate = Number(this.taxSettings.stateRate || 0) || 0;
+          this.medicalTaxRate = Number(this.taxSettings.medicalRate || 0) || 0;
+        } catch(_) {}
         this.salesSettings = {
           minimumSale: Number(s.minimum_price_amount || 0),
           enforceMinimumSale: !!s.minimum_price_enabled,
