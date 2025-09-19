@@ -456,7 +456,12 @@
         const cur = srv && (srv.settings || srv) ? srv.settings || srv : {};
         if (cur && typeof cur === "object") base = { ...base, ...cur };
       } catch (_) {}
-      const merged = { ...DEFAULTS, ...base, ...(patch || {}) };
+      // Preserve existing METRC keys if patch contains masked values
+      function isMasked(v){ return typeof v === 'string' && (v.trim() === '••••••••' || /^[*•]+$/.test(v.trim())); }
+      const patched = { ...(patch || {}) };
+      if (isMasked(patched.metrc_user_key)) patched.metrc_user_key = base.metrc_user_key || '';
+      if (isMasked(patched.metrc_vendor_key)) patched.metrc_vendor_key = base.metrc_vendor_key || '';
+      const merged = { ...DEFAULTS, ...base, ...patched };
       this.saveLocal(sid, merged);
       // Fire and retry server save
       let last = null;
