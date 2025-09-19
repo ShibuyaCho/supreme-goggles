@@ -409,6 +409,9 @@
             data && typeof data === "object" && (data.settings || data)
               ? data.settings || data
               : {};
+          if ((!Number.isFinite(Number(settings.cannabis_tax)) || Number(settings.cannabis_tax) === 0) && Number.isFinite(Number(settings.sales_tax))) {
+            settings.cannabis_tax = Number(settings.sales_tax);
+          }
           const merged = { ...DEFAULTS, ...settings };
           const updatedAt =
             data && (data.settings_updated_at || data.updated_at)
