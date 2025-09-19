@@ -137,7 +137,7 @@
       const m = document.cookie.match(
         new RegExp(
           "(?:^|; )" +
-            name.replace(/([.$?*|{}()\[\]\\\/\+^])/g, "\\$1") +
+            name.replace(/([.$?*|{}()\[\]\\\/+^])/g, "\\$1") +
             "=([^;]*)",
         ),
       );
@@ -332,7 +332,61 @@
         if (local)
           return { success: true, settings: { ...DEFAULTS, ...local } };
       }
-      // 1) Try Supabase first
+      // 1) Try Laravel API first (authoritative merge of defaults + remote + local DB)
+      try {
+        const resp = await httpGet("/api/settings/pos", { nocache: true });
+        const data =
+          resp && typeof resp === "object" ? resp.settings || resp : {};
+        const localPrev = this.loadLocal(sid) || {};
+        const merged = { ...DEFAULTS, ...data };
+        function isMasked(v) {
+          return (
+            typeof v === "string" &&
+            (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
+          );
+        }
+        ["metrc_user_key", "metrc_vendor_key"].forEach((k) => {
+          if (isMasked(merged[k]))
+            merged[k] = localPrev && localPrev[k] ? localPrev[k] : "";
+        });
+        const updatedAt =
+          resp && (resp.settings_updated_at || resp.updated_at)
+            ? resp.settings_updated_at || resp.updated_at
+            : null;
+        this.saveLocal(sid, merged);
+        try {
+          localStorage.setItem(
+            "cannabisPOS-weightThreshold",
+            String(merged.weight_threshold ?? 0),
+          );
+        } catch (_) {}
+        try {
+          writeUiCachesFromSettings(merged);
+        } catch (_) {}
+        try {
+          window.dispatchEvent(
+            new CustomEvent("settings:updated", {
+              detail: { settings: merged, storeId: sid },
+            }),
+          );
+          try {
+            const arr = Array.isArray(merged.price_tiers)
+              ? merged.price_tiers
+              : Array.isArray(merged.priceTiers)
+                ? merged.priceTiers
+                : [];
+            if (arr && arr.length) {
+              localStorage.setItem(
+                "cannabisPOS-priceTiers-backup",
+                JSON.stringify(arr),
+              );
+            }
+          } catch (_) {}
+        } catch (_) {}
+        return { success: true, settings: merged, updated_at: updatedAt };
+      } catch (e1) {}
+
+      // 2) Fallback to Supabase direct read
       let last = null;
       for (let i = 0; i < 3; i++) {
         try {
@@ -403,60 +457,7 @@
           await new Promise((r) => setTimeout(r, 200 * (i + 1)));
         }
       }
-      // 2) Fallback to Laravel API (cache)
-      try {
-        const resp = await httpGet("/api/settings/pos", { nocache: true });
-        const data =
-          resp && typeof resp === "object" ? resp.settings || resp : {};
-        const localPrev = this.loadLocal(sid) || {};
-        const merged = { ...DEFAULTS, ...data };
-        // Preserve existing METRC keys if response is masked
-        function isMasked(v) {
-          return (
-            typeof v === "string" &&
-            (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
-          );
-        }
-        ["metrc_user_key", "metrc_vendor_key"].forEach((k) => {
-          if (isMasked(merged[k]))
-            merged[k] = localPrev && localPrev[k] ? localPrev[k] : "";
-        });
-        const updatedAt =
-          resp && (resp.settings_updated_at || resp.updated_at)
-            ? resp.settings_updated_at || resp.updated_at
-            : null;
-        this.saveLocal(sid, merged);
-        try {
-          localStorage.setItem(
-            "cannabisPOS-weightThreshold",
-            String(merged.weight_threshold ?? 0),
-          );
-        } catch (_) {}
-        try {
-          writeUiCachesFromSettings(merged);
-        } catch (_) {}
-        try {
-          window.dispatchEvent(
-            new CustomEvent("settings:updated", {
-              detail: { settings: merged, storeId: sid },
-            }),
-          );
-          try {
-            const arr = Array.isArray(merged.price_tiers)
-              ? merged.price_tiers
-              : Array.isArray(merged.priceTiers)
-                ? merged.priceTiers
-                : [];
-            if (arr && arr.length) {
-              localStorage.setItem(
-                "cannabisPOS-priceTiers-backup",
-                JSON.stringify(arr),
-              );
-            }
-          } catch (_) {}
-        } catch (_) {}
-        return { success: true, settings: merged, updated_at: updatedAt };
-      } catch (_) {}
+
       // 3) Fallback to local defaults
       const fallback = this.loadLocal(sid) || DEFAULTS;
       return {
@@ -469,10 +470,10 @@
     async save(patch) {
       const sid = currentStoreId();
       let base = this.loadLocal(sid) || {};
-      // Prefetch current from server to avoid overwriting other fields
+      // Prefetch current from API to avoid overwriting other fields
       try {
-        const srv = await getFromServer(sid, true);
-        const cur = srv && (srv.settings || srv) ? srv.settings || srv : {};
+        const resp = await httpGet("/api/settings/pos", { nocache: true });
+        const cur = resp && (resp.settings || resp) ? resp.settings || resp : {};
         if (cur && typeof cur === "object") base = { ...base, ...cur };
       } catch (_) {}
       // Preserve existing METRC keys if patch contains masked values
@@ -499,12 +500,12 @@
           const s =
             data && (data.settings || data) ? data.settings || data : merged;
           let m = { ...DEFAULTS, ...s };
-          // Read-after-write verification (bypass cache)
+          // Read-after-write verification against Laravel API (bypass cache)
           try {
-            const verify = await getFromServer(sid, true);
+            const verifyResp = await httpGet("/api/settings/pos", { nocache: true });
             const vs =
-              verify && (verify.settings || verify)
-                ? verify.settings || verify
+              verifyResp && (verifyResp.settings || verifyResp)
+                ? verifyResp.settings || verifyResp
                 : {};
             if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
           } catch (_) {}
