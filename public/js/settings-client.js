@@ -231,7 +231,6 @@
     try {
       const tax = {
         recreationalRate: Number(merged.cannabis_tax ?? 0) || 0,
-        medicalRate: Number(merged.medical_tax ?? 0) || 0,
         includeInPrice: !!merged.tax_inclusive,
         localRate: Number(merged.excise_tax ?? 0) || 0,
         stateRate: Number(merged.sales_tax ?? 0) || 0,
