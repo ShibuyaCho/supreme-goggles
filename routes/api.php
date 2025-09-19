@@ -351,14 +351,44 @@ Route::get('/settings/pos', function() {
             if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
                 $settingsRemote = $row['settings'];
                 $updatedAtRemote = $row['updated_at'] ?? null;
+            } else {
+                // Fallback: try default, then legacy defaultstore
+                foreach (['default','defaultstore'] as $fid) {
+                    if ($fid === $storeId) continue;
+                    try {
+                        $respF = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                            'X-Store-ID' => $storeId,
+                        ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $fid,
+                            'select' => 'id,settings,updated_at',
+                        ]);
+                        if ($respF->ok()) {
+                            $arrF = $respF->json();
+                            $rowF = (is_array($arrF) && isset($arrF[0])) ? $arrF[0] : null;
+                            if (is_array($rowF) && isset($rowF['settings']) && is_array($rowF['settings'])) {
+                                $settingsRemote = $rowF['settings'];
+                                $updatedAtRemote = $rowF['updated_at'] ?? null;
+                                break;
+                            }
+                        }
+                    } catch (\Throwable $e) { /* ignore */ }
+                }
             }
         } catch (\Throwable $e) {}
     }
     // Local DB overlay (fills gaps and provides fallback)
     try {
         $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
-        if (!$local && $storeId === 'default') {
-            $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', 'defaultstore')->first();
+        if (!$local) {
+            // Fallback to default, then defaultstore
+            foreach (['default','defaultstore'] as $fid) {
+                if ($fid === $storeId) continue;
+                $try = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $fid)->first();
+                if ($try) { $local = $try; break; }
+            }
         }
         if ($local && isset($local->settings)) {
             $decoded = json_decode($local->settings, true);
