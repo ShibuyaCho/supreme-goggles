@@ -431,7 +431,8 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
-            
+            'X-Store-ID' => $storeId,
+
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $merged['store_name'] ?? null,
@@ -447,7 +448,8 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
-            
+            'X-Store-ID' => $storeId,
+
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $legacy,
                         'store_name' => $merged['store_name'] ?? null,
@@ -827,7 +829,8 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
-            
+            'X-Store-ID' => $storeId,
+
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
@@ -930,7 +933,8 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
-            
+            'X-Store-ID' => $storeId,
+
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
@@ -1680,7 +1684,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'resolution=merge-duplicates,return=representation',
-            
+            'X-Store-ID' => $storeId,
+
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                                     'id' => $storeId,
                                     'store_name' => $settings['store_name'] ?? null,
