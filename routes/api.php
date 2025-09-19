@@ -481,6 +481,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
 Route::get('/settings/stores/open', function() {
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
+    $storeId = 'default';
     $stores = [];
     if ($supabaseUrl && $supabaseKey) {
         try {
@@ -1770,7 +1771,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/stores', function() {
             $supabaseUrl = env('SUPABASE_URL');
             $supabaseKey = env('SUPABASE_ANON_KEY');
-            $stores = [];
+    $storeId = 'default';
+    $stores = [];
             // Try Supabase first
             if ($supabaseUrl && $supabaseKey) {
                 try {
