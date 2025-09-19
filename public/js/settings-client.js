@@ -269,6 +269,42 @@
     return fetch(url, Object.assign({}, init || {}, { headers }));
   }
 
+  function writeUiCachesFromSettings(merged) {
+    try {
+      const tax = {
+        recreationalRate: Number(merged.cannabis_tax ?? 0) || 0,
+        medicalRate: Number(merged.medical_tax ?? 0) || 0,
+        includeInPrice: !!merged.tax_inclusive,
+        localRate: Number(merged.excise_tax ?? 0) || 0,
+        stateRate: Number(merged.sales_tax ?? 0) || 0,
+      };
+      localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(tax));
+    } catch (_) {}
+    try {
+      const sales = {
+        minimumSale: Number(merged.minimum_price_amount ?? 0) || 0,
+        enforceMinimumSale: !!merged.minimum_price_enabled,
+        dailyLimit: Number(merged.__ui_daily_limit ?? merged.daily_limit ?? 0) || 0,
+        requireCustomerInfo: !!merged.require_customer,
+        autoDeleteZeroQuantity: !!merged.auto_delete_zero_quantity,
+        autoDeleteZeroDays: Number(merged.auto_delete_zero_days ?? 1) || 1,
+      };
+      localStorage.setItem("cannabisPOS-salesSettings", JSON.stringify(sales));
+    } catch (_) {}
+    try {
+      const print = {
+        autoprint: !!merged.receipt_autoprint,
+        printLabels: !!(merged.__ui_print_labels ?? merged.print_labels),
+        receiptTemplate: String(merged.__ui_receipt_template ?? merged.receipt_template ?? "standard"),
+        paperSize: String(merged.receipt_paper_size ?? "80mm"),
+        categoriesAutoprint: Array.isArray(merged.receipt_categories_autoprint)
+          ? merged.receipt_categories_autoprint
+          : [],
+      };
+      localStorage.setItem("cannabisPOS-printSettings", JSON.stringify(print));
+    } catch (_) {}
+  }
+
   async function getFromServer(sid, noCache = false) {
     // Read directly from Supabase pos_settings (no API hop)
     const tryIds = [sid];
