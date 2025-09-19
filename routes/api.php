@@ -1639,7 +1639,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
             }
             if (array_key_exists('metrc_vendor_key', $settings)) {
-                $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
+                $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '•••••��••' : '';
             }
             return response()->json([
                 'success' => true,
@@ -1660,6 +1660,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
             \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'protected', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
             try {
                 $settings = $request->all();
+                // Basic validation for critical fields
+                $validator = \Illuminate\Support\Facades\Validator::make($settings, [
+                    'print_labels' => 'sometimes|boolean',
+                    'receipt_template' => 'sometimes|in:standard,detailed,minimal',
+                ]);
+                if ($validator->fails()) {
+                    return response()->json(['success'=>false,'message'=>'Validation failed','errors'=>$validator->errors()], 400);
+                }
                 // Initialize Supabase and store scope before any reads
                 $supabaseUrl = env('SUPABASE_URL');
                 $supabaseKey = env('SUPABASE_ANON_KEY');
