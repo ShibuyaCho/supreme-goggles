@@ -929,7 +929,17 @@
                   </svg>
                   <span>Add/Switch Store</span>
                 </button>
+                <span id="header-store-label" class="text-xs text-gray-600"></span>
               </div>
+              <script>
+                (function(){
+                  function read(){ try{ const raw = localStorage.getItem('pos_store'); return raw?JSON.parse(raw):null; }catch(_){ return null; } }
+                  function update(){ try{ const s = read(); var el = document.getElementById('header-store-label'); if (el) el.textContent = s && (s.name||s.id) ? `Store: ${s.name||s.id}` : 'Store: default'; }catch(_){}}
+                  window.updateStoreHeaderLabel = update;
+                  document.addEventListener('DOMContentLoaded', update);
+                  window.addEventListener('settings:updated', update);
+                })();
+              </script>
               <button
                 id="global-refresh-metrc-demo"
                 @click="window.__refreshMetrc && window.__refreshMetrc()"
@@ -6648,7 +6658,7 @@
                       >
                     </p>
                     <p class="text-sm text-gray-500">
-                      ����������� Enhanced search functionality implemented
+                      ������������� Enhanced search functionality implemented
                     </p>
                     <p class="text-sm text-gray-500">
                       ��� Customer action buttons added
@@ -17417,56 +17427,20 @@
                     </h5>
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >Pennies ($0.01)</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.pennies"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Pennies ($0.01)</label>
+                        <input type="number" min="0" x-model.number="cashCount.pennies" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >Nickels ($0.05)</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.nickels"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Nickels ($0.05)</label>
+                        <input type="number" min="0" x-model.number="cashCount.nickels" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >Dimes ($0.10)</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.dimes"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Dimes ($0.10)</label>
+                        <input type="number" min="0" x-model.number="cashCount.dimes" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >Quarters ($0.25)</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.quarters"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Quarters ($0.25)</label>
+                        <input type="number" min="0" x-model.number="cashCount.quarters" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                     </div>
                   </div>
@@ -17480,82 +17454,28 @@
                     </h5>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >$1 Bills</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.ones"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">$1 Bills</label>
+                        <input type="number" min="0" x-model.number="cashCount.ones" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >$5 Bills</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.fives"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">$5 Bills</label>
+                        <input type="number" min="0" x-model.number="cashCount.fives" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >$10 Bills</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.tens"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">$10 Bills</label>
+                        <input type="number" min="0" x-model.number="cashCount.tens" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >$20 Bills</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.twenties"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">$20 Bills</label>
+                        <input type="number" min="0" x-model.number="cashCount.twenties" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >$50 Bills</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.fifties"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">$50 Bills</label>
+                        <input type="number" min="0" x-model.number="cashCount.fifties" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                       <div>
-                        <label
-                          class="block text-xs font-medium text-gray-700 mb-1"
-                          >$100 Bills</label
-                        >
-                        <input
-                          type="number"
-                          min="0"
-                          x-model.number="cashCount.hundreds"
-                          @input="calculateTotal()"
-                          class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-                        />
+                        <label class="block text-xs font-medium text-gray-700 mb-1">$100 Bills</label>
+                        <input type="number" min="0" x-model.number="cashCount.hundreds" @input="calculateTotal()" class="w-full border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500" />
                       </div>
                     </div>
                   </div>
