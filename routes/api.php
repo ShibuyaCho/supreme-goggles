@@ -210,6 +210,7 @@ Route::post('/drawers-open', function(\Illuminate\Http\Request $request) {
             'Authorization' => 'Bearer ' . $supabaseKey,
             'Accept' => 'application/json',
             'Prefer' => 'return=representation',
+            'X-Store-ID' => $storeId,
         ])->post($supabaseUrl . '/rest/v1/drawers', [ $row ]);
         if ($resp->successful()) {
             $arr = $resp->json(); $created = is_array($arr)&&isset($arr[0])?$arr[0]:$arr; return response()->json(['success'=>true,'drawer'=>$created],201);
