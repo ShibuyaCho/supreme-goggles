@@ -6216,10 +6216,13 @@ function cannabisPOS() {
         } catch (_) {}
         // Map backend settings to UI structures without clobbering with zeros
         const currentTax = { ...this.taxSettings };
-        const rec = s.hasOwnProperty('cannabis_tax') ? Number(s.cannabis_tax) : currentTax.recreationalRate;
+        const rec0 = s.hasOwnProperty('cannabis_tax') ? Number(s.cannabis_tax) : currentTax.recreationalRate;
         const med = s.hasOwnProperty('medical_tax_rate') ? Number(s.medical_tax_rate) : currentTax.medicalRate;
         const loc = s.hasOwnProperty('excise_tax') ? Number(s.excise_tax) : currentTax.localRate;
         const st  = s.hasOwnProperty('sales_tax') ? Number(s.sales_tax) : currentTax.stateRate;
+        const rec = (isFinite(rec0) && rec0 > 0)
+          ? rec0
+          : (isFinite(st) ? st : currentTax.recreationalRate);
         this.taxSettings = {
           recreationalRate: isFinite(rec) ? rec : currentTax.recreationalRate || 0,
           medicalRate: isFinite(med) ? med : currentTax.medicalRate || 0,
