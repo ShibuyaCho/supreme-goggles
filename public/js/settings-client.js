@@ -229,11 +229,13 @@
 
   function writeUiCachesFromSettings(merged) {
     try {
+      const stateRate = Number(merged.sales_tax ?? 0) || 0;
+      const recRate = Number(merged.cannabis_tax ?? 0);
       const tax = {
-        recreationalRate: Number(merged.cannabis_tax ?? 0) || 0,
+        recreationalRate: (Number.isFinite(recRate) && recRate > 0) ? recRate : stateRate,
         includeInPrice: !!merged.tax_inclusive,
         localRate: Number(merged.excise_tax ?? 0) || 0,
-        stateRate: Number(merged.sales_tax ?? 0) || 0,
+        stateRate,
       };
       localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(tax));
     } catch (_) {}
