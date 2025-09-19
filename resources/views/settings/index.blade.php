@@ -1168,6 +1168,12 @@ function settingsManager() {
                                 if ((!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0) && isFinite(st) && st >= 0) merged.sales_tax = st;
                             }
                         } catch(_) {}
+                        // Mirror sales_tax to cannabis_tax when recreational is zero (UI fallback)
+                        try {
+                            const st = Number(merged.sales_tax);
+                            const rec = Number(merged.cannabis_tax);
+                            if (isFinite(st) && st > 0 && (!isFinite(rec) || rec === 0)) merged.cannabis_tax = st;
+                        } catch(_) {}
                         // Map legacy keys
                         if (Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt') && !Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint')) {
                             merged.receipt_autoprint = !!merged.auto_print_receipt;
