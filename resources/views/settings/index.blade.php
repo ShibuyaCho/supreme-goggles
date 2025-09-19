@@ -1175,6 +1175,7 @@ function settingsManager() {
                         this.settings = merged;
                         this.saveSettingsToStorage();
                         this._lastPersistedJSON = JSON.stringify(this.settings);
+                        this.hydrated = true;
                     }
                 }
             } catch (e) {
