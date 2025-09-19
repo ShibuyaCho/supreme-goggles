@@ -961,6 +961,7 @@ function settingsManager() {
         _saveTimer: null,
         _lastPersistedJSON: '',
         _saveSettingsDebounced() {
+            if (!this.hydrated) return;
             try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
             this._saveTimer = setTimeout(() => this._persistSettings(), 500);
         },
