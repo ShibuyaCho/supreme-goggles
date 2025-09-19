@@ -2404,7 +2404,7 @@ function cannabisPOS() {
               ? payload.tax_rate
               : settings.sales_tax != null
                 ? settings.sales_tax
-                : 20.0;
+                : 0.0;
           this.medicalTaxRate =
             payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
           // Merge and map server settings to UI store settings (prefer newer)
