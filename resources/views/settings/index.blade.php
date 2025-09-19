@@ -11,11 +11,12 @@
                 <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
                 <p class="text-sm text-gray-600">Configure store operations and preferences</p>
             </div>
-            <div class="flex items-center gap-4" x-data="{ currentStore: 'main' }">
-                <select x-model="currentStore" class="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green text-gray-900">
-                    <option value="main">Cannabest POS - Main Store</option>
-                    <option value="downtown">Cannabest POS - Downtown</option>
-                    <option value="eastside">Cannabest POS - Eastside</option>
+            <div class="flex items-center gap-4">
+                <select x-model="currentStoreSelect" @change="onSelectStoreChange" class="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green text-gray-900">
+                    <template x-for="s in stores" :key="s.id">
+                        <option :value="s.id" x-text="s.name"></option>
+                    </template>
+                    <option value="default" x-show="stores.length === 0">Default Store</option>
                 </select>
                 <button id="save-settings-btn" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
