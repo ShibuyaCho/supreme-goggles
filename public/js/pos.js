@@ -1862,7 +1862,9 @@ function cannabisPOS() {
               } catch (_) {}
               this.showToast("Settings saved successfully", "success");
               return;
-            } catch (_) { /* fall through to error */ }
+            } catch (_) {
+              /* fall through to error */
+            }
           } catch (_) {}
           this.showToast(
             "Failed to save settings (saved locally, will retry)",

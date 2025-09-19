@@ -241,7 +241,8 @@
       const sales = {
         minimumSale: Number(merged.minimum_price_amount ?? 0) || 0,
         enforceMinimumSale: !!merged.minimum_price_enabled,
-        dailyLimit: Number(merged.__ui_daily_limit ?? merged.daily_limit ?? 0) || 0,
+        dailyLimit:
+          Number(merged.__ui_daily_limit ?? merged.daily_limit ?? 0) || 0,
         requireCustomerInfo: !!merged.require_customer,
         autoDeleteZeroQuantity: !!merged.auto_delete_zero_quantity,
         autoDeleteZeroDays: Number(merged.auto_delete_zero_days ?? 1) || 1,
@@ -252,7 +253,9 @@
       const print = {
         autoprint: !!merged.receipt_autoprint,
         printLabels: !!(merged.__ui_print_labels ?? merged.print_labels),
-        receiptTemplate: String(merged.__ui_receipt_template ?? merged.receipt_template ?? "standard"),
+        receiptTemplate: String(
+          merged.__ui_receipt_template ?? merged.receipt_template ?? "standard",
+        ),
         paperSize: String(merged.receipt_paper_size ?? "80mm"),
         categoriesAutoprint: Array.isArray(merged.receipt_categories_autoprint)
           ? merged.receipt_categories_autoprint
@@ -353,7 +356,10 @@
                 "pos_store",
                 JSON.stringify({ id: sid, name: displayName }),
               );
-              try { if (typeof window.updateStoreHeaderLabel === "function") window.updateStoreHeaderLabel(); } catch (_) {}
+              try {
+                if (typeof window.updateStoreHeaderLabel === "function")
+                  window.updateStoreHeaderLabel();
+              } catch (_) {}
             }
           } catch (_) {}
           try {
@@ -362,10 +368,14 @@
               String(merged.weight_threshold ?? 0),
             );
           } catch (_) {}
-          try { writeUiCachesFromSettings(merged); } catch (_) {}
+          try {
+            writeUiCachesFromSettings(merged);
+          } catch (_) {}
           try {
             // Mirror to Laravel cache (best-effort)
-            try { await httpPost("/api/settings/pos", merged, { store: sid }); } catch (_) {}
+            try {
+              await httpPost("/api/settings/pos", merged, { store: sid });
+            } catch (_) {}
             // Broadcast settings update
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
@@ -396,13 +406,20 @@
       // 2) Fallback to Laravel API (cache)
       try {
         const resp = await httpGet("/api/settings/pos", { nocache: true });
-        const data = resp && typeof resp === "object" ? (resp.settings || resp) : {};
+        const data =
+          resp && typeof resp === "object" ? resp.settings || resp : {};
         const localPrev = this.loadLocal(sid) || {};
         const merged = { ...DEFAULTS, ...data };
         // Preserve existing METRC keys if response is masked
-        function isMasked(v){ return typeof v === 'string' && (v.trim() === '••••••••' || /^[*•]+$/.test(v.trim())); }
-        ["metrc_user_key","metrc_vendor_key"].forEach((k)=>{
-          if (isMasked(merged[k])) merged[k] = localPrev && localPrev[k] ? localPrev[k] : "";
+        function isMasked(v) {
+          return (
+            typeof v === "string" &&
+            (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
+          );
+        }
+        ["metrc_user_key", "metrc_vendor_key"].forEach((k) => {
+          if (isMasked(merged[k]))
+            merged[k] = localPrev && localPrev[k] ? localPrev[k] : "";
         });
         const updatedAt =
           resp && (resp.settings_updated_at || resp.updated_at)
@@ -415,7 +432,9 @@
             String(merged.weight_threshold ?? 0),
           );
         } catch (_) {}
-        try { writeUiCachesFromSettings(merged); } catch (_) {}
+        try {
+          writeUiCachesFromSettings(merged);
+        } catch (_) {}
         try {
           window.dispatchEvent(
             new CustomEvent("settings:updated", {
@@ -457,10 +476,17 @@
         if (cur && typeof cur === "object") base = { ...base, ...cur };
       } catch (_) {}
       // Preserve existing METRC keys if patch contains masked values
-      function isMasked(v){ return typeof v === 'string' && (v.trim() === '••••••••' || /^[*•]+$/.test(v.trim())); }
+      function isMasked(v) {
+        return (
+          typeof v === "string" &&
+          (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
+        );
+      }
       const patched = { ...(patch || {}) };
-      if (isMasked(patched.metrc_user_key)) patched.metrc_user_key = base.metrc_user_key || '';
-      if (isMasked(patched.metrc_vendor_key)) patched.metrc_vendor_key = base.metrc_vendor_key || '';
+      if (isMasked(patched.metrc_user_key))
+        patched.metrc_user_key = base.metrc_user_key || "";
+      if (isMasked(patched.metrc_vendor_key))
+        patched.metrc_vendor_key = base.metrc_vendor_key || "";
       const merged = { ...DEFAULTS, ...base, ...patched };
       this.saveLocal(sid, merged);
       // Fire and retry server save
@@ -492,7 +518,10 @@
                 "pos_store",
                 JSON.stringify({ id: sid, name: displayName }),
               );
-              try { if (typeof window.updateStoreHeaderLabel === "function") window.updateStoreHeaderLabel(); } catch (_) {}
+              try {
+                if (typeof window.updateStoreHeaderLabel === "function")
+                  window.updateStoreHeaderLabel();
+              } catch (_) {}
             }
           } catch (_) {}
           try {
@@ -501,7 +530,9 @@
               String(m.weight_threshold ?? 0),
             );
           } catch (_) {}
-          try { writeUiCachesFromSettings(m); } catch (_) {}
+          try {
+            writeUiCachesFromSettings(m);
+          } catch (_) {}
           try {
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
@@ -561,7 +592,10 @@
                       "pos_store",
                       JSON.stringify({ id: sid, name: displayName }),
                     );
-                    try { if (typeof window.updateStoreHeaderLabel === "function") window.updateStoreHeaderLabel(); } catch (_) {}
+                    try {
+                      if (typeof window.updateStoreHeaderLabel === "function")
+                        window.updateStoreHeaderLabel();
+                    } catch (_) {}
                   }
                 } catch (_) {}
                 try {
@@ -570,7 +604,9 @@
                     String(m.weight_threshold ?? 0),
                   );
                 } catch (_) {}
-                try { writeUiCachesFromSettings(m); } catch (_) {}
+                try {
+                  writeUiCachesFromSettings(m);
+                } catch (_) {}
                 try {
                   window.dispatchEvent(
                     new CustomEvent("settings:updated", {

@@ -12,18 +12,23 @@ export const handler = async (event: any) => {
     }
 
     const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_JWT_SECRET = process.env.SUPABASE_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const SUPABASE_JWT_SECRET =
+      process.env.SUPABASE_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
     const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!SUPABASE_URL || !SUPABASE_JWT_SECRET || !SUPABASE_SERVICE_ROLE_KEY) {
       return {
         statusCode: 500,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "Missing required environment variables on the server." }),
+        body: JSON.stringify({
+          error: "Missing required environment variables on the server.",
+        }),
       };
     }
 
-    const authHeader = (event.headers?.authorization || event.headers?.Authorization || "") as string;
+    const authHeader = (event.headers?.authorization ||
+      event.headers?.Authorization ||
+      "") as string;
     if (!authHeader || !authHeader.toLowerCase().startsWith("bearer ")) {
       return {
         statusCode: 401,
@@ -55,7 +60,9 @@ export const handler = async (event: any) => {
       return {
         statusCode: 401,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "Unable to retrieve user from Supabase Auth." }),
+        body: JSON.stringify({
+          error: "Unable to retrieve user from Supabase Auth.",
+        }),
       };
     }
 
@@ -67,7 +74,10 @@ export const handler = async (event: any) => {
     }
 
     const store_id = (body && (body as any).store_id) as string;
-    const ttl_minutes = Math.max(1, Math.min(60, Number((body && (body as any).ttl_minutes) ?? 5)));
+    const ttl_minutes = Math.max(
+      1,
+      Math.min(60, Number((body && (body as any).ttl_minutes) ?? 5)),
+    );
 
     if (!store_id) {
       return {
@@ -103,7 +113,9 @@ export const handler = async (event: any) => {
       return {
         statusCode: 403,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ error: "User is not authorized for the requested store." }),
+        body: JSON.stringify({
+          error: "User is not authorized for the requested store.",
+        }),
       };
     }
 
@@ -117,7 +129,9 @@ export const handler = async (event: any) => {
       store_id: store_id,
     };
 
-    const token = jwt.sign(payload, SUPABASE_JWT_SECRET as string, { algorithm: "HS256" });
+    const token = jwt.sign(payload, SUPABASE_JWT_SECRET as string, {
+      algorithm: "HS256",
+    });
 
     return {
       statusCode: 200,

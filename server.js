@@ -1017,11 +1017,16 @@ app.post("/api/settings/pos", async (req, res) => {
       }
     } catch (_) {}
     function isMasked(v) {
-      return typeof v === "string" && (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()));
+      return (
+        typeof v === "string" &&
+        (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
+      );
     }
     const incomingClean = { ...incoming };
-    if (isMasked(incomingClean.metrc_user_key)) incomingClean.metrc_user_key = current.metrc_user_key || "";
-    if (isMasked(incomingClean.metrc_vendor_key)) incomingClean.metrc_vendor_key = current.metrc_vendor_key || "";
+    if (isMasked(incomingClean.metrc_user_key))
+      incomingClean.metrc_user_key = current.metrc_user_key || "";
+    if (isMasked(incomingClean.metrc_vendor_key))
+      incomingClean.metrc_vendor_key = current.metrc_vendor_key || "";
     const merged = { ...current, ...incomingClean };
 
     // Write to primary id
@@ -1054,16 +1059,31 @@ app.post("/api/settings/pos", async (req, res) => {
       } catch (_) {}
     }
     const payload = r.ok ? await r.json() : null;
-  const responseSettings = { ...merged };
-  try {
-    if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")) {
-      responseSettings.metrc_user_key = responseSettings.metrc_user_key ? "••••••••" : "";
-    }
-    if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_vendor_key")) {
-      responseSettings.metrc_vendor_key = responseSettings.metrc_vendor_key ? "••••••••" : "";
-    }
-  } catch (_) {}
-  return res.json({ success: true, settings: responseSettings, saved: payload });
+    const responseSettings = { ...merged };
+    try {
+      if (
+        Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")
+      ) {
+        responseSettings.metrc_user_key = responseSettings.metrc_user_key
+          ? "••••••••"
+          : "";
+      }
+      if (
+        Object.prototype.hasOwnProperty.call(
+          responseSettings,
+          "metrc_vendor_key",
+        )
+      ) {
+        responseSettings.metrc_vendor_key = responseSettings.metrc_vendor_key
+          ? "••••••••"
+          : "";
+      }
+    } catch (_) {}
+    return res.json({
+      success: true,
+      settings: responseSettings,
+      saved: payload,
+    });
   } catch (e) {
     return res
       .status(500)
