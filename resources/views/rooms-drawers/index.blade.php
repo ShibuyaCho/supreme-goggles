@@ -665,7 +665,12 @@ document.addEventListener('DOMContentLoaded', function() {
       const d = entry?.data || {};
       const win = window.open('', 'print-drawer', 'width=600,height=800');
       if (!win) return;
-      const rows = (d.breakdown||[]).filter(x=>x.qty>0).map(x=>`<tr><td style=\"padding:4px 8px;\">${x.denom>=1?`$${x.denom.toFixed(0)}`:`${(x.denom*100).toFixed(0)}¢`}</td><td style=\"padding:4px 8px; text-align:right;\">${x.qty}</td><td style=\"padding:4px 8px; text-align:right;\">$${(x.denom*x.qty).toFixed(2)}</td></tr>`).join('');
+      const rows = (d.breakdown||[])
+        .slice()
+        .sort((a,b)=> (a.denom||0) - (b.denom||0))
+        .filter(x=>x.qty>0)
+        .map(x=>`<tr><td style=\"padding:4px 8px;\">${x.denom>=1?`$${x.denom.toFixed(0)}`:`${(x.denom*100).toFixed(0)}¢`}</td><td style=\"padding:4px 8px; text-align:right;\">${x.qty}</td><td style=\"padding:4px 8px; text-align:right;\">$${(x.denom*x.qty).toFixed(2)}</td></tr>`)
+        .join('');
       win.document.write(`<!doctype html><html><head><meta charset=\"utf-8\"/><title>Drawer Count - ${d.drawerName||''}</title><style>body{font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:16px;} h1{font-size:18px;margin:0 0 8px;} table{width:100%; border-collapse:collapse;} th,td{border-bottom:1px solid #e5e7eb;} .tot{font-weight:600;} .sign{margin-top:24px; display:flex; gap:24px;} .line{border-top:1px solid #111827; padding-top:4px; min-width:200px;}</style></head><body>
         <h1>Closed Drawer Count</h1>
         <div style=\"font-size:12px;color:#374151;\">Drawer: <strong>${d.drawerName||'-'}</strong><br/>When: ${new Date(d.at||entry.at).toLocaleString()}<br/>Counted By: ${d.countedBy||'-'} • Approved By: ${d.approvedBy||'-'}</div>
