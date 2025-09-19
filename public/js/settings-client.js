@@ -528,6 +528,9 @@
               verifyResp && (verifyResp.settings || verifyResp)
                 ? verifyResp.settings || verifyResp
                 : {};
+            if ((!Number.isFinite(Number(vs.cannabis_tax)) || Number(vs.cannabis_tax) === 0) && Number.isFinite(Number(vs.sales_tax))) {
+              vs.cannabis_tax = Number(vs.sales_tax);
+            }
             if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
           } catch (_) {}
           this.saveLocal(sid, m);
