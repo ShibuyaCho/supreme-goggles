@@ -445,6 +445,7 @@ class SettingsController extends Controller
             'metrc_user_key' => env('METRC_USER_KEY', ''),
             'metrc_vendor_key' => env('METRC_VENDOR_KEY', ''),
             'metrc_facility' => env('METRC_FACILITY', ''),
+            'metrc_auto_push_sales' => false,
 
             // Appearance
             'dark_mode' => false,
