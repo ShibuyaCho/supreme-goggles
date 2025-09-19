@@ -981,6 +981,7 @@ function settingsManager() {
             return patch;
         },
         async _persistSettings() {
+            if (!this.hydrated) return;
             try {
                 const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
                 const patch = this._computePatch(this.settings, prev);
