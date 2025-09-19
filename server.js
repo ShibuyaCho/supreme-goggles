@@ -957,6 +957,14 @@ app.get("/api/settings/pos", async (req, res) => {
         settingsRow.settings && typeof settingsRow.settings === "object"
           ? { ...defaults, ...settingsRow.settings }
           : defaults;
+      try {
+        if (Object.prototype.hasOwnProperty.call(s, "metrc_user_key")) {
+          s.metrc_user_key = s.metrc_user_key ? "••••••••" : "";
+        }
+        if (Object.prototype.hasOwnProperty.call(s, "metrc_vendor_key")) {
+          s.metrc_vendor_key = s.metrc_vendor_key ? "••••••••" : "";
+        }
+      } catch (_) {}
       return res.json({
         success: true,
         settings: s,
