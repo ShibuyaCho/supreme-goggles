@@ -356,7 +356,7 @@ function cannabisPOS() {
     sortOrder: "name-asc",
     searchQuery: "",
     selectedCategory: "",
-    taxRate: 20.0,
+    taxRate: 0.0,
     medicalTaxRate: 0.0, // Tax free for medical customers
     selectedCustomer: null,
     selectedProduct: null,
