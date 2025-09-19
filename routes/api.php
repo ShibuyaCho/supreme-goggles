@@ -511,6 +511,73 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         ] as $n) {
             if (isset($merged[$n])) $merged[$n] = is_numeric($merged[$n]) ? 0 + $merged[$n] : $merged[$n];
         }
+        // Merge with full defaults to ensure the stored JSON contains every known key
+        $defaultsAll = [
+            'sales_tax' => 0.0,
+            'excise_tax' => 10.0,
+            'cannabis_tax' => 17.0,
+            'tax_inclusive' => false,
+            'store_name' => 'Cannabest POS',
+            'store_address' => '',
+            'store_phone' => '',
+            'store_email' => '',
+            'website' => '',
+            'store_manager' => '',
+            'license_number' => '',
+            'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
+            'exit_label_categories' => ['Flower','Pre-Rolls','Concentrates','Edibles'],
+            'auto_print_receipt' => false,
+            'receipt_autoprint' => false,
+            'receipt_categories_autoprint' => [],
+            'receipt_show_tax_breakdown' => true,
+            'receipt_show_metrc' => true,
+            'receipt_show_loyalty' => true,
+            'receipt_show_qr_code' => false,
+            'default_receipt_printer' => '',
+            'receipt_paper_size' => '80mm',
+            'require_customer' => true,
+            'age_verification' => true,
+            'limit_enforcement' => true,
+            'accept_cash' => true,
+            'accept_debit' => true,
+            'accept_check' => false,
+            'round_to_nearest' => false,
+            'minimum_price_enabled' => false,
+            'minimum_price_amount' => 0.01,
+            'minimum_price_categories' => [],
+            'inventory_view_mode' => 'cards',
+            'expandable_cart' => true,
+            'weight_threshold' => 0,
+            'role_permissions' => [
+                'admin' => ['*'],
+                'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+                'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+            ],
+            'auto_delete_zero_quantity' => false,
+            'auto_delete_zero_days' => 1,
+            'metrc_enabled' => true,
+            'metrc_user_key' => env('METRC_USER_KEY', ''),
+            'metrc_vendor_key' => env('METRC_VENDOR_KEY', ''),
+            'metrc_facility' => env('METRC_FACILITY', ''),
+            'metrc_auto_push_sales' => false,
+            'dark_mode' => false,
+            'theme_color' => 'green',
+            'font_size' => 'medium',
+            'high_contrast' => false,
+            'reduce_motion' => false,
+            'business_hours' => [
+                ['day' => 'Monday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Tuesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Wednesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Thursday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Friday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Saturday', 'is_open' => true, 'open_time' => '10:00', 'close_time' => '20:00'],
+                ['day' => 'Sunday', 'is_open' => true, 'open_time' => '11:00', 'close_time' => '19:00'],
+            ],
+        ];
+        $merged = array_replace_recursive($defaultsAll, $merged);
         $savedRemote = false;
         if ($supabaseUrl && $supabaseKey) {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
