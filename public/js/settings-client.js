@@ -397,7 +397,13 @@
       try {
         const resp = await httpGet("/api/settings/pos", { nocache: true });
         const data = resp && typeof resp === "object" ? (resp.settings || resp) : {};
+        const localPrev = this.loadLocal(sid) || {};
         const merged = { ...DEFAULTS, ...data };
+        // Preserve existing METRC keys if response is masked
+        function isMasked(v){ return typeof v === 'string' && (v.trim() === '••••••••' || /^[*•]+$/.test(v.trim())); }
+        ["metrc_user_key","metrc_vendor_key"].forEach((k)=>{
+          if (isMasked(merged[k])) merged[k] = localPrev && localPrev[k] ? localPrev[k] : "";
+        });
         const updatedAt =
           resp && (resp.settings_updated_at || resp.updated_at)
             ? resp.settings_updated_at || resp.updated_at
