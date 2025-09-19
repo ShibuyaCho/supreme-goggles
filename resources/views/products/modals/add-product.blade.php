@@ -52,9 +52,8 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Unit of Measurement *</label>
                             <select id="addp-unit" name="unit" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cannabis-green">
-                                <option value="Each">each</option>
-                                <option value="Grams">grams</option>
-                                <option value="Fluid Ounces">fluid oz.</option>
+                                <option value="Grams">Grams</option>
+                                <option value="Each">Each</option>
                                 <option value="Milliliters">Milliliters</option>
                             </select>
                             <p class="text-xs text-gray-500 mt-1">Select the appropriate unit of measurement for this product</p>
