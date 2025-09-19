@@ -491,7 +491,15 @@
           (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
         );
       }
-      const patched = { ...(patch || {}) };
+      // Scrub empty/null patch values to avoid overwriting existing settings with blanks
+      const _pin = { ...(patch || {}) };
+      const patched = {};
+      Object.keys(_pin).forEach((k) => {
+        const v = _pin[k];
+        if (v === null) return;
+        if (typeof v === 'string' && v.trim() === '') return;
+        patched[k] = v;
+      });
       if (isMasked(patched.metrc_user_key))
         patched.metrc_user_key = base.metrc_user_key || "";
       if (isMasked(patched.metrc_vendor_key))
