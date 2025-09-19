@@ -970,7 +970,6 @@ app.get("/api/settings/pos", async (req, res) => {
         settings: s,
         settings_updated_at: settingsRow.updated_at || null,
         tax_rate: s.sales_tax ?? 20.0,
-        medical_tax_rate: 0.0,
         currency: "USD",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       });
@@ -980,7 +979,6 @@ app.get("/api/settings/pos", async (req, res) => {
     success: true,
     settings: defaults,
     tax_rate: defaults.sales_tax ?? 20.0,
-    medical_tax_rate: 0.0,
     currency: "USD",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
   });
@@ -1018,7 +1016,13 @@ app.post("/api/settings/pos", async (req, res) => {
           current = row.settings;
       }
     } catch (_) {}
-    const merged = { ...current, ...incoming };
+    function isMasked(v) {
+      return typeof v === "string" && (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()));
+    }
+    const incomingClean = { ...incoming };
+    if (isMasked(incomingClean.metrc_user_key)) incomingClean.metrc_user_key = current.metrc_user_key || "";
+    if (isMasked(incomingClean.metrc_vendor_key)) incomingClean.metrc_vendor_key = current.metrc_vendor_key || "";
+    const merged = { ...current, ...incomingClean };
 
     // Write to primary id
     let r = await supaFetch("pos_settings", {

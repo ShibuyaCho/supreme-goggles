@@ -373,12 +373,18 @@ Route::get('/settings/pos', function() {
         }
     } catch (\Throwable $e) {}
 
+    // Mask METRC keys in response
+    if (array_key_exists('metrc_user_key', $settings)) {
+        $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
+    }
+    if (array_key_exists('metrc_vendor_key', $settings)) {
+        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
+    }
     return response()->json([
         'success' => true,
         'settings' => $settings,
         'settings_updated_at' => $settingsUpdatedAt,
         'tax_rate' => $settings['sales_tax'] ?? 20.0,
-        'medical_tax_rate' => 0.0,
         'currency' => 'USD',
         'timezone' => config('app.timezone'),
     ]);
@@ -422,6 +428,13 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     }
                 }
             } catch (\Throwable $e) {}
+        }
+        // Preserve existing METRC keys if incoming is masked
+        $maskPattern = '/^(?:[•*]+)$/u';
+        foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
+            if (isset($incoming[$k]) && is_string($incoming[$k]) && preg_match($maskPattern, trim($incoming[$k]))) {
+                if (isset($current[$k])) { $incoming[$k] = $current[$k]; }
+            }
         }
         $merged = array_merge(is_array($current)?$current:[], is_array($incoming)?$incoming:[]);
         $savedRemote = false;
@@ -468,10 +481,24 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             );
         } catch (\Throwable $e) { /* ignore local errors */ }
         if ($savedRemote) {
-            return response()->json(['success' => true, 'settings' => $merged]);
+            $respSettings = $merged;
+            if (array_key_exists('metrc_user_key', $respSettings)) {
+                $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '••••••••' : '';
+            }
+            if (array_key_exists('metrc_vendor_key', $respSettings)) {
+                $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : '';
+            }
+            return response()->json(['success' => true, 'settings' => $respSettings]);
         }
         // Remote failed but local saved: still return success with flag
-        return response()->json(['success' => true, 'saved_local' => true, 'settings' => $merged]);
+        $respSettings = $merged;
+        if (array_key_exists('metrc_user_key', $respSettings)) {
+            $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '•••••��••' : '';
+        }
+        if (array_key_exists('metrc_vendor_key', $respSettings)) {
+            $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : '';
+        }
+        return response()->json(['success' => true, 'saved_local' => true, 'settings' => $respSettings]);
     } catch (\Throwable $e) {
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
@@ -1599,11 +1626,17 @@ Route::middleware(['auth:sanctum'])->group(function () {
             if (!array_key_exists('metrc_facility', $settings) || empty($settings['metrc_facility'])) {
                 $settings['metrc_facility'] = env('METRC_FACILITY', '');
             }
+            // Mask METRC keys in response
+            if (array_key_exists('metrc_user_key', $settings)) {
+                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
+            }
+            if (array_key_exists('metrc_vendor_key', $settings)) {
+                $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
+            }
             return response()->json([
                 'success' => true,
                 'settings' => $settings,
                 'tax_rate' => $settings['sales_tax'] ?? 20.0,
-                'medical_tax_rate' => 0.0,
                 'currency' => 'USD',
                 'timezone' => config('app.timezone'),
                 'features' => [
@@ -1653,7 +1686,16 @@ Route::middleware(['auth:sanctum'])->group(function () {
                             if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) $current = $decoded;
                         }
                     }
-                    if (is_array($current)) { $settings = array_merge($current, $settings); }
+                    if (is_array($current)) {
+                        // Preserve existing METRC keys if incoming is masked
+                        $maskPattern = '/^(?:[•*]+)$/u';
+                        foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
+                            if (isset($settings[$k]) && is_string($settings[$k]) && preg_match($maskPattern, trim($settings[$k]))) {
+                                if (isset($current[$k])) { $settings[$k] = $current[$k]; }
+                            }
+                        }
+                        $settings = array_merge($current, $settings);
+                    }
                 } catch (\Throwable $e) { /* ignore */ }
                 foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','role_permissions'] as $field) {
                     if (isset($settings[$field]) && is_string($settings[$field])) {
@@ -1738,6 +1780,15 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
                 \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $fresh, now()->addYears(5));
 
+                // Mask METRC keys in response
+                if (is_array($fresh)) {
+                    if (array_key_exists('metrc_user_key', $fresh)) {
+                        $fresh['metrc_user_key'] = !empty($fresh['metrc_user_key']) ? '••••••••' : '';
+                    }
+                    if (array_key_exists('metrc_vendor_key', $fresh)) {
+                        $fresh['metrc_vendor_key'] = !empty($fresh['metrc_vendor_key']) ? '••••••••' : '';
+                    }
+                }
                 return response()->json(['success' => true, 'settings' => $fresh]);
             } catch (\Throwable $e) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);

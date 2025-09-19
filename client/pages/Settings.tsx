@@ -331,7 +331,6 @@ export default function Settings() {
       if (taxRaw) {
         const t = JSON.parse(taxRaw);
         basePayload.cannabis_tax = Number(t.recreationalRate ?? t.cannabisRate ?? existing.cannabis_tax ?? 0) || 0;
-        basePayload.medical_tax = Number(t.medicalRate ?? existing.medical_tax ?? 0) || 0;
         basePayload.excise_tax = Number(t.localRate ?? existing.excise_tax ?? 0) || 0;
         basePayload.sales_tax = Number(basePayload.sales_tax ?? t.stateRate ?? existing.sales_tax ?? 0) || 0;
         basePayload.tax_inclusive = !!(t.includeInPrice ?? existing.tax_inclusive);
