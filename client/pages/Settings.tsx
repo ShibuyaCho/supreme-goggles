@@ -266,7 +266,8 @@ export default function Settings() {
   };
 
   const saveToApi = async (settings: StoreSettings) => {
-    const payload: any = {
+    // Base payload from this page's UI
+    const basePayload: any = {
       // Store info
       store_name: settings.storeName,
       store_address: (settings as any).storeAddress ?? "",
@@ -277,7 +278,7 @@ export default function Settings() {
       website: settings.website,
       receipt_footer: (settings as any).receiptFooter ?? "",
 
-      // Taxes
+      // Taxes (this page currently only edits the primary tax rate)
       sales_tax: Number(settings.taxRate) || 0,
 
       // Auto delete
@@ -313,12 +314,77 @@ export default function Settings() {
       // Hours
       business_hours: settings.hours,
     };
+
+    // Enrich with other sections (tax breakdowns, printing prefs, METRC, sales rules)
+    let existing: any = {};
+    try {
+      const scAny: any = (window as any).SettingsClient;
+      if (scAny) {
+        const resp = await scAny.get(true);
+        existing = (resp && resp.settings) || {};
+      }
+    } catch (_) {}
+
+    // Pull additional details from local UI caches (if the modal/UI saved them previously)
+    try {
+      const taxRaw = localStorage.getItem("cannabisPOS-taxSettings") || "";
+      if (taxRaw) {
+        const t = JSON.parse(taxRaw);
+        basePayload.cannabis_tax = Number(t.recreationalRate ?? t.cannabisRate ?? existing.cannabis_tax ?? 0) || 0;
+        basePayload.medical_tax = Number(t.medicalRate ?? existing.medical_tax ?? 0) || 0;
+        basePayload.excise_tax = Number(t.localRate ?? existing.excise_tax ?? 0) || 0;
+        basePayload.sales_tax = Number(basePayload.sales_tax ?? t.stateRate ?? existing.sales_tax ?? 0) || 0;
+        basePayload.tax_inclusive = !!(t.includeInPrice ?? existing.tax_inclusive);
+      }
+    } catch (_) {}
+    try {
+      const printRaw = localStorage.getItem("cannabisPOS-printSettings") || "";
+      if (printRaw) {
+        const p = JSON.parse(printRaw);
+        basePayload.receipt_autoprint = !!(p.autoprint ?? existing.receipt_autoprint);
+        basePayload.print_labels = !!(p.printLabels ?? existing.print_labels);
+        basePayload.receipt_template = String(p.receiptTemplate ?? existing.receipt_template ?? "standard");
+        basePayload.receipt_paper_size = String(p.paperSize ?? existing.receipt_paper_size ?? "80mm");
+        if (Array.isArray(p.categoriesAutoprint)) basePayload.receipt_categories_autoprint = p.categoriesAutoprint;
+      }
+    } catch (_) {}
+    try {
+      const salesRaw = localStorage.getItem("cannabisPOS-salesSettings") || "";
+      if (salesRaw) {
+        const s = JSON.parse(salesRaw);
+        basePayload.minimum_price_amount = Number(s.minimumSale ?? basePayload.minimum_price_amount ?? existing.minimum_price_amount ?? 0) || 0;
+        basePayload.minimum_price_enabled = !!(s.enforceMinimumSale ?? basePayload.minimum_price_enabled ?? existing.minimum_price_enabled);
+        basePayload.__ui_daily_limit = Number(s.dailyLimit ?? existing.__ui_daily_limit ?? existing.daily_limit ?? 0) || 0;
+        basePayload.daily_limit = Number(s.dailyLimit ?? existing.daily_limit ?? 0) || 0;
+        basePayload.require_customer = !!(s.requireCustomerInfo ?? existing.require_customer);
+        basePayload.auto_delete_zero_quantity = !!(s.autoDeleteZeroQuantity ?? basePayload.auto_delete_zero_quantity ?? existing.auto_delete_zero_quantity);
+        basePayload.auto_delete_zero_days = Math.min(30, Math.max(1, Number(s.autoDeleteZeroDays ?? basePayload.auto_delete_zero_days ?? existing.auto_delete_zero_days ?? 1) || 1));
+      }
+    } catch (_) {}
+
+    // Preserve and include METRC integration fields and POS behavior/sales rules
+    basePayload.metrc_enabled = existing.metrc_enabled ?? basePayload.metrc_enabled ?? false;
+    basePayload.metrc_user_key = existing.metrc_user_key ?? basePayload.metrc_user_key ?? "";
+    basePayload.metrc_vendor_key = existing.metrc_vendor_key ?? basePayload.metrc_vendor_key ?? "";
+    basePayload.metrc_facility = existing.metrc_facility ?? basePayload.metrc_facility ?? "";
+    basePayload.metrc_auto_push_sales = existing.metrc_auto_push_sales ?? basePayload.metrc_auto_push_sales ?? false;
+
+    basePayload.require_customer = basePayload.require_customer ?? existing.require_customer ?? true;
+    basePayload.age_verification = basePayload.age_verification ?? existing.age_verification ?? true;
+    basePayload.limit_enforcement = basePayload.limit_enforcement ?? existing.limit_enforcement ?? true;
+    basePayload.accept_cash = basePayload.accept_cash ?? existing.accept_cash ?? true;
+    basePayload.accept_debit = basePayload.accept_debit ?? existing.accept_debit ?? true;
+    basePayload.accept_check = basePayload.accept_check ?? existing.accept_check ?? false;
+    basePayload.round_to_nearest = basePayload.round_to_nearest ?? existing.round_to_nearest ?? false;
+
+    const fullPayload = { ...(existing || {}), ...basePayload };
+
     const sc: any = (window as any).SettingsClient;
     if (sc) {
-      const res = await sc.save(payload);
+      const res = await sc.save(fullPayload);
       if (!res || res.success !== true) throw new Error("save-failed");
     } else {
-      await axios.post("/api/settings/pos", payload, {
+      await axios.post("/api/settings/pos", fullPayload, {
         headers: getStoreHeaders(),
       });
     }
