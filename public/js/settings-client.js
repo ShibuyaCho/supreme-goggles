@@ -393,6 +393,7 @@
               String(merged.weight_threshold ?? 0),
             );
           } catch (_) {}
+          try { writeUiCachesFromSettings(merged); } catch (_) {}
           try {
             // Broadcast settings update
             window.dispatchEvent(
