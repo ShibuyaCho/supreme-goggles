@@ -1155,6 +1155,19 @@ function settingsManager() {
                                 merged.sales_tax = apiTax;
                             }
                         } catch (_) {}
+                        // Backfill from local tax cache if server returned zeros
+                        try {
+                            const tsRaw = localStorage.getItem('cannabisPOS-taxSettings');
+                            if (tsRaw) {
+                                const ts = JSON.parse(tsRaw);
+                                const rec = Number(ts.recreationalRate || 0);
+                                const loc = Number(ts.localRate || 0);
+                                const st  = Number(ts.stateRate || 0);
+                                if ((!isFinite(Number(merged.cannabis_tax)) || Number(merged.cannabis_tax) === 0) && isFinite(rec) && rec > 0) merged.cannabis_tax = rec;
+                                if ((!isFinite(Number(merged.excise_tax)) || Number(merged.excise_tax) === 0) && isFinite(loc) && loc > 0) merged.excise_tax = loc;
+                                if ((!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0) && isFinite(st) && st >= 0) merged.sales_tax = st;
+                            }
+                        } catch(_) {}
                         // Map legacy keys
                         if (Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt') && !Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint')) {
                             merged.receipt_autoprint = !!merged.auto_print_receipt;
