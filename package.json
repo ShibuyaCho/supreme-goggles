@@ -71,7 +71,8 @@
     "recharts": "^2.12.7",
     "vaul": "^0.9.5",
     "sonner": "^1.5.0",
-    "next-themes": "^0.3.0"
+    "next-themes": "^0.3.0",
+    "jsonwebtoken": "^9.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
