@@ -248,6 +248,8 @@ function handleSettingsUpdate(event) {
                             });
                           }
                         } catch(_) {}
+                        // Refresh Laravel cache so readers see latest
+                        try { await (window.axios||axios).post('/api/settings/pos', merged, { headers: { 'X-Store-ID': sid, Accept: 'application/json' } }); } catch(_) {}
                         try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({})); } catch(_) {}
                         CannabisPOS.closeModal('settings-modal');
                         const taxDisplay = document.getElementById('tax-display');
