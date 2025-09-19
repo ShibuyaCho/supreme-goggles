@@ -1050,7 +1050,16 @@ app.post("/api/settings/pos", async (req, res) => {
       } catch (_) {}
     }
     const payload = r.ok ? await r.json() : null;
-    return res.json({ success: true, settings: merged, saved: payload });
+  const responseSettings = { ...merged };
+  try {
+    if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")) {
+      responseSettings.metrc_user_key = responseSettings.metrc_user_key ? "••••••••" : "";
+    }
+    if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_vendor_key")) {
+      responseSettings.metrc_vendor_key = responseSettings.metrc_vendor_key ? "••••••••" : "";
+    }
+  } catch (_) {}
+  return res.json({ success: true, settings: responseSettings, saved: payload });
   } catch (e) {
     return res
       .status(500)
