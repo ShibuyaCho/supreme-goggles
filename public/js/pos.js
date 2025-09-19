@@ -6122,6 +6122,13 @@ function cannabisPOS() {
             localRate: Number(ts.localRate || 0),
             stateRate: Number(ts.stateRate || 0),
           };
+          // Keep primitive taxRate vars in sync for calculators/UI referencing them
+          try {
+            const st = Number(this.taxSettings.stateRate || 0);
+            const med = Number(this.taxSettings.medicalRate || 0);
+            this.taxRate = Number.isFinite(st) ? st : (this.taxRate || 0);
+            this.medicalTaxRate = Number.isFinite(med) ? med : (this.medicalTaxRate || 0);
+          } catch(_) {}
         }
         const ss = JSON.parse(
           localStorage.getItem("cannabisPOS-salesSettings") || "{}",
