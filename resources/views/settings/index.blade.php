@@ -771,11 +771,8 @@ function settingsManager() {
         activeTab: 'general',
         categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Patches', 'Tinctures', 'Vapes', 'Inhalable Cannabinoid', 'Inhalable Cannabinoids', 'Plants (Clones)', 'Clones', 'Seeds', 'Hemp', 'Paraphernalia', 'Accessories', 'Apparel'],
         settings: @json($settings ?? {}),
-        stores: [
-            { id: 'main', name: 'Cannabest POS - Main Store', address: '123 Cannabis St, Portland, OR 97201', phone: '(503) 555-0123', status: 'active', is_current: true },
-            { id: 'downtown', name: 'Cannabest POS - Downtown', address: '456 Main St, Portland, OR 97202', phone: '(503) 555-0124', status: 'active', is_current: false },
-            { id: 'eastside', name: 'Cannabest POS - Eastside', address: '789 Division St, Portland, OR 97203', phone: '(503) 555-0125', status: 'inactive', is_current: false }
-        ],
+        stores: [],
+        currentStoreSelect: '',
 
         init() {
             // Initialize default settings if empty
