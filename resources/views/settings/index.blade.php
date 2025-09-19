@@ -793,6 +793,8 @@ function settingsManager() {
 
             // Load settings from localStorage if available
             this.loadSettingsFromStorage();
+            // Snapshot to avoid pushing defaults to server before hydration
+            try { this._lastPersistedJSON = JSON.stringify(this.settings); } catch (_) {}
 
             // Merge server settings (authorizes via posAuth)
             this.fetchServerSettings();
