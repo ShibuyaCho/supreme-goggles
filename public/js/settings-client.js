@@ -472,6 +472,18 @@
           } catch (_) {}
           this.saveLocal(sid, m);
           try {
+            const raw = localStorage.getItem("pos_store");
+            const cur = raw ? JSON.parse(raw) : null;
+            const displayName = m.store_name || (cur && cur.name) || sid;
+            if (!cur || cur.id !== sid || cur.name !== displayName) {
+              localStorage.setItem(
+                "pos_store",
+                JSON.stringify({ id: sid, name: displayName }),
+              );
+              try { if (typeof window.updateStoreHeaderLabel === "function") window.updateStoreHeaderLabel(); } catch (_) {}
+            }
+          } catch (_) {}
+          try {
             localStorage.setItem(
               "cannabisPOS-weightThreshold",
               String(m.weight_threshold ?? 0),
