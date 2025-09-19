@@ -196,6 +196,17 @@ class SettingsController extends Controller
                 $settings['receipt_autoprint'] = (bool)$settings['auto_print_receipt'];
             }
 
+            // Preserve existing METRC keys if incoming payload contains masked values
+            try {
+                $existing = $this->getCurrentSettings();
+                $maskPattern = '/^(?:[•*]+)$/u';
+                foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
+                    if (isset($settings[$k]) && is_string($settings[$k]) && preg_match($maskPattern, trim($settings[$k]))) {
+                        $settings[$k] = $existing[$k] ?? '';
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+
             // Handle per-user METRC user key (also persist globally per store)
             if (!empty($settings['metrc_user_key'])) {
                 $user = auth()->user();
