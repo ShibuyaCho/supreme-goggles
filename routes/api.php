@@ -120,6 +120,7 @@ Route::get('/rooms-open', function(\Illuminate\Http\Request $request) {
                 'apikey' => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
             ])->get($supabaseUrl . '/rest/v1/rooms', $params);
             if ($resp->ok()) return response()->json(['rooms' => $resp->json() ?? []]);
         } catch (\Throwable $e) { /* ignore */ }
