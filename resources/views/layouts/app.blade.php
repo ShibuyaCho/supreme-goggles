@@ -210,6 +210,54 @@
         document.addEventListener('DOMContentLoaded', updateLabel);
       })();
     </script>
+    <script>
+      (function(){
+        function setTaxLabel(val){
+          try {
+            const el = document.getElementById('tax-display');
+            if (!el) return;
+            const n = Number(val);
+            if (Number.isFinite(n)) el.textContent = `Tax: ${n}%`;
+          } catch(_) {}
+        }
+        function readLocalTax(){
+          try {
+            const ts = JSON.parse(localStorage.getItem('cannabisPOS-taxSettings')||'{}');
+            if (ts && typeof ts === 'object') {
+              const v = ts.stateRate != null ? ts.stateRate : (ts.recreationalRate != null ? ts.recreationalRate : null);
+              return v != null ? Number(v) : null;
+            }
+          } catch(_) {}
+          return null;
+        }
+        document.addEventListener('DOMContentLoaded', function(){
+          try {
+            const localVal = readLocalTax();
+            if (localVal != null && Number.isFinite(localVal)) setTaxLabel(localVal);
+          } catch(_) {}
+          try {
+            if (window.SettingsClient && typeof SettingsClient.get === 'function'){
+              SettingsClient.get(true).then(function(res){
+                try {
+                  const s = (res && res.settings) || {};
+                  const v = s.sales_tax != null ? s.sales_tax : (s.cannabis_tax != null ? s.cannabis_tax : null);
+                  if (v != null && Number.isFinite(Number(v))) setTaxLabel(Number(v));
+                } catch(_) {}
+              }).catch(function(){});
+            }
+          } catch(_) {}
+        });
+        try {
+          window.addEventListener('settings:updated', function(e){
+            try {
+              const s = e && e.detail && e.detail.settings ? e.detail.settings : {};
+              const v = s.sales_tax != null ? s.sales_tax : (s.cannabis_tax != null ? s.cannabis_tax : null);
+              if (v != null && Number.isFinite(Number(v))) setTaxLabel(Number(v));
+            } catch(_) {}
+          });
+        } catch(_) {}
+      })();
+    </script>
 </head>
 
 <body class="font-sans antialiased bg-gray-50">
