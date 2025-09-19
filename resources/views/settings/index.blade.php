@@ -773,6 +773,7 @@ function settingsManager() {
         settings: @json($settings ?? {}),
         stores: [],
         currentStoreSelect: '',
+        hydrated: false,
 
         init() {
             // Initialize default settings if empty
