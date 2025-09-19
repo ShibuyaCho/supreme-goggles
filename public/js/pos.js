@@ -6194,7 +6194,7 @@ function cannabisPOS() {
     async _hydrateBusinessSettingsFromServer() {
       try {
         const resp = await (window.SettingsClient
-          ? SettingsClient.get()
+          ? SettingsClient.get(true)
           : Promise.resolve({ success: false, settings: {} }));
         const s = (resp && resp.settings) || {};
         const serverTs = Number(
@@ -6207,17 +6207,18 @@ function cannabisPOS() {
           const raw = localStorage.getItem("cannabisPOS-storeSettings");
           if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
         } catch (_) {}
-        // Map backend settings to UI structures
-        const rec = Number(s.cannabis_tax != null ? s.cannabis_tax : 0);
-        const med = Number(s.medical_tax_rate != null ? s.medical_tax_rate : 0);
-        const loc = Number(s.excise_tax != null ? s.excise_tax : 0);
-        const st = Number(s.sales_tax != null ? s.sales_tax : 0);
+        // Map backend settings to UI structures without clobbering with zeros
+        const currentTax = { ...this.taxSettings };
+        const rec = s.hasOwnProperty('cannabis_tax') ? Number(s.cannabis_tax) : currentTax.recreationalRate;
+        const med = s.hasOwnProperty('medical_tax_rate') ? Number(s.medical_tax_rate) : currentTax.medicalRate;
+        const loc = s.hasOwnProperty('excise_tax') ? Number(s.excise_tax) : currentTax.localRate;
+        const st  = s.hasOwnProperty('sales_tax') ? Number(s.sales_tax) : currentTax.stateRate;
         this.taxSettings = {
-          recreationalRate: isFinite(rec) ? rec : 0,
-          medicalRate: isFinite(med) ? med : 0,
-          includeInPrice: !!s.tax_inclusive,
-          localRate: isFinite(loc) ? loc : 0,
-          stateRate: isFinite(st) ? st : 0,
+          recreationalRate: isFinite(rec) ? rec : currentTax.recreationalRate || 0,
+          medicalRate: isFinite(med) ? med : currentTax.medicalRate || 0,
+          includeInPrice: s.hasOwnProperty('tax_inclusive') ? !!s.tax_inclusive : !!currentTax.includeInPrice,
+          localRate: isFinite(loc) ? loc : currentTax.localRate || 0,
+          stateRate: isFinite(st) ? st : currentTax.stateRate || 0,
         };
         this.salesSettings = {
           minimumSale: Number(s.minimum_price_amount || 0),
