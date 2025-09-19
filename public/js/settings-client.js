@@ -425,7 +425,7 @@
                 : [];
             if (arr && arr.length) {
               localStorage.setItem(
-                "cannabisPOS-priceTers-backup",
+                "cannabisPOS-priceTiers-backup",
                 JSON.stringify(arr),
               );
             }
