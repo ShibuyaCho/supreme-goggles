@@ -6115,8 +6115,11 @@ function cannabisPOS() {
           localStorage.getItem("cannabisPOS-taxSettings") || "{}",
         );
         if (ts && typeof ts === "object") {
+          let rec = Number(ts.recreationalRate || 0);
+          const st = Number(ts.stateRate || 0);
+          if (!(Number.isFinite(rec) && rec > 0) && Number.isFinite(st) && st >= 0) rec = st;
           this.taxSettings = {
-            recreationalRate: Number(ts.recreationalRate || 0),
+            recreationalRate: rec,
             medicalRate: Number(ts.medicalRate || 0),
             includeInPrice: !!ts.includeInPrice,
             localRate: Number(ts.localRate || 0),
@@ -6124,9 +6127,9 @@ function cannabisPOS() {
           };
           // Keep primitive taxRate vars in sync for calculators/UI referencing them
           try {
-            const st = Number(this.taxSettings.stateRate || 0);
+            const stNum = Number(this.taxSettings.stateRate || 0);
             const med = Number(this.taxSettings.medicalRate || 0);
-            this.taxRate = Number.isFinite(st) ? st : (this.taxRate || 0);
+            this.taxRate = Number.isFinite(stNum) ? stNum : (this.taxRate || 0);
             this.medicalTaxRate = Number.isFinite(med) ? med : (this.medicalTaxRate || 0);
           } catch(_) {}
         }
