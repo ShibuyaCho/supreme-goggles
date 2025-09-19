@@ -398,6 +398,14 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         unset($incoming['settings']);
         $incoming = array_merge($nested, $incoming);
     }
+    // Basic validation for critical fields
+    $validator = \Illuminate\Support\Facades\Validator::make($incoming, [
+        'print_labels' => 'sometimes|boolean',
+        'receipt_template' => 'sometimes|in:standard,detailed,minimal',
+    ]);
+    if ($validator->fails()) {
+        return response()->json(['success'=>false,'message'=>'Validation failed','errors'=>$validator->errors()], 400);
+    }
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
     // Multi-store: scope by X-Store-ID header when present
@@ -493,7 +501,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         // Remote failed but local saved: still return success with flag
         $respSettings = $merged;
         if (array_key_exists('metrc_user_key', $respSettings)) {
-            $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '•••••��••' : '';
+            $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '••••••••' : '';
         }
         if (array_key_exists('metrc_vendor_key', $respSettings)) {
             $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : '';
