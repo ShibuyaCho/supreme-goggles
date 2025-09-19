@@ -178,6 +178,7 @@ Route::get('/drawers-open', function(\Illuminate\Http\Request $request) {
                 'apikey' => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
             ])->get($supabaseUrl . '/rest/v1/drawers', $params);
             if ($resp->ok()) return response()->json(['drawers' => $resp->json() ?? []]);
         } catch (\Throwable $e) { /* ignore */ }
