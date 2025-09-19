@@ -74,6 +74,8 @@ class SettingsController extends Controller
             'receipt_show_qr_code' => 'sometimes|boolean',
             'default_receipt_printer' => 'sometimes|nullable|string|max:255',
             'receipt_paper_size' => 'sometimes|in:80mm,58mm,letter',
+            'print_labels' => 'sometimes|boolean',
+            'receipt_template' => 'sometimes|in:standard,detailed,minimal',
 
             // POS behavior
             'require_customer' => 'sometimes|boolean',
