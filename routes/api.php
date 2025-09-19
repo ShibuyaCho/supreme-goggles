@@ -404,13 +404,36 @@ Route::get('/settings/pos', function() {
     try {
         $settingsCache = \Illuminate\Support\Facades\Cache::get('pos_settings:' . $storeId, []);
     } catch (\Throwable $e) { $settingsCache = []; }
-    // Compose final settings: defaults -> remote -> local -> cache
-    $settings = array_merge(
-        $defaults,
-        is_array($settingsRemote)?$settingsRemote:[],
-        is_array($settingsLocal)?$settingsLocal:[],
-        is_array($settingsCache)?$settingsCache:[],
-    );
+    // Compose final settings preferring non-null values: defaults -> remote -> local -> cache
+    $mergeNonNull = function(array $base, array $overlay) {
+        foreach ($overlay as $k => $v) {
+            if ($v === null) continue;
+            if (is_string($v) && trim($v) === '') continue;
+            $base[$k] = $v;
+        }
+        return $base;
+    };
+    $settings = $defaults;
+    if (is_array($settingsRemote)) $settings = $mergeNonNull($settings, $settingsRemote);
+    if (is_array($settingsLocal))  $settings = $mergeNonNull($settings, $settingsLocal);
+    if (is_array($settingsCache))  $settings = $mergeNonNull($settings, $settingsCache);
+
+    // Coerce known numeric and boolean fields to correct types
+    foreach (['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'] as $n) {
+        if (array_key_exists($n, $settings)) {
+            $settings[$n] = is_numeric($settings[$n]) ? 0 + $settings[$n] : ($settings[$n] ?? 0);
+        }
+    }
+    foreach ([
+        'receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+        'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+        'minimum_price_enabled','expandable_cart','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion','metrc_enabled','metrc_auto_push_sales'
+    ] as $b) {
+        if (array_key_exists($b, $settings)) {
+            $settings[$b] = (bool)$settings[$b];
+        }
+    }
+
     $settingsUpdatedAt = $updatedAtRemote ?? $updatedAtLocal;
     try {
         if ($updatedAtRemote && $updatedAtLocal) {
@@ -429,7 +452,7 @@ Route::get('/settings/pos', function() {
         'success' => true,
         'settings' => $settings,
         'settings_updated_at' => $settingsUpdatedAt,
-        'tax_rate' => $settings['sales_tax'] ?? 20.0,
+        'tax_rate' => $settings['sales_tax'] ?? 0.0,
         'currency' => 'USD',
         'timezone' => config('app.timezone'),
     ]);
