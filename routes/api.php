@@ -450,6 +450,27 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             }
         }
         $merged = array_merge(is_array($current)?$current:[], is_array($incoming)?$incoming:[]);
+        // Normalize array fields sent as JSON strings and ensure correct types
+        foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours','role_permissions'] as $field) {
+            if (isset($merged[$field]) && is_string($merged[$field])) {
+                $decoded = json_decode($merged[$field], true);
+                if (json_last_error() === JSON_ERROR_NONE) $merged[$field] = $decoded;
+            }
+        }
+        // Coerce booleans for known toggle fields
+        foreach ([
+            'receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+            'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+            'minimum_price_enabled','expandable_cart','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion','metrc_enabled','metrc_auto_push_sales'
+        ] as $b) {
+            if (array_key_exists($b, $merged)) $merged[$b] = (bool)filter_var($merged[$b], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool)$merged[$b];
+        }
+        // Coerce numeric fields
+        foreach ([
+            'sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'
+        ] as $n) {
+            if (isset($merged[$n])) $merged[$n] = is_numeric($merged[$n]) ? 0 + $merged[$n] : $merged[$n];
+        }
         $savedRemote = false;
         if ($supabaseUrl && $supabaseKey) {
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
