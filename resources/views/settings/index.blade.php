@@ -795,6 +795,12 @@ function settingsManager() {
 
             // Merge server settings (authorizes via posAuth)
             this.fetchServerSettings();
+            // Load store list and align selector to current store id
+            try { this.fetchStores && this.fetchStores(); } catch (_) {}
+            try {
+                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
+                this.currentStoreSelect = sid;
+            } catch (_) {}
             try {
                 window.addEventListener('realtime:table-changed', (e) => {
                     if (e && e.detail && e.detail.table === 'pos_settings') {
