@@ -262,7 +262,7 @@ async function openSettingsModal() {
         const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
         setVal('sales-tax', s.sales_tax);
         setVal('excise-tax', s.excise_tax);
-        setVal('cannabis-tax', s.cannabis_tax);
+        setVal('cannabis-tax', (s.cannabis_tax != null && s.cannabis_tax !== 0) ? s.cannabis_tax : s.sales_tax);
         setChk('tax-inclusive', s.tax_inclusive);
         setChk('auto-print-receipt', s.receipt_autoprint ?? s.auto_print_receipt);
         setChk('require-customer', s.require_customer);
