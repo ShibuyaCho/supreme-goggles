@@ -433,6 +433,17 @@ Route::get('/settings/pos', function() {
             $settings[$b] = (bool)$settings[$b];
         }
     }
+    // Mirror cannabis_tax and sales_tax for consistency if one is missing/zero
+    try {
+        $st = isset($settings['sales_tax']) ? (float)$settings['sales_tax'] : 0.0;
+        $rec = isset($settings['cannabis_tax']) ? (float)$settings['cannabis_tax'] : 0.0;
+        if (($rec === 0.0 || !is_finite($rec)) && is_finite($st) && $st > 0) {
+            $settings['cannabis_tax'] = $st;
+        }
+        if (($st === 0.0 || !is_finite($st)) && is_finite($rec) && $rec > 0) {
+            $settings['sales_tax'] = $rec;
+        }
+    } catch (\Throwable $e) { /* ignore */ }
 
     $settingsUpdatedAt = $updatedAtRemote ?? $updatedAtLocal;
     try {
@@ -539,6 +550,17 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         ] as $n) {
             if (isset($merged[$n])) $merged[$n] = is_numeric($merged[$n]) ? 0 + $merged[$n] : $merged[$n];
         }
+        // Mirror cannabis_tax and sales_tax for consistency when one is zero/missing
+        try {
+            $st = isset($merged['sales_tax']) ? (float)$merged['sales_tax'] : 0.0;
+            $rec = isset($merged['cannabis_tax']) ? (float)$merged['cannabis_tax'] : 0.0;
+            if (($rec === 0.0 || !is_finite($rec)) && is_finite($st) && $st > 0) {
+                $merged['cannabis_tax'] = $st;
+            }
+            if (($st === 0.0 || !is_finite($st)) && is_finite($rec) && $rec > 0) {
+                $merged['sales_tax'] = $rec;
+            }
+        } catch (\Throwable $e) { /* ignore */ }
         // Merge with full defaults to ensure the stored JSON contains every known key
         $defaultsAll = [
             'sales_tax' => 0.0,
