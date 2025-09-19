@@ -1047,10 +1047,31 @@ function settingsManager() {
             }
         },
 
-        switchStore(store) {
-            this.stores.forEach(s => s.is_current = false);
-            store.is_current = true;
-            this.showToast(`Switched to ${store.name}`, 'success');
+        async switchStore(store) {
+            try {
+                (this.stores || []).forEach(s => s.is_current = false);
+                store.is_current = true;
+                this.currentStoreSelect = String(store.id);
+                try {
+                    localStorage.setItem('pos_store', JSON.stringify({ id: String(store.id), name: store.name || String(store.id) }));
+                    if (typeof window.updateStoreHeaderLabel === 'function') window.updateStoreHeaderLabel();
+                } catch (_) {}
+                try {
+                    const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                    if (resp && (resp.settings || resp.data)) {
+                        const srv = resp.settings || resp.data || {};
+                        if (srv && typeof srv === 'object') {
+                            const merged = Object.assign({}, this.settings, srv);
+                            this.settings = merged;
+                            this.saveSettingsToStorage();
+                            this._lastPersistedJSON = JSON.stringify(this.settings);
+                        }
+                    }
+                } catch (_) {}
+                this.showToast(`Switched to ${store.name || store.id}`, 'success');
+            } catch (_) {
+                this.showToast('Failed to switch store', 'error');
+            }
         },
 
         testReceipt(type) {
