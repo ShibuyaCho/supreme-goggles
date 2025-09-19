@@ -426,11 +426,7 @@
             writeUiCachesFromSettings(merged);
           } catch (_) {}
           try {
-            // Mirror to Laravel cache (best-effort)
-            try {
-              await httpPost("/api/settings/pos", merged, { store: sid });
-            } catch (_) {}
-            // Broadcast settings update
+            // Broadcast settings update (read-only hydration; no write-back)
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
                 detail: { settings: merged, storeId: sid },
