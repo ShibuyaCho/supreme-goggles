@@ -468,6 +468,7 @@
               String(m.weight_threshold ?? 0),
             );
           } catch (_) {}
+          try { writeUiCachesFromSettings(m); } catch (_) {}
           try {
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
