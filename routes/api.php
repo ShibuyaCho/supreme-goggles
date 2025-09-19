@@ -282,6 +282,7 @@ Route::get('/settings/pos', function() {
         ],
         'auto_delete_zero_quantity' => false,
         'auto_delete_zero_days' => 1,
+        'weight_threshold' => 0,
         'metrc_enabled' => true,
         'dark_mode' => false,
         'theme_color' => 'green',
