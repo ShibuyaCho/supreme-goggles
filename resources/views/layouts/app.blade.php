@@ -240,7 +240,12 @@
               SettingsClient.get(true).then(function(res){
                 try {
                   const s = (res && res.settings) || {};
-                  const v = s.sales_tax != null ? s.sales_tax : (s.cannabis_tax != null ? s.cannabis_tax : null);
+                  let v = null;
+                  try {
+                    const st = Number(s.sales_tax);
+                    const rec = Number(s.cannabis_tax);
+                    if (Number.isFinite(st) && st > 0) v = st; else if (Number.isFinite(rec) && rec >= 0) v = rec; else if (Number.isFinite(st)) v = st;
+                  } catch(_) {}
                   if (v != null && Number.isFinite(Number(v))) setTaxLabel(Number(v));
                 } catch(_) {}
               }).catch(function(){});
@@ -251,7 +256,12 @@
           window.addEventListener('settings:updated', function(e){
             try {
               const s = e && e.detail && e.detail.settings ? e.detail.settings : {};
-              const v = s.sales_tax != null ? s.sales_tax : (s.cannabis_tax != null ? s.cannabis_tax : null);
+              let v = null;
+              try {
+                const st = Number(s.sales_tax);
+                const rec = Number(s.cannabis_tax);
+                if (Number.isFinite(st) && st > 0) v = st; else if (Number.isFinite(rec) && rec >= 0) v = rec; else if (Number.isFinite(st)) v = st;
+              } catch(_) {}
               if (v != null && Number.isFinite(Number(v))) setTaxLabel(Number(v));
             } catch(_) {}
           });
