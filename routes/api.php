@@ -307,6 +307,7 @@ Route::get('/settings/pos', function() {
     $supabaseKey = env('SUPABASE_ANON_KEY');
     $settingsRemote = [];
     $settingsLocal = [];
+    $settingsCache = [];
     // Multi-store: scope by X-Store-ID header when present
     $storeId = request()->header('X-Store-ID');
     $storeId = is_string($storeId) ? trim($storeId) : '';
@@ -399,8 +400,17 @@ Route::get('/settings/pos', function() {
         }
     } catch (\Throwable $e) {}
 
-    // Compose final settings: defaults -> remote -> local
-    $settings = array_merge($defaults, is_array($settingsRemote)?$settingsRemote:[], is_array($settingsLocal)?$settingsLocal:[]);
+    // Read from Cache (highest priority when present)
+    try {
+        $settingsCache = \Illuminate\Support\Facades\Cache::get('pos_settings:' . $storeId, []);
+    } catch (\Throwable $e) { $settingsCache = []; }
+    // Compose final settings: defaults -> remote -> local -> cache
+    $settings = array_merge(
+        $defaults,
+        is_array($settingsRemote)?$settingsRemote:[],
+        is_array($settingsLocal)?$settingsLocal:[],
+        is_array($settingsCache)?$settingsCache:[],
+    );
     $settingsUpdatedAt = $updatedAtRemote ?? $updatedAtLocal;
     try {
         if ($updatedAtRemote && $updatedAtLocal) {
@@ -544,6 +554,10 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 ['settings' => json_encode($merged), 'updated_at' => now()]
             );
         } catch (\Throwable $e) { /* ignore local errors */ }
+        // Persist to Cache for environments without DB access
+        try {
+            \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $merged, now()->addYears(5));
+        } catch (\Throwable $e) { /* ignore cache errors */ }
         if ($savedRemote) {
             $respSettings = $merged;
             if (array_key_exists('metrc_user_key', $respSettings)) {
