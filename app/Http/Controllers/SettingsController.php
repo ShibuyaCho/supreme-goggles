@@ -28,9 +28,19 @@ class SettingsController extends Controller
         try {
             $settings = $this->getCurrentSettings();
 
+            // Mask sensitive fields in response
+            $responseSettings = $settings;
+            if (is_array($responseSettings)) {
+                if (array_key_exists('metrc_user_key', $responseSettings)) {
+                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
+                }
+                if (array_key_exists('metrc_vendor_key', $responseSettings)) {
+                    $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••••' : '';
+                }
+            }
             return response()->json([
                 'success' => true,
-                'settings' => $settings
+                'settings' => $responseSettings
             ]);
 
         } catch (\Exception $e) {
@@ -49,10 +59,10 @@ class SettingsController extends Controller
     public function updateSettings(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            // Tax settings
-            'sales_tax' => 'required|numeric|min:0|max:100',
-            'excise_tax' => 'required|numeric|min:0|max:100',
-            'cannabis_tax' => 'required|numeric|min:0|max:100',
+            // Tax settings (optional to mirror Supabase; default/merge applied server-side)
+            'sales_tax' => 'sometimes|numeric|min:0|max:100',
+            'excise_tax' => 'sometimes|numeric|min:0|max:100',
+            'cannabis_tax' => 'sometimes|numeric|min:0|max:100',
             'tax_inclusive' => 'sometimes|boolean',
 
             // POS/Receipt preferences (support both legacy and new keys)
@@ -245,10 +255,20 @@ class SettingsController extends Controller
                 'user_id' => auth()->id()
             ]);
 
+            // Mask sensitive fields in response
+            $responseSettings = $settings;
+            if (is_array($responseSettings)) {
+                if (array_key_exists('metrc_user_key', $responseSettings)) {
+                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
+                }
+                if (array_key_exists('metrc_vendor_key', $responseSettings)) {
+                    $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••••' : '';
+                }
+            }
             return response()->json([
                 'success' => true,
                 'message' => 'Settings updated successfully',
-                'settings' => $settings
+                'settings' => $responseSettings
             ]);
 
         } catch (\Exception $e) {
