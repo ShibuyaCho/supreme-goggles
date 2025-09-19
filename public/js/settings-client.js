@@ -330,46 +330,7 @@
         if (local)
           return { success: true, settings: { ...DEFAULTS, ...local } };
       }
-      // Try Laravel API first (uses cache/merge)
-      try {
-        const resp = await httpGet("/api/settings/pos", { nocache: true });
-        const data = resp && typeof resp === "object" ? (resp.settings || resp) : {};
-        const merged = { ...DEFAULTS, ...data };
-        const updatedAt =
-          resp && (resp.settings_updated_at || resp.updated_at)
-            ? resp.settings_updated_at || resp.updated_at
-            : null;
-        this.saveLocal(sid, merged);
-        try {
-          localStorage.setItem(
-            "cannabisPOS-weightThreshold",
-            String(merged.weight_threshold ?? 0),
-          );
-        } catch (_) {}
-        try { writeUiCachesFromSettings(merged); } catch (_) {}
-        try {
-          window.dispatchEvent(
-            new CustomEvent("settings:updated", {
-              detail: { settings: merged, storeId: sid },
-            }),
-          );
-          try {
-            const arr = Array.isArray(merged.price_tiers)
-              ? merged.price_tiers
-              : Array.isArray(merged.priceTiers)
-                ? merged.priceTiers
-                : [];
-            if (arr && arr.length) {
-              localStorage.setItem(
-                "cannabisPOS-priceTiers-backup",
-                JSON.stringify(arr),
-              );
-            }
-          } catch (_) {}
-        } catch (_) {}
-        return { success: true, settings: merged, updated_at: updatedAt };
-      } catch (_) {}
-      // Server with retries
+      // 1) Try Supabase first
       let last = null;
       for (let i = 0; i < 3; i++) {
         try {
@@ -404,13 +365,15 @@
           } catch (_) {}
           try { writeUiCachesFromSettings(merged); } catch (_) {}
           try {
+            // Mirror to Laravel cache (best-effort)
+            try { await httpPost("/api/settings/pos", merged, { store: sid }); } catch (_) {}
             // Broadcast settings update
             window.dispatchEvent(
               new CustomEvent("settings:updated", {
                 detail: { settings: merged, storeId: sid },
               }),
             );
-            // If settings include price tiers, persist to local backup for POS fallback
+            // Persist price tiers backup
             try {
               const arr = Array.isArray(merged.price_tiers)
                 ? merged.price_tiers
@@ -431,7 +394,46 @@
           await new Promise((r) => setTimeout(r, 200 * (i + 1)));
         }
       }
-      // Fallback to local defaults
+      // 2) Fallback to Laravel API (cache)
+      try {
+        const resp = await httpGet("/api/settings/pos", { nocache: true });
+        const data = resp && typeof resp === "object" ? (resp.settings || resp) : {};
+        const merged = { ...DEFAULTS, ...data };
+        const updatedAt =
+          resp && (resp.settings_updated_at || resp.updated_at)
+            ? resp.settings_updated_at || resp.updated_at
+            : null;
+        this.saveLocal(sid, merged);
+        try {
+          localStorage.setItem(
+            "cannabisPOS-weightThreshold",
+            String(merged.weight_threshold ?? 0),
+          );
+        } catch (_) {}
+        try { writeUiCachesFromSettings(merged); } catch (_) {}
+        try {
+          window.dispatchEvent(
+            new CustomEvent("settings:updated", {
+              detail: { settings: merged, storeId: sid },
+            }),
+          );
+          try {
+            const arr = Array.isArray(merged.price_tiers)
+              ? merged.price_tiers
+              : Array.isArray(merged.priceTiers)
+                ? merged.priceTiers
+                : [];
+            if (arr && arr.length) {
+              localStorage.setItem(
+                "cannabisPOS-priceTers-backup",
+                JSON.stringify(arr),
+              );
+            }
+          } catch (_) {}
+        } catch (_) {}
+        return { success: true, settings: merged, updated_at: updatedAt };
+      } catch (_) {}
+      // 3) Fallback to local defaults
       const fallback = this.loadLocal(sid) || DEFAULTS;
       return {
         success: false,
