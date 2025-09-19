@@ -339,21 +339,21 @@
         <div>
           <h4 class="font-medium text-gray-900 mb-2">Bills</h4>
           <div class="space-y-2">
-            <div class="flex items-center justify-between"><label class="text-sm">$100</label><input data-denom="100" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
-            <div class="flex items-center justify-between"><label class="text-sm">$50</label><input data-denom="50" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
-            <div class="flex items-center justify-between"><label class="text-sm">$20</label><input data-denom="20" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
-            <div class="flex items-center justify-between"><label class="text-sm">$10</label><input data-denom="10" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
-            <div class="flex items-center justify-between"><label class="text-sm">$5</label><input data-denom="5" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
             <div class="flex items-center justify-between"><label class="text-sm">$1</label><input data-denom="1" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$5</label><input data-denom="5" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$10</label><input data-denom="10" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$20</label><input data-denom="20" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$50</label><input data-denom="50" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">$100</label><input data-denom="100" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
           </div>
         </div>
         <div>
           <h4 class="font-medium text-gray-900 mb-2">Coins</h4>
           <div class="space-y-2">
-            <div class="flex items-center justify-between"><label class="text-sm">25¢</label><input data-denom="0.25" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
-            <div class="flex items-center justify-between"><label class="text-sm">10¢</label><input data-denom="0.10" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
-            <div class="flex items-center justify-between"><label class="text-sm">5¢</label><input data-denom="0.05" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
             <div class="flex items-center justify-between"><label class="text-sm">1¢</label><input data-denom="0.01" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">5¢</label><input data-denom="0.05" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">10¢</label><input data-denom="0.10" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
+            <div class="flex items-center justify-between"><label class="text-sm">25¢</label><input data-denom="0.25" type="number" min="0" class="rd-denom w-24 text-right px-2 py-1 border rounded" placeholder="0"/></div>
           </div>
         </div>
       </div>
