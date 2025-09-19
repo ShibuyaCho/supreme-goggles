@@ -1842,61 +1842,19 @@ function cannabisPOS() {
               mergedForFallback = { ...cur, ...payload };
             } catch (_) {}
 
-            const base = (window.__SUPABASE_URL || "").replace(/\/$/, "");
-            const key = window.__SUPABASE_ANON_KEY || "";
-            if (base && key) {
-              const body = [
+            // Route fallback through Laravel to standardize writes and cache
+            try {
+              await (window.axios || axios).post(
+                "/api/settings/pos",
+                mergedForFallback,
                 {
-                  id: sid,
-                  settings: mergedForFallback,
-                  updated_at: new Date().toISOString(),
-                },
-              ];
-              const res1 = await fetch(
-                `${base}/rest/v1/pos_settings?on_conflict=id`,
-                {
-                  method: "POST",
                   headers: {
-                    apikey: key,
-                    Authorization: `Bearer ${key}`,
                     Accept: "application/json",
                     "Content-Type": "application/json",
-                    Prefer: "resolution=merge-duplicates,return=representation",
+                    "X-Store-ID": sid,
                   },
-                  body: JSON.stringify(body),
                 },
               );
-              if (!res1.ok) throw new Error("supabase upsert failed");
-              // Write legacy id for backward compatibility
-              try {
-                const legacy =
-                  sid === "default"
-                    ? "defaultstore"
-                    : sid === "defaultstore"
-                      ? "default"
-                      : null;
-                if (legacy) {
-                  await fetch(`${base}/rest/v1/pos_settings?on_conflict=id`, {
-                    method: "POST",
-                    headers: {
-                      apikey: key,
-                      Authorization: `Bearer ${key}`,
-                      Accept: "application/json",
-                      "Content-Type": "application/json",
-                      Prefer:
-                        "resolution=merge-duplicates,return=representation",
-                    },
-                    body: JSON.stringify([
-                      {
-                        id: legacy,
-                        settings: mergedForFallback,
-                        updated_at: new Date().toISOString(),
-                      },
-                    ]),
-                  });
-                }
-              } catch (_) {}
-              // Verify and refresh local cache/UI
               try {
                 await (window.SettingsClient
                   ? SettingsClient.get(true)
@@ -1904,7 +1862,7 @@ function cannabisPOS() {
               } catch (_) {}
               this.showToast("Settings saved successfully", "success");
               return;
-            }
+            } catch (_) { /* fall through to error */ }
           } catch (_) {}
           this.showToast(
             "Failed to save settings (saved locally, will retry)",
