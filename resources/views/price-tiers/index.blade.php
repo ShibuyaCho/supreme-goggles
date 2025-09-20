@@ -439,7 +439,8 @@
       } catch(_) {}
       // 3) Fallback: localStorage backup
       try {
-        const raw = localStorage.getItem('cannabisPOS-priceTiers-backup') || '[]';
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } return 'default'; })();
+        const raw = (localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) || localStorage.getItem('cannabisPOS-priceTiers-backup') || '[]');
         const arr = JSON.parse(raw);
         if (Array.isArray(arr) && arr.length) {
           const mapped = arr.map(t=>({
