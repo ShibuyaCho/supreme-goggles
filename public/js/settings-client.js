@@ -298,6 +298,7 @@
           ? merged.receipt_categories_autoprint
           : [],
       };
+      try { const sid = currentStoreId(); localStorage.setItem(`cannabisPOS-printSettings_${sid}`, JSON.stringify(print)); } catch (_) {}
       localStorage.setItem("cannabisPOS-printSettings", JSON.stringify(print));
     } catch (_) {}
   }
