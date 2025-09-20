@@ -962,6 +962,7 @@ function settingsManager() {
         },
 
         saveSettingsToStorage() {
+            if (!this.hydrated) return;
             try {
                 if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
                     const sid = SettingsClient.currentStoreId();
@@ -987,7 +988,7 @@ function settingsManager() {
             if (!this.hydrated) return;
             // Dispatch custom event to notify other components
             const event = new CustomEvent('settings-updated', {
-                detail: this.settings
+                detail: { settings: this.settings }
             });
             window.dispatchEvent(event);
             try { window.dispatchEvent(new CustomEvent('settings:updated', { detail: { settings: this.settings } })); } catch (_) {}
@@ -1142,6 +1143,7 @@ function settingsManager() {
                             this.saveSettingsToStorage();
                             this._lastPersistedJSON = JSON.stringify(this.settings);
                             this.hydrated = true;
+                            this.dispatchSettingsUpdate();
                         }
                     }
                 } catch (_) {}
@@ -1258,6 +1260,7 @@ function settingsManager() {
                         }
                         // First successful server hydration complete; enable autosave
                         this.hydrated = true;
+                            this.dispatchSettingsUpdate();
                     }
                 }
             } catch (e) {
