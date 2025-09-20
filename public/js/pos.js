@@ -596,6 +596,48 @@ function cannabisPOS() {
     vendorSearchQuery: "",
     vendorStatusFilter: "",
     vendorETAFilter: "",
+    // METRC section tabs and derived products list
+    metrcTab: "transfers",
+    vendorProductQuery: "",
+    get metrcProducts() {
+      try {
+        const out = [];
+        const list = Array.isArray(this.incomingVendors)
+          ? this.incomingVendors
+          : [];
+        for (let i = 0; i < list.length; i++) {
+          const v = list[i] || {};
+          const pkgs = Array.isArray(v.packages) ? v.packages : [];
+          for (let j = 0; j < pkgs.length; j++) {
+            const p = pkgs[j] || {};
+            const qty = Number(p.quantity ?? 0);
+            out.push({
+              name: p.productName || "Package",
+              tag: p.metrcTag || "",
+              qty: isFinite(qty) ? qty : 0,
+              unit: p.unit || "",
+              room: (p.room || "").toString(),
+            });
+          }
+        }
+        return out;
+      } catch (_) {
+        return [];
+      }
+    },
+    get metrcProductsFiltered() {
+      try {
+        const q = (this.vendorProductQuery || "").toLowerCase();
+        const rows = this.metrcProducts;
+        if (!q) return rows;
+        return rows.filter((r) => {
+          const s = `${r.name} ${r.tag} ${r.room}`.toLowerCase();
+          return s.includes(q);
+        });
+      } catch (_) {
+        return this.metrcProducts || [];
+      }
+    },
     get filteredVendors() {
       try {
         const q = (this.vendorSearchQuery || "").toLowerCase();
