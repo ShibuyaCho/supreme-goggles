@@ -24,7 +24,7 @@
                     </svg>
                     Save Settings
                 </button>
-                <button id="settings-refresh-metrc" @click="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+                <button id="settings-refresh-metrc" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/>
                     </svg>
