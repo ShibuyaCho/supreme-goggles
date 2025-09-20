@@ -638,6 +638,36 @@ function cannabisPOS() {
         return this.metrcProducts || [];
       }
     },
+    // Products summary from backend
+    metrcProductsSummary: [],
+    metrcProductsSummaryLoading: false,
+    async refreshMetrcProductsSummary(){
+      try{
+        this.metrcProductsSummaryLoading = true;
+        const res = await (window.axios || axios).get('/api/metrc/products/summary', { headers:{ Accept:'application/json' }});
+        const rows = res?.data?.data || res?.data?.rows || res?.data || [];
+        this.metrcProductsSummary = (Array.isArray(rows)?rows:[]).map((r)=>({
+          name: r.name || r.ProductName || 'Unknown',
+          tag: r.tag || r.PackageLabel || '',
+          metrc_qty: Number(r.metrc_qty ?? r.metrcQty ?? r.metrc_quantity ?? r.quantity ?? 0),
+          inventory_qty: Number(r.inventory_qty ?? r.inventoryQty ?? r.flowhub_qty ?? 0),
+          variance: Number(r.inventory_qty ?? 0) - Number(r.metrc_qty ?? 0),
+          unit: r.unit || r.UnitOfMeasureName || r.unit_of_measure || '',
+          last_modified: r.last_modified || r.LastModified || r.updated_at || null,
+          sku: r.sku || r.SKU || ''
+        }));
+      } catch(_) { this.metrcProductsSummary = []; }
+      finally { this.metrcProductsSummaryLoading = false; }
+    },
+    get metrcProductsSummaryFiltered(){
+      try{
+        const q=(this.vendorProductQuery||'').toLowerCase();
+        const rows = Array.isArray(this.metrcProductsSummary)?this.metrcProductsSummary:[];
+        if(!q) return rows;
+        return rows.filter(r=>(`${r.name} ${r.tag} ${r.sku}`).toLowerCase().includes(q));
+      }catch(_){ return this.metrcProductsSummary||[]; }
+    },
+
     get filteredVendors() {
       try {
         const q = (this.vendorSearchQuery || "").toLowerCase();
@@ -4405,9 +4435,8 @@ function cannabisPOS() {
         }
       }
       if (page === "metrc-vendors") {
-        try {
-          this.refreshVendorData();
-        } catch (_) {}
+        try { this.refreshVendorData(); } catch (_) {}
+        try { this.refreshMetrcProductsSummary(); } catch (_) {}
       }
       if (page === "order-queue") {
         try {
@@ -4421,7 +4450,7 @@ function cannabisPOS() {
         pos: "Cashier",
         customers: "Customer Management",
         products: "Products",
-        "metrc-vendors": "METRC Transfers",
+        "metrc-vendors": "METRC",
         employees: "Employees",
         "rooms-drawers": "Rooms & Drawers",
         "price-tiers": "Price Tiers",
