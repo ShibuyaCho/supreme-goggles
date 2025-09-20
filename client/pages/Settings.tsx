@@ -327,7 +327,8 @@ export default function Settings() {
 
     // Pull additional details from local UI caches (if the modal/UI saved them previously)
     try {
-      const taxRaw = localStorage.getItem("cannabisPOS-taxSettings") || "";
+      const sid = (window as any).SettingsClient?.currentStoreId?.() || 'default';
+      const taxRaw = localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem("cannabisPOS-taxSettings") || "";
       if (taxRaw) {
         const t = JSON.parse(taxRaw);
         basePayload.cannabis_tax =
@@ -346,7 +347,8 @@ export default function Settings() {
       }
     } catch (_) {}
     try {
-      const printRaw = localStorage.getItem("cannabisPOS-printSettings") || "";
+      const sid = (window as any).SettingsClient?.currentStoreId?.() || 'default';
+      const printRaw = localStorage.getItem(`cannabisPOS-printSettings_${sid}`) || localStorage.getItem("cannabisPOS-printSettings") || "";
       if (printRaw) {
         const p = JSON.parse(printRaw);
         basePayload.receipt_autoprint = !!(
@@ -364,7 +366,8 @@ export default function Settings() {
       }
     } catch (_) {}
     try {
-      const salesRaw = localStorage.getItem("cannabisPOS-salesSettings") || "";
+      const sid = (window as any).SettingsClient?.currentStoreId?.() || 'default';
+      const salesRaw = localStorage.getItem(`cannabisPOS-salesSettings_${sid}`) || localStorage.getItem("cannabisPOS-salesSettings") || "";
       if (salesRaw) {
         const s = JSON.parse(salesRaw);
         basePayload.minimum_price_amount =
