@@ -909,7 +909,7 @@
             <div class="flex items-center space-x-4">
               <!-- Store selector -->
               <div class="hidden md:flex items-center space-x-2">
-                                <button
+                <button
                   id="header-store-button"
                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
                 >
@@ -943,8 +943,11 @@
                     try {
                       const s = read();
                       var btn = document.getElementById("header-store-button");
-                      var t = document.getElementById("header-store-button-text") || (btn ? btn.querySelector('span') : null);
-                      const name = s && (s.name || s.id) ? (s.name || s.id) : 'default';
+                      var t =
+                        document.getElementById("header-store-button-text") ||
+                        (btn ? btn.querySelector("span") : null);
+                      const name =
+                        s && (s.name || s.id) ? s.name || s.id : "default";
                       if (t) t.textContent = name;
                       if (btn) btn.title = name;
                     } catch (_) {}
