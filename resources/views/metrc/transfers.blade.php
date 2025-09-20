@@ -165,6 +165,7 @@ function metrcPage(){
     sort: { key: 'variance', dir: 'asc' },
 
     init(){
+      try { window.__metrcPage = this; } catch(_) {}
       const hdr = document.getElementById('global-refresh-metrc');
       if (hdr && !hdr.dataset.bound){ hdr.dataset.bound='1'; hdr.addEventListener('click', (e)=>{ e.preventDefault(); this.refreshCurrent(); }); }
       document.addEventListener('metrc:imported', ()=>{ this.refreshAll(); });
