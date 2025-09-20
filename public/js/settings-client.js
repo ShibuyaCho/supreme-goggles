@@ -428,6 +428,7 @@
                 ? merged.priceTiers
                 : [];
             if (arr && arr.length) {
+              try { const sid2 = currentStoreId(); localStorage.setItem(`cannabisPOS-priceTiers-backup_${sid2}`, JSON.stringify(arr)); } catch(_){ }
               localStorage.setItem(
                 "cannabisPOS-priceTiers-backup",
                 JSON.stringify(arr),
@@ -505,10 +506,7 @@
             try {
               window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged }));
             } catch (_) {}
-          try {
-            window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged }));
-          } catch (_) {}
-            // Persist price tiers backup
+            // Persist price tiers backup (namespaced + legacy)
             try {
               const arr = Array.isArray(merged.price_tiers)
                 ? merged.price_tiers
@@ -516,6 +514,7 @@
                   ? merged.priceTiers
                   : [];
               if (arr && arr.length) {
+                try { const sid2 = currentStoreId(); localStorage.setItem(`cannabisPOS-priceTiers-backup_${sid2}`, JSON.stringify(arr)); } catch(_){ }
                 localStorage.setItem(
                   "cannabisPOS-priceTiers-backup",
                   JSON.stringify(arr),
@@ -643,6 +642,7 @@
                   ? m.priceTiers
                   : [];
               if (arr && arr.length) {
+                try { const sid2 = currentStoreId(); localStorage.setItem(`cannabisPOS-priceTiers-backup_${sid2}`, JSON.stringify(arr)); } catch(_){ }
                 localStorage.setItem(
                   "cannabisPOS-priceTiers-backup",
                   JSON.stringify(arr),
