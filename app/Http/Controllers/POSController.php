@@ -34,6 +34,7 @@ class POSController extends Controller
 
         // Get products with filtering and sorting
         $productsQuery = Product::query()
+            ->when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })
             ->search($searchQuery)
             ->byCategory($selectedCategory);
 
