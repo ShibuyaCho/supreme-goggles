@@ -6491,21 +6491,26 @@ function cannabisPOS() {
         };
         // Persist locally for resilience
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
           localStorage.setItem(
-            "cannabisPOS-taxSettings",
+            `cannabisPOS-taxSettings_${sid}`,
             JSON.stringify(this.taxSettings),
           );
           localStorage.setItem(
-            "cannabisPOS-salesSettings",
+            `cannabisPOS-salesSettings_${sid}`,
             JSON.stringify(this.salesSettings),
           );
           localStorage.setItem(
-            "cannabisPOS-zeroDelete",
+            `cannabisPOS-zeroDelete_${sid}`,
             JSON.stringify({
               enabled: payload.auto_delete_zero_quantity,
               days: payload.auto_delete_zero_days,
             }),
           );
+          // Legacy globals
+          localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(this.taxSettings));
+          localStorage.setItem("cannabisPOS-salesSettings", JSON.stringify(this.salesSettings));
+          localStorage.setItem("cannabisPOS-zeroDelete", JSON.stringify({ enabled: payload.auto_delete_zero_quantity, days: payload.auto_delete_zero_days }));
         } catch (_) {}
         // POST to API (Supabase-backed)
         const res = await (window.SettingsClient
