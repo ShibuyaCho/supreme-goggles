@@ -32,7 +32,7 @@ class DealsController extends Controller
                     $supabaseDeals = collect(is_array($rows) ? $rows : []);
 
                     // Always also load local deals and merge any that aren't present in Supabase
-                    $localDeals = Deal::orderBy('created_at','desc')->get();
+                    $localDeals = Deal::when(\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->orderBy('created_at','desc')->get();
                     $merged = collect([]);
                     // Normalize keys and avoid id collisions
                     $supabaseByKey = $supabaseDeals->keyBy(function($d){
@@ -92,7 +92,7 @@ class DealsController extends Controller
             }
         }
         if ($deals === null) {
-            $deals = Deal::orderBy('created_at', 'desc')->get();
+            $deals = Deal::when(\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->orderBy('created_at', 'desc')->get();
         }
 
         // Load METRC categories with safe fallback and ensure 'Infused' always included
@@ -252,6 +252,7 @@ class DealsController extends Controller
                 $dealData['item_discounts'] = json_encode($normalized);
             }
 
+            try { if (\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id')) { $dealData['store_id'] = \App\Helpers\StoreContext::id(); } } catch (\Throwable $e) {}
             $deal = Deal::create($dealData);
 
             // Send email campaign if requested
