@@ -44,7 +44,7 @@
 
                     <!-- Sale Control Buttons -->
                     <div class="flex items-center space-x-3">
-                        <button id="refresh-metrc" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="inline-flex items-center rounded-lg bg-cannabis-green px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                        <button id="refresh-metrc" class="inline-flex items-center rounded-lg bg-cannabis-green px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
                             <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5" /></svg>
                             Refresh METRC
                         </button>
