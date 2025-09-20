@@ -150,6 +150,13 @@
         // Safe public fallbacks to ensure POS can read settings when envs are unset
         if(!window.__SUPABASE_URL){ window.__SUPABASE_URL = "https://yyitwchajkruipsjvifn.supabase.co"; }
         if(!window.__SUPABASE_ANON_KEY){ window.__SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aXR3Y2hhamtydWlwc2p2aWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2OTQwNDUsImV4cCI6MjA3MzI3MDA0NX0.-fKS2ODSPNjLEx6HPrTlvXSV6hZqjdyFweIz8_f2ao8"; }
+        // Expose via meta for early access by deferred scripts
+        try {
+          let m1 = document.querySelector('meta[name="supabase-url"]'); if(!m1){ m1 = document.createElement('meta'); m1.setAttribute('name','supabase-url'); document.head.appendChild(m1); }
+          m1.setAttribute('content', window.__SUPABASE_URL);
+          let m2 = document.querySelector('meta[name="supabase-anon-key"]'); if(!m2){ m2 = document.createElement('meta'); m2.setAttribute('name','supabase-anon-key'); document.head.appendChild(m2); }
+          m2.setAttribute('content', window.__SUPABASE_ANON_KEY);
+        } catch(_) {}
       })();
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
