@@ -851,7 +851,8 @@
         const ids = ['global-refresh-metrc', 'settings-refresh-metrc', 'global-refresh-metrc-demo'];
         ids.forEach((id) => {
           const btn = document.getElementById(id);
-          if (!btn) return;
+          if (!btn || btn.dataset.metrcBound === '1') return;
+          btn.dataset.metrcBound = '1';
           btn.addEventListener('click', async function(){
             try {
               window.POS?.showLoading?.();
