@@ -92,7 +92,6 @@ const availableCategories = [
 
 export default function Settings() {
   const [currentStore, setCurrentStore] = useState<Store>(() => {
-    // Try to load settings from localStorage
     const defaultStore = {
       id: "1",
       name: "Cannabest Dispensary - Main",
@@ -115,18 +114,29 @@ export default function Settings() {
       },
     };
 
+    // Prefer SettingsClient local cache when present (no migration to other keys)
     try {
-      const savedSettings = localStorage.getItem("cannabest-store-settings");
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        return {
-          ...defaultStore,
-          settings: { ...defaultStore.settings, ...settings },
+      const sc: any = (window as any).SettingsClient;
+      const sid = sc?.currentStoreId?.() || (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } return 'default'; })();
+      const local = sc?.loadLocal?.(sid);
+      if (local && typeof local === 'object') {
+        const mapped: Partial<StoreSettings> = {
+          storeName: local.store_name ?? defaultStore.settings.storeName,
+          website: local.website ?? defaultStore.settings.website,
+          taxRate: Number(local.sales_tax ?? defaultStore.settings.taxRate) || 0,
+          autoDeleteZeroQuantity: !!local.auto_delete_zero_quantity,
+          autoDeleteZeroDays: Math.min(30, Math.max(1, Number(local.auto_delete_zero_days ?? 1) || 1)),
+          exitLabelCategories: Array.isArray(local.exit_label_categories) ? local.exit_label_categories : defaultStore.settings.exitLabelCategories,
+          hours: Array.isArray(local.business_hours) ? local.business_hours : defaultStore.settings.hours,
+          minimumPriceEnabled: !!local.minimum_price_enabled,
+          minimumPriceCategories: Array.isArray(local.minimum_price_categories) ? local.minimum_price_categories : defaultStore.settings.minimumPriceCategories,
+          minimumPriceAmount: Number(local.minimum_price_amount ?? defaultStore.settings.minimumPriceAmount) || defaultStore.settings.minimumPriceAmount,
+          inventoryViewMode: (local.inventory_view_mode === 'list' || local.inventory_view_mode === 'cards') ? local.inventory_view_mode : defaultStore.settings.inventoryViewMode,
+          expandableCart: local.expandable_cart ?? defaultStore.settings.expandableCart,
         };
+        return { ...defaultStore, id: sid, name: defaultStore.name, settings: { ...defaultStore.settings, ...mapped } };
       }
-    } catch (error) {
-      console.warn("Could not load settings from localStorage:", error);
-    }
+    } catch (_) {}
 
     return defaultStore;
   });
@@ -200,47 +210,19 @@ export default function Settings() {
 
   const updateStoreSettings = (updates: Partial<StoreSettings>) => {
     const newSettings = { ...currentStore.settings, ...updates };
-    console.log(
-      "Settings: Updating store settings:",
-      updates,
-      "New settings:",
-      newSettings,
-    );
+    setCurrentStore((prev) => ({ ...prev, settings: newSettings }));
 
-    setCurrentStore((prev) => ({
-      ...prev,
-      settings: newSettings,
-    }));
-
-    // Save to localStorage for persistence across pages
+    // Notify UI immediately; persistence handled by SettingsClient in autosave
     try {
-      localStorage.setItem(
-        "cannabest-store-settings",
-        JSON.stringify(newSettings),
-      );
-      console.log("Settings: Saved to localStorage:", newSettings);
-
-      // Dispatch custom event to notify other components
-      const event = new CustomEvent("settings-updated", {
-        detail: newSettings,
-      });
+      const event = new CustomEvent("settings-updated", { detail: newSettings });
       window.dispatchEvent(event);
-      console.log("Settings: Dispatched settings-updated event:", event.detail);
-
-      // Also dispatch a specific inventory view mode event
       if (updates.inventoryViewMode) {
         const inventoryEvent = new CustomEvent("inventory-view-changed", {
           detail: { viewMode: updates.inventoryViewMode },
         });
         window.dispatchEvent(inventoryEvent);
-        console.log(
-          "Settings: Dispatched inventory-view-changed event:",
-          inventoryEvent.detail,
-        );
       }
-    } catch (error) {
-      console.warn("Could not save settings to localStorage:", error);
-    }
+    } catch (_) {}
   };
 
   const updateHours = (dayIndex: number, updates: Partial<StoreHours>) => {
