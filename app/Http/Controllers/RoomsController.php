@@ -45,6 +45,7 @@ class RoomsController extends Controller
             'is_active' => $request->boolean('is_active', true),
         ];
         $data['room_id'] = 'RM-' . strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $request->name), 0, 4)) . '-' . strtoupper(substr(uniqid(), -4));
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id')) { $data['store_id'] = \App\Helpers\StoreContext::id(); } } catch (\Throwable $e) {}
         $room = Room::create($data);
 
         // Mirror to Supabase (best-effort)
