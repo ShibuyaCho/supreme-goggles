@@ -755,7 +755,7 @@
                         <button @click="testMetrcConnection" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                             Test Connection
                         </button>
-                        <button id="settings-refresh-metrc" @click="window.__refreshMetrc && window.__refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800">
+                        <button @click="window.__refreshMetrc && window.__refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800">
                             Refresh METRC
                         </button>
                     </div>
@@ -1211,7 +1211,8 @@ function settingsManager() {
                         } catch (_) {}
                         // Backfill from local tax cache if server returned zeros and fields are not dirty
                         try {
-                            const tsRaw = localStorage.getItem('cannabisPOS-taxSettings');
+                            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
+                            const tsRaw = localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem('cannabisPOS-taxSettings');
                             if (tsRaw) {
                                 const ts = JSON.parse(tsRaw);
                                 const rec = Number(ts.recreationalRate || 0);
