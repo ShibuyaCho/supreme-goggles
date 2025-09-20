@@ -1445,7 +1445,7 @@ METRC transfer notification has been sent.`);
                     <Button
                       variant={viewMode === 'cards' ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         setViewMode('cards');
                         try {
                           const sc: any = (window as any).SettingsClient;
@@ -1459,7 +1459,7 @@ METRC transfer notification has been sent.`);
                     <Button
                       variant={viewMode === 'list' ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         setViewMode('list');
                         try {
                           const sc: any = (window as any).SettingsClient;
