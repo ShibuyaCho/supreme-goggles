@@ -739,7 +739,7 @@
                         <input type="password" x-model="settings.metrc_vendor_key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Facility License</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Facility License Number</label>
                         <input type="text" x-model="settings.metrc_facility" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                     </div>
                     <div class="md:col-span-3">
