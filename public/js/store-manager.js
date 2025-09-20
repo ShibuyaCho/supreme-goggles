@@ -400,18 +400,26 @@
   window.addOrSwitchStore = function () {
     switchStoreModal();
   };
-  try {
-    document.addEventListener("DOMContentLoaded", function () {
+  function bindHeaderStoreButton() {
+    try {
       var btn = document.getElementById("header-store-button");
-      if (btn)
-        btn.onclick = function (e) {
-          e.preventDefault();
+      if (btn && !btn.dataset.storeBound) {
+        btn.dataset.storeBound = "1";
+        btn.addEventListener("click", function (e) {
+          try { e.preventDefault(); } catch (_) {}
           if (window.switchStoreModal) window.switchStoreModal();
           else if (window.addOrSwitchStore) window.addOrSwitchStore();
-        };
+        });
+      }
+    } catch (_) {}
+  }
+  // Bind immediately if DOM is ready, and also on DOMContentLoaded
+  if (document.readyState !== "loading") bindHeaderStoreButton();
+  try {
+    document.addEventListener("DOMContentLoaded", function () {
+      bindHeaderStoreButton();
       // Permanently remove any legacy Default Store dropdown and Clear buttons
       try {
-        // Remove any button that clears pos_store directly
         document
           .querySelectorAll('button[onclick*="pos_store"]')
           .forEach(function (el) {
@@ -423,7 +431,6 @@
               el.remove();
             }
           });
-        // Remove any old dropdown containing "Switch Store…" or "Clear Store"
         var legacySwitch = Array.from(
           document.querySelectorAll("button"),
         ).filter(function (b) {
@@ -444,5 +451,10 @@
         });
       } catch (_) {}
     });
+  } catch (_) {}
+  // As a resilience measure, observe DOM mutations to (re)bind if header is rebuilt
+  try {
+    var mo = new MutationObserver(function () { bindHeaderStoreButton(); });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
   } catch (_) {}
 })();
