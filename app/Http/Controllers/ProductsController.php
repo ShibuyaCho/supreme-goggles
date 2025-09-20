@@ -27,6 +27,12 @@ class ProductsController extends Controller
         $selectedTab = $request->get('tab', 'products');
 
         $query = Product::query();
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasColumn('products','store_id')) {
+                $sid = \App\Helpers\StoreContext::id();
+                $query->where('store_id', $sid);
+            }
+        } catch (\Throwable $e) {}
 
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
@@ -63,8 +69,8 @@ class ProductsController extends Controller
 
         $products = $query->paginate(24);
         // Categories for filtering (existing product categories only)
-        $categories = Product::select('category')->distinct()->pluck('category');
-        $rooms = Room::all();
+        $categories = Product::when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->select('category')->distinct()->pluck('category');
+        $rooms = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->get();
 
         // Categories for the Create Product modal (METRC + business-specific)
         $createCategories = [];
@@ -191,6 +197,7 @@ class ProductsController extends Controller
         }
 
         // Fallback: create locally
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('products','store_id')) { $data['store_id'] = \App\Helpers\StoreContext::id(); } } catch (\Throwable $e) {}
         $product = Product::create($data);
         return redirect()->route('products.index')->with('success', 'Product created locally (remote sync pending)');
     }
@@ -542,6 +549,7 @@ class ProductsController extends Controller
     public function export(Request $request)
     {
         $query = Product::query();
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('products','store_id')) { $query->where('store_id', \App\Helpers\StoreContext::id()); } } catch (\Throwable $e) {}
         $products = $query->get();
         $filename = 'products_' . now()->format('Y-m-d') . '.csv';
         $headers = [
