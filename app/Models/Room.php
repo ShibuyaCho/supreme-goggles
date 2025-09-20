@@ -16,7 +16,8 @@ class Room extends Model
         'is_active',
         'max_capacity',
         'current_stock',
-        'description'
+        'description',
+        'store_id'
     ];
 
     protected $casts = [
