@@ -6078,7 +6078,7 @@ function cannabisPOS() {
         }
 
         // Load store settings
-        const savedStoreSettings = localStorage.getItem(
+        const savedStoreSettings = localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) || localStorage.getItem(
           "cannabisPOS-storeSettings",
         );
         if (savedStoreSettings) {
