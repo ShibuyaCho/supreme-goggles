@@ -29,7 +29,7 @@ class SettingsController extends Controller
             $settings = $this->getCurrentSettings();
 
             // Mask sensitive fields in response
-            $responseSettings = $settings;
+            $responseSettings = $merged;
             if (is_array($responseSettings)) {
                 if (array_key_exists('metrc_user_key', $responseSettings)) {
                     $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
@@ -218,8 +218,13 @@ class SettingsController extends Controller
                 // Keep metrc_user_key in store-scoped settings as requested
             }
 
+            // Compose final merged settings (defaults -> existing -> incoming)
+            $existing = $this->getCurrentSettings();
+            $defaults = $this->getDefaultSettings();
+            $merged = array_replace_recursive($defaults, array_merge(is_array($existing)?$existing:[], is_array($settings)?$settings:[]));
+
             // Store remaining settings in cache with a long TTL
-            Cache::put($this->cacheKeyForStore(), $settings, now()->addDays(30));
+            Cache::put($this->cacheKeyForStore(), $merged, now()->addDays(30));
 
             // Persist to Supabase (store-scoped) with DB fallback
             try {
@@ -239,7 +244,7 @@ class SettingsController extends Controller
                         'X-Store-ID' => $storeId,
                     ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $storeId,
-                        'settings' => $settings,
+                        'settings' => $merged,
                         'updated_at' => now()->toIso8601String(),
                     ]]);
                     if ($resp->successful()) { $saved = true; }
@@ -247,7 +252,7 @@ class SettingsController extends Controller
                 if (!$saved) {
                     \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
                         ['id' => $storeId],
-                        ['settings' => json_encode($settings), 'updated_at' => now()]
+                        ['settings' => json_encode($merged), 'updated_at' => now()]
                     );
                 }
             } catch (\Throwable $e) {
@@ -269,7 +274,7 @@ class SettingsController extends Controller
             ]);
 
             // Mask sensitive fields in response
-            $responseSettings = $settings;
+            $responseSettings = $merged;
             if (is_array($responseSettings)) {
                 if (array_key_exists('metrc_user_key', $responseSettings)) {
                     $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
@@ -403,7 +408,7 @@ class SettingsController extends Controller
             'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
 
             // Exit Label Categories
-            'exit_label_categories' => ['Flower','Pre-Rolls','Concentrates','Edibles'],
+            'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
 
             // Receipt Printing
             'auto_print_receipt' => false,
