@@ -232,7 +232,8 @@
       const stateRate = Number(merged.sales_tax ?? 0) || 0;
       const recRate = Number(merged.cannabis_tax ?? 0);
       const tax = {
-        recreationalRate: (Number.isFinite(recRate) && recRate > 0) ? recRate : stateRate,
+        recreationalRate:
+          Number.isFinite(recRate) && recRate > 0 ? recRate : stateRate,
         includeInPrice: !!merged.tax_inclusive,
         localRate: Number(merged.excise_tax ?? 0) || 0,
         stateRate,
@@ -343,12 +344,19 @@
         // Merge and scrub null/empty values to avoid clobbering
         const mergedRaw = { ...DEFAULTS, ...data };
         const merged = { ...mergedRaw };
-        Object.keys(merged).forEach((k)=>{
+        Object.keys(merged).forEach((k) => {
           const v = merged[k];
-          if (v === null || (typeof v === 'string' && v.trim() === '')) {
-            if (localPrev && localPrev[k] != null && !(typeof localPrev[k] === 'string' && String(localPrev[k]).trim() === '')) {
+          if (v === null || (typeof v === "string" && v.trim() === "")) {
+            if (
+              localPrev &&
+              localPrev[k] != null &&
+              !(
+                typeof localPrev[k] === "string" &&
+                String(localPrev[k]).trim() === ""
+              )
+            ) {
               merged[k] = localPrev[k];
-            } else if (Object.prototype.hasOwnProperty.call(DEFAULTS,k)) {
+            } else if (Object.prototype.hasOwnProperty.call(DEFAULTS, k)) {
               merged[k] = DEFAULTS[k];
             }
           }
@@ -409,7 +417,11 @@
             data && typeof data === "object" && (data.settings || data)
               ? data.settings || data
               : {};
-          if ((!Number.isFinite(Number(settings.cannabis_tax)) || Number(settings.cannabis_tax) === 0) && Number.isFinite(Number(settings.sales_tax))) {
+          if (
+            (!Number.isFinite(Number(settings.cannabis_tax)) ||
+              Number(settings.cannabis_tax) === 0) &&
+            Number.isFinite(Number(settings.sales_tax))
+          ) {
             settings.cannabis_tax = Number(settings.sales_tax);
           }
           const merged = { ...DEFAULTS, ...settings };
@@ -486,7 +498,8 @@
       // Prefetch current from API to avoid overwriting other fields
       try {
         const resp = await httpGet("/api/settings/pos", { nocache: true });
-        const cur = resp && (resp.settings || resp) ? resp.settings || resp : {};
+        const cur =
+          resp && (resp.settings || resp) ? resp.settings || resp : {};
         if (cur && typeof cur === "object") base = { ...base, ...cur };
       } catch (_) {}
       // Preserve existing METRC keys if patch contains masked values
@@ -517,12 +530,18 @@
           let m = { ...DEFAULTS, ...s };
           // Read-after-write verification against Laravel API (bypass cache)
           try {
-            const verifyResp = await httpGet("/api/settings/pos", { nocache: true });
+            const verifyResp = await httpGet("/api/settings/pos", {
+              nocache: true,
+            });
             const vs =
               verifyResp && (verifyResp.settings || verifyResp)
                 ? verifyResp.settings || verifyResp
                 : {};
-            if ((!Number.isFinite(Number(vs.cannabis_tax)) || Number(vs.cannabis_tax) === 0) && Number.isFinite(Number(vs.sales_tax))) {
+            if (
+              (!Number.isFinite(Number(vs.cannabis_tax)) ||
+                Number(vs.cannabis_tax) === 0) &&
+              Number.isFinite(Number(vs.sales_tax))
+            ) {
               vs.cannabis_tax = Number(vs.sales_tax);
             }
             if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
