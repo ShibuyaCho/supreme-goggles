@@ -72,6 +72,19 @@ class PriceTiersController extends Controller
                             'schedule' => $schedule,
                             'updated_at' => $r['updated_at'] ?? null,
                         ];
+
+                        // Best-effort local DB mirror to keep sources in sync
+                        try {
+                            if (\Illuminate\Support\Facades\Schema::hasTable('price_tiers')) {
+                                $pt = PriceTier::firstOrNew(['name' => $name]);
+                                $pt->description = $r['description'] ?? $pt->description;
+                                $pt->minimum_quantity = (int)($minQty ?? ($pt->minimum_quantity ?: 1));
+                                $pt->discount_percentage = (float)$discount;
+                                $pt->applicable_categories = is_array($r['applicable_categories'] ?? null) ? $r['applicable_categories'] : ($pt->applicable_categories ?? []);
+                                $pt->is_active = $isActive;
+                                $pt->save();
+                            }
+                        } catch (\Throwable $e) { /* ignore mirror errors */ }
                     }
                 }
             } catch (\Throwable $e) {
