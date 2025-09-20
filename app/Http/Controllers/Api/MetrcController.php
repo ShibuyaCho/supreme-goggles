@@ -1334,4 +1334,70 @@ class MetrcController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Summarize METRC packages against current inventory for the active store
+     */
+    public function getProductsSummary(Request $request)
+    {
+        try {
+            $packages = (array) $this->metrcService->getAllPackages();
+            $tags = collect($packages)->map(function($p){
+                if (is_array($p)) {
+                    return $p['Label'] ?? $p['label'] ?? ($p['Tag'] ?? null);
+                }
+                return null;
+            })->filter()->unique()->values()->all();
+
+            $invQuery = \App\Models\Product::query();
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('products','store_id')) {
+                    $invQuery->where('store_id', \App\Helpers\StoreContext::id());
+                }
+            } catch (\Throwable $e) {}
+            if (!empty($tags)) { $invQuery->whereIn('metrc_tag', $tags); }
+            $invRows = $invQuery->get(['metrc_tag','quantity','unit','weight','name']);
+            $invMap = [];
+            foreach ($invRows as $r) {
+                $invMap[$r->metrc_tag] = [
+                    'inventory_qty' => (float)($r->quantity ?? 0),
+                    'unit' => $r->unit ?: ($r->weight ?: 'Each'),
+                    'name' => $r->name,
+                ];
+            }
+
+            $rows = [];
+            foreach ($packages as $p) {
+                if (!is_array($p)) { continue; }
+                $tag = $p['Label'] ?? $p['label'] ?? ($p['Tag'] ?? null);
+                if (!$tag) { continue; }
+                $unit = $p['UnitOfMeasureName'] ?? $p['UnitOfMeasure'] ?? $p['unitOfMeasure'] ?? ($invMap[$tag]['unit'] ?? 'Each');
+                $name = null;
+                $item = $p['Item'] ?? null;
+                if (is_array($item)) { $name = $item['Name'] ?? $item['name'] ?? null; }
+                if (!$name) { $name = $p['ProductName'] ?? ($invMap[$tag]['name'] ?? ('METRC Package ' . $tag)); }
+                $metrcQty = (float)($p['Quantity'] ?? $p['RemainingQuantity'] ?? 0);
+                $invQty = (float)($invMap[$tag]['inventory_qty'] ?? 0);
+                $rows[] = [
+                    'name' => $name,
+                    'tag' => $tag,
+                    'metrc_qty' => $metrcQty,
+                    'inventory_qty' => $invQty,
+                    'unit' => $unit,
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'rows' => $rows,
+                'count' => count($rows),
+                'retrieved_at' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
