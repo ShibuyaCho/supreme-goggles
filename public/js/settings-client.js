@@ -106,7 +106,15 @@
   function currentStoreId() {
     try {
       const raw = localStorage.getItem("pos_store");
-      if (!raw) return "default";
+      if (!raw) {
+        const ck = readCookie('cpos_store_id');
+        if (ck && typeof ck === 'string') {
+          let cid = ck.trim().toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9_.-]/g, '');
+          if (cid === 'defaultstore') cid = 'default';
+          return cid || 'default';
+        }
+        return "default";
+      }
       const s = JSON.parse(raw);
       let id = s && s.id ? String(s.id) : "default";
       id = id
@@ -115,6 +123,7 @@
         .replace(/\s+/g, "")
         .replace(/[^a-z0-9_.-]/g, "");
       if (id === "defaultstore") id = "default";
+      try { writeCookie('cpos_store_id', id || 'default'); } catch(_){ }
       return id || "default";
     } catch (_) {
       return "default";
