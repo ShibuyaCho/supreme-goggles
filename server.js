@@ -834,7 +834,7 @@ app.get("/api/settings/pos", async (req, res) => {
       "Hemp",
       "Accessories",
       "Inhalable Cannabinoids",
-      "Cones",
+      "Clones",
       "Seeds",
     ],
     auto_print_receipt: false,
