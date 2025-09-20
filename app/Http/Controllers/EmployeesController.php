@@ -312,6 +312,7 @@ class EmployeesController extends Controller
         $department = $request->get('department', 'all');
 
         $query = Employee::query();
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('employees','store_id')) { $query->where('store_id', \App\Helpers\StoreContext::id()); } } catch (\Throwable $e) {}
         if ($searchQuery) {
             $q = trim($searchQuery);
             $query->where(function($qb) use ($q){
