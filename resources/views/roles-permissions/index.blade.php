@@ -294,7 +294,11 @@
 
   async function load(){
     try{
-      const res = await (window.posAuth ? posAuth.apiRequest('get','/settings/pos') : (window.axios || axios).get('/api/settings/pos'));
+      const res = await (window.posAuth ? posAuth.apiRequest('get','/settings/pos') : (async function(){
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+        const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+        return (window.axios || axios).get('/api/settings/pos', { headers: { Accept: 'application/json', 'X-Store-ID': String(sid||'default'), ...(sname?{ 'X-Store-Name': sname }: {}) }, params: { nocache: true } });
+      })());
       const data = res?.data?.settings || res?.data || res;
       const settings = data || {};
       const apiPerms = settings.role_permissions && typeof settings.role_permissions === 'object' ? settings.role_permissions : null;
@@ -321,10 +325,16 @@
 
   async function saveAllRoles(){
     try{
-      const getRes = await (window.posAuth ? posAuth.apiRequest('get','/settings/pos') : (window.axios || axios).get('/api/settings/pos'));
+      const getRes = await (window.posAuth ? posAuth.apiRequest('get','/settings/pos') : (async function(){
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+        const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+        return (window.axios || axios).get('/api/settings/pos', { headers: { Accept: 'application/json', 'X-Store-ID': String(sid||'default'), ...(sname?{ 'X-Store-Name': sname }: {}) }, params: { nocache: true } });
+      })());
       const base = getRes?.data?.settings || getRes?.data || {};
       base.role_permissions = rolePerms;
-      const res = await (window.posAuth ? posAuth.apiRequest('post','/settings/pos', base) : (window.axios || axios).post('/api/settings/pos', base));
+      const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+      const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+      const res = await (window.posAuth ? posAuth.apiRequest('post','/settings/pos', base) : (window.axios || axios).post('/api/settings/pos', base, { headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Store-ID': String(sid||'default'), ...(sname?{ 'X-Store-Name': sname }: {}) } }));
       const ok = (res?.success === true) || (res?.data?.success === true) || (res?.status && res.status >= 200 && res.status < 300);
       if (ok) { try{ localStorage.setItem('role_permissions_backup', JSON.stringify(rolePerms)); }catch(_){ } }
       if (!ok) throw new Error('Save failed');

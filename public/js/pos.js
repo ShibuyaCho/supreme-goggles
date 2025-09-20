@@ -6720,8 +6720,11 @@ function cannabisPOS() {
         // 7) Protected settings API (returns settings.price_tiers)
         if (!Array.isArray(list) || list.length === 0) {
           try {
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
             const rsp = await (window.axios || axios).get("/api/settings/pos", {
-              headers: { Accept: "application/json" },
+              headers: Object.assign({ Accept: "application/json", 'X-Store-ID': String(sid||'default') }, sname ? { 'X-Store-Name': sname } : {}),
+              params: { nocache: true },
             });
             const s = rsp?.data?.settings || {};
             const pt = Array.isArray(s.price_tiers)

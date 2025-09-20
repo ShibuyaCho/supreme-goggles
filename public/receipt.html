@@ -138,8 +138,10 @@
             );
             return { name, unitDisplay, lineTotal };
           });
-          const storeRes = await fetch("/api/settings/pos", {
-            headers: { Accept: "application/json" },
+          const sid = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+          const sname = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+          const storeRes = await fetch(`/api/settings/pos?nocache=true`, {
+            headers: Object.assign({ Accept: "application/json", 'X-Store-ID': sid }, sname ? { 'X-Store-Name': sname } : {}),
           }).catch(() => null);
           let storeName = "Cannabest POS",
             storePhone = "",

@@ -519,7 +519,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
     async function loadRolePerms() {
         try {
-            const res = await (window.axios || axios).get('/api/settings/pos');
+            let res;
+            try {
+                if (window.SettingsClient && typeof SettingsClient.get === 'function') {
+                    const r = await SettingsClient.get(true);
+                    res = { data: { settings: (r && r.settings) || r || {} } };
+                } else {
+                    const sid = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+                    const sname = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+                    res = await (window.axios || axios).get('/api/settings/pos', { headers: { Accept: 'application/json', 'X-Store-ID': sid, ...(sname?{ 'X-Store-Name': sname }: {}) }, params: { nocache: true } });
+                }
+            } catch(e) { res = null; }
             const settings = res?.data?.settings || {};
             rolePerms = settings.role_permissions || {
                 admin: ['*'],
@@ -557,8 +567,10 @@ document.addEventListener('DOMContentLoaded', function() {
         const selected = permInputs.filter(cb => cb.checked).map(cb => cb.value);
         rolePerms[role] = selected;
         try {
-            const res = await (window.axios || axios).post('/api/settings/pos', {
-                role_permissions: rolePerms
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+            const res = await (window.axios || axios).post('/api/settings/pos', { role_permissions: rolePerms }, {
+                headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Store-ID': String(sid||'default'), ...(sname?{ 'X-Store-Name': sname }: {}) }
             });
             const ok = (res?.data?.success === true) || (res?.status && res.status >= 200 && res.status < 300);
             if (window.POS?.showToast) POS.showToast(ok ? 'Permissions saved' : 'Failed to save', ok ? 'success' : 'error');

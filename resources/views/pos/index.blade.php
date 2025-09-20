@@ -430,8 +430,18 @@
     // Enforce scanner-only mode (block card click) when enabled for current role
     (async function(){
       try {
-        const settingsRes = await (window.axios || axios).get('/api/settings/pos');
-        const settings = settingsRes?.data?.settings || {};
+        let settings = {};
+        try {
+          if (window.SettingsClient && typeof SettingsClient.get === 'function') {
+            const r = await SettingsClient.get(true);
+            settings = (r && r.settings) || r || {};
+          } else {
+            const sid = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+            const sname = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+            const rsp = await (window.axios||axios).get('/api/settings/pos', { headers: { Accept: 'application/json', 'X-Store-ID': sid, ...(sname?{ 'X-Store-Name': sname }: {}) }, params: { nocache: true } });
+            settings = rsp?.data?.settings || {};
+          }
+        } catch(_) { settings = {}; }
         let role = '';
         try { role = (window.posAuth?.getUser()?.role || '').toLowerCase(); } catch(e) { role = ''; }
         const rolePerms = (settings.role_permissions && settings.role_permissions[role]) || [];
