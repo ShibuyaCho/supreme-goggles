@@ -214,11 +214,12 @@
         }
         function updateLabel(){
           try{
-            const label=document.getElementById('header-store-label');
             const btn=document.getElementById('header-store-button');
+            const text=document.getElementById('header-store-button-text') || (btn ? btn.querySelector('span') : null);
             const s=readStore();
-            if(label){ label.textContent = s && (s.name||s.id) ? `Store: ${s.name||s.id}` : 'Store: default'; }
-            if(btn){ btn.title = 'Current ' + (s && (s.name||s.id) ? (s.name||s.id) : 'default'); }
+            const name = s && (s.name||s.id) ? (s.name||s.id) : 'default';
+            if(text){ text.textContent = name; }
+            if(btn){ btn.title = 'Current ' + name; }
           }catch(e){}
         }
         window.updateStoreHeaderLabel = updateLabel;
@@ -358,16 +359,15 @@
                     </a>
                     <!-- Store selector -->
                     <div class="hidden md:flex items-center space-x-2">
-                        <span id="header-store-label" class="text-xs text-gray-600"></span>
-                        <button id="header-store-button" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors" onclick="(function(){ if(window.addOrSwitchStore){window.addOrSwitchStore();return;} if(window.mainMenu){window.mainMenu();return;} var s=document.createElement('script'); var base='{{ asset('js/store-manager.js') }}'; s.src=base + '?v=' + Date.now(); s.onload=function(){ if(window.addOrSwitchStore) window.addOrSwitchStore(); else if(window.mainMenu) window.mainMenu(); }; document.head.appendChild(s); })()">
+                                                <button id="header-store-button" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors">
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V5a3 3 0 013-3h0a3 3 0 013 3v2"/></svg>
-                            <span>Add/Switch Store</span>
+                            <span id="header-store-button-text"></span>
                         </button>
                     </div>
                     <script>
                       (function(){
                         function setLabel(name){
-                          try{ document.getElementById('header-store-label').textContent = name ? `Store: ${name}` : ''; }catch(_){}}
+                          try{ var t=document.getElementById('header-store-button-text'); if(t) t.textContent = name || 'default'; var b=document.getElementById('header-store-button'); if(b) b.title = name || 'default'; }catch(_){}}
                         function initial(){
                           try{
                             let sid = 'default';
