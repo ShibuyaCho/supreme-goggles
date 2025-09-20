@@ -18,7 +18,7 @@ class ReportsController extends Controller
     
     public function inventoryEvaluation(Request $request)
     {
-        $products = Product::all();
+        $products = Product::when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->get();
         
         $categories = $products->groupBy('category')->map(function($categoryProducts, $category) {
             $totalCost = $categoryProducts->sum(function($product) {
@@ -151,7 +151,7 @@ class ReportsController extends Controller
     
     private function exportInventoryReport($format)
     {
-        $products = Product::all();
+        $products = Product::when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->get();
         
         $filename = 'inventory_evaluation_' . now()->format('Y-m-d') . '.' . $format;
         $headers = [
