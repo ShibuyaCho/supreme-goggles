@@ -21733,8 +21733,9 @@
               /* keep defaults */
             }
             try {
+              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
               const b = JSON.parse(
-                localStorage.getItem("role_permissions_backup") || "null",
+                localStorage.getItem(`role_permissions_backup_${sid}`) || localStorage.getItem("role_permissions_backup") || "null",
               );
               if (b && typeof b === "object") {
                 this.rolePermissions = Object.assign(
@@ -21743,6 +21744,7 @@
                   b,
                 );
               }
+              try { localStorage.setItem(`role_permissions_backup_${sid}`, JSON.stringify(this.rolePermissions)); } catch(_) {}
               localStorage.setItem(
                 "role_permissions_backup",
                 JSON.stringify(this.rolePermissions),
