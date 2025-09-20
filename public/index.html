@@ -67,17 +67,26 @@
             function open() {
               if (window.switchStoreModal) {
                 window.switchStoreModal();
-              } else if (window.addOrSwitchStore && window.addOrSwitchStore !== arguments.callee) {
-                try { window.addOrSwitchStore(); } catch(_) {}
+              } else if (
+                window.addOrSwitchStore &&
+                window.addOrSwitchStore !== arguments.callee
+              ) {
+                try {
+                  window.addOrSwitchStore();
+                } catch (_) {}
               } else if (window.mainMenu) {
                 window.mainMenu();
               }
             }
-            try { open(); } catch (_) {}
+            try {
+              open();
+            } catch (_) {}
             var s = document.createElement("script");
             s.src = "/js/store-manager.js?v=" + Date.now();
             s.onload = function () {
-              try { open(); } catch (_) {}
+              try {
+                open();
+              } catch (_) {}
             };
             document.head.appendChild(s);
           };
@@ -115,7 +124,9 @@
       }
 
       /* Hide legacy store label */
-      #header-store-label { display: none !important; }
+      #header-store-label {
+        display: none !important;
+      }
 
       /* POS specific utilities */
       .product-card:hover {

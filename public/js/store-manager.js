@@ -400,27 +400,34 @@
   window.addOrSwitchStore = function () {
     switchStoreModal();
   };
-  function readStoreName(){
-    try{ const s = JSON.parse(localStorage.getItem('pos_store')||'null'); return (s && (s.name||s.id)) ? (s.name||s.id) : 'default'; }catch(_){ return 'default'; }
+  function readStoreName() {
+    try {
+      const s = JSON.parse(localStorage.getItem("pos_store") || "null");
+      return s && (s.name || s.id) ? s.name || s.id : "default";
+    } catch (_) {
+      return "default";
+    }
   }
-  function setHeaderButtonLabel(name){
-    try{
-      var btn = document.getElementById('header-store-button');
-      var t = document.getElementById('header-store-button-text') || (btn ? btn.querySelector('span') : null);
+  function setHeaderButtonLabel(name) {
+    try {
+      var btn = document.getElementById("header-store-button");
+      var t =
+        document.getElementById("header-store-button-text") ||
+        (btn ? btn.querySelector("span") : null);
       if (t) {
-        const n = String(name||'default');
+        const n = String(name || "default");
         if (t.textContent !== n) t.textContent = n;
       }
       if (btn && btn.title !== name) btn.title = name;
-    }catch(_){ }
+    } catch (_) {}
   }
-  function removeLegacyLabel(){
+  function removeLegacyLabel() {
     try {
-      var lbl = document.getElementById('header-store-label');
+      var lbl = document.getElementById("header-store-label");
       if (lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl);
-    } catch(_) {}
+    } catch (_) {}
   }
-  function syncHeaderUI(){
+  function syncHeaderUI() {
     bindHeaderStoreButton();
     removeLegacyLabel();
     setHeaderButtonLabel(readStoreName());
@@ -431,7 +438,9 @@
       if (btn && !btn.dataset.storeBound) {
         btn.dataset.storeBound = "1";
         btn.addEventListener("click", function (e) {
-          try { e.preventDefault(); } catch (_) {}
+          try {
+            e.preventDefault();
+          } catch (_) {}
           if (window.switchStoreModal) window.switchStoreModal();
           else if (window.addOrSwitchStore) window.addOrSwitchStore();
         });
@@ -481,14 +490,23 @@
   try {
     var mo = new MutationObserver(function (mutations) {
       var needs = false;
-      for (var i=0;i<mutations.length;i++){
+      for (var i = 0; i < mutations.length; i++) {
         var m = mutations[i];
         if (!m.addedNodes) continue;
-        for (var j=0;j<m.addedNodes.length;j++){
+        for (var j = 0; j < m.addedNodes.length; j++) {
           var n = m.addedNodes[j];
           if (!n) continue;
-          if ((n.id && (n.id==='header-store-button' || n.id==='header-store-label' || n.id==='header-store-button-text')) || (n.querySelector && (n.querySelector('#header-store-button') || n.querySelector('#header-store-label')))){
-            needs = true; break;
+          if (
+            (n.id &&
+              (n.id === "header-store-button" ||
+                n.id === "header-store-label" ||
+                n.id === "header-store-button-text")) ||
+            (n.querySelector &&
+              (n.querySelector("#header-store-button") ||
+                n.querySelector("#header-store-label")))
+          ) {
+            needs = true;
+            break;
           }
         }
         if (needs) break;
