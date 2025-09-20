@@ -6397,6 +6397,10 @@ function cannabisPOS() {
     },
     saveSalesSettings() {
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+        localStorage.setItem(`cannabisPOS-salesSettings_${sid}`,
+          JSON.stringify(this.salesSettings),
+        );
         localStorage.setItem(
           "cannabisPOS-salesSettings",
           JSON.stringify(this.salesSettings),
