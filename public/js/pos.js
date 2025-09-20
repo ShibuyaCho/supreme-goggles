@@ -668,9 +668,20 @@ function cannabisPOS() {
     get metrcProductsSummaryFiltered(){
       try{
         const q=(this.vendorProductQuery||'').toLowerCase();
-        const rows = Array.isArray(this.metrcProductsSummary)?this.metrcProductsSummary:[];
+        let rows = Array.isArray(this.metrcProductsSummary)?this.metrcProductsSummary:[];
+        if(rows.length===0){
+          const base = Array.isArray(this.metrcProducts)?this.metrcProducts:[];
+          rows = base.map(r=>({
+            name: r.name,
+            tag: r.tag,
+            metrc_qty: Number(r.qty||0),
+            inventory_qty: 0,
+            variance: 0 - Number(r.qty||0),
+            unit: r.unit||''
+          }));
+        }
         if(!q) return rows;
-        return rows.filter(r=>(`${r.name} ${r.tag} ${r.sku}`).toLowerCase().includes(q));
+        return rows.filter(r=>(`${r.name} ${r.tag} ${r.sku||''}`).toLowerCase().includes(q));
       }catch(_){ return this.metrcProductsSummary||[]; }
     },
 
