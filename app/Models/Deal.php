@@ -32,7 +32,8 @@ class Deal extends Model
         'loyalty_only',
         'medical_only',
         'is_active',
-        'active_days'
+        'active_days',
+        'store_id'
     ];
 
     protected $casts = [
