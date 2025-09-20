@@ -505,7 +505,7 @@ Route::get('/settings/pos', function() {
         $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
     }
     if (array_key_exists('metrc_vendor_key', $settings)) {
-        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
+        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '•••���••••' : '';
     }
     return response()->json([
         'success' => true,
@@ -1867,10 +1867,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
             }
             // Mask METRC keys in response
             if (array_key_exists('metrc_user_key', $settings)) {
-                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
+                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '•••••��••' : '';
             }
             if (array_key_exists('metrc_vendor_key', $settings)) {
-                $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '•••••��••' : '';
+                $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
             }
             return response()->json([
                 'success' => true,
