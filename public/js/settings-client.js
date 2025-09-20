@@ -270,7 +270,13 @@
         localRate: Number(merged.excise_tax ?? 0) || 0,
         stateRate,
       };
-      try { const sid = currentStoreId(); localStorage.setItem(`cannabisPOS-taxSettings_${sid}`, JSON.stringify(tax)); } catch (_) {}
+      try {
+        const sid = currentStoreId();
+        localStorage.setItem(
+          `cannabisPOS-taxSettings_${sid}`,
+          JSON.stringify(tax),
+        );
+      } catch (_) {}
       localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(tax));
     } catch (_) {}
     try {
@@ -283,7 +289,13 @@
         autoDeleteZeroQuantity: !!merged.auto_delete_zero_quantity,
         autoDeleteZeroDays: Number(merged.auto_delete_zero_days ?? 1) || 1,
       };
-      try { const sid = currentStoreId(); localStorage.setItem(`cannabisPOS-salesSettings_${sid}`, JSON.stringify(sales)); } catch (_) {}
+      try {
+        const sid = currentStoreId();
+        localStorage.setItem(
+          `cannabisPOS-salesSettings_${sid}`,
+          JSON.stringify(sales),
+        );
+      } catch (_) {}
       localStorage.setItem("cannabisPOS-salesSettings", JSON.stringify(sales));
     } catch (_) {}
     try {
@@ -298,7 +310,13 @@
           ? merged.receipt_categories_autoprint
           : [],
       };
-      try { const sid = currentStoreId(); localStorage.setItem(`cannabisPOS-printSettings_${sid}`, JSON.stringify(print)); } catch (_) {}
+      try {
+        const sid = currentStoreId();
+        localStorage.setItem(
+          `cannabisPOS-printSettings_${sid}`,
+          JSON.stringify(print),
+        );
+      } catch (_) {}
       localStorage.setItem("cannabisPOS-printSettings", JSON.stringify(print));
     } catch (_) {}
   }
@@ -416,7 +434,9 @@
             }),
           );
           try {
-            window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged }));
+            window.dispatchEvent(
+              new CustomEvent("settings-updated", { detail: merged }),
+            );
           } catch (_) {}
           try {
             writeCookie("cpos_store_id", sid);
@@ -428,7 +448,13 @@
                 ? merged.priceTiers
                 : [];
             if (arr && arr.length) {
-              try { const sid2 = currentStoreId(); localStorage.setItem(`cannabisPOS-priceTiers-backup_${sid2}`, JSON.stringify(arr)); } catch(_){ }
+              try {
+                const sid2 = currentStoreId();
+                localStorage.setItem(
+                  `cannabisPOS-priceTiers-backup_${sid2}`,
+                  JSON.stringify(arr),
+                );
+              } catch (_) {}
               localStorage.setItem(
                 "cannabisPOS-priceTiers-backup",
                 JSON.stringify(arr),
@@ -483,16 +509,16 @@
             }
           } catch (_) {}
           try {
-          const sid = currentStoreId();
-          localStorage.setItem(
-            `cannabisPOS-weightThreshold_${sid}`,
-            String(merged.weight_threshold ?? 0),
-          );
-          localStorage.setItem(
-            "cannabisPOS-weightThreshold",
-            String(merged.weight_threshold ?? 0),
-          );
-        } catch (_) {}
+            const sid = currentStoreId();
+            localStorage.setItem(
+              `cannabisPOS-weightThreshold_${sid}`,
+              String(merged.weight_threshold ?? 0),
+            );
+            localStorage.setItem(
+              "cannabisPOS-weightThreshold",
+              String(merged.weight_threshold ?? 0),
+            );
+          } catch (_) {}
           try {
             writeUiCachesFromSettings(merged);
           } catch (_) {}
@@ -504,7 +530,9 @@
               }),
             );
             try {
-              window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged }));
+              window.dispatchEvent(
+                new CustomEvent("settings-updated", { detail: merged }),
+              );
             } catch (_) {}
             // Persist price tiers backup (namespaced + legacy)
             try {
@@ -514,7 +542,13 @@
                   ? merged.priceTiers
                   : [];
               if (arr && arr.length) {
-                try { const sid2 = currentStoreId(); localStorage.setItem(`cannabisPOS-priceTiers-backup_${sid2}`, JSON.stringify(arr)); } catch(_){ }
+                try {
+                  const sid2 = currentStoreId();
+                  localStorage.setItem(
+                    `cannabisPOS-priceTiers-backup_${sid2}`,
+                    JSON.stringify(arr),
+                  );
+                } catch (_) {}
                 localStorage.setItem(
                   "cannabisPOS-priceTiers-backup",
                   JSON.stringify(arr),
@@ -630,7 +664,9 @@
               }),
             );
             try {
-              window.dispatchEvent(new CustomEvent("settings-updated", { detail: m }));
+              window.dispatchEvent(
+                new CustomEvent("settings-updated", { detail: m }),
+              );
             } catch (_) {}
             try {
               writeCookie("cpos_store_id", sid);
@@ -642,7 +678,13 @@
                   ? m.priceTiers
                   : [];
               if (arr && arr.length) {
-                try { const sid2 = currentStoreId(); localStorage.setItem(`cannabisPOS-priceTiers-backup_${sid2}`, JSON.stringify(arr)); } catch(_){ }
+                try {
+                  const sid2 = currentStoreId();
+                  localStorage.setItem(
+                    `cannabisPOS-priceTiers-backup_${sid2}`,
+                    JSON.stringify(arr),
+                  );
+                } catch (_) {}
                 localStorage.setItem(
                   "cannabisPOS-priceTiers-backup",
                   JSON.stringify(arr),
@@ -717,13 +759,15 @@
                 } catch (_) {}
                 try {
                   window.dispatchEvent(
-              new CustomEvent("settings:updated", {
-                detail: { settings: m, storeId: sid },
-              }),
-            );
-            try {
-              window.dispatchEvent(new CustomEvent("settings-updated", { detail: m }));
-            } catch (_) {}
+                    new CustomEvent("settings:updated", {
+                      detail: { settings: m, storeId: sid },
+                    }),
+                  );
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("settings-updated", { detail: m }),
+                    );
+                  } catch (_) {}
                 } catch (_) {}
                 return { success: true, settings: m };
               }

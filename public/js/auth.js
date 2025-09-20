@@ -277,8 +277,25 @@ class POSAuth {
           const tiers = (res?.data && (res.data.tiers || res.data)) || [];
           if (Array.isArray(tiers)) {
             try {
-              let sid = 'default';
-              try { sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (function(){ const raw=localStorage.getItem('pos_store'); if(raw){ try{ const o=JSON.parse(raw)||{}; return String(o.id||'default'); }catch(e){} } return 'default'; })(); } catch(_){ sid='default'; }
+              let sid = "default";
+              try {
+                sid =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                    ? SettingsClient.currentStoreId()
+                    : (function () {
+                        const raw = localStorage.getItem("pos_store");
+                        if (raw) {
+                          try {
+                            const o = JSON.parse(raw) || {};
+                            return String(o.id || "default");
+                          } catch (e) {}
+                        }
+                        return "default";
+                      })();
+              } catch (_) {
+                sid = "default";
+              }
               localStorage.setItem(
                 `cannabisPOS-priceTiers-backup_${sid}`,
                 JSON.stringify(tiers),

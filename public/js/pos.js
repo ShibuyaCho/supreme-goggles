@@ -2395,8 +2395,16 @@ function cannabisPOS() {
           );
           let localTs = 0;
           try {
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-            const raw = localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) || localStorage.getItem("cannabisPOS-storeSettings");
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : this._currentStoreId
+                  ? this._currentStoreId()
+                  : "default";
+            const raw =
+              localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) ||
+              localStorage.getItem("cannabisPOS-storeSettings");
             if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
           } catch (_) {}
           // Update local settings with API data
@@ -2474,8 +2482,16 @@ function cannabisPOS() {
           }
           // Persist mapped store settings locally (namespaced + legacy) with timestamp
           try {
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-            try { this.storeSettings.lastUpdated = Date.now(); } catch(_) {}
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : this._currentStoreId
+                  ? this._currentStoreId()
+                  : "default";
+            try {
+              this.storeSettings.lastUpdated = Date.now();
+            } catch (_) {}
             localStorage.setItem(
               `cannabisPOS-storeSettings_${sid}`,
               JSON.stringify(this.storeSettings),
@@ -4536,9 +4552,15 @@ function cannabisPOS() {
             : null;
         let __backup = null;
         try {
-          const __sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : "default";
+          const __sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : "default";
           __backup = JSON.parse(
-            localStorage.getItem(`role_permissions_backup_${__sid}`) || localStorage.getItem("role_permissions_backup") || "null",
+            localStorage.getItem(`role_permissions_backup_${__sid}`) ||
+              localStorage.getItem("role_permissions_backup") ||
+              "null",
           );
         } catch (_) {
           __backup = null;
@@ -4595,15 +4617,31 @@ function cannabisPOS() {
               : __defaults;
       } catch (e) {
         try {
-          const __sid2 = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : "default";
+          const __sid2 =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : "default";
           const b = JSON.parse(
-            localStorage.getItem(`role_permissions_backup_${__sid2}`) || localStorage.getItem("role_permissions_backup") || "null",
+            localStorage.getItem(`role_permissions_backup_${__sid2}`) ||
+              localStorage.getItem("role_permissions_backup") ||
+              "null",
           );
           if (b && typeof b === "object") this.rolePermissions = b;
         } catch (_) {}
       }
       try {
-        try { const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : "default"; localStorage.setItem(`role_permissions_backup_${sid}`, JSON.stringify(this.rolePermissions)); } catch(_) {}
+        try {
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : "default";
+          localStorage.setItem(
+            `role_permissions_backup_${sid}`,
+            JSON.stringify(this.rolePermissions),
+          );
+        } catch (_) {}
         localStorage.setItem(
           "role_permissions_backup",
           JSON.stringify(this.rolePermissions),
@@ -4644,7 +4682,17 @@ function cannabisPOS() {
         const ok = r?.success === true || r?.data?.success === true;
         if (ok) {
           try {
-            try { const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : "default"; localStorage.setItem(`role_permissions_backup_${sid}`, JSON.stringify(this.rolePermissions)); } catch(_) {}
+            try {
+              const sid =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : "default";
+              localStorage.setItem(
+                `role_permissions_backup_${sid}`,
+                JSON.stringify(this.rolePermissions),
+              );
+            } catch (_) {}
             localStorage.setItem(
               "role_permissions_backup",
               JSON.stringify(this.rolePermissions),
@@ -6073,13 +6121,23 @@ function cannabisPOS() {
     // Settings and data management
     loadSettings() {
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function")
-          ? SettingsClient.currentStoreId()
-          : (this._currentStoreId ? this._currentStoreId() : "default");
-        const savedPrimaryNs = localStorage.getItem(`cannabisPOS-settings_${sid}`);
-        const savedLegacyNs = localStorage.getItem(`cannabest-pos-settings_${sid}`);
-        const savedPrimary = savedPrimaryNs || localStorage.getItem("cannabisPOS-settings");
-        const savedLegacy = savedLegacyNs || localStorage.getItem("cannabest-pos-settings");
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        const savedPrimaryNs = localStorage.getItem(
+          `cannabisPOS-settings_${sid}`,
+        );
+        const savedLegacyNs = localStorage.getItem(
+          `cannabest-pos-settings_${sid}`,
+        );
+        const savedPrimary =
+          savedPrimaryNs || localStorage.getItem("cannabisPOS-settings");
+        const savedLegacy =
+          savedLegacyNs || localStorage.getItem("cannabest-pos-settings");
         const saved = savedPrimary || savedLegacy;
         if (saved) {
           const settings = JSON.parse(saved);
@@ -6088,9 +6146,9 @@ function cannabisPOS() {
         }
 
         // Load store settings
-        const savedStoreSettings = localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) || localStorage.getItem(
-          "cannabisPOS-storeSettings",
-        );
+        const savedStoreSettings =
+          localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) ||
+          localStorage.getItem("cannabisPOS-storeSettings");
         if (savedStoreSettings) {
           const storeSettings = JSON.parse(savedStoreSettings);
           this.storeSettings = { ...this.storeSettings, ...storeSettings };
@@ -6099,7 +6157,9 @@ function cannabisPOS() {
         // Load print settings (local first)
         try {
           const ps = JSON.parse(
-            (localStorage.getItem(`cannabisPOS-printSettings_${sid}`) || localStorage.getItem("cannabisPOS-printSettings") || "{}"),
+            localStorage.getItem(`cannabisPOS-printSettings_${sid}`) ||
+              localStorage.getItem("cannabisPOS-printSettings") ||
+              "{}",
           );
           if (ps && typeof ps === "object") {
             this.printSettings = {
@@ -6118,7 +6178,9 @@ function cannabisPOS() {
       }
       // Load weight threshold
       try {
-        const wt = localStorage.getItem(`cannabisPOS-weightThreshold_${sid}`) || localStorage.getItem("cannabisPOS-weightThreshold");
+        const wt =
+          localStorage.getItem(`cannabisPOS-weightThreshold_${sid}`) ||
+          localStorage.getItem("cannabisPOS-weightThreshold");
         if (wt != null && wt !== "") {
           const n = parseFloat(wt);
           if (!isNaN(n) && isFinite(n)) this.weightThreshold = Math.max(0, n);
@@ -6128,7 +6190,9 @@ function cannabisPOS() {
       // Load tax/sales settings (local first)
       try {
         const ts = JSON.parse(
-          (localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem("cannabisPOS-taxSettings") || "{}"),
+          localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) ||
+            localStorage.getItem("cannabisPOS-taxSettings") ||
+            "{}",
         );
         if (ts && typeof ts === "object") {
           let rec = Number(ts.recreationalRate || 0);
@@ -6157,7 +6221,9 @@ function cannabisPOS() {
           } catch (_) {}
         }
         const ss = JSON.parse(
-          (localStorage.getItem(`cannabisPOS-salesSettings_${sid}`) || localStorage.getItem("cannabisPOS-salesSettings") || "{}"),
+          localStorage.getItem(`cannabisPOS-salesSettings_${sid}`) ||
+            localStorage.getItem("cannabisPOS-salesSettings") ||
+            "{}",
         );
         if (ss && typeof ss === "object") {
           this.salesSettings = {
@@ -6169,7 +6235,9 @@ function cannabisPOS() {
         }
         // Load auto-delete zero prefs
         const z = JSON.parse(
-          (localStorage.getItem(`cannabisPOS-zeroDelete_${sid}`) || localStorage.getItem("cannabisPOS-zeroDelete") || "{}"),
+          localStorage.getItem(`cannabisPOS-zeroDelete_${sid}`) ||
+            localStorage.getItem("cannabisPOS-zeroDelete") ||
+            "{}",
         );
         if (z && typeof z === "object") {
           this.autoDeleteZeroQuantity = !!z.enabled;
@@ -6215,8 +6283,15 @@ function cannabisPOS() {
             this.printSettings.categoriesAutoprint = cats;
           // Persist locally
           try {
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-            localStorage.setItem(`cannabisPOS-printSettings_${sid}`,
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : this._currentStoreId
+                  ? this._currentStoreId()
+                  : "default";
+            localStorage.setItem(
+              `cannabisPOS-printSettings_${sid}`,
               JSON.stringify(this.printSettings),
             );
             localStorage.setItem(
@@ -6241,8 +6316,16 @@ function cannabisPOS() {
         );
         let localTs = 0;
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-          const raw = localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) || localStorage.getItem("cannabisPOS-storeSettings");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
+          const raw =
+            localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) ||
+            localStorage.getItem("cannabisPOS-storeSettings");
           if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
         } catch (_) {}
         // Map backend settings to UI structures without clobbering with zeros
@@ -6308,8 +6391,15 @@ function cannabisPOS() {
             const n = Number(s.weight_threshold);
             this.weightThreshold = isFinite(n) ? Math.max(0, Number(n)) : 0;
             try {
-              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-              localStorage.setItem(`cannabisPOS-weightThreshold_${sid}`,
+              const sid =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : this._currentStoreId
+                    ? this._currentStoreId()
+                    : "default";
+              localStorage.setItem(
+                `cannabisPOS-weightThreshold_${sid}`,
                 String(this.weightThreshold),
               );
               localStorage.setItem(
@@ -6356,7 +6446,13 @@ function cannabisPOS() {
           ? Math.min(30, Math.max(1, d))
           : 1;
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-taxSettings_${sid}`,
             JSON.stringify(this.taxSettings),
@@ -6373,16 +6469,33 @@ function cannabisPOS() {
             }),
           );
           // Persist store info locally as well for resilience
-          try { this.storeSettings.lastUpdated = Date.now(); } catch(_) {}
+          try {
+            this.storeSettings.lastUpdated = Date.now();
+          } catch (_) {}
           localStorage.setItem(
             `cannabisPOS-storeSettings_${sid}`,
             JSON.stringify(this.storeSettings),
           );
           // Legacy globals fallback
-          localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(this.taxSettings));
-          localStorage.setItem("cannabisPOS-salesSettings", JSON.stringify(this.salesSettings));
-          localStorage.setItem("cannabisPOS-zeroDelete", JSON.stringify({ enabled: this.autoDeleteZeroQuantity, days: this.autoDeleteZeroDays }));
-          localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(this.storeSettings));
+          localStorage.setItem(
+            "cannabisPOS-taxSettings",
+            JSON.stringify(this.taxSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-salesSettings",
+            JSON.stringify(this.salesSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-zeroDelete",
+            JSON.stringify({
+              enabled: this.autoDeleteZeroQuantity,
+              days: this.autoDeleteZeroDays,
+            }),
+          );
+          localStorage.setItem(
+            "cannabisPOS-storeSettings",
+            JSON.stringify(this.storeSettings),
+          );
         } catch (_) {}
       } catch (_) {}
     },
@@ -6393,8 +6506,15 @@ function cannabisPOS() {
         this.medicalTaxRate = Number(this.taxSettings.medicalRate || 0) || 0;
       } catch (_) {}
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-        localStorage.setItem(`cannabisPOS-taxSettings_${sid}`,
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `cannabisPOS-taxSettings_${sid}`,
           JSON.stringify(this.taxSettings),
         );
         localStorage.setItem(
@@ -6408,8 +6528,15 @@ function cannabisPOS() {
     },
     saveSalesSettings() {
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-        localStorage.setItem(`cannabisPOS-salesSettings_${sid}`,
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `cannabisPOS-salesSettings_${sid}`,
           JSON.stringify(this.salesSettings),
         );
         localStorage.setItem(
@@ -6442,8 +6569,15 @@ function cannabisPOS() {
       try {
         // Save locally
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-          localStorage.setItem(`cannabisPOS-printSettings_${sid}`,
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
+          localStorage.setItem(
+            `cannabisPOS-printSettings_${sid}`,
             JSON.stringify(this.printSettings),
           );
           localStorage.setItem(
@@ -6502,7 +6636,13 @@ function cannabisPOS() {
         };
         // Persist locally for resilience
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-taxSettings_${sid}`,
             JSON.stringify(this.taxSettings),
@@ -6519,9 +6659,21 @@ function cannabisPOS() {
             }),
           );
           // Legacy globals
-          localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(this.taxSettings));
-          localStorage.setItem("cannabisPOS-salesSettings", JSON.stringify(this.salesSettings));
-          localStorage.setItem("cannabisPOS-zeroDelete", JSON.stringify({ enabled: payload.auto_delete_zero_quantity, days: payload.auto_delete_zero_days }));
+          localStorage.setItem(
+            "cannabisPOS-taxSettings",
+            JSON.stringify(this.taxSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-salesSettings",
+            JSON.stringify(this.salesSettings),
+          );
+          localStorage.setItem(
+            "cannabisPOS-zeroDelete",
+            JSON.stringify({
+              enabled: payload.auto_delete_zero_quantity,
+              days: payload.auto_delete_zero_days,
+            }),
+          );
         } catch (_) {}
         // POST to API (Supabase-backed)
         const res = await (window.SettingsClient
@@ -6539,9 +6691,13 @@ function cannabisPOS() {
           timestamp: new Date().toISOString(),
         };
         const json = JSON.stringify(settings);
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function")
-          ? SettingsClient.currentStoreId()
-          : (this._currentStoreId ? this._currentStoreId() : "default");
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
         // Store-scoped namespaced keys
         localStorage.setItem(`cannabisPOS-settings_${sid}`, json);
         localStorage.setItem(`cannabest-pos-settings_${sid}`, json);
@@ -6559,8 +6715,15 @@ function cannabisPOS() {
         this.weightThreshold = isFinite(n)
           ? Math.max(0, Number(n.toFixed(2)))
           : 0;
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-        localStorage.setItem(`cannabisPOS-weightThreshold_${sid}`,
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `cannabisPOS-weightThreshold_${sid}`,
           String(this.weightThreshold),
         );
         localStorage.setItem(
@@ -6859,9 +7022,17 @@ function cannabisPOS() {
         // Load any locally-saved tiers (offline/optimistic) to merge with server
         let localBackup = [];
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localBackup = JSON.parse(
-            (localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) || localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]"),
+            localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) ||
+              localStorage.getItem("cannabisPOS-priceTiers-backup") ||
+              "[]",
           );
           if (!Array.isArray(localBackup)) localBackup = [];
         } catch (_) {
@@ -7085,7 +7256,13 @@ function cannabisPOS() {
 
         this.priceTiers = merged;
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-priceTiers-backup_${sid}`,
             JSON.stringify(this.priceTiers),
@@ -7098,9 +7275,17 @@ function cannabisPOS() {
       } catch (_) {
         // Network/API failed: show whatever we have locally
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           const b = JSON.parse(
-            (localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) || localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]"),
+            localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) ||
+              localStorage.getItem("cannabisPOS-priceTiers-backup") ||
+              "[]",
           );
           if (Array.isArray(b) && b.length) this.priceTiers = b;
         } catch (_) {}
@@ -11235,7 +11420,13 @@ function cannabisPOS() {
           );
         }
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-priceTiers-backup_${sid}`,
             JSON.stringify(this.priceTiers),
@@ -11365,16 +11556,22 @@ function cannabisPOS() {
         if (res) {
           tier.isActive = next;
           try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
-          localStorage.setItem(
-            `cannabisPOS-priceTiers-backup_${sid}`,
-            JSON.stringify(this.priceTiers),
-          );
-          localStorage.setItem(
-            "cannabisPOS-priceTiers-backup",
-            JSON.stringify(this.priceTiers),
-          );
-        } catch (_) {}
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : this._currentStoreId
+                  ? this._currentStoreId()
+                  : "default";
+            localStorage.setItem(
+              `cannabisPOS-priceTiers-backup_${sid}`,
+              JSON.stringify(this.priceTiers),
+            );
+            localStorage.setItem(
+              "cannabisPOS-priceTiers-backup",
+              JSON.stringify(this.priceTiers),
+            );
+          } catch (_) {}
           this.showToast(
             next ? "Tier activated" : "Tier deactivated",
             "success",
@@ -11383,7 +11580,13 @@ function cannabisPOS() {
       } catch (e) {
         tier.isActive = !tier.isActive;
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-priceTiers-backup_${sid}`,
             JSON.stringify(this.priceTiers),
@@ -11414,7 +11617,13 @@ function cannabisPOS() {
           );
         }
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-priceTiers-backup_${sid}`,
             JSON.stringify(this.priceTiers),

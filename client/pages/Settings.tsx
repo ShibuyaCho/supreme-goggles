@@ -117,24 +117,59 @@ export default function Settings() {
     // Prefer SettingsClient local cache when present (no migration to other keys)
     try {
       const sc: any = (window as any).SettingsClient;
-      const sid = sc?.currentStoreId?.() || (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } return 'default'; })();
+      const sid =
+        sc?.currentStoreId?.() ||
+        (function () {
+          try {
+            const raw = localStorage.getItem("pos_store");
+            if (raw) {
+              const o = JSON.parse(raw) || {};
+              return String(o.id || "default");
+            }
+          } catch (_) {}
+          return "default";
+        })();
       const local = sc?.loadLocal?.(sid);
-      if (local && typeof local === 'object') {
+      if (local && typeof local === "object") {
         const mapped: Partial<StoreSettings> = {
           storeName: local.store_name ?? defaultStore.settings.storeName,
           website: local.website ?? defaultStore.settings.website,
-          taxRate: Number(local.sales_tax ?? defaultStore.settings.taxRate) || 0,
+          taxRate:
+            Number(local.sales_tax ?? defaultStore.settings.taxRate) || 0,
           autoDeleteZeroQuantity: !!local.auto_delete_zero_quantity,
-          autoDeleteZeroDays: Math.min(30, Math.max(1, Number(local.auto_delete_zero_days ?? 1) || 1)),
-          exitLabelCategories: Array.isArray(local.exit_label_categories) ? local.exit_label_categories : defaultStore.settings.exitLabelCategories,
-          hours: Array.isArray(local.business_hours) ? local.business_hours : defaultStore.settings.hours,
+          autoDeleteZeroDays: Math.min(
+            30,
+            Math.max(1, Number(local.auto_delete_zero_days ?? 1) || 1),
+          ),
+          exitLabelCategories: Array.isArray(local.exit_label_categories)
+            ? local.exit_label_categories
+            : defaultStore.settings.exitLabelCategories,
+          hours: Array.isArray(local.business_hours)
+            ? local.business_hours
+            : defaultStore.settings.hours,
           minimumPriceEnabled: !!local.minimum_price_enabled,
-          minimumPriceCategories: Array.isArray(local.minimum_price_categories) ? local.minimum_price_categories : defaultStore.settings.minimumPriceCategories,
-          minimumPriceAmount: Number(local.minimum_price_amount ?? defaultStore.settings.minimumPriceAmount) || defaultStore.settings.minimumPriceAmount,
-          inventoryViewMode: (local.inventory_view_mode === 'list' || local.inventory_view_mode === 'cards') ? local.inventory_view_mode : defaultStore.settings.inventoryViewMode,
-          expandableCart: local.expandable_cart ?? defaultStore.settings.expandableCart,
+          minimumPriceCategories: Array.isArray(local.minimum_price_categories)
+            ? local.minimum_price_categories
+            : defaultStore.settings.minimumPriceCategories,
+          minimumPriceAmount:
+            Number(
+              local.minimum_price_amount ??
+                defaultStore.settings.minimumPriceAmount,
+            ) || defaultStore.settings.minimumPriceAmount,
+          inventoryViewMode:
+            local.inventory_view_mode === "list" ||
+            local.inventory_view_mode === "cards"
+              ? local.inventory_view_mode
+              : defaultStore.settings.inventoryViewMode,
+          expandableCart:
+            local.expandable_cart ?? defaultStore.settings.expandableCart,
         };
-        return { ...defaultStore, id: sid, name: defaultStore.name, settings: { ...defaultStore.settings, ...mapped } };
+        return {
+          ...defaultStore,
+          id: sid,
+          name: defaultStore.name,
+          settings: { ...defaultStore.settings, ...mapped },
+        };
       }
     } catch (_) {}
 
@@ -214,7 +249,9 @@ export default function Settings() {
 
     // Notify UI immediately; persistence handled by SettingsClient in autosave
     try {
-      const event = new CustomEvent("settings-updated", { detail: newSettings });
+      const event = new CustomEvent("settings-updated", {
+        detail: newSettings,
+      });
       window.dispatchEvent(event);
       if (updates.inventoryViewMode) {
         const inventoryEvent = new CustomEvent("inventory-view-changed", {
@@ -309,8 +346,12 @@ export default function Settings() {
 
     // Pull additional details from local UI caches (if the modal/UI saved them previously)
     try {
-      const sid = (window as any).SettingsClient?.currentStoreId?.() || 'default';
-      const taxRaw = localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem("cannabisPOS-taxSettings") || "";
+      const sid =
+        (window as any).SettingsClient?.currentStoreId?.() || "default";
+      const taxRaw =
+        localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) ||
+        localStorage.getItem("cannabisPOS-taxSettings") ||
+        "";
       if (taxRaw) {
         const t = JSON.parse(taxRaw);
         basePayload.cannabis_tax =
@@ -329,8 +370,12 @@ export default function Settings() {
       }
     } catch (_) {}
     try {
-      const sid = (window as any).SettingsClient?.currentStoreId?.() || 'default';
-      const printRaw = localStorage.getItem(`cannabisPOS-printSettings_${sid}`) || localStorage.getItem("cannabisPOS-printSettings") || "";
+      const sid =
+        (window as any).SettingsClient?.currentStoreId?.() || "default";
+      const printRaw =
+        localStorage.getItem(`cannabisPOS-printSettings_${sid}`) ||
+        localStorage.getItem("cannabisPOS-printSettings") ||
+        "";
       if (printRaw) {
         const p = JSON.parse(printRaw);
         basePayload.receipt_autoprint = !!(
@@ -348,8 +393,12 @@ export default function Settings() {
       }
     } catch (_) {}
     try {
-      const sid = (window as any).SettingsClient?.currentStoreId?.() || 'default';
-      const salesRaw = localStorage.getItem(`cannabisPOS-salesSettings_${sid}`) || localStorage.getItem("cannabisPOS-salesSettings") || "";
+      const sid =
+        (window as any).SettingsClient?.currentStoreId?.() || "default";
+      const salesRaw =
+        localStorage.getItem(`cannabisPOS-salesSettings_${sid}`) ||
+        localStorage.getItem("cannabisPOS-salesSettings") ||
+        "";
       if (salesRaw) {
         const s = JSON.parse(salesRaw);
         basePayload.minimum_price_amount =
