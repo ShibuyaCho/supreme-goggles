@@ -51,7 +51,7 @@ class POSController extends Controller
         $categories = ['All'] + Product::when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->select('category')->distinct()->pluck('category')->toArray();
         $savedSales = SavedSale::where('employee_id', Auth::id())->latest()->get();
         $loyaltyCustomers = Customer::loyaltyMembers()->get();
-        $currentDeals = Deal::active()->get();
+        $currentDeals = Deal::when(\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->active()->get();
 
         // Get customer info from session
         $customerInfo = Session::get('customer_info', [
