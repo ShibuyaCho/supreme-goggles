@@ -344,7 +344,7 @@
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4">
                     <!-- Quick Actions -->
-                    <button id="global-refresh-metrc" @click="window.__refreshMetrc && window.__refreshMetrc()" onclick="window.__refreshMetrc && window.__refreshMetrc()" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-cannabis-green hover:bg-green-700 rounded-md transition-colors">
+                    <button id="global-refresh-metrc" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-cannabis-green hover:bg-green-700 rounded-md transition-colors">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/></svg>
                         Refresh METRC
                     </button>
@@ -846,29 +846,6 @@
           .finally(() => window.POS?.hideLoading?.());
       });
 
-      // Refresh METRC from any button id in the list
-      document.addEventListener('DOMContentLoaded', function(){
-        const ids = ['global-refresh-metrc', 'settings-refresh-metrc', 'global-refresh-metrc-demo'];
-        ids.forEach((id) => {
-          const btn = document.getElementById(id);
-          if (!btn || btn.dataset.metrcBound === '1') return;
-          btn.dataset.metrcBound = '1';
-          btn.addEventListener('click', async function(){
-            try {
-              window.POS?.showLoading?.();
-              const res = await (window.axios || axios).get('/api/metrc/debug/packages?diagnose=1');
-              if (!res || res.status < 200 || res.status >= 300 || res.data?.success === false) throw new Error(res?.data?.message || 'Refresh failed');
-              const count = Number(res.data?.count || 0);
-              window.POS?.showToast?.(`METRC packages retrieved: ${count}`, 'success');
-            } catch(e) {
-              const msg = (e && e.response && (e.response.data?.message || e.response.data?.error)) || e.message || 'Failed to refresh METRC data';
-              window.POS?.showToast?.(`Failed to refresh METRC data: ${msg}`, 'error');
-            } finally {
-              window.POS?.hideLoading?.();
-            }
-          });
-        });
-      });
     })();
     </script>
 
