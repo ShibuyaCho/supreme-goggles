@@ -302,7 +302,7 @@
       const data = res?.data?.settings || res?.data || res;
       const settings = data || {};
       const apiPerms = settings.role_permissions && typeof settings.role_permissions === 'object' ? settings.role_permissions : null;
-      let backup = null; try { backup = JSON.parse(localStorage.getItem('role_permissions_backup') || 'null'); } catch(_) { backup = null; }
+      let backup = null; try { const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default'; backup = JSON.parse(localStorage.getItem(`role_permissions_backup_${sid}`) || localStorage.getItem('role_permissions_backup') || 'null'); } catch(_) { backup = null; }
       const defaults = {
         admin: ['*'],
         manager: ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
@@ -314,11 +314,12 @@
       rolePerms = apiPerms && !isDefaults(apiPerms) ? apiPerms : (backup && typeof backup === 'object' ? backup : defaults);
     } catch(e){
       try {
-        const backup = JSON.parse(localStorage.getItem('role_permissions_backup') || '{}');
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default';
+        const backup = JSON.parse(localStorage.getItem(`role_permissions_backup_${sid}`) || localStorage.getItem('role_permissions_backup') || '{}');
         rolePerms = backup && Object.keys(backup).length ? backup : rolePerms || {};
       } catch(_) {}
     }
-    try{ localStorage.setItem('role_permissions_backup', JSON.stringify(rolePerms)); }catch(_){ }
+    try{ const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default'; localStorage.setItem(`role_permissions_backup_${sid}`, JSON.stringify(rolePerms)); localStorage.setItem('role_permissions_backup', JSON.stringify(rolePerms)); }catch(_){ }
     refreshRoleOptions();
     render();
   }
@@ -336,7 +337,7 @@
       const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
       const res = await (window.posAuth ? posAuth.apiRequest('post','/settings/pos', base) : (window.axios || axios).post('/api/settings/pos', base, { headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Store-ID': String(sid||'default'), ...(sname?{ 'X-Store-Name': sname }: {}) } }));
       const ok = (res?.success === true) || (res?.data?.success === true) || (res?.status && res.status >= 200 && res.status < 300);
-      if (ok) { try{ localStorage.setItem('role_permissions_backup', JSON.stringify(rolePerms)); }catch(_){ } }
+      if (ok) { try{ const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default'; localStorage.setItem(`role_permissions_backup_${sid}`, JSON.stringify(rolePerms)); localStorage.setItem('role_permissions_backup', JSON.stringify(rolePerms)); }catch(_){ } }
       if (!ok) throw new Error('Save failed');
       return true;
     }catch(e){ return false; }
