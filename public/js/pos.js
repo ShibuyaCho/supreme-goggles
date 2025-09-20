@@ -6062,8 +6062,13 @@ function cannabisPOS() {
     // Settings and data management
     loadSettings() {
       try {
-        const savedPrimary = localStorage.getItem("cannabisPOS-settings");
-        const savedLegacy = localStorage.getItem("cannabest-pos-settings");
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function")
+          ? SettingsClient.currentStoreId()
+          : (this._currentStoreId ? this._currentStoreId() : "default");
+        const savedPrimaryNs = localStorage.getItem(`cannabisPOS-settings_${sid}`);
+        const savedLegacyNs = localStorage.getItem(`cannabest-pos-settings_${sid}`);
+        const savedPrimary = savedPrimaryNs || localStorage.getItem("cannabisPOS-settings");
+        const savedLegacy = savedLegacyNs || localStorage.getItem("cannabest-pos-settings");
         const saved = savedPrimary || savedLegacy;
         if (saved) {
           const settings = JSON.parse(saved);
@@ -6490,6 +6495,13 @@ function cannabisPOS() {
           timestamp: new Date().toISOString(),
         };
         const json = JSON.stringify(settings);
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function")
+          ? SettingsClient.currentStoreId()
+          : (this._currentStoreId ? this._currentStoreId() : "default");
+        // Store-scoped namespaced keys
+        localStorage.setItem(`cannabisPOS-settings_${sid}`, json);
+        localStorage.setItem(`cannabest-pos-settings_${sid}`, json);
+        // Keep legacy globals for backward-compat
         localStorage.setItem("cannabisPOS-settings", json);
         localStorage.setItem("cannabest-pos-settings", json);
       } catch (error) {
