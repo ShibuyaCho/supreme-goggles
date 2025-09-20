@@ -435,7 +435,9 @@
           );
           try {
             window.dispatchEvent(
-              new CustomEvent("settings-updated", { detail: { settings: merged, storeId: sid } }),
+              new CustomEvent("settings-updated", {
+                detail: { settings: merged, storeId: sid },
+              }),
             );
           } catch (_) {}
           try {
@@ -531,7 +533,9 @@
             );
             try {
               window.dispatchEvent(
-                new CustomEvent("settings-updated", { detail: { settings: merged, storeId: sid } }),
+                new CustomEvent("settings-updated", {
+                  detail: { settings: merged, storeId: sid },
+                }),
               );
             } catch (_) {}
             // Persist price tiers backup (namespaced + legacy)
