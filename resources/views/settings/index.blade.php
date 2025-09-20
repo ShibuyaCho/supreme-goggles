@@ -935,6 +935,17 @@ function settingsManager() {
                         this.settings = { ...this.settings, ...local };
                         return;
                     }
+                    // Fallback: read namespaced global keys for this store
+                    try {
+                        const nsLegacy = localStorage.getItem(`cannabest-pos-settings_${sid}`);
+                        const nsCurrent = localStorage.getItem(`cannabisPOS-settings_${sid}`);
+                        const nsStored = nsCurrent || nsLegacy;
+                        if (nsStored) {
+                            const parsed = JSON.parse(nsStored);
+                            this.settings = { ...this.settings, ...parsed };
+                            return;
+                        }
+                    } catch (_) {}
                 }
             } catch (_) {}
             try {
@@ -955,6 +966,12 @@ function settingsManager() {
                 if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
                     const sid = SettingsClient.currentStoreId();
                     SettingsClient.saveLocal(sid, this.settings);
+                    // Also write namespaced globals for this store (keep legacy globals too)
+                    try {
+                        const json = JSON.stringify(this.settings);
+                        localStorage.setItem(`cannabisPOS-settings_${sid}`, json);
+                        localStorage.setItem(`cannabest-pos-settings_${sid}`, json);
+                    } catch (_) {}
                 }
             } catch (_) {}
             try {
