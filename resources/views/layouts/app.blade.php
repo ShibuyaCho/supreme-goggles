@@ -370,7 +370,9 @@
                           try{ document.getElementById('header-store-label').textContent = name ? `Store: ${name}` : ''; }catch(_){}}
                         function initial(){
                           try{
-                            const raw = localStorage.getItem('cannabisPOS-storeSettings');
+                            let sid = 'default';
+                            try { sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ const raw=localStorage.getItem('pos_store'); if(raw){ try{ const o=JSON.parse(raw)||{}; return String(o.id||'default'); }catch(e){} } return 'default'; })(); } catch(_){ sid='default'; }
+                            const raw = localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) || localStorage.getItem('cannabisPOS-storeSettings');
                             if(raw){ const s = JSON.parse(raw||'{}'); if(s && (s.name||s.store_name)) setLabel(s.name||s.store_name); }
                           }catch(_){}
                         }
