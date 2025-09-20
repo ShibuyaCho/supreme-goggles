@@ -644,6 +644,40 @@ function cannabisPOS() {
         return this.metrcProducts || [];
       }
     },
+    // Employee Evaluation computed stats (store-scoped)
+    get employeeEvalData(){
+      try{
+        const sales = Array.isArray(this.filteredSales) && this.filteredSales.length ? this.filteredSales : (Array.isArray(this.sales)?this.sales:[]);
+        const employees = Array.isArray(this.employees)?this.employees:[];
+        const totals = { tx:0, sales:0, discounts:0, returns:0 };
+        const byEmp = new Map();
+        for(const s of sales){
+          const emp = (s.employee||'Unknown').toString();
+          const row = byEmp.get(emp) || { name: emp, tx:0, sales:0, discounts:0, returns:0 };
+          row.tx += 1;
+          row.sales += Number(s.total||0);
+          try{ const dsum = Array.isArray(s.discounts)? s.discounts.reduce((a,b)=> a + Number(b.amount||0), 0) : 0; row.discounts += dsum; }catch(_){ }
+          const status = String(s.status||'');
+          const isReturn = /refund|return|void/i.test(status) || Number(s.total||0) < 0 || s.isVoided === true;
+          if(isReturn) row.returns += 1;
+          byEmp.set(emp,row);
+          totals.tx += 1; totals.sales += Number(s.total||0);
+          if(isReturn) totals.returns += 1;
+        }
+        totals.discounts = 0; byEmp.forEach(r=> totals.discounts += r.discounts);
+        for(const e of employees){ const name=(e.name||e.fullName||((e.firstName||'')+" "+(e.lastName||'')).trim()||e.employeeName)||e.employee||e.username||e.email||''; const key = name || (e.id!=null?`#${e.id}`:'Unknown'); if(!byEmp.has(key)) byEmp.set(key,{name:key, tx:0, sales:0, discounts:0, returns:0}); }
+        const rows = Array.from(byEmp.values()).map(r=>({
+          ...r,
+          avgOrder: r.tx>0 ? r.sales/r.tx : 0,
+          txPct: totals.tx>0 ? (r.tx/totals.tx)*100 : 0,
+          salesPct: totals.sales!==0 ? (r.sales/totals.sales)*100 : 0,
+          discPct: totals.discounts!==0 ? (r.discounts/totals.discounts)*100 : 0,
+          retPct: totals.returns>0 ? (r.returns/totals.returns)*100 : 0,
+        })).sort((a,b)=> b.sales - a.sales);
+        return { totals, rows };
+      }catch(_){ return { totals:{tx:0,sales:0,discounts:0,returns:0}, rows:[]}; }
+    },
+
     // Products summary from backend
     metrcProductsSummary: [],
     metrcProductsSummaryLoading: false,
