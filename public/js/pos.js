@@ -6147,7 +6147,7 @@ function cannabisPOS() {
           } catch (_) {}
         }
         const ss = JSON.parse(
-          localStorage.getItem("cannabisPOS-salesSettings") || "{}",
+          (localStorage.getItem(`cannabisPOS-salesSettings_${sid}`) || localStorage.getItem("cannabisPOS-salesSettings") || "{}"),
         );
         if (ss && typeof ss === "object") {
           this.salesSettings = {
