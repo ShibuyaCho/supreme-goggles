@@ -50,7 +50,7 @@
       "Hemp",
       "Accessories",
       "Inhalable Cannabinoids",
-      "Cones",
+      "Clones",
       "Seeds",
     ],
 
