@@ -505,7 +505,7 @@ Route::get('/settings/pos', function() {
         $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
     }
     if (array_key_exists('metrc_vendor_key', $settings)) {
-        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '•••���••••' : '';
+        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
     }
     return response()->json([
         'success' => true,
@@ -565,7 +565,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             } catch (\Throwable $e) {}
         }
         // Preserve existing METRC keys if incoming is masked
-        $maskPattern = '/^(?:[��*]+)$/u';
+        $maskPattern = '/^(?:[•*]+)$/u';
         foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
             if (isset($incoming[$k]) && is_string($incoming[$k]) && preg_match($maskPattern, trim($incoming[$k]))) {
                 if (isset($current[$k])) { $incoming[$k] = $current[$k]; }
@@ -1867,7 +1867,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             }
             // Mask METRC keys in response
             if (array_key_exists('metrc_user_key', $settings)) {
-                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '•••••��••' : '';
+                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
             }
             if (array_key_exists('metrc_vendor_key', $settings)) {
                 $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
@@ -1875,7 +1875,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             return response()->json([
                 'success' => true,
                 'settings' => $settings,
-                'tax_rate' => $settings['sales_tax'] ?? 20.0,
+                'tax_rate' => $settings['sales_tax'] ?? 0.0,
                 'currency' => 'USD',
                 'timezone' => config('app.timezone'),
                 'features' => [
