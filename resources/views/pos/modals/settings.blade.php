@@ -182,7 +182,7 @@ function handleSettingsUpdate(event) {
     for (let [key, value] of formData.entries()) {
         settingsData[key] = value;
     }
-    
+
     // Handle checkboxes (they won't appear in FormData if unchecked)
     const checkboxes = [
         'tax_inclusive', 'auto_print_receipt', 'require_customer',
@@ -190,12 +190,22 @@ function handleSettingsUpdate(event) {
         'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled',
         'auto_delete_zero_quantity'
     ];
-    
-    checkboxes.forEach(checkbox => {
-        if (!settingsData.hasOwnProperty(checkbox)) {
-            settingsData[checkbox] = false;
-        } else {
-            settingsData[checkbox] = true;
+
+    checkboxes.forEach((checkbox) => {
+        settingsData[checkbox] = Object.prototype.hasOwnProperty.call(settingsData, checkbox);
+    });
+
+    // Keep legacy/new keys in sync so backend always has both
+    if (Object.prototype.hasOwnProperty.call(settingsData, 'auto_print_receipt')) {
+        settingsData.receipt_autoprint = !!settingsData.auto_print_receipt;
+    }
+
+    // Coerce numerics
+    const numericFields = ['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days'];
+    numericFields.forEach((k) => {
+        if (Object.prototype.hasOwnProperty.call(settingsData, k)) {
+            const n = k === 'auto_delete_zero_days' ? parseInt(settingsData[k], 10) : parseFloat(settingsData[k]);
+            settingsData[k] = Number.isFinite(n) ? n : settingsData[k];
         }
     });
 
