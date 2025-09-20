@@ -4507,6 +4507,7 @@ function cannabisPOS() {
         products: "Products",
         "metrc-vendors": "METRC",
         employees: "Employees",
+        "employee-eval": "Employee Eval",
         "rooms-drawers": "Rooms & Drawers",
         "price-tiers": "Price Tiers",
         sales: "Sales",
