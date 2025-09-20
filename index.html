@@ -909,14 +909,9 @@
             <div class="flex items-center space-x-4">
               <!-- Store selector -->
               <div class="hidden md:flex items-center space-x-2">
-                <span
-                  id="header-store-label"
-                  class="text-xs text-gray-600"
-                ></span>
-                <button
+                                <button
                   id="header-store-button"
                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
-                  onclick="(function(){ if(window.addOrSwitchStore){window.addOrSwitchStore();return;} if(window.mainMenu){window.mainMenu();return;} var s=document.createElement('script'); s.src='/js/store-manager.js'; s.onload=function(){ if(window.addOrSwitchStore) window.addOrSwitchStore(); else if(window.mainMenu) window.mainMenu(); }; document.head.appendChild(s); })()"
                 >
                   <svg
                     class="w-4 h-4 mr-1"
@@ -931,7 +926,7 @@
                       d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V5a3 3 0 013-3h0a3 3 0 013 3v2"
                     />
                   </svg>
-                  <span>Add/Switch Store</span>
+                  <span id="header-store-button-text"></span>
                 </button>
               </div>
               <script>
@@ -947,12 +942,11 @@
                   function update() {
                     try {
                       const s = read();
-                      var el = document.getElementById("header-store-label");
-                      if (el)
-                        el.textContent =
-                          s && (s.name || s.id)
-                            ? `Store: ${s.name || s.id}`
-                            : "Store: default";
+                      var btn = document.getElementById("header-store-button");
+                      var t = document.getElementById("header-store-button-text") || (btn ? btn.querySelector('span') : null);
+                      const name = s && (s.name || s.id) ? (s.name || s.id) : 'default';
+                      if (t) t.textContent = name;
+                      if (btn) btn.title = name;
                     } catch (_) {}
                   }
                   window.updateStoreHeaderLabel = update;
