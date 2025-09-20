@@ -165,9 +165,17 @@
     <script src="{{ asset('js/auth.js') }}" defer></script>
     <script>
       (function(){
+        function getCookie(name){ try{ const m=document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()\[\]\\\/+^])/g,'\\$1')+'=([^;]*)')); return m?decodeURIComponent(m[1]):null; }catch(_){ return null; } }
         try{
           const raw = localStorage.getItem('pos_store');
-          if(raw && (window.axios||window.axios)){ const s=JSON.parse(raw); const n=s && (s.name||s.store_name); if(n){ (window.axios||axios).defaults.headers.common['X-Store-Name']=n; }}
+          let sid = '';
+          let sname = '';
+          if (raw) { try { const s=JSON.parse(raw); sid = s && s.id ? String(s.id) : ''; sname = s && (s.name||s.store_name) ? String(s.name||s.store_name) : ''; } catch(_){} }
+          if (!sid) { const ck = getCookie('cpos_store_id'); if (ck) sid = ck; }
+          if ((window.axios||axios)){
+            if (sname) (window.axios||axios).defaults.headers.common['X-Store-Name']=sname;
+            if (sid) (window.axios||axios).defaults.headers.common['X-Store-ID']=sid;
+          }
         }catch(_){ }
       })();
     </script>
