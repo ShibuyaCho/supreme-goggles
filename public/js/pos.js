@@ -6855,8 +6855,9 @@ function cannabisPOS() {
         // Load any locally-saved tiers (offline/optimistic) to merge with server
         let localBackup = [];
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
           localBackup = JSON.parse(
-            localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]",
+            (localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) || localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]"),
           );
           if (!Array.isArray(localBackup)) localBackup = [];
         } catch (_) {
