@@ -982,7 +982,7 @@ app.get("/api/settings/pos", async (req, res) => {
           s.metrc_user_key = s.metrc_user_key ? "••••••••" : "";
         }
         if (Object.prototype.hasOwnProperty.call(s, "metrc_vendor_key")) {
-          s.metrc_vendor_key = s.metrc_vendor_key ? "••••••••" : "";
+          s.metrc_vendor_key = s.metrc_vendor_key ? "•••••���••" : "";
         }
       } catch (_) {}
       return res.json({
@@ -1142,7 +1142,7 @@ app.post("/api/settings/pos", async (req, res) => {
       body: [
         {
           id: storeId,
-          settings: merged,
+          settings: mergedFull,
           updated_at: new Date().toISOString(),
         },
       ],
@@ -1157,7 +1157,7 @@ app.post("/api/settings/pos", async (req, res) => {
           body: [
             {
               id: legacy,
-              settings: merged,
+              settings: mergedFull,
               updated_at: new Date().toISOString(),
             },
           ],
@@ -1166,7 +1166,7 @@ app.post("/api/settings/pos", async (req, res) => {
       } catch (_) {}
     }
     const payload = r.ok ? await r.json() : null;
-    const responseSettings = { ...merged };
+    const responseSettings = { ...mergedFull };
     try {
       if (
         Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")
