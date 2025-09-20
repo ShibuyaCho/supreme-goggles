@@ -6382,6 +6382,10 @@ function cannabisPOS() {
         this.medicalTaxRate = Number(this.taxSettings.medicalRate || 0) || 0;
       } catch (_) {}
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+        localStorage.setItem(`cannabisPOS-taxSettings_${sid}`,
+          JSON.stringify(this.taxSettings),
+        );
         localStorage.setItem(
           "cannabisPOS-taxSettings",
           JSON.stringify(this.taxSettings),
