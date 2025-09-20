@@ -117,7 +117,7 @@
                                 <input type="password" id="metrc-vendor-key" name="metrc_vendor_key" value="{{ config('pos.metrc_vendor_key', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div>
-                                <label for="metrc-facility" class="block text-sm font-medium text-gray-700 mb-1">Facility License</label>
+                                <label for="metrc-facility" class="block text-sm font-medium text-gray-700 mb-1">Facility License Number</label>
                                 <input type="text" id="metrc-facility" name="metrc_facility" value="{{ config('pos.metrc_facility', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                         </div>
@@ -127,17 +127,33 @@
                     <div>
                         <h4 class="text-lg font-medium text-gray-900 mb-4">Receipt Settings</h4>
                         <div class="space-y-4">
-                            <div>
-                                <label for="receipt-footer" class="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Text</label>
-                                <textarea id="receipt-footer" name="receipt_footer" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ config('pos.receipt_footer', 'Thank you for your business!\nKeep receipt for returns and warranty.') }}</textarea>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="store-name" class="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                                    <input type="text" id="store-name" name="store_name" value="{{ config('pos.store_name', 'Cannabis POS') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="license-number" class="block text-sm font-medium text-gray-700 mb-1">Business License Number</label>
+                                    <input type="text" id="license-number" name="license_number" value="{{ config('pos.license_number', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
                             </div>
-                            <div>
-                                <label for="store-name" class="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
-                                <input type="text" id="store-name" name="store_name" value="{{ config('pos.store_name', 'Cannabis POS') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="store-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                    <input type="email" id="store-email" name="store_email" value="{{ config('pos.store_email', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="website" class="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                                    <input type="url" id="website" name="website" value="{{ config('pos.website', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
                             </div>
                             <div>
                                 <label for="store-address" class="block text-sm font-medium text-gray-700 mb-1">Store Address</label>
                                 <textarea id="store-address" name="store_address" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ config('pos.store_address', '') }}</textarea>
+                            </div>
+                            <div>
+                                <label for="receipt-footer" class="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Text</label>
+                                <textarea id="receipt-footer" name="receipt_footer" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ config('pos.receipt_footer', 'Thank you for your business!\nKeep receipt for returns and warranty.') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -155,6 +171,32 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Days to wait before deleting</label>
                         <input id="auto-delete-zero-days" name="auto_delete_zero_days" type="number" min="1" max="30" step="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
                         <p class="text-xs text-gray-500 mt-1">Range: 1-30 days</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="flex items-center">
+                            <input id="minimum-price-enabled" name="minimum_price_enabled" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
+                            <span class="ml-2 text-sm text-gray-700">Enforce minimum sale price</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Minimum sale amount</label>
+                        <input id="minimum-price-amount" name="minimum_price_amount" type="number" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Receipt auto-print categories</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        @php($rcats = ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'])
+                        @foreach($rcats as $cat)
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" name="receipt_categories_autoprint" value="{{ $cat }}" class="mr-2 rounded text-cannabis-green focus:ring-cannabis-green">
+                            <span>{{ $cat }}</span>
+                        </label>
+                        @endforeach
                     </div>
                 </div>
 
@@ -178,9 +220,15 @@ function handleSettingsUpdate(event) {
     const formData = new FormData(event.target);
     const settingsData = {};
     
-    // Convert FormData to regular object
+    // Convert FormData to regular object (aggregate arrays)
+    const arrayFields = new Set(['receipt_categories_autoprint','minimum_price_categories','exit_label_categories']);
     for (let [key, value] of formData.entries()) {
-        settingsData[key] = value;
+        if (arrayFields.has(key)) {
+            if (!Array.isArray(settingsData[key])) settingsData[key] = [];
+            settingsData[key].push(value);
+        } else {
+            settingsData[key] = value;
+        }
     }
 
     // Handle checkboxes (they won't appear in FormData if unchecked)
@@ -188,7 +236,7 @@ function handleSettingsUpdate(event) {
         'tax_inclusive', 'auto_print_receipt', 'require_customer',
         'age_verification', 'limit_enforcement', 'accept_cash',
         'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled',
-        'auto_delete_zero_quantity'
+        'auto_delete_zero_quantity', 'minimum_price_enabled'
     ];
 
     checkboxes.forEach((checkbox) => {
@@ -304,8 +352,17 @@ async function openSettingsModal() {
         setVal('receipt-footer', s.receipt_footer);
         setVal('store-name', s.store_name);
         setVal('store-address', s.store_address);
+        setVal('store-email', s.store_email);
+        setVal('website', s.website);
+        setVal('license-number', s.license_number);
         setChk('auto-delete-zero-quantity', s.auto_delete_zero_quantity);
         setVal('auto-delete-zero-days', s.auto_delete_zero_days);
+        setChk('minimum-price-enabled', s.minimum_price_enabled);
+        setVal('minimum-price-amount', s.minimum_price_amount);
+        (function(){
+            const cats = Array.isArray(s.receipt_categories_autoprint) ? s.receipt_categories_autoprint : [];
+            cats.forEach((v)=>{ try{ const el=[...document.querySelectorAll('input[name="receipt_categories_autoprint"][value="'+String(v).replace(/"/g,'\\"')+'"]')][0]; if(el) el.checked=true; }catch(_){ } });
+        })();
     } catch (_) { /* ignore prefill errors */ }
 }
 </script>
