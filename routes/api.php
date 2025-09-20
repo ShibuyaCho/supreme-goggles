@@ -523,11 +523,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 if (isset($current[$k])) { $incoming[$k] = $current[$k]; }
             }
         }
-        // Drop empty-string/null fields to avoid clobbering existing values
-        foreach ($incoming as $k => $v) {
-            if ($v === null) { unset($incoming[$k]); continue; }
-            if (is_string($v) && trim($v) === '') { unset($incoming[$k]); }
-        }
+        // Preserve explicit clears: do not drop null/empty string values; allow client to intentionally clear fields
         $merged = array_merge(is_array($current)?$current:[], is_array($incoming)?$incoming:[]);
         // Normalize array fields sent as JSON strings and ensure correct types
         foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours','role_permissions'] as $field) {
