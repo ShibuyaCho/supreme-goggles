@@ -4595,8 +4595,9 @@ function cannabisPOS() {
               : __defaults;
       } catch (e) {
         try {
+          const __sid2 = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : "default";
           const b = JSON.parse(
-            localStorage.getItem("role_permissions_backup") || "null",
+            localStorage.getItem(`role_permissions_backup_${__sid2}`) || localStorage.getItem("role_permissions_backup") || "null",
           );
           if (b && typeof b === "object") this.rolePermissions = b;
         } catch (_) {}
