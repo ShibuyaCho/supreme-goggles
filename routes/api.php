@@ -413,9 +413,9 @@ Route::get('/settings/pos', function() {
         return $base;
     };
     $settings = $defaults;
+    if (is_array($settingsCache))  $settings = $mergeNonNull($settings, $settingsCache);
     if (is_array($settingsRemote)) $settings = $mergeNonNull($settings, $settingsRemote);
     if (is_array($settingsLocal))  $settings = $mergeNonNull($settings, $settingsLocal);
-    if (is_array($settingsCache))  $settings = $mergeNonNull($settings, $settingsCache);
 
     // Coerce known numeric and boolean fields to correct types
     foreach (['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'] as $n) {
