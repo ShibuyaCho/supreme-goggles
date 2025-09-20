@@ -811,6 +811,9 @@ function settingsManager() {
             // Snapshot to avoid pushing defaults to server before hydration
             try { this._lastPersistedJSON = JSON.stringify(this.settings); } catch (_) {}
 
+            // Enable autosave immediately even if server hydration is slow
+            this.hydrated = true;
+
             // Merge server settings (authorizes via posAuth)
             this.fetchServerSettings();
             // Load store list and align selector to current store id
@@ -1153,7 +1156,17 @@ function settingsManager() {
                     if (srv && typeof srv === 'object') {
                         const sensitive = new Set(['metrc_user_key','metrc_vendor_key','metrc_facility']);
                         const merged = { ...this.settings };
+                        // Determine keys the user has modified since the last persisted snapshot
+                        let prevSnap = {};
+                        try { prevSnap = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {}; } catch(_) { prevSnap = {}; }
+                        const dirty = new Set();
+                        try {
+                            const keys = new Set([...Object.keys(this.settings || {}), ...Object.keys(prevSnap || {})]);
+                            keys.forEach((k)=>{ if (JSON.stringify((this.settings||{})[k]) !== JSON.stringify((prevSnap||{})[k])) dirty.add(k); });
+                        } catch(_) {}
+                        // Merge server values but NEVER overwrite dirty keys
                         Object.keys(srv).forEach((k) => {
+                            if (dirty.has(k)) return; // preserve user edits
                             const v = srv[k];
                             const isNullish = v === null || v === undefined;
                             const isEmptyStr = typeof v === 'string' && v.trim() === '';
@@ -1163,14 +1176,16 @@ function settingsManager() {
                                 if (!isNullish) merged[k] = v;
                             }
                         });
-                        // If API provides tax_rate but settings.sales_tax is 0, sync it
+                        // If API provides tax_rate but sales_tax is unset AND not dirty, sync it
                         try {
-                            const apiTax = Number(resp.tax_rate ?? srv.sales_tax ?? NaN);
-                            if (isFinite(apiTax) && apiTax >= 0 && (!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0)) {
-                                merged.sales_tax = apiTax;
+                            if (!dirty.has('sales_tax')) {
+                                const apiTax = Number(resp.tax_rate ?? srv.sales_tax ?? NaN);
+                                if (isFinite(apiTax) && apiTax >= 0 && (!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0)) {
+                                    merged.sales_tax = apiTax;
+                                }
                             }
                         } catch (_) {}
-                        // Backfill from local tax cache if server returned zeros
+                        // Backfill from local tax cache if server returned zeros and fields are not dirty
                         try {
                             const tsRaw = localStorage.getItem('cannabisPOS-taxSettings');
                             if (tsRaw) {
@@ -1178,27 +1193,30 @@ function settingsManager() {
                                 const rec = Number(ts.recreationalRate || 0);
                                 const loc = Number(ts.localRate || 0);
                                 const st  = Number(ts.stateRate || 0);
-                                if ((!isFinite(Number(merged.cannabis_tax)) || Number(merged.cannabis_tax) === 0) && isFinite(rec) && rec > 0) merged.cannabis_tax = rec;
-                                if ((!isFinite(Number(merged.excise_tax)) || Number(merged.excise_tax) === 0) && isFinite(loc) && loc > 0) merged.excise_tax = loc;
-                                if ((!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0) && isFinite(st) && st >= 0) merged.sales_tax = st;
+                                if (!dirty.has('cannabis_tax') && ((!isFinite(Number(merged.cannabis_tax)) || Number(merged.cannabis_tax) === 0) && isFinite(rec) && rec > 0)) merged.cannabis_tax = rec;
+                                if (!dirty.has('excise_tax') && ((!isFinite(Number(merged.excise_tax)) || Number(merged.excise_tax) === 0) && isFinite(loc) && loc > 0)) merged.excise_tax = loc;
+                                if (!dirty.has('sales_tax') && ((!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0) && isFinite(st) && st >= 0)) merged.sales_tax = st;
                             }
                         } catch(_) {}
-                        // Mirror sales_tax to cannabis_tax when recreational is zero (UI fallback)
+                        // Mirror sales_tax to cannabis_tax when recreational is zero (UI fallback) if not dirty
                         try {
-                            const st = Number(merged.sales_tax);
-                            const rec = Number(merged.cannabis_tax);
-                            if (isFinite(st) && st > 0 && (!isFinite(rec) || rec === 0)) merged.cannabis_tax = st;
+                            if (!dirty.has('cannabis_tax')) {
+                                const st = Number(merged.sales_tax);
+                                const rec = Number(merged.cannabis_tax);
+                                if (isFinite(st) && st > 0 && (!isFinite(rec) || rec === 0)) merged.cannabis_tax = st;
+                            }
                         } catch(_) {}
-                        // Map legacy keys
-                        if (Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt') && !Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint')) {
+                        // Map legacy keys (do not overwrite dirty)
+                        if (!dirty.has('receipt_autoprint') && Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt') && !Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint')) {
                             merged.receipt_autoprint = !!merged.auto_print_receipt;
                         }
-                        if (Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint') && !Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt')) {
+                        if (!dirty.has('auto_print_receipt') && Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint') && !Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt')) {
                             merged.auto_print_receipt = !!merged.receipt_autoprint;
                         }
                         // Coerce arrays for Alpine reactivity
                         const arrayKeys = ['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours'];
                         arrayKeys.forEach((key) => {
+                            if (dirty.has(key)) return; // preserve user edits
                             const val = merged[key];
                             if (typeof val === 'string') {
                                 try { const parsed = JSON.parse(val); merged[key] = Array.isArray(parsed) ? parsed : []; } catch (_) { merged[key] = []; }
@@ -1208,8 +1226,10 @@ function settingsManager() {
                         });
                         this.settings = merged;
                         this.saveSettingsToStorage();
-                        this._lastPersistedJSON = JSON.stringify(this.settings);
-                        this.hydrated = true;
+                        // Do not advance snapshot here if user has dirty edits; keep last persisted snapshot for diffing
+                        if (dirty.size === 0) {
+                            this._lastPersistedJSON = JSON.stringify(this.settings);
+                        }
                     }
                 }
             } catch (e) {
