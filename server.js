@@ -1047,7 +1047,94 @@ app.post("/api/settings/pos", async (req, res) => {
       incomingClean.metrc_user_key = current.metrc_user_key || "";
     if (isMasked(incomingClean.metrc_vendor_key))
       incomingClean.metrc_vendor_key = current.metrc_vendor_key || "";
-    const merged = { ...current, ...incomingClean };
+    // Normalize arrays and types, merge, and overlay defaults
+    const normalizeArrays = (obj) => {
+      const out = { ...obj };
+      const arrayFields = [
+        "exit_label_categories",
+        "receipt_categories_autoprint",
+        "minimum_price_categories",
+        "business_hours",
+        "role_permissions",
+      ];
+      arrayFields.forEach((k) => {
+        if (Object.prototype.hasOwnProperty.call(out, k)) {
+          if (typeof out[k] === "string") {
+            try {
+              const dec = JSON.parse(out[k]);
+              if (Array.isArray(dec) || typeof dec === "object") out[k] = dec;
+            } catch (_) {}
+          }
+        }
+      });
+      return out;
+    };
+    const coerceBooleans = (obj) => {
+      const out = { ...obj };
+      [
+        "receipt_autoprint",
+        "receipt_show_tax_breakdown",
+        "receipt_show_metrc",
+        "receipt_show_loyalty",
+        "receipt_show_qr_code",
+        "require_customer",
+        "age_verification",
+        "limit_enforcement",
+        "accept_cash",
+        "accept_debit",
+        "accept_check",
+        "round_to_nearest",
+        "minimum_price_enabled",
+        "expandable_cart",
+        "auto_delete_zero_quantity",
+        "dark_mode",
+        "high_contrast",
+        "reduce_motion",
+        "metrc_enabled",
+        "metrc_auto_push_sales",
+      ].forEach((b) => {
+        if (Object.prototype.hasOwnProperty.call(out, b)) {
+          const v = out[b];
+          out[b] = typeof v === "string" ? /^(true|1|yes|on)$/i.test(v) : !!v;
+        }
+      });
+      if (
+        Object.prototype.hasOwnProperty.call(out, "auto_print_receipt") &&
+        !Object.prototype.hasOwnProperty.call(out, "receipt_autoprint")
+      ) out.receipt_autoprint = !!out.auto_print_receipt;
+      if (
+        Object.prototype.hasOwnProperty.call(out, "receipt_autoprint") &&
+        !Object.prototype.hasOwnProperty.call(out, "auto_print_receipt")
+      ) out.auto_print_receipt = !!out.receipt_autoprint;
+      return out;
+    };
+    const coerceNumbers = (obj) => {
+      const out = { ...obj };
+      [
+        "sales_tax",
+        "excise_tax",
+        "cannabis_tax",
+        "minimum_price_amount",
+        "auto_delete_zero_days",
+        "weight_threshold",
+      ].forEach((n) => {
+        if (Object.prototype.hasOwnProperty.call(out, n)) {
+          const v = out[n];
+          const num = n === "auto_delete_zero_days" ? parseInt(v, 10) : parseFloat(v);
+          if (Number.isFinite(num)) out[n] = num;
+        }
+      });
+      return out;
+    };
+    let merged = { ...current, ...incomingClean };
+    merged = normalizeArrays(coerceNumbers(coerceBooleans(merged)));
+    try {
+      const st = Number(merged.sales_tax ?? 0);
+      const rec = Number(merged.cannabis_tax ?? 0);
+      if ((!Number.isFinite(rec) || rec === 0) && Number.isFinite(st) && st > 0) merged.cannabis_tax = st;
+      if ((!Number.isFinite(st) || st === 0) && Number.isFinite(rec) && rec > 0) merged.sales_tax = rec;
+    } catch (_) {}
+    const mergedFull = { ...defaults, ...merged };
 
     // Write to primary id
     let r = await supaFetch("pos_settings", {
