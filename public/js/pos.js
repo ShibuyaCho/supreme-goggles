@@ -7081,6 +7081,11 @@ function cannabisPOS() {
 
         this.priceTiers = merged;
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          localStorage.setItem(
+            `cannabisPOS-priceTiers-backup_${sid}`,
+            JSON.stringify(this.priceTiers),
+          );
           localStorage.setItem(
             "cannabisPOS-priceTiers-backup",
             JSON.stringify(this.priceTiers),
