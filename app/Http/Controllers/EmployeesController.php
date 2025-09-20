@@ -28,6 +28,7 @@ class EmployeesController extends Controller
         $statusFilter = $request->get('status', 'all');
 
         $query = Employee::query();
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('employees','store_id')) { $query->where('store_id', \App\Helpers\StoreContext::id()); } } catch (\Throwable $e) {}
 
         if ($searchQuery) {
             $query->where(function($q) use ($searchQuery) {
