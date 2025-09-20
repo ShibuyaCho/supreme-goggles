@@ -238,6 +238,14 @@ Route::get('/products', [ProductsController::class, 'index']);
 // Public POS settings endpoints for SPA/demo compatibility
 Route::get('/settings/pos', function() {
     \Illuminate\Support\Facades\Log::info('Settings GET', ['scope' => 'public', 'store' => (string)request()->header('X-Store-ID')]);
+    $noCache = false;
+    try {
+        $noCache = (bool)request()->boolean('nocache');
+        if (!$noCache) {
+            $cc = (string)request()->header('Cache-Control', '');
+            $noCache = stripos($cc, 'no-cache') !== false || stripos($cc, 'max-age=0') !== false;
+        }
+    } catch (\Throwable $e) { $noCache = false; }
     $defaults = [
         'sales_tax' => 0.0,
         'excise_tax' => 10.0,
@@ -400,9 +408,13 @@ Route::get('/settings/pos', function() {
         }
     } catch (\Throwable $e) {}
 
-    // Read from Cache (highest priority when present)
+    // Read from Cache unless bypass requested
     try {
-        $settingsCache = \Illuminate\Support\Facades\Cache::get('pos_settings:' . $storeId, []);
+        if (!$noCache) {
+            $settingsCache = \Illuminate\Support\Facades\Cache::get('pos_settings:' . $storeId, []);
+        } else {
+            $settingsCache = [];
+        }
     } catch (\Throwable $e) { $settingsCache = []; }
     // Compose final settings preferring non-null values: defaults -> remote -> local -> cache
     $mergeNonNull = function(array $base, array $overlay) {
