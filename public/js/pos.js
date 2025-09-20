@@ -6205,6 +6205,10 @@ function cannabisPOS() {
             this.printSettings.categoriesAutoprint = cats;
           // Persist locally
           try {
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+            localStorage.setItem(`cannabisPOS-printSettings_${sid}`,
+              JSON.stringify(this.printSettings),
+            );
             localStorage.setItem(
               "cannabisPOS-printSettings",
               JSON.stringify(this.printSettings),
