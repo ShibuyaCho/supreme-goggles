@@ -9,7 +9,7 @@ class RoomsDrawersController extends Controller
 {
     public function index()
     {
-        $rooms = Room::all()->map(function (Room $room) {
+        $rooms = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->get()->map(function (Room $room) {
             $categoryMap = [
                 'production' => 'processing',
                 'processing' => 'processing',
