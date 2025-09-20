@@ -4601,6 +4601,7 @@ function cannabisPOS() {
         } catch (_) {}
       }
       try {
+        try { const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : "default"; localStorage.setItem(`role_permissions_backup_${sid}`, JSON.stringify(this.rolePermissions)); } catch(_) {}
         localStorage.setItem(
           "role_permissions_backup",
           JSON.stringify(this.rolePermissions),
