@@ -802,8 +802,14 @@ function settingsManager() {
                     if (m) {
                         const v = Number(m[1]);
                         if (Number.isFinite(v)) {
-                            if (!Number.isFinite(Number(this.settings.sales_tax)) || Number(this.settings.sales_tax) === 0) this.settings.sales_tax = v;
-                            if (!Number.isFinite(Number(this.settings.cannabis_tax)) || Number(this.settings.cannabis_tax) === 0) this.settings.cannabis_tax = v;
+                            const hasSales = Object.prototype.hasOwnProperty.call(this.settings, 'sales_tax');
+                            const hasCann  = Object.prototype.hasOwnProperty.call(this.settings, 'cannabis_tax');
+                            if (!hasSales || this.settings.sales_tax === null || typeof this.settings.sales_tax === 'undefined') {
+                                this.settings.sales_tax = v;
+                            }
+                            if (!hasCann || this.settings.cannabis_tax === null || typeof this.settings.cannabis_tax === 'undefined') {
+                                this.settings.cannabis_tax = v;
+                            }
                         }
                     }
                 }
