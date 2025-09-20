@@ -6117,7 +6117,12 @@ function cannabisPOS() {
         if (ts && typeof ts === "object") {
           let rec = Number(ts.recreationalRate || 0);
           const st = Number(ts.stateRate || 0);
-          if (!(Number.isFinite(rec) && rec > 0) && Number.isFinite(st) && st >= 0) rec = st;
+          if (
+            !(Number.isFinite(rec) && rec > 0) &&
+            Number.isFinite(st) &&
+            st >= 0
+          )
+            rec = st;
           this.taxSettings = {
             recreationalRate: rec,
             medicalRate: Number(ts.medicalRate || 0),
@@ -6129,9 +6134,11 @@ function cannabisPOS() {
           try {
             const stNum = Number(this.taxSettings.stateRate || 0);
             const med = Number(this.taxSettings.medicalRate || 0);
-            this.taxRate = Number.isFinite(stNum) ? stNum : (this.taxRate || 0);
-            this.medicalTaxRate = Number.isFinite(med) ? med : (this.medicalTaxRate || 0);
-          } catch(_) {}
+            this.taxRate = Number.isFinite(stNum) ? stNum : this.taxRate || 0;
+            this.medicalTaxRate = Number.isFinite(med)
+              ? med
+              : this.medicalTaxRate || 0;
+          } catch (_) {}
         }
         const ss = JSON.parse(
           localStorage.getItem("cannabisPOS-salesSettings") || "{}",
@@ -6219,21 +6226,36 @@ function cannabisPOS() {
         } catch (_) {}
         // Map backend settings to UI structures without clobbering with zeros
         const currentTax = { ...this.taxSettings };
-        const rec0 = s.hasOwnProperty('cannabis_tax') ? Number(s.cannabis_tax) : currentTax.recreationalRate;
-        const med = s.hasOwnProperty('medical_tax_rate') ? Number(s.medical_tax_rate) : currentTax.medicalRate;
-        const loc = s.hasOwnProperty('excise_tax') ? Number(s.excise_tax) : currentTax.localRate;
-        let st  = s.hasOwnProperty('sales_tax') ? Number(s.sales_tax) : currentTax.stateRate;
+        const rec0 = s.hasOwnProperty("cannabis_tax")
+          ? Number(s.cannabis_tax)
+          : currentTax.recreationalRate;
+        const med = s.hasOwnProperty("medical_tax_rate")
+          ? Number(s.medical_tax_rate)
+          : currentTax.medicalRate;
+        const loc = s.hasOwnProperty("excise_tax")
+          ? Number(s.excise_tax)
+          : currentTax.localRate;
+        let st = s.hasOwnProperty("sales_tax")
+          ? Number(s.sales_tax)
+          : currentTax.stateRate;
         if ((!isFinite(st) || st === 0) && resp && resp.tax_rate != null) {
           const tr = Number(resp.tax_rate);
           if (isFinite(tr)) st = tr;
         }
-        const rec = (isFinite(rec0) && rec0 > 0)
-          ? rec0
-          : (isFinite(st) ? st : currentTax.recreationalRate);
+        const rec =
+          isFinite(rec0) && rec0 > 0
+            ? rec0
+            : isFinite(st)
+              ? st
+              : currentTax.recreationalRate;
         this.taxSettings = {
-          recreationalRate: isFinite(rec) ? rec : currentTax.recreationalRate || 0,
+          recreationalRate: isFinite(rec)
+            ? rec
+            : currentTax.recreationalRate || 0,
           medicalRate: isFinite(med) ? med : currentTax.medicalRate || 0,
-          includeInPrice: s.hasOwnProperty('tax_inclusive') ? !!s.tax_inclusive : !!currentTax.includeInPrice,
+          includeInPrice: s.hasOwnProperty("tax_inclusive")
+            ? !!s.tax_inclusive
+            : !!currentTax.includeInPrice,
           localRate: isFinite(loc) ? loc : currentTax.localRate || 0,
           stateRate: isFinite(st) ? st : currentTax.stateRate || 0,
         };
@@ -6241,7 +6263,7 @@ function cannabisPOS() {
         try {
           this.taxRate = Number(this.taxSettings.stateRate || 0) || 0;
           this.medicalTaxRate = Number(this.taxSettings.medicalRate || 0) || 0;
-        } catch(_) {}
+        } catch (_) {}
         this.salesSettings = {
           minimumSale: Number(s.minimum_price_amount || 0),
           enforceMinimumSale: !!s.minimum_price_enabled,
@@ -6337,7 +6359,7 @@ function cannabisPOS() {
       try {
         this.taxRate = Number(this.taxSettings.stateRate || 0) || 0;
         this.medicalTaxRate = Number(this.taxSettings.medicalRate || 0) || 0;
-      } catch(_) {}
+      } catch (_) {}
       try {
         localStorage.setItem(
           "cannabisPOS-taxSettings",
@@ -6720,10 +6742,48 @@ function cannabisPOS() {
         // 7) Protected settings API (returns settings.price_tiers)
         if (!Array.isArray(list) || list.length === 0) {
           try {
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
-            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : (function () {
+                    try {
+                      const raw = localStorage.getItem("pos_store");
+                      if (raw) {
+                        const o = JSON.parse(raw) || {};
+                        return String(o.id || "default");
+                      }
+                    } catch (_) {}
+                    try {
+                      const m = document.cookie.match(
+                        /(?:^|; )cpos_store_id=([^;]*)/,
+                      );
+                      if (m) return decodeURIComponent(m[1]);
+                    } catch (_) {}
+                    return "default";
+                  })();
+            const sname =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreName === "function"
+                ? SettingsClient.currentStoreName()
+                : (function () {
+                    try {
+                      const raw = localStorage.getItem("pos_store");
+                      if (raw) {
+                        const o = JSON.parse(raw) || {};
+                        return String(o.name || "");
+                      }
+                    } catch (_) {}
+                    return "";
+                  })();
             const rsp = await (window.axios || axios).get("/api/settings/pos", {
-              headers: Object.assign({ Accept: "application/json", 'X-Store-ID': String(sid||'default') }, sname ? { 'X-Store-Name': sname } : {}),
+              headers: Object.assign(
+                {
+                  Accept: "application/json",
+                  "X-Store-ID": String(sid || "default"),
+                },
+                sname ? { "X-Store-Name": sname } : {},
+              ),
               params: { nocache: true },
             });
             const s = rsp?.data?.settings || {};
