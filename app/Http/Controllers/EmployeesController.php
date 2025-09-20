@@ -115,7 +115,7 @@ class EmployeesController extends Controller
         
         $hashedPassword = Hash::make($request->password);
         $empId = $request->filled('employee_id') ? $request->employee_id : \App\Helpers\EmployeeIdHelper::generateNextId();
-        $employee = Employee::create([
+        $payload = [
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
             'email' => $request->email,
@@ -131,7 +131,9 @@ class EmployeesController extends Controller
             'permissions' => $request->permissions,
             'pin' => Hash::make(str_pad((string) random_int(0, 9999), 4, '0', STR_PAD_LEFT)),
             'password' => $hashedPassword,
-        ]);
+        ];
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('employees','store_id')) { $payload['store_id'] = \App\Helpers\StoreContext::id(); } } catch (\Throwable $e) {}
+        $employee = Employee::create($payload);
 
         // Sync or create linked user with employee role/permissions and same login password
         try {
