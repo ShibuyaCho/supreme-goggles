@@ -2395,7 +2395,8 @@ function cannabisPOS() {
           );
           let localTs = 0;
           try {
-            const raw = localStorage.getItem("cannabisPOS-storeSettings");
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+            const raw = localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) || localStorage.getItem("cannabisPOS-storeSettings");
             if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
           } catch (_) {}
           // Update local settings with API data
