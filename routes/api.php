@@ -251,7 +251,7 @@ Route::get('/settings/pos', function() {
         'store_manager' => '',
         'license_number' => '',
         'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
-        'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories'],
+        'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Cones','Seeds'],
         'auto_print_receipt' => false,
         'receipt_autoprint' => false,
         'receipt_categories_autoprint' => [],
@@ -570,7 +570,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             'store_manager' => '',
             'license_number' => '',
             'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
-            'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories'],
+            'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Cones','Seeds'],
             'auto_print_receipt' => false,
             'receipt_autoprint' => false,
             'receipt_categories_autoprint' => [],
@@ -1730,7 +1730,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
 
                 // Exit labels
-                'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories'],
+                'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Cones','Seeds'],
 
                 // Receipt & printing
                 'auto_print_receipt' => false,
