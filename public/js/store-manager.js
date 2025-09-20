@@ -406,7 +406,9 @@
       if (btn && !btn.dataset.storeBound) {
         btn.dataset.storeBound = "1";
         btn.addEventListener("click", function (e) {
-          try { e.preventDefault(); } catch (_) {}
+          try {
+            e.preventDefault();
+          } catch (_) {}
           if (window.switchStoreModal) window.switchStoreModal();
           else if (window.addOrSwitchStore) window.addOrSwitchStore();
         });
@@ -454,7 +456,9 @@
   } catch (_) {}
   // As a resilience measure, observe DOM mutations to (re)bind if header is rebuilt
   try {
-    var mo = new MutationObserver(function () { bindHeaderStoreButton(); });
+    var mo = new MutationObserver(function () {
+      bindHeaderStoreButton();
+    });
     mo.observe(document.documentElement, { childList: true, subtree: true });
   } catch (_) {}
 })();
