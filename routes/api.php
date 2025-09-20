@@ -1307,6 +1307,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/packages/{packageTag}', [MetrcController::class, 'getPackageDetails']);
         Route::get('/packages/{packageTag}/history', [MetrcController::class, 'getPackageHistory']);
         Route::get('/transfers/incoming', [MetrcController::class, 'getIncomingTransfers']);
+        Route::get('/products/summary', [MetrcController::class, 'getProductsSummary']);
         Route::post('/packages/update-status', [MetrcController::class, 'updatePackageStatus']);
         Route::post('/packages/change-location', [MetrcController::class, 'changePackageLocation']);
     });
