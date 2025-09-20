@@ -769,7 +769,7 @@
 function settingsManager() {
     return {
         activeTab: 'general',
-        categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Patches', 'Tinctures', 'Vapes', 'Inhalable Cannabinoid', 'Inhalable Cannabinoids', 'Plants (Clones)', 'Clones', 'Seeds', 'Hemp', 'Paraphernalia', 'Accessories', 'Apparel'],
+        categories: ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
         settings: @json($settings ?? {}),
         stores: [],
         currentStoreSelect: '',
