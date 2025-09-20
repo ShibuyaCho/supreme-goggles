@@ -889,78 +889,45 @@ export default function Index() {
   const [showInventoryTab, setShowInventoryTab] = useState(false);
   const [showNavigationDropdown, setShowNavigationDropdown] = useState(false);
 
-  // Cashier view mode - connected to Settings page
-  const [cashierViewMode, setCashierViewMode] = useState<'cards' | 'list'>(() => {
-    // Try to get from localStorage or default to 'cards'
-    try {
-      const savedSettings = localStorage.getItem('cannabest-store-settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        return settings.inventoryViewMode || 'cards';
-      }
-    } catch (error) {
-      console.warn('Could not load settings from localStorage:', error);
-    }
-    return 'cards';
-  });
+  // Cashier view mode - connected to Settings (via SettingsClient)
+  const [cashierViewMode, setCashierViewMode] = useState<'cards' | 'list'>('cards');
 
-  // Listen for changes to the settings for view mode synchronization
+  // Sync with SettingsClient and listen for updates
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'cannabest-store-settings' && e.newValue) {
-        try {
-          const settings = JSON.parse(e.newValue);
-          console.log('Index: Storage change detected, updating cashier view mode to:', settings.inventoryViewMode);
-          setCashierViewMode(settings.inventoryViewMode || 'cards');
-        } catch (error) {
-          console.warn('Could not parse settings from localStorage:', error);
+    let mounted = true;
+    (async () => {
+      try {
+        const sc: any = (window as any).SettingsClient;
+        if (sc?.get) {
+          const resp = await sc.get(true);
+          const settings = resp?.settings || {};
+          const mode = (settings.inventory_view_mode === 'list' || settings.inventory_view_mode === 'cards') ? settings.inventory_view_mode : 'cards';
+          if (mounted) setCashierViewMode(mode);
         }
-      }
+      } catch (_) {}
+    })();
+
+    const handleSettingsUpdate = (e: any) => {
+      const s = e?.detail?.settings || e?.detail || {};
+      const m = s.inventory_view_mode || s.inventoryViewMode;
+      if (m === 'cards' || m === 'list') setCashierViewMode(m);
+    };
+    const handleInventoryViewChange = (e: any) => {
+      const m = e?.detail?.viewMode;
+      if (m === 'cards' || m === 'list') setCashierViewMode(m);
     };
 
-    // Listen for custom event for same-page updates
-    const handleSettingsUpdate = (e: CustomEvent) => {
-      console.log('Index: Settings update event received:', e.detail);
-      if (e.detail?.inventoryViewMode) {
-        setCashierViewMode(e.detail.inventoryViewMode);
-      }
-    };
-
-    const handleInventoryViewChange = (e: CustomEvent) => {
-      console.log('Index: Inventory view change event received:', e.detail);
-      if (e.detail?.viewMode) {
-        setCashierViewMode(e.detail.viewMode);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('settings:updated', handleSettingsUpdate as EventListener);
     window.addEventListener('settings-updated', handleSettingsUpdate as EventListener);
     window.addEventListener('inventory-view-changed', handleInventoryViewChange as EventListener);
 
-    // Check localStorage periodically for any missed updates
-    const checkSettingsInterval = setInterval(() => {
-      try {
-        const savedSettings = localStorage.getItem('cannabest-store-settings');
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          const currentViewMode = settings.inventoryViewMode || 'cards';
-          if (currentViewMode !== cashierViewMode) {
-            console.log('Index: Periodic check found view mode change:', currentViewMode);
-            setCashierViewMode(currentViewMode);
-          }
-        }
-      } catch (error) {
-        // Silent fail for periodic check
-      }
-    }, 1000);
-
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      mounted = false;
+      window.removeEventListener('settings:updated', handleSettingsUpdate as EventListener);
       window.removeEventListener('settings-updated', handleSettingsUpdate as EventListener);
       window.removeEventListener('inventory-view-changed', handleInventoryViewChange as EventListener);
-      clearInterval(checkSettingsInterval);
     };
-  }, [cashierViewMode]);
+  }, []);
 
   // Customizable tax rate (default 20% for Oregon)
   const [taxRate, setTaxRate] = useState(0.20);
@@ -2424,24 +2391,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       size="sm"
                       onClick={() => {
                         setCashierViewMode('cards');
-                        // Update localStorage to keep settings in sync
+                        // Persist via SettingsClient
                         try {
-                          const savedSettings = localStorage.getItem('cannabest-store-settings');
-                          const settings = savedSettings ? JSON.parse(savedSettings) : {};
-                          const newSettings = { ...settings, inventoryViewMode: 'cards' };
-                          localStorage.setItem('cannabest-store-settings', JSON.stringify(newSettings));
-                          console.log('Index: Updated localStorage with cards view');
-
-                          // Dispatch events to notify other components
-                          window.dispatchEvent(new CustomEvent('settings-updated', {
-                            detail: newSettings
-                          }));
-                          window.dispatchEvent(new CustomEvent('inventory-view-changed', {
-                            detail: { viewMode: 'cards' }
-                          }));
-                        } catch (error) {
-                          console.warn('Could not update localStorage:', error);
-                        }
+                          const sc: any = (window as any).SettingsClient;
+                          if (sc?.save) await sc.save({ inventory_view_mode: 'cards' });
+                          window.dispatchEvent(new CustomEvent('inventory-view-changed', { detail: { viewMode: 'cards' } }));
+                        } catch (_) {}
                       }}
                       className="px-3"
                     >
@@ -2452,24 +2407,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       size="sm"
                       onClick={() => {
                         setCashierViewMode('list');
-                        // Update localStorage to keep settings in sync
+                        // Persist via SettingsClient
                         try {
-                          const savedSettings = localStorage.getItem('cannabest-store-settings');
-                          const settings = savedSettings ? JSON.parse(savedSettings) : {};
-                          const newSettings = { ...settings, inventoryViewMode: 'list' };
-                          localStorage.setItem('cannabest-store-settings', JSON.stringify(newSettings));
-                          console.log('Index: Updated localStorage with list view');
-
-                          // Dispatch events to notify other components
-                          window.dispatchEvent(new CustomEvent('settings-updated', {
-                            detail: newSettings
-                          }));
-                          window.dispatchEvent(new CustomEvent('inventory-view-changed', {
-                            detail: { viewMode: 'list' }
-                          }));
-                        } catch (error) {
-                          console.warn('Could not update localStorage:', error);
-                        }
+                          const sc: any = (window as any).SettingsClient;
+                          if (sc?.save) await sc.save({ inventory_view_mode: 'list' });
+                          window.dispatchEvent(new CustomEvent('inventory-view-changed', { detail: { viewMode: 'list' } }));
+                        } catch (_) {}
                       }}
                       className="px-3"
                     >
@@ -3766,7 +3709,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
               <div className="space-y-6">
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <h3 className="font-semibold text-lg">{selectedProductForEnhancedMetrc.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedProductForEnhancedMetrc.category} • {selectedProductForEnhancedMetrc.weight}</p>
+                  <p className="text-sm text-muted-foreground">{selectedProductForEnhancedMetrc.category} ��� {selectedProductForEnhancedMetrc.weight}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
