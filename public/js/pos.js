@@ -6548,6 +6548,10 @@ function cannabisPOS() {
         this.weightThreshold = isFinite(n)
           ? Math.max(0, Number(n.toFixed(2)))
           : 0;
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+        localStorage.setItem(`cannabisPOS-weightThreshold_${sid}`,
+          String(this.weightThreshold),
+        );
         localStorage.setItem(
           "cannabisPOS-weightThreshold",
           String(this.weightThreshold),
