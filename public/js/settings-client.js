@@ -32,7 +32,7 @@
     receipt_paper_size: "80mm",
     receipt_footer:
       "Thank you for your business!\nKeep receipt for returns and warranty.",
-    exit_label_categories: ["Flower", "Pre-Rolls", "Infused", "Edibles", "Concentrates", "Vape Products", "Tinctures", "Topicals", "Capsules", "Beverages", "Suppositories", "Clones/Seeds", "Immature Plants", "Mature Plants", "Hemp", "Accessories"],
+    exit_label_categories: ["Flower", "Pre-Rolls", "Infused", "Edibles", "Concentrates", "Vape Products", "Tinctures", "Topicals", "Capsules", "Beverages", "Suppositories", "Clones/Seeds", "Immature Plants", "Mature Plants", "Hemp", "Accessories", "Inhalable Cannabinoids", "Cones", "Seeds"],
 
     // POS behavior / payments
     require_customer: true,
