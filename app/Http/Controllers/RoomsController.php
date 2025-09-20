@@ -12,7 +12,7 @@ class RoomsController extends Controller
 {
     public function index()
     {
-        $rooms = Room::withCount('products')->get();
+        $rooms = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->withCount('products')->get();
         return view('rooms.index', compact('rooms'));
     }
     
