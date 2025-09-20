@@ -2389,7 +2389,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     <Button
                       variant={cashierViewMode === 'cards' ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         setCashierViewMode('cards');
                         // Persist via SettingsClient
                         try {
@@ -2405,7 +2405,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     <Button
                       variant={cashierViewMode === 'list' ? 'default' : 'ghost'}
                       size="sm"
-                      onClick={() => {
+                      onClick={async () => {
                         setCashierViewMode('list');
                         // Persist via SettingsClient
                         try {
