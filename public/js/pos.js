@@ -7094,8 +7094,9 @@ function cannabisPOS() {
       } catch (_) {
         // Network/API failed: show whatever we have locally
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
           const b = JSON.parse(
-            localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]",
+            (localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) || localStorage.getItem("cannabisPOS-priceTiers-backup") || "[]"),
           );
           if (Array.isArray(b) && b.length) this.priceTiers = b;
         } catch (_) {}
