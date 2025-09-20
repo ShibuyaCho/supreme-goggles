@@ -6118,7 +6118,7 @@ function cannabisPOS() {
       // Load tax/sales settings (local first)
       try {
         const ts = JSON.parse(
-          localStorage.getItem("cannabisPOS-taxSettings") || "{}",
+          (localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem("cannabisPOS-taxSettings") || "{}"),
         );
         if (ts && typeof ts === "object") {
           let rec = Number(ts.recreationalRate || 0);
