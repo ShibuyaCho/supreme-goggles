@@ -2472,8 +2472,14 @@ function cannabisPOS() {
             if (isFinite(n))
               this.weightThreshold = Math.max(0, Number(n.toFixed(2)));
           }
-          // Persist mapped store settings locally
+          // Persist mapped store settings locally (namespaced + legacy) with timestamp
           try {
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+            try { this.storeSettings.lastUpdated = Date.now(); } catch(_) {}
+            localStorage.setItem(
+              `cannabisPOS-storeSettings_${sid}`,
+              JSON.stringify(this.storeSettings),
+            );
             localStorage.setItem(
               "cannabisPOS-storeSettings",
               JSON.stringify(this.storeSettings),
