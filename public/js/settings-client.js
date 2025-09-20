@@ -283,6 +283,7 @@
         autoDeleteZeroQuantity: !!merged.auto_delete_zero_quantity,
         autoDeleteZeroDays: Number(merged.auto_delete_zero_days ?? 1) || 1,
       };
+      try { const sid = currentStoreId(); localStorage.setItem(`cannabisPOS-salesSettings_${sid}`, JSON.stringify(sales)); } catch (_) {}
       localStorage.setItem("cannabisPOS-salesSettings", JSON.stringify(sales));
     } catch (_) {}
     try {
