@@ -154,11 +154,12 @@
     "settings-refresh-metrc",
   ].forEach((id) => {
     const el = document.getElementById(id);
-    if (el)
-      el.addEventListener("click", (e) => {
-        e.preventDefault();
-        window.__refreshMetrc();
-      });
+    if (!el || el.dataset.metrcBound === '1') return;
+    el.dataset.metrcBound = '1';
+    el.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.__refreshMetrc();
+    });
   });
 
   // Global Loyalty enroll fallback (works even if Alpine fails)
