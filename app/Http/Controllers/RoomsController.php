@@ -18,7 +18,7 @@ class RoomsController extends Controller
     
     public function show($id)
     {
-        $room = Room::with('products')->findOrFail($id);
+        $room = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->with('products')->findOrFail($id);
         return view('rooms.show', compact('room'));
     }
     
