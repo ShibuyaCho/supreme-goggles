@@ -1531,7 +1531,7 @@
                             </div>
                             <p
                               class="text-xs text-gray-400 mt-1"
-                              x-text="`SKU: ${product.sku || 'N/A'} ��� Room: ${product.room || 'Main'}`"
+                              x-text="`SKU: ${product.sku || 'N/A'} ���� Room: ${product.room || 'Main'}`"
                             ></p>
                             <p
                               class="text-xs text-gray-400"
@@ -6679,7 +6679,7 @@
                       >
                     </p>
                     <p class="text-sm text-gray-500">
-                      ����������� Enhanced search functionality implemented
+                      ������������ Enhanced search functionality implemented
                     </p>
                     <p class="text-sm text-gray-500">
                       ��� Customer action buttons added
@@ -8055,19 +8055,21 @@
                             <tr>
                               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
                               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
-                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Qty</th>
+                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">METRC Qty</th>
+                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Inventory Qty</th>
+                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Variance</th>
                               <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
                             </tr>
                           </thead>
                           <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="r in (typeof metrcProductsFiltered==='undefined'?[]:metrcProductsFiltered)" :key="r.tag + '_' + r.name">
+                            <template x-for="r in (typeof metrcProductsSummaryFiltered==='undefined'?[]:metrcProductsSummaryFiltered)" :key="r.tag + '_' + r.name">
                               <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4"><div class="text-sm text-gray-900" x-text="r.name"></div></td>
                                 <td class="px-6 py-4"><code class="text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded" x-text="r.tag || 'No Tag'"></code></td>
-                                <td class="px-6 py-4 text-right" x-text="r.qty"></td>
+                                <td class="px-6 py-4 text-right" x-text="r.metrc_qty"></td>
+                                <td class="px-6 py-4 text-right" x-text="r.inventory_qty"></td>
+                                <td class="px-6 py-4 text-right" :class="r.variance===0 ? 'text-gray-700' : (r.variance>0 ? 'text-green-700' : 'text-red-700')" x-text="r.variance"></td>
                                 <td class="px-6 py-4" x-text="r.unit"></td>
-                                <td class="px-6 py-4" x-text="r.room || '-' "></td>
                               </tr>
                             </template>
                           </tbody>
