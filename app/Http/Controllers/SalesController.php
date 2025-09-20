@@ -173,6 +173,7 @@ class SalesController extends Controller
 
         // Default: Eloquent (MySQL)
         $query = Sale::with(['customer', 'employee', 'saleItems.product']);
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('sales','store_id')) { $query->where('store_id', \App\Helpers\StoreContext::id()); } } catch (\Throwable $e) {}
 
         // Apply search filter
         if ($searchQuery) {
