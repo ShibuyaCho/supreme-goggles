@@ -48,7 +48,7 @@ class POSController extends Controller
 
         // Get cart and other data
         $cart = $this->cartService->getCart();
-        $categories = ['All'] + Product::getCategories();
+        $categories = ['All'] + Product::when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->select('category')->distinct()->pluck('category')->toArray();
         $savedSales = SavedSale::where('employee_id', Auth::id())->latest()->get();
         $loyaltyCustomers = Customer::loyaltyMembers()->get();
         $currentDeals = Deal::active()->get();
