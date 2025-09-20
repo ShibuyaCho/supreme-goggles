@@ -408,7 +408,6 @@ Route::get('/settings/pos', function() {
     $mergeNonNull = function(array $base, array $overlay) {
         foreach ($overlay as $k => $v) {
             if ($v === null) continue;
-            if (is_string($v) && trim($v) === '') continue;
             $base[$k] = $v;
         }
         return $base;
