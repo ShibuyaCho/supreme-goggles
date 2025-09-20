@@ -6345,7 +6345,7 @@
                 <!-- Print and Export Options (hide on Sales to avoid redundancy) -->
                 <div
                   class="flex items-center gap-2"
-                  x-show="currentPage !== 'sales'"
+                  x-show="currentPage !== 'sales' && currentPage !== 'metrc-vendors'"
                 >
                   <button
                     @click="printPage()"
