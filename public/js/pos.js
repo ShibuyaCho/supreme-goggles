@@ -6363,6 +6363,7 @@ function cannabisPOS() {
             }),
           );
           // Persist store info locally as well for resilience
+          try { this.storeSettings.lastUpdated = Date.now(); } catch(_) {}
           localStorage.setItem(
             `cannabisPOS-storeSettings_${sid}`,
             JSON.stringify(this.storeSettings),
