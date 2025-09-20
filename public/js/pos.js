@@ -6089,7 +6089,7 @@ function cannabisPOS() {
         // Load print settings (local first)
         try {
           const ps = JSON.parse(
-            localStorage.getItem("cannabisPOS-printSettings") || "{}",
+            (localStorage.getItem(`cannabisPOS-printSettings_${sid}`) || localStorage.getItem("cannabisPOS-printSettings") || "{}"),
           );
           if (ps && typeof ps === "object") {
             this.printSettings = {
