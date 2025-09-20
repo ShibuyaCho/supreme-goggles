@@ -30,8 +30,6 @@
     receipt_show_qr_code: false,
     default_receipt_printer: "",
     receipt_paper_size: "80mm",
-    receipt_footer:
-      "Thank you for your business!\nKeep receipt for returns and warranty.",
     exit_label_categories: [
       "Flower",
       "Pre-Rolls",
@@ -82,7 +80,6 @@
     // Auto delete
     auto_delete_zero_quantity: false,
     auto_delete_zero_days: 1,
-    round_to_nearest: false,
 
     // METRC Integration
     metrc_enabled: true,
@@ -411,6 +408,9 @@
             }),
           );
           try {
+            window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged }));
+          } catch (_) {}
+          try {
             writeCookie("cpos_store_id", sid);
           } catch (_) {}
           try {
@@ -489,6 +489,12 @@
                 detail: { settings: merged, storeId: sid },
               }),
             );
+            try {
+              window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged }));
+            } catch (_) {}
+          try {
+            window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged }));
+          } catch (_) {}
             // Persist price tiers backup
             try {
               const arr = Array.isArray(merged.price_tiers)
@@ -612,6 +618,9 @@
               }),
             );
             try {
+              window.dispatchEvent(new CustomEvent("settings-updated", { detail: m }));
+            } catch (_) {}
+            try {
               writeCookie("cpos_store_id", sid);
             } catch (_) {}
             try {
@@ -690,10 +699,13 @@
                 } catch (_) {}
                 try {
                   window.dispatchEvent(
-                    new CustomEvent("settings:updated", {
-                      detail: { settings: m, storeId: sid },
-                    }),
-                  );
+              new CustomEvent("settings:updated", {
+                detail: { settings: m, storeId: sid },
+              }),
+            );
+            try {
+              window.dispatchEvent(new CustomEvent("settings-updated", { detail: m }));
+            } catch (_) {}
                 } catch (_) {}
                 return { success: true, settings: m };
               }
