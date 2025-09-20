@@ -420,6 +420,20 @@
   try {
     document.addEventListener("DOMContentLoaded", function () {
       bindHeaderStoreButton();
+      try {
+        var lbl = document.getElementById('header-store-label');
+        if (lbl && lbl.parentNode) lbl.parentNode.removeChild(lbl);
+      } catch(_) {}
+      try {
+        if (typeof window.updateStoreHeaderLabel === 'function') window.updateStoreHeaderLabel();
+        else {
+          var btn = document.getElementById('header-store-button');
+          var t = document.getElementById('header-store-button-text') || (btn ? btn.querySelector('span') : null);
+          if (t) {
+            try { var s = JSON.parse(localStorage.getItem('pos_store')||'null'); var name = s && (s.name||s.id) ? (s.name||s.id) : 'default'; t.textContent = name; } catch(_) {}
+          }
+        }
+      } catch(_) {}
       // Permanently remove any legacy Default Store dropdown and Clear buttons
       try {
         document
