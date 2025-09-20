@@ -23,6 +23,8 @@ function cannabisPOS() {
       await (this.initAuth && this.initAuth());
       this.loadStoreContext();
       this.loadSettings();
+      // Load local loyalty enrollments for current store
+      try { this.loadLoyaltyEnrollments && this.loadLoyaltyEnrollments(); } catch (_) {}
       this.loadCartState();
       // Defer networked data until auth headers are set
       await (this.loadData && this.loadData());
@@ -649,11 +651,11 @@ function cannabisPOS() {
       try{
         const sales = Array.isArray(this.filteredSales) && this.filteredSales.length ? this.filteredSales : (Array.isArray(this.sales)?this.sales:[]);
         const employees = Array.isArray(this.employees)?this.employees:[];
-        const totals = { tx:0, sales:0, discounts:0, returns:0 };
+        const totals = { tx:0, sales:0, discounts:0, returns:0, loyalty:0 };
         const byEmp = new Map();
         for(const s of sales){
           const emp = (s.employee||'Unknown').toString();
-          const row = byEmp.get(emp) || { name: emp, tx:0, sales:0, discounts:0, returns:0 };
+          const row = byEmp.get(emp) || { name: emp, tx:0, sales:0, discounts:0, returns:0, loyaltySignups:0 };
           row.tx += 1;
           row.sales += Number(s.total||0);
           try{ const dsum = Array.isArray(s.discounts)? s.discounts.reduce((a,b)=> a + Number(b.amount||0), 0) : 0; row.discounts += dsum; }catch(_){ }
@@ -664,18 +666,37 @@ function cannabisPOS() {
           totals.tx += 1; totals.sales += Number(s.total||0);
           if(isReturn) totals.returns += 1;
         }
+        // Loyalty sign-ups (tracked locally per store)
+        const loyalty = Array.isArray(this.loyaltyEnrollments) ? this.loyaltyEnrollments : [];
+        const storeId = (this.selectedStore && this.selectedStore.id) ? String(this.selectedStore.id) : 'default';
+        const loyaltyByEmp = new Map();
+        for(const e of loyalty){
+          if (e && (e.storeId||'default') === storeId){
+            const k = (e.employee || 'Unknown').toString();
+            loyaltyByEmp.set(k, (loyaltyByEmp.get(k)||0) + 1);
+            totals.loyalty += 1;
+          }
+        }
         totals.discounts = 0; byEmp.forEach(r=> totals.discounts += r.discounts);
-        for(const e of employees){ const name=(e.name||e.fullName||((e.firstName||'')+" "+(e.lastName||'')).trim()||e.employeeName)||e.employee||e.username||e.email||''; const key = name || (e.id!=null?`#${e.id}`:'Unknown'); if(!byEmp.has(key)) byEmp.set(key,{name:key, tx:0, sales:0, discounts:0, returns:0}); }
-        const rows = Array.from(byEmp.values()).map(r=>({
-          ...r,
-          avgOrder: r.tx>0 ? r.sales/r.tx : 0,
-          txPct: totals.tx>0 ? (r.tx/totals.tx)*100 : 0,
-          salesPct: totals.sales!==0 ? (r.sales/totals.sales)*100 : 0,
-          discPct: totals.discounts!==0 ? (r.discounts/totals.discounts)*100 : 0,
-          retPct: totals.returns>0 ? (r.returns/totals.returns)*100 : 0,
-        })).sort((a,b)=> b.sales - a.sales);
-        return { totals, rows };
-      }catch(_){ return { totals:{tx:0,sales:0,discounts:0,returns:0}, rows:[]}; }
+        for(const e of employees){ const name=(e.name||e.fullName||((e.firstName||'')+" "+(e.lastName||'')).trim()||e.employeeName)||e.employee||e.username||e.email||''; const key = name || (e.id!=null?`#${e.id}`:'Unknown'); if(!byEmp.has(key)) byEmp.set(key,{name:key, tx:0, sales:0, discounts:0, returns:0, loyaltySignups:0}); }
+        const rows = Array.from(byEmp.values()).map(r=>{
+          const loyaltySignups = loyaltyByEmp.get(r.name) || 0;
+          return ({
+            ...r,
+            loyaltySignups,
+            avgOrder: r.tx>0 ? r.sales/r.tx : 0,
+            txPct: totals.tx>0 ? (r.tx/totals.tx)*100 : 0,
+            salesPct: totals.sales!==0 ? (r.sales/totals.sales)*100 : 0,
+            discPct: totals.discounts!==0 ? (r.discounts/totals.discounts)*100 : 0,
+            retPct: totals.returns>0 ? (r.returns/totals.returns)*100 : 0,
+            loyaltyPct: totals.loyalty>0 ? (loyaltySignups/totals.loyalty)*100 : 0,
+          });
+        }).sort((a,b)=> b.sales - a.sales);
+        const topSales = rows.slice().sort((a,b)=> b.sales - a.sales).slice(0,3).map(r=>({ name:r.name, value:r.sales, pct: r.salesPct, tx:r.tx }));
+        const topLoyalty = rows.slice().sort((a,b)=> b.loyaltySignups - a.loyaltySignups).slice(0,3).map(r=>({ name:r.name, value:r.loyaltySignups, pct: r.loyaltyPct }));
+        const topReturns = rows.slice().sort((a,b)=> b.returns - a.returns).slice(0,3).map(r=>({ name:r.name, value:r.returns, pct: (totals.returns>0?(r.returns/totals.returns*100):0) }));
+        return { totals, rows, top:{ sales: topSales, loyalty: topLoyalty, returns: topReturns } };
+      }catch(_){ return { totals:{tx:0,sales:0,discounts:0,returns:0,loyalty:0}, rows:[], top:{ sales:[], loyalty:[], returns:[] } }; }
     },
 
     // Products summary from backend
@@ -5731,6 +5752,7 @@ function cannabisPOS() {
       try {
         this.filterLoyaltyCustomers();
       } catch (_) {}
+      try { this.recordLoyaltyEnrollment && this.recordLoyaltyEnrollment(enrolled.id, enrolled.name); } catch (_) {}
       this.showEnrollCustomerModal = false;
       this.enrollForm = {
         customerName: "",
@@ -6064,6 +6086,47 @@ function cannabisPOS() {
       this.showMedicalModal = false;
       this.ageVerified = false;
       this.selectedCustomer = null;
+    },
+
+    // Loyalty enrollment tracking (store-scoped)
+    loyaltyEnrollments: [],
+    loyaltyEnrollmentsKey() {
+      try {
+        const sid = (this.selectedStore && this.selectedStore.id) ? String(this.selectedStore.id) : 'default';
+        return `pos_loyalty_enrollments_${sid}`;
+      } catch (_) { return 'pos_loyalty_enrollments_default'; }
+    },
+    loadLoyaltyEnrollments() {
+      try {
+        const raw = localStorage.getItem(this.loyaltyEnrollmentsKey()) || '[]';
+        const arr = JSON.parse(raw);
+        this.loyaltyEnrollments = Array.isArray(arr) ? arr : [];
+      } catch (_) { this.loyaltyEnrollments = []; }
+    },
+    saveLoyaltyEnrollments() {
+      try { localStorage.setItem(this.loyaltyEnrollmentsKey(), JSON.stringify(Array.isArray(this.loyaltyEnrollments)?this.loyaltyEnrollments:[])); } catch (_) {}
+    },
+    _currentEmployeeName() {
+      try {
+        const u = (window.posAuth && window.posAuth.getUser && window.posAuth.getUser()) || {};
+        const n = (u.name || (u.employee && ((u.employee.first_name||'') + ' ' + (u.employee.last_name||'')).trim()) || '').trim();
+        return n || 'Unknown';
+      } catch (_) { return 'Unknown'; }
+    },
+    recordLoyaltyEnrollment(customerId, customerName){
+      try{
+        const entry = {
+          customerId: customerId != null ? String(customerId) : null,
+          customerName: customerName || null,
+          employee: this._currentEmployeeName(),
+          ts: Date.now(),
+          storeId: (this.selectedStore && this.selectedStore.id) ? String(this.selectedStore.id) : 'default',
+        };
+        const list = Array.isArray(this.loyaltyEnrollments) ? this.loyaltyEnrollments : [];
+        list.push(entry);
+        this.loyaltyEnrollments = list;
+        this.saveLoyaltyEnrollments();
+      }catch(_){ /* ignore */ }
     },
 
     // Loyalty filtering and stats (for demo index.html)
@@ -9497,6 +9560,7 @@ function cannabisPOS() {
               enrolledInLoyalty: true,
             };
         } catch (_) {}
+        try { this.recordLoyaltyEnrollment && this.recordLoyaltyEnrollment(finalCustomer.id, finalCustomer.name); } catch (_) {}
       }
 
       this.showToast(
