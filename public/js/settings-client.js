@@ -393,6 +393,11 @@
           writeCookie("cpos_store_id", sid);
         } catch (_) {}
         try {
+          const sid = currentStoreId();
+          localStorage.setItem(
+            `cannabisPOS-weightThreshold_${sid}`,
+            String(merged.weight_threshold ?? 0),
+          );
           localStorage.setItem(
             "cannabisPOS-weightThreshold",
             String(merged.weight_threshold ?? 0),
@@ -474,11 +479,16 @@
             }
           } catch (_) {}
           try {
-            localStorage.setItem(
-              "cannabisPOS-weightThreshold",
-              String(merged.weight_threshold ?? 0),
-            );
-          } catch (_) {}
+          const sid = currentStoreId();
+          localStorage.setItem(
+            `cannabisPOS-weightThreshold_${sid}`,
+            String(merged.weight_threshold ?? 0),
+          );
+          localStorage.setItem(
+            "cannabisPOS-weightThreshold",
+            String(merged.weight_threshold ?? 0),
+          );
+        } catch (_) {}
           try {
             writeUiCachesFromSettings(merged);
           } catch (_) {}
