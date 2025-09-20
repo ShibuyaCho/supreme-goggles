@@ -6209,13 +6209,6 @@ function cannabisPOS() {
     // Settings and data management
     loadSettings() {
       try {
-        const sid =
-          window.SettingsClient &&
-          typeof SettingsClient.currentStoreId === "function"
-            ? SettingsClient.currentStoreId()
-            : this._currentStoreId
-              ? this._currentStoreId()
-              : "default";
         const savedPrimaryNs = localStorage.getItem(
           `cannabisPOS-settings_${sid}`,
         );
