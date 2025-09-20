@@ -270,6 +270,7 @@
         localRate: Number(merged.excise_tax ?? 0) || 0,
         stateRate,
       };
+      try { const sid = currentStoreId(); localStorage.setItem(`cannabisPOS-taxSettings_${sid}`, JSON.stringify(tax)); } catch (_) {}
       localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(tax));
     } catch (_) {}
     try {
