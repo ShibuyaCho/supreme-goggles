@@ -118,7 +118,7 @@ class POSController extends Controller
             $customer = $request->customer_id ? Customer::find($request->customer_id) : null;
 
             // Create sale record aligned with schema
-            $sale = Sale::create([
+            $salePayload = [
                 'sale_number' => $saleNumber,
                 'customer_id' => $customer?->id,
                 'employee_id' => $employeeId,
@@ -141,7 +141,9 @@ class POSController extends Controller
                 'status' => 'completed',
                 'receipt_printed' => (bool)($request->receipt_options['print'] ?? false),
                 'synced_to_metrc' => false,
-            ]);
+            ];
+            try { if (\Illuminate\Support\Facades\Schema::hasColumn('sales','store_id')) { $salePayload['store_id'] = \App\Helpers\StoreContext::id(); } } catch (\Throwable $e) {}
+            $sale = Sale::create($salePayload);
             
             // Add sale items
             foreach ($request->items as $item) {
