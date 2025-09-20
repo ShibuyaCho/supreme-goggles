@@ -6159,7 +6159,7 @@ function cannabisPOS() {
         }
         // Load auto-delete zero prefs
         const z = JSON.parse(
-          localStorage.getItem("cannabisPOS-zeroDelete") || "{}",
+          (localStorage.getItem(`cannabisPOS-zeroDelete_${sid}`) || localStorage.getItem("cannabisPOS-zeroDelete") || "{}"),
         );
         if (z && typeof z === "object") {
           this.autoDeleteZeroQuantity = !!z.enabled;
