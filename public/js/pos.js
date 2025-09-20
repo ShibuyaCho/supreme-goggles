@@ -10392,7 +10392,7 @@ function cannabisPOS() {
               "room",
               "updated",
               this.roomForm.name,
-              `${prev.name} → ${this.roomForm.name}`,
+              `${prev.name} �� ${this.roomForm.name}`,
             );
         } catch (_) {}
         this.showToast(
@@ -11231,6 +11231,11 @@ function cannabisPOS() {
           );
         }
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          localStorage.setItem(
+            `cannabisPOS-priceTiers-backup_${sid}`,
+            JSON.stringify(this.priceTiers),
+          );
           localStorage.setItem(
             "cannabisPOS-priceTiers-backup",
             JSON.stringify(this.priceTiers),
@@ -11356,11 +11361,16 @@ function cannabisPOS() {
         if (res) {
           tier.isActive = next;
           try {
-            localStorage.setItem(
-              "cannabisPOS-priceTiers-backup",
-              JSON.stringify(this.priceTiers),
-            );
-          } catch (_) {}
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          localStorage.setItem(
+            `cannabisPOS-priceTiers-backup_${sid}`,
+            JSON.stringify(this.priceTiers),
+          );
+          localStorage.setItem(
+            "cannabisPOS-priceTiers-backup",
+            JSON.stringify(this.priceTiers),
+          );
+        } catch (_) {}
           this.showToast(
             next ? "Tier activated" : "Tier deactivated",
             "success",
@@ -11369,6 +11379,11 @@ function cannabisPOS() {
       } catch (e) {
         tier.isActive = !tier.isActive;
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          localStorage.setItem(
+            `cannabisPOS-priceTiers-backup_${sid}`,
+            JSON.stringify(this.priceTiers),
+          );
           localStorage.setItem(
             "cannabisPOS-priceTiers-backup",
             JSON.stringify(this.priceTiers),
@@ -11395,6 +11410,11 @@ function cannabisPOS() {
           );
         }
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
+          localStorage.setItem(
+            `cannabisPOS-priceTiers-backup_${sid}`,
+            JSON.stringify(this.priceTiers),
+          );
           localStorage.setItem(
             "cannabisPOS-priceTiers-backup",
             JSON.stringify(this.priceTiers),
