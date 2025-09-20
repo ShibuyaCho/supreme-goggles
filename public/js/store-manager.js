@@ -394,8 +394,11 @@
         '<div class="p-4 text-sm text-red-600">Failed to load stores</div>';
     }
   }
+  // Expose switch-only entry point
+  window.switchStoreModal = switchStoreModal;
+  // Alias legacy entry to switch only (no Add)
   window.addOrSwitchStore = function () {
-    mainMenu();
+    switchStoreModal();
   };
   try {
     document.addEventListener("DOMContentLoaded", function () {
@@ -403,7 +406,8 @@
       if (btn)
         btn.onclick = function (e) {
           e.preventDefault();
-          window.addOrSwitchStore();
+          if (window.switchStoreModal) window.switchStoreModal();
+          else if (window.addOrSwitchStore) window.addOrSwitchStore();
         };
       // Permanently remove any legacy Default Store dropdown and Clear buttons
       try {
