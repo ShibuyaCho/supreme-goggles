@@ -130,8 +130,8 @@ class RoomsController extends Controller
     
     public function inventory($id)
     {
-        $room = Room::findOrFail($id);
-        $products = Product::where('room', $room->name)->paginate(20);
+        $room = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->findOrFail($id);
+        $products = Product::when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->where('room', $room->name)->paginate(20);
         
         return response()->json([
             'room' => $room,
