@@ -60,7 +60,10 @@
         .text-cannabis-green { color: #16a34a; }
         .bg-cannabis-green { background-color: #16a34a; }
         .border-cannabis-green { border-color: #16a34a; }
-        
+
+        /* Hide legacy store label (replaced by button text) */
+        #header-store-label { display: none !important; }
+
         /* POS specific utilities */
         .product-card:hover {
             transform: translateY(-1px);
