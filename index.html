@@ -912,6 +912,7 @@
                 <button
                   id="header-store-button"
                   class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors"
+                  onclick="(function(e){try{e&&e.preventDefault&&e.preventDefault();}catch(_){} try{ if(window.switchStoreModal){window.switchStoreModal(); return;} if(window.addOrSwitchStore){window.addOrSwitchStore(); return;} }catch(_){} var s=document.createElement('script'); s.src='/js/store-manager.js?v='+Date.now(); s.onload=function(){ try{ if(window.switchStoreModal) window.switchStoreModal(); else if(window.addOrSwitchStore) window.addOrSwitchStore(); }catch(_){}}; document.head.appendChild(s); })(event)"
                 >
                   <svg
                     class="w-4 h-4 mr-1"
@@ -8007,7 +8008,7 @@
                       >
                     </p>
                     <p class="text-sm text-gray-500 mt-1">
-                      ✅ Real-time METRC vendor shipment tracking with ETA
+                      ��� Real-time METRC vendor shipment tracking with ETA
                       monitoring
                     </p>
                     <p class="text-sm text-gray-500">
