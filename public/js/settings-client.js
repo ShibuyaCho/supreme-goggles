@@ -366,7 +366,8 @@
             ? resp.settings_updated_at || resp.updated_at
             : null;
         this.saveLocal(sid, merged);
-        try {
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
+              try {
           localStorage.setItem(
             "cannabisPOS-weightThreshold",
             String(merged.weight_threshold ?? 0),
@@ -381,7 +382,8 @@
               detail: { settings: merged, storeId: sid },
             }),
           );
-          try {
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
+              try {
             const arr = Array.isArray(merged.price_tiers)
               ? merged.price_tiers
               : Array.isArray(merged.priceTiers)
@@ -420,7 +422,8 @@
               ? data.settings_updated_at || data.updated_at
               : null;
           this.saveLocal(sid, merged);
-          try {
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
+              try {
             const raw = localStorage.getItem("pos_store");
             const cur = raw ? JSON.parse(raw) : null;
             const displayName = merged.store_name || (cur && cur.name) || sid;
@@ -429,6 +432,7 @@
                 "pos_store",
                 JSON.stringify({ id: sid, name: displayName }),
               );
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
               try {
                 if (typeof window.updateStoreHeaderLabel === "function")
                   window.updateStoreHeaderLabel();
@@ -537,7 +541,8 @@
             if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
           } catch (_) {}
           this.saveLocal(sid, m);
-          try {
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
+              try {
             const raw = localStorage.getItem("pos_store");
             const cur = raw ? JSON.parse(raw) : null;
             const displayName = m.store_name || (cur && cur.name) || sid;
@@ -546,6 +551,7 @@
                 "pos_store",
                 JSON.stringify({ id: sid, name: displayName }),
               );
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
               try {
                 if (typeof window.updateStoreHeaderLabel === "function")
                   window.updateStoreHeaderLabel();
@@ -567,7 +573,8 @@
                 detail: { settings: m, storeId: sid },
               }),
             );
-            try {
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
+              try {
               const arr = Array.isArray(m.price_tiers)
                 ? m.price_tiers
                 : Array.isArray(m.priceTiers)
@@ -611,7 +618,8 @@
               if (row && row.settings && typeof row.settings === "object") {
                 const m = { ...DEFAULTS, ...row.settings };
                 this.saveLocal(sid, m);
-                try {
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
+              try {
                   const raw = localStorage.getItem("pos_store");
                   const cur = raw ? JSON.parse(raw) : null;
                   const displayName = m.store_name || (cur && cur.name) || sid;
@@ -620,7 +628,8 @@
                       "pos_store",
                       JSON.stringify({ id: sid, name: displayName }),
                     );
-                    try {
+              try { writeCookie('cpos_store_id', sid); } catch(_){ }
+              try {
                       if (typeof window.updateStoreHeaderLabel === "function")
                         window.updateStoreHeaderLabel();
                     } catch (_) {}
