@@ -702,6 +702,11 @@
                   }
                 } catch (_) {}
                 try {
+                  const sid = currentStoreId();
+                  localStorage.setItem(
+                    `cannabisPOS-weightThreshold_${sid}`,
+                    String(m.weight_threshold ?? 0),
+                  );
                   localStorage.setItem(
                     "cannabisPOS-weightThreshold",
                     String(m.weight_threshold ?? 0),
