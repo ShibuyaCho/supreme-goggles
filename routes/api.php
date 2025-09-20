@@ -416,18 +416,55 @@ Route::get('/settings/pos', function() {
             $settingsCache = [];
         }
     } catch (\Throwable $e) { $settingsCache = []; }
-    // Compose final settings preferring non-null values: defaults -> remote -> local -> cache
+    // Compose final settings preferring values from the freshest source.
+    // Order: defaults -> cache -> PRIMARY (newest of remote/local) -> SECONDARY fills only missing keys.
     $mergeNonNull = function(array $base, array $overlay) {
         foreach ($overlay as $k => $v) {
-            // Allow null and empty string to overwrite defaults/local to preserve explicit clears
+            // Allow null and empty string to overwrite to preserve explicit clears
             $base[$k] = $v;
         }
         return $base;
     };
+    $fillMissing = function(array $base, array $overlay) {
+        foreach ($overlay as $k => $v) {
+            if (!array_key_exists($k, $base)) {
+                $base[$k] = $v;
+            }
+        }
+        return $base;
+    };
+
     $settings = $defaults;
+    // Apply cache first; it will be overwritten by fresher sources below
     if (is_array($settingsCache))  $settings = $mergeNonNull($settings, $settingsCache);
-    if (is_array($settingsRemote)) $settings = $mergeNonNull($settings, $settingsRemote);
-    if (is_array($settingsLocal))  $settings = $mergeNonNull($settings, $settingsLocal);
+
+    $hasRemote = is_array($settingsRemote) && !empty($settingsRemote);
+    $hasLocal  = is_array($settingsLocal)  && !empty($settingsLocal);
+    $primary = [];
+    $secondary = [];
+    if ($hasRemote && $hasLocal) {
+        // Decide freshest by updated_at
+        $useRemote = false;
+        try {
+            if ($updatedAtRemote && $updatedAtLocal) {
+                $useRemote = strcmp((string)$updatedAtRemote, (string)$updatedAtLocal) >= 0;
+            } elseif ($updatedAtRemote && !$updatedAtLocal) {
+                $useRemote = true;
+            } else {
+                $useRemote = false;
+            }
+        } catch (\Throwable $e) { $useRemote = true; }
+        if ($useRemote) { $primary = $settingsRemote; $secondary = $settingsLocal; }
+        else { $primary = $settingsLocal; $secondary = $settingsRemote; }
+    } elseif ($hasRemote) {
+        $primary = $settingsRemote;
+    } elseif ($hasLocal) {
+        $primary = $settingsLocal;
+    }
+
+    // Apply freshest fully (preserves explicit clears), then fill gaps from the other source
+    if (!empty($primary))   $settings = $mergeNonNull($settings, $primary);
+    if (!empty($secondary)) $settings = $fillMissing($settings, $secondary);
 
     // Coerce known numeric and boolean fields to correct types
     foreach (['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'] as $n) {
@@ -528,7 +565,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             } catch (\Throwable $e) {}
         }
         // Preserve existing METRC keys if incoming is masked
-        $maskPattern = '/^(?:[•*]+)$/u';
+        $maskPattern = '/^(?:[��*]+)$/u';
         foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
             if (isset($incoming[$k]) && is_string($incoming[$k]) && preg_match($maskPattern, trim($incoming[$k]))) {
                 if (isset($current[$k])) { $incoming[$k] = $current[$k]; }
