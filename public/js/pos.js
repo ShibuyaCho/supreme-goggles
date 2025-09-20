@@ -4494,6 +4494,10 @@ function cannabisPOS() {
           this.refreshOrderQueue();
         } catch (_) {}
       }
+      if (page === "employee-eval") {
+        try { if (!Array.isArray(this.sales) || this.sales.length===0) this.refreshSales(true); } catch(_){}
+        try { if (!Array.isArray(this.employees) || this.employees.length===0) this.fetchEmployeesFromApi && this.fetchEmployeesFromApi(); } catch(_){}
+      }
     },
 
     getCurrentPageTitle() {
