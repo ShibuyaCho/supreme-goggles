@@ -237,7 +237,9 @@
         }
         function readLocalTax(){
           try {
-            const ts = JSON.parse(localStorage.getItem('cannabisPOS-taxSettings')||'{}');
+            let sid = 'default';
+            try { sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ const raw=localStorage.getItem('pos_store'); if(raw){ try{ const o=JSON.parse(raw)||{}; return String(o.id||'default'); }catch(e){} } return 'default'; })(); } catch(_){}
+            const ts = JSON.parse((localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem('cannabisPOS-taxSettings') || '{}'));
             if (ts && typeof ts === 'object') {
               const v = ts.stateRate != null ? ts.stateRate : (ts.recreationalRate != null ? ts.recreationalRate : null);
               return v != null ? Number(v) : null;
