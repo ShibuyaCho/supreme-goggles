@@ -599,6 +599,12 @@ function cannabisPOS() {
     // METRC section tabs and derived products list
     metrcTab: "transfers",
     vendorProductQuery: "",
+    setMetrcTab(tab){
+      this.metrcTab = tab;
+      if(tab==='products' && (!Array.isArray(this.metrcProductsSummary) || this.metrcProductsSummary.length===0)){
+        try{ this.refreshMetrcProductsSummary(); }catch(_){}
+      }
+    },
     get metrcProducts() {
       try {
         const out = [];
