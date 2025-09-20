@@ -1101,11 +1101,13 @@ app.post("/api/settings/pos", async (req, res) => {
       if (
         Object.prototype.hasOwnProperty.call(out, "auto_print_receipt") &&
         !Object.prototype.hasOwnProperty.call(out, "receipt_autoprint")
-      ) out.receipt_autoprint = !!out.auto_print_receipt;
+      )
+        out.receipt_autoprint = !!out.auto_print_receipt;
       if (
         Object.prototype.hasOwnProperty.call(out, "receipt_autoprint") &&
         !Object.prototype.hasOwnProperty.call(out, "auto_print_receipt")
-      ) out.auto_print_receipt = !!out.receipt_autoprint;
+      )
+        out.auto_print_receipt = !!out.receipt_autoprint;
       return out;
     };
     const coerceNumbers = (obj) => {
@@ -1120,7 +1122,8 @@ app.post("/api/settings/pos", async (req, res) => {
       ].forEach((n) => {
         if (Object.prototype.hasOwnProperty.call(out, n)) {
           const v = out[n];
-          const num = n === "auto_delete_zero_days" ? parseInt(v, 10) : parseFloat(v);
+          const num =
+            n === "auto_delete_zero_days" ? parseInt(v, 10) : parseFloat(v);
           if (Number.isFinite(num)) out[n] = num;
         }
       });
@@ -1131,8 +1134,10 @@ app.post("/api/settings/pos", async (req, res) => {
     try {
       const st = Number(merged.sales_tax ?? 0);
       const rec = Number(merged.cannabis_tax ?? 0);
-      if ((!Number.isFinite(rec) || rec === 0) && Number.isFinite(st) && st > 0) merged.cannabis_tax = st;
-      if ((!Number.isFinite(st) || st === 0) && Number.isFinite(rec) && rec > 0) merged.sales_tax = rec;
+      if ((!Number.isFinite(rec) || rec === 0) && Number.isFinite(st) && st > 0)
+        merged.cannabis_tax = st;
+      if ((!Number.isFinite(st) || st === 0) && Number.isFinite(rec) && rec > 0)
+        merged.sales_tax = rec;
     } catch (_) {}
     const mergedFull = { ...defaults, ...merged };
 
