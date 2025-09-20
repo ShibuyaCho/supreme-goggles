@@ -439,82 +439,45 @@ export default function Products() {
   const [editingInventoryItem, setEditingInventoryItem] = useState<any>(null);
   const [inventoryItems, setInventoryItems] = useState(inventoryProducts);
 
-  // Get view mode from settings - connected to Settings page
-  const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
-    // Try to get from localStorage or default to 'cards'
-    try {
-      const savedSettings = localStorage.getItem('cannabest-store-settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        return settings.inventoryViewMode || 'cards';
-      }
-    } catch (error) {
-      console.warn('Could not load settings from localStorage:', error);
-    }
-    return 'cards';
-  });
+  // Get view mode from SettingsClient - connected to Settings page
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>('cards');
 
-  // Listen for changes to the settings
+  // Sync with SettingsClient and listen for updates
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'cannabest-store-settings' && e.newValue) {
-        try {
-          const settings = JSON.parse(e.newValue);
-          console.log('Products: Storage change detected, updating view mode to:', settings.inventoryViewMode);
-          setViewMode(settings.inventoryViewMode || 'cards');
-        } catch (error) {
-          console.warn('Could not parse settings from localStorage:', error);
+    let mounted = true;
+    (async () => {
+      try {
+        const sc: any = (window as any).SettingsClient;
+        if (sc?.get) {
+          const resp = await sc.get(true);
+          const settings = resp?.settings || {};
+          const mode = (settings.inventory_view_mode === 'list' || settings.inventory_view_mode === 'cards') ? settings.inventory_view_mode : 'cards';
+          if (mounted) setViewMode(mode);
         }
-      }
+      } catch (_) {}
+    })();
+
+    const handleSettingsUpdate = (e: any) => {
+      const s = e?.detail?.settings || e?.detail || {};
+      const m = s.inventory_view_mode || s.inventoryViewMode;
+      if (m === 'cards' || m === 'list') setViewMode(m);
+    };
+    const handleInventoryViewChange = (e: any) => {
+      const m = e?.detail?.viewMode;
+      if (m === 'cards' || m === 'list') setViewMode(m);
     };
 
-    // Listen for storage changes from other tabs/pages
-    window.addEventListener('storage', handleStorageChange);
-
-    // Also listen for custom event for same-page updates
-    const handleSettingsUpdate = (e: CustomEvent) => {
-      console.log('Products: Settings update event received:', e.detail);
-      if (e.detail?.inventoryViewMode) {
-        setViewMode(e.detail.inventoryViewMode);
-      }
-    };
-
+    window.addEventListener('settings:updated', handleSettingsUpdate as EventListener);
     window.addEventListener('settings-updated', handleSettingsUpdate as EventListener);
-
-    // Listen for specific inventory view change events
-    const handleInventoryViewChange = (e: CustomEvent) => {
-      console.log('Products: Inventory view change event received:', e.detail);
-      if (e.detail?.viewMode) {
-        setViewMode(e.detail.viewMode);
-      }
-    };
-
     window.addEventListener('inventory-view-changed', handleInventoryViewChange as EventListener);
 
-    // Also check localStorage periodically in case we missed an update
-    const checkSettingsInterval = setInterval(() => {
-      try {
-        const savedSettings = localStorage.getItem('cannabest-store-settings');
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          const currentViewMode = settings.inventoryViewMode || 'cards';
-          if (currentViewMode !== viewMode) {
-            console.log('Products: Periodic check found view mode change:', currentViewMode);
-            setViewMode(currentViewMode);
-          }
-        }
-      } catch (error) {
-        // Silent fail for periodic check
-      }
-    }, 1000);
-
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
+      mounted = false;
+      window.removeEventListener('settings:updated', handleSettingsUpdate as EventListener);
       window.removeEventListener('settings-updated', handleSettingsUpdate as EventListener);
       window.removeEventListener('inventory-view-changed', handleInventoryViewChange as EventListener);
-      clearInterval(checkSettingsInterval);
     };
-  }, [viewMode]);
+  }, []);
 
   // Product Catalogue states
   const [showCatalogueDialog, setShowCatalogueDialog] = useState(false);
@@ -1484,16 +1447,11 @@ METRC transfer notification has been sent.`);
                       size="sm"
                       onClick={() => {
                         setViewMode('cards');
-                        // Update localStorage to keep settings in sync
                         try {
-                          const savedSettings = localStorage.getItem('cannabest-store-settings');
-                          const settings = savedSettings ? JSON.parse(savedSettings) : {};
-                          const newSettings = { ...settings, inventoryViewMode: 'cards' };
-                          localStorage.setItem('cannabest-store-settings', JSON.stringify(newSettings));
-                          console.log('Products: Updated localStorage with cards view');
-                        } catch (error) {
-                          console.warn('Could not update localStorage:', error);
-                        }
+                          const sc: any = (window as any).SettingsClient;
+                          if (sc?.save) await sc.save({ inventory_view_mode: 'cards' });
+                          window.dispatchEvent(new CustomEvent('inventory-view-changed', { detail: { viewMode: 'cards' } }));
+                        } catch (_) {}
                       }}
                     >
                       <Grid3X3 className="w-4 h-4" />
@@ -1503,16 +1461,11 @@ METRC transfer notification has been sent.`);
                       size="sm"
                       onClick={() => {
                         setViewMode('list');
-                        // Update localStorage to keep settings in sync
                         try {
-                          const savedSettings = localStorage.getItem('cannabest-store-settings');
-                          const settings = savedSettings ? JSON.parse(savedSettings) : {};
-                          const newSettings = { ...settings, inventoryViewMode: 'list' };
-                          localStorage.setItem('cannabest-store-settings', JSON.stringify(newSettings));
-                          console.log('Products: Updated localStorage with list view');
-                        } catch (error) {
-                          console.warn('Could not update localStorage:', error);
-                        }
+                          const sc: any = (window as any).SettingsClient;
+                          if (sc?.save) await sc.save({ inventory_view_mode: 'list' });
+                          window.dispatchEvent(new CustomEvent('inventory-view-changed', { detail: { viewMode: 'list' } }));
+                        } catch (_) {}
                       }}
                     >
                       <List className="w-4 h-4" />
