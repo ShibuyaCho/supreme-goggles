@@ -723,7 +723,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     // Also merge from Supabase via Node alias
     try {
-      const r = await fetch('/api/rooms-open', { headers: { Accept: 'application/json' } });
+      const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default';
+      const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : '';
+      const r = await fetch('/api/rooms-open', { headers: { Accept: 'application/json', 'X-Store-ID': sid, 'X-Store-Name': sname||'' } });
       if (r.ok) {
         const data = await r.json();
         const list = Array.isArray(data?.rooms) ? data.rooms : [];
@@ -943,11 +945,14 @@ document.addEventListener('DOMContentLoaded', function() {
         closeAddRoomModal();
         // Try Laravel in background
         try {
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default';
+            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : '';
             const res = await fetch('/api/rooms-open', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Store-ID': (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : 'default', 'X-Store-Name': (window.SettingsClient && typeof SettingsClient.currentStoreName==='function') ? SettingsClient.currentStoreName() : ''
+                    'X-Store-ID': sid,
+                    'X-Store-Name': sname||''
                 },
                 body: JSON.stringify({ name, type, max_capacity, description, is_active: true })
             });
