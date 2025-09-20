@@ -232,7 +232,7 @@ class SalesController extends Controller
         $sales = $query->paginate(20);
 
         // Get filter options
-        $employees = Employee::all();
+        $employees = Employee::when(\Illuminate\Support\Facades\Schema::hasColumn('employees','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->get();
         $paymentMethods = Sale::select('payment_method')->distinct()->pluck('payment_method');
 
         // Get analytics data
