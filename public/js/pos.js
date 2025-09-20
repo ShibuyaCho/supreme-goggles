@@ -6346,7 +6346,7 @@ function cannabisPOS() {
           ? Math.min(30, Math.max(1, d))
           : 1;
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._CurrentStoreId() : "default");
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default");
           localStorage.setItem(
             `cannabisPOS-taxSettings_${sid}`,
             JSON.stringify(this.taxSettings),
