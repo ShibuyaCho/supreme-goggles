@@ -6346,16 +6346,17 @@ function cannabisPOS() {
           ? Math.min(30, Math.max(1, d))
           : 1;
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==="function") ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._CurrentStoreId() : "default");
           localStorage.setItem(
-            "cannabisPOS-taxSettings",
+            `cannabisPOS-taxSettings_${sid}`,
             JSON.stringify(this.taxSettings),
           );
           localStorage.setItem(
-            "cannabisPOS-salesSettings",
+            `cannabisPOS-salesSettings_${sid}`,
             JSON.stringify(this.salesSettings),
           );
           localStorage.setItem(
-            "cannabisPOS-zeroDelete",
+            `cannabisPOS-zeroDelete_${sid}`,
             JSON.stringify({
               enabled: this.autoDeleteZeroQuantity,
               days: this.autoDeleteZeroDays,
@@ -6363,9 +6364,14 @@ function cannabisPOS() {
           );
           // Persist store info locally as well for resilience
           localStorage.setItem(
-            "cannabisPOS-storeSettings",
+            `cannabisPOS-storeSettings_${sid}`,
             JSON.stringify(this.storeSettings),
           );
+          // Legacy globals fallback
+          localStorage.setItem("cannabisPOS-taxSettings", JSON.stringify(this.taxSettings));
+          localStorage.setItem("cannabisPOS-salesSettings", JSON.stringify(this.salesSettings));
+          localStorage.setItem("cannabisPOS-zeroDelete", JSON.stringify({ enabled: this.autoDeleteZeroQuantity, days: this.autoDeleteZeroDays }));
+          localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(this.storeSettings));
         } catch (_) {}
       } catch (_) {}
     },
