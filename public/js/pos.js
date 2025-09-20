@@ -6108,7 +6108,7 @@ function cannabisPOS() {
       }
       // Load weight threshold
       try {
-        const wt = localStorage.getItem("cannabisPOS-weightThreshold");
+        const wt = localStorage.getItem(`cannabisPOS-weightThreshold_${sid}`) || localStorage.getItem("cannabisPOS-weightThreshold");
         if (wt != null && wt !== "") {
           const n = parseFloat(wt);
           if (!isNaN(n) && isFinite(n)) this.weightThreshold = Math.max(0, n);
