@@ -811,8 +811,8 @@ function settingsManager() {
             // Snapshot to avoid pushing defaults to server before hydration
             try { this._lastPersistedJSON = JSON.stringify(this.settings); } catch (_) {}
 
-            // Enable autosave immediately even if server hydration is slow
-            this.hydrated = true;
+            // Delay autosave until server hydration completes
+            this.hydrated = false;
 
             // Merge server settings (authorizes via posAuth)
             this.fetchServerSettings();
@@ -1113,8 +1113,8 @@ function settingsManager() {
                     if (resp && (resp.settings || resp.data)) {
                         const srv = resp.settings || resp.data || {};
                         if (srv && typeof srv === 'object') {
-                            const merged = Object.assign({}, this.settings, srv);
-                            this.settings = merged;
+                            const merged = Object.assign({}, this.getDefaultSettings(), srv);
+                        this.settings = merged;
                             this.saveSettingsToStorage();
                             this._lastPersistedJSON = JSON.stringify(this.settings);
                             this.hydrated = true;
@@ -1231,6 +1231,8 @@ function settingsManager() {
                         if (dirty.size === 0) {
                             this._lastPersistedJSON = JSON.stringify(this.settings);
                         }
+                        // First successful server hydration complete; enable autosave
+                        this.hydrated = true;
                     }
                 }
             } catch (e) {
