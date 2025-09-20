@@ -862,8 +862,8 @@ function settingsManager() {
                 cannabis_tax: 17,
                 tax_inclusive: false,
 
-                // Exit Label Categories
-                exit_label_categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Edibles'],
+                // Exit Label Categories (match API defaults)
+                exit_label_categories: ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
 
                 // Receipt Printing
                 receipt_autoprint: false,
@@ -966,6 +966,7 @@ function settingsManager() {
                 detail: this.settings
             });
             window.dispatchEvent(event);
+            try { window.dispatchEvent(new CustomEvent('settings:updated', { detail: { settings: this.settings } })); } catch (_) {}
 
             // Dispatch specific events for certain settings
             if (this.settings.inventory_view_mode) {
