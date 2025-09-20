@@ -350,26 +350,7 @@
         const data =
           resp && typeof resp === "object" ? resp.settings || resp : {};
         const localPrev = this.loadLocal(sid) || {};
-        // Merge and scrub null/empty values to avoid clobbering
-        const mergedRaw = { ...DEFAULTS, ...data };
-        const merged = { ...mergedRaw };
-        Object.keys(merged).forEach((k) => {
-          const v = merged[k];
-          if (v === null || (typeof v === "string" && v.trim() === "")) {
-            if (
-              localPrev &&
-              localPrev[k] != null &&
-              !(
-                typeof localPrev[k] === "string" &&
-                String(localPrev[k]).trim() === ""
-              )
-            ) {
-              merged[k] = localPrev[k];
-            } else if (Object.prototype.hasOwnProperty.call(DEFAULTS, k)) {
-              merged[k] = DEFAULTS[k];
-            }
-          }
-        });
+        const merged = { ...DEFAULTS, ...data };
         function isMasked(v) {
           return (
             typeof v === "string" &&
