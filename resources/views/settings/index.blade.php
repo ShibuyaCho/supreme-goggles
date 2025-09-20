@@ -111,7 +111,7 @@
                             <input type="url" x-model="settings.website" placeholder="https://yourstore.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Cannabis License Number</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Business License Number</label>
                             <input type="text" x-model="settings.license_number" placeholder="OR-RET-####" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                         </div>
                     </div>
