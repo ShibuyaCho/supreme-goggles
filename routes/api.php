@@ -407,7 +407,7 @@ Route::get('/settings/pos', function() {
     // Compose final settings preferring non-null values: defaults -> remote -> local -> cache
     $mergeNonNull = function(array $base, array $overlay) {
         foreach ($overlay as $k => $v) {
-            if ($v === null) continue;
+            // Allow null and empty string to overwrite defaults/local to preserve explicit clears
             $base[$k] = $v;
         }
         return $base;
