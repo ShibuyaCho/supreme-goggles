@@ -7616,7 +7616,7 @@
                       ✅ Data retention and METRC integration implemented
                     </p>
                     <p class="text-sm text-gray-500">
-                      ������� Full CRUD operations with image upload
+                      �������� Full CRUD operations with image upload
                       capabilities
                     </p>
                   </div>
@@ -8149,6 +8149,81 @@
                       </table>
                     </div>
                   </div>
+
+                  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="p-4 border-b flex items-center justify-between">
+                      <h3 class="text-lg font-semibold">Top Performers</h3>
+                      <div class="text-sm text-gray-500">Store leaders (top 3)</div>
+                    </div>
+                    <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <!-- Top Sales -->
+                      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                          <h4 class="font-semibold text-blue-900">Sales</h4>
+                          <span class="text-xs text-blue-700" x-text="'Total: $' + (employeeEvalData.totals.sales||0).toFixed(2)"></span>
+                        </div>
+                        <div class="space-y-2">
+                          <template x-for="(r, i) in employeeEvalData.top.sales" :key="r.name + '_sales'">
+                            <div class="flex items-center justify-between py-1">
+                              <div class="flex items-center gap-2 min-w-0">
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold" x-text="i===0?'1st':(i===1?'2nd':'3rd')"></span>
+                                <span class="truncate font-medium text-blue-900" x-text="r.name"></span>
+                              </div>
+                              <div class="text-right">
+                                <div class="text-sm font-semibold text-blue-900" x-text="'$' + Number(r.value||0).toFixed(2)"></div>
+                                <div class="text-xs text-blue-700" x-text="Number(r.pct||0).toFixed(1) + '%'"></div>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+
+                      <!-- Top Loyalty Sign-ups -->
+                      <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                          <h4 class="font-semibold text-purple-900">Loyalty Sign-ups</h4>
+                          <span class="text-xs text-purple-700" x-text="'Total: ' + (employeeEvalData.totals.loyalty||0)"></span>
+                        </div>
+                        <div class="space-y-2">
+                          <template x-for="(r, i) in employeeEvalData.top.loyalty" :key="r.name + '_loyalty'">
+                            <div class="flex items-center justify-between py-1">
+                              <div class="flex items-center gap-2 min-w-0">
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold" x-text="i===0?'1st':(i===1?'2nd':'3rd')"></span>
+                                <span class="truncate font-medium text-purple-900" x-text="r.name"></span>
+                              </div>
+                              <div class="text-right">
+                                <div class="text-sm font-semibold text-purple-900" x-text="Number(r.value||0)"></div>
+                                <div class="text-xs text-purple-700" x-text="Number(r.pct||0).toFixed(1) + '%'"></div>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+
+                      <!-- Watchlist: Returns -->
+                      <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                          <h4 class="font-semibold text-red-900">Watchlist (Returns)</h4>
+                          <span class="text-xs text-red-700" x-text="'Total: ' + (employeeEvalData.totals.returns||0)"></span>
+                        </div>
+                        <div class="space-y-2">
+                          <template x-for="(r, i) in employeeEvalData.top.returns" :key="r.name + '_returns'">
+                            <div class="flex items-center justify-between py-1">
+                              <div class="flex items-center gap-2 min-w-0">
+                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 text-red-700 text-xs font-semibold" x-text="i===0?'1st':(i===1?'2nd':'3rd')"></span>
+                                <span class="truncate font-medium text-red-900" x-text="r.name"></span>
+                              </div>
+                              <div class="text-right">
+                                <div class="text-sm font-semibold text-red-900" x-text="Number(r.value||0)"></div>
+                                <div class="text-xs text-red-700" x-text="Number(r.pct||0).toFixed(1) + '%'"></div>
+                              </div>
+                            </div>
+                          </template>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                 </div>
               </template>
 
