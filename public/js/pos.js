@@ -5398,9 +5398,10 @@ function cannabisPOS() {
         ) {
           await posAuth.apiRequest("delete", `/pos/saved-sales/${id}`);
         } else {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
           const uid = window.posAuth?.getUser?.()?.id || "anon";
-          const key = `cannabisPOS-savedSales-${uid}`;
-          const list = JSON.parse(localStorage.getItem(key) || "[]");
+          const key = `cannabisPOS-savedSales-${sid}-${uid}`;
+          const list = JSON.parse(localStorage.getItem(key) || localStorage.getItem(`cannabisPOS-savedSales-${uid}`) || "[]");
           const next = list.filter((x) => x.id !== id);
           localStorage.setItem(key, JSON.stringify(next));
         }
@@ -5498,9 +5499,10 @@ function cannabisPOS() {
       } catch (_) {}
       if (!savedOk) {
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
           const uid = window.posAuth?.getUser?.()?.id || "anon";
-          const key = `cannabisPOS-savedSales-${uid}`;
-          const list = JSON.parse(localStorage.getItem(key) || "[]");
+          const key = `cannabisPOS-savedSales-${sid}-${uid}`;
+          const list = JSON.parse(localStorage.getItem(key) || localStorage.getItem(`cannabisPOS-savedSales-${uid}`) || "[]");
           list.unshift(payload);
           localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
           savedOk = true;
