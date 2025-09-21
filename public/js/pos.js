@@ -8191,7 +8191,7 @@ function cannabisPOS() {
       }
 
       const sizes = {
-        small: '2" �� 1"',
+        small: '2" ��� 1"',
         medium: '3" ���� 2"',
         large: '4" × 3"',
         "extra-large": '6" × 4"',
@@ -10197,10 +10197,17 @@ function cannabisPOS() {
 
           // Save to localStorage
           try {
-            localStorage.setItem(
-              "cannabisPOS-products",
-              JSON.stringify(this.products),
-            );
+            (function(){
+              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+              localStorage.setItem(
+                `cannabisPOS-products_${sid}`,
+                JSON.stringify(this.products),
+              );
+              localStorage.setItem(
+                "cannabisPOS-products",
+                JSON.stringify(this.products),
+              );
+            }).call(this);
           } catch (error) {
             console.error("Error saving products to localStorage:", error);
           }
