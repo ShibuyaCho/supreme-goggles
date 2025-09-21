@@ -12546,11 +12546,18 @@ function cannabisPOS() {
             this.recentReports = this.recentReports.slice(0, 10);
           }
 
-          // Save to localStorage
-          localStorage.setItem(
-            "cannabisPOS-reports",
-            JSON.stringify(this.recentReports),
-          );
+          // Save to localStorage (store-scoped + legacy)
+          (function(){
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            localStorage.setItem(
+              `cannabisPOS-reports_${sid}`,
+              JSON.stringify(this.recentReports),
+            );
+            localStorage.setItem(
+              "cannabisPOS-reports",
+              JSON.stringify(this.recentReports),
+            );
+          }).call(this);
 
           this.showToast(`${config.name} generated successfully!`, "success");
         }, 1500);
