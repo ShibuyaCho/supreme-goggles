@@ -2562,8 +2562,9 @@ function cannabisPOS() {
           // Update local settings with API data
           this.taxRate = (function(self){
             const st = Number(settings.sales_tax);
-            const fallback = Number.isFinite(st) ? st : Number((self.taxSettings && self.taxSettings.stateRate) || 0);
-            return Number.isFinite(fallback) ? fallback : 0;
+            const rec = Number(settings.cannabis_tax);
+            let v = Number.isFinite(st) && st > 0 ? st : (Number.isFinite(rec) && rec > 0 ? rec : Number((self.taxSettings && self.taxSettings.stateRate) || 0));
+            return Number.isFinite(v) ? v : 0;
           })(this);
           this.medicalTaxRate = (function(self){
             const med = Number(settings.medical_tax_rate);
