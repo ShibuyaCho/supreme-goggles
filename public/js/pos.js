@@ -6388,7 +6388,7 @@ function cannabisPOS() {
             this.printSettings = {
               autoprint: !!ps.autoprint,
               printLabels: !!ps.printLabels,
-              receiptTemplate: ps.receiptTemplate || "standard",
+              receiptTemplate: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(ps.receiptTemplate),
               paperSize: ps.paperSize || "80mm",
               categoriesAutoprint: Array.isArray(ps.categoriesAutoprint)
                 ? ps.categoriesAutoprint
@@ -6509,7 +6509,8 @@ function cannabisPOS() {
             this.printSettings.printLabels = !!s.__ui_print_labels;
           }
           if (Object.prototype.hasOwnProperty.call(s, "__ui_receipt_template")) {
-            this.printSettings.receiptTemplate = s.__ui_receipt_template || this.printSettings.receiptTemplate || "standard";
+            const v = s.__ui_receipt_template || this.printSettings.receiptTemplate || "standard";
+            this.printSettings.receiptTemplate = ["standard","detailed","minimal"].includes(String(v)) ? String(v) : "standard";
           }
           // Persist locally
           try {
