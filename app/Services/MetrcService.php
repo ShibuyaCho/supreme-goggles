@@ -22,8 +22,8 @@ class MetrcService
         $this->vendorKey = env('METRC_INTEGRATOR_KEY') ?: env('METRC_VENDOR_KEY');
         $this->facilityLicense = env('METRC_FACILITY');
 
-        // Fallback to cached settings if env not populated yet
-        if (empty($this->userKey) || empty($this->vendorKey) || empty($this->facilityLicense)) {
+        // Prefer per-store cached settings over env to honor user-entered keys per store
+        try {
             $sid = null;
             try { $sid = request()->header('X-Store-ID'); } catch (\Throwable $e) { $sid = null; }
             $sid = is_string($sid) ? trim($sid) : '';
@@ -31,10 +31,18 @@ class MetrcService
             $sid = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $sid);
             if ($sid === 'defaultstore') $sid = 'default';
             $cached = Cache::get('pos_settings:' . $sid, Cache::get('pos_settings', []));
-            $this->userKey = $this->userKey ?: ($cached['metrc_user_key'] ?? null);
-            $this->vendorKey = $this->vendorKey ?: ($cached['metrc_vendor_key'] ?? null);
-            $this->facilityLicense = $this->facilityLicense ?: ($cached['metrc_facility'] ?? null);
-        }
+            $isMasked = function($v){
+                return is_string($v) && (trim($v) === '••••••••' || preg_match('/^[•*]+$/u', trim($v)) === 1);
+            };
+            if (is_array($cached)) {
+                $uk = $cached['metrc_user_key'] ?? null;
+                $vk = $cached['metrc_vendor_key'] ?? null;
+                $fl = $cached['metrc_facility'] ?? null;
+                if (!empty($uk) && !$isMasked($uk)) { $this->userKey = $uk; }
+                if (!empty($vk) && !$isMasked($vk)) { $this->vendorKey = $vk; }
+                if (!empty($fl)) { $this->facilityLicense = $fl; }
+            }
+        } catch (\Throwable $e) { /* ignore cache issues */ }
 
         // Prefer per-user METRC key from authenticated employee when available
         try {
