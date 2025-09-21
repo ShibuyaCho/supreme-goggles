@@ -400,8 +400,10 @@
             store_name: clean.store_name || "",
             sales_tax: clean.sales_tax ?? 0,
             excise_tax: clean.excise_tax ?? 0,
-            cannabis_tax: clean.cannabis_tax ?? (clean.sales_tax ?? 0),
-            receipt_autoprint: !!(clean.receipt_autoprint ?? clean.auto_print_receipt),
+            cannabis_tax: clean.cannabis_tax ?? clean.sales_tax ?? 0,
+            receipt_autoprint: !!(
+              clean.receipt_autoprint ?? clean.auto_print_receipt
+            ),
           });
           writeCookie(CK_KEY(sid), compact);
         }
@@ -440,8 +442,14 @@
         try {
           // Write compatibility keys used by other pages
           const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
-          localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
-          localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+          localStorage.setItem(
+            `cannabisPOS-storeSettings_${sid}`,
+            JSON.stringify(compat),
+          );
+          localStorage.setItem(
+            "cannabisPOS-storeSettings",
+            JSON.stringify(compat),
+          );
         } catch (_) {}
         try {
           writeCookie("cpos_store_id", sid);
@@ -523,9 +531,17 @@
               : null;
           this.saveLocal(sid, merged);
           try {
-            const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
-            localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
-            localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+            const compat = Object.assign({}, merged, {
+              lastUpdated: Date.now(),
+            });
+            localStorage.setItem(
+              `cannabisPOS-storeSettings_${sid}`,
+              JSON.stringify(compat),
+            );
+            localStorage.setItem(
+              "cannabisPOS-storeSettings",
+              JSON.stringify(compat),
+            );
           } catch (_) {}
           try {
             writeCookie("cpos_store_id", sid);
@@ -658,23 +674,46 @@
         const x = Number(n);
         return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : n;
       };
-      if (patched.sales_tax != null) patched.sales_tax = clamp(patched.sales_tax, 0, 100);
-      if (patched.excise_tax != null) patched.excise_tax = clamp(patched.excise_tax, 0, 100);
-      if (patched.cannabis_tax != null) patched.cannabis_tax = clamp(patched.cannabis_tax, 0, 100);
-      if (patched.minimum_price_amount != null) patched.minimum_price_amount = Math.max(0, Number(patched.minimum_price_amount) || 0);
-      if (patched.weight_threshold != null) patched.weight_threshold = Math.max(0, Number(patched.weight_threshold) || 0);
-      if (patched.auto_delete_zero_days != null) patched.auto_delete_zero_days = clamp(patched.auto_delete_zero_days, 1, 30);
+      if (patched.sales_tax != null)
+        patched.sales_tax = clamp(patched.sales_tax, 0, 100);
+      if (patched.excise_tax != null)
+        patched.excise_tax = clamp(patched.excise_tax, 0, 100);
+      if (patched.cannabis_tax != null)
+        patched.cannabis_tax = clamp(patched.cannabis_tax, 0, 100);
+      if (patched.minimum_price_amount != null)
+        patched.minimum_price_amount = Math.max(
+          0,
+          Number(patched.minimum_price_amount) || 0,
+        );
+      if (patched.weight_threshold != null)
+        patched.weight_threshold = Math.max(
+          0,
+          Number(patched.weight_threshold) || 0,
+        );
+      if (patched.auto_delete_zero_days != null)
+        patched.auto_delete_zero_days = clamp(
+          patched.auto_delete_zero_days,
+          1,
+          30,
+        );
       // Validate receipt_template if present
       if (patched.receipt_template != null) {
         const t = String(patched.receipt_template || "standard");
-        if (!(["standard","detailed","minimal"].includes(t))) patched.receipt_template = "standard";
+        if (!["standard", "detailed", "minimal"].includes(t))
+          patched.receipt_template = "standard";
       }
       const merged = { ...DEFAULTS, ...base, ...patched };
       this.saveLocal(sid, merged);
       try {
         const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
-        localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
-        localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+        localStorage.setItem(
+          `cannabisPOS-storeSettings_${sid}`,
+          JSON.stringify(compat),
+        );
+        localStorage.setItem(
+          "cannabisPOS-storeSettings",
+          JSON.stringify(compat),
+        );
       } catch (_) {}
       // Fire and retry server save
       let last = null;
@@ -705,8 +744,14 @@
           this.saveLocal(sid, m);
           try {
             const compat = Object.assign({}, m, { lastUpdated: Date.now() });
-            localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
-            localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+            localStorage.setItem(
+              `cannabisPOS-storeSettings_${sid}`,
+              JSON.stringify(compat),
+            );
+            localStorage.setItem(
+              "cannabisPOS-storeSettings",
+              JSON.stringify(compat),
+            );
           } catch (_) {}
           try {
             writeCookie("cpos_store_id", sid);
@@ -804,9 +849,17 @@
                 const m = { ...DEFAULTS, ...row.settings };
                 this.saveLocal(sid, m);
                 try {
-                  const compat = Object.assign({}, m, { lastUpdated: Date.now() });
-                  localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
-                  localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+                  const compat = Object.assign({}, m, {
+                    lastUpdated: Date.now(),
+                  });
+                  localStorage.setItem(
+                    `cannabisPOS-storeSettings_${sid}`,
+                    JSON.stringify(compat),
+                  );
+                  localStorage.setItem(
+                    "cannabisPOS-storeSettings",
+                    JSON.stringify(compat),
+                  );
                 } catch (_) {}
                 try {
                   writeCookie("cpos_store_id", sid);
