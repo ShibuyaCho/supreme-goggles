@@ -2560,14 +2560,16 @@ function cannabisPOS() {
             if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
           } catch (_) {}
           // Update local settings with API data
-          this.taxRate =
-            payload.tax_rate != null
-              ? payload.tax_rate
-              : settings.sales_tax != null
-                ? settings.sales_tax
-                : 0.0;
-          this.medicalTaxRate =
-            payload.medical_tax_rate != null ? payload.medical_tax_rate : 0.0;
+          this.taxRate = (function(){
+            const st = Number(settings.sales_tax);
+            const fallback = Number.isFinite(st) ? st : Number(pos?.taxSettings?.stateRate || 0);
+            return Number.isFinite(fallback) ? fallback : 0;
+          })();
+          this.medicalTaxRate = (function(){
+            const med = Number(settings.medical_tax_rate);
+            const fallback = Number.isFinite(med) ? med : Number(pos?.taxSettings?.medicalRate || 0);
+            return Number.isFinite(fallback) ? fallback : 0;
+          })();
           // Merge and map server settings to UI store settings (prefer newer)
           const preferServer = serverTs && serverTs >= localTs;
           if (preferServer) {
@@ -6501,6 +6503,13 @@ function cannabisPOS() {
           const cats = s.receipt_categories_autoprint;
           if (Array.isArray(cats))
             this.printSettings.categoriesAutoprint = cats;
+          // Hydrate UI-only extras when present
+          if (Object.prototype.hasOwnProperty.call(s, "__ui_print_labels")) {
+            this.printSettings.printLabels = !!s.__ui_print_labels;
+          }
+          if (Object.prototype.hasOwnProperty.call(s, "__ui_receipt_template")) {
+            this.printSettings.receiptTemplate = s.__ui_receipt_template || this.printSettings.receiptTemplate || "standard";
+          }
           // Persist locally
           try {
             const sid =
