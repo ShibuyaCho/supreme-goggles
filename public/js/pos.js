@@ -5375,9 +5375,10 @@ function cannabisPOS() {
       } catch (_) {}
       if (!Array.isArray(list) || list.length === 0) {
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
           const uid = window.posAuth?.getUser?.()?.id || "anon";
-          const key = `cannabisPOS-savedSales-${uid}`;
-          list = JSON.parse(localStorage.getItem(key) || "[]");
+          const key = `cannabisPOS-savedSales-${sid}-${uid}`;
+          list = JSON.parse(localStorage.getItem(key) || localStorage.getItem(`cannabisPOS-savedSales-${uid}`) || "[]");
         } catch (_) {
           list = [];
         }
