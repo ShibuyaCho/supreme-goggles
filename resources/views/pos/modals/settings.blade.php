@@ -275,9 +275,11 @@ function handleSettingsUpdate(event) {
                 try {
                     const raw = localStorage.getItem('pos_store');
                     let sid = 'default';
-                    if (raw) { try { sid = JSON.parse(raw)?.id || 'default'; } catch(_) {} }
+                    let sname = '';
+                    if (raw) { try { const ps = JSON.parse(raw) || {}; sid = ps?.id || 'default'; sname = ps?.name || ''; } catch(_) {} }
                     sid = String(sid||'default').trim().toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9_.-]/g,'');
                     if (sid === 'defaultstore') sid = 'default';
+                    try { if (!sname && window.SettingsClient && typeof SettingsClient.currentStoreName==='function') sname = String(SettingsClient.currentStoreName()||''); } catch(_) {}
                     // Merge with current from server to avoid overwriting
                     let merged = { ...settingsData };
                     try {
@@ -286,7 +288,7 @@ function handleSettingsUpdate(event) {
                         merged = { ...cur, ...settingsData };
                     } catch(_) {}
                     // Route fallback through Laravel with merged complete payload
-                    await (window.axios||axios).post('/api/settings/pos', merged, { headers: { 'X-Store-ID': sid, Accept: 'application/json', 'Content-Type':'application/json' } });
+                    await (window.axios||axios).post('/api/settings/pos', merged, { headers: { 'X-Store-ID': sid, 'X-Store-Name': sname, Accept: 'application/json', 'Content-Type':'application/json' } });
                     try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({})); } catch(_) {}
                     CannabisPOS.closeModal('settings-modal');
                     const taxDisplay = document.getElementById('tax-display');
