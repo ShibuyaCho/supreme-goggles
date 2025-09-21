@@ -633,6 +633,37 @@
         patched.metrc_user_key = base.metrc_user_key || "";
       if (isMasked(patched.metrc_vendor_key))
         patched.metrc_vendor_key = base.metrc_vendor_key || "";
+      // Normalize arrays possibly sent as JSON strings
+      [
+        "exit_label_categories",
+        "receipt_categories_autoprint",
+        "minimum_price_categories",
+        "business_hours",
+      ].forEach((k) => {
+        const v = patched[k];
+        if (typeof v === "string") {
+          try {
+            const p = JSON.parse(v);
+            if (Array.isArray(p)) patched[k] = p;
+          } catch (_) {}
+        }
+      });
+      // Clamp numerics to sane ranges
+      const clamp = (n, lo, hi) => {
+        const x = Number(n);
+        return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : n;
+      };
+      if (patched.sales_tax != null) patched.sales_tax = clamp(patched.sales_tax, 0, 100);
+      if (patched.excise_tax != null) patched.excise_tax = clamp(patched.excise_tax, 0, 100);
+      if (patched.cannabis_tax != null) patched.cannabis_tax = clamp(patched.cannabis_tax, 0, 100);
+      if (patched.minimum_price_amount != null) patched.minimum_price_amount = Math.max(0, Number(patched.minimum_price_amount) || 0);
+      if (patched.weight_threshold != null) patched.weight_threshold = Math.max(0, Number(patched.weight_threshold) || 0);
+      if (patched.auto_delete_zero_days != null) patched.auto_delete_zero_days = clamp(patched.auto_delete_zero_days, 1, 30);
+      // Validate receipt_template if present
+      if (patched.receipt_template != null) {
+        const t = String(patched.receipt_template || "standard");
+        if (!(["standard","detailed","minimal"].includes(t))) patched.receipt_template = "standard";
+      }
       const merged = { ...DEFAULTS, ...base, ...patched };
       this.saveLocal(sid, merged);
       try {
