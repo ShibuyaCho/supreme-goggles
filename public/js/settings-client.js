@@ -439,8 +439,9 @@
         this.saveLocal(sid, merged);
         try {
           // Write compatibility keys used by other pages
-          localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(merged));
-          localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(merged));
+          const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
+          localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
+          localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
         } catch (_) {}
         try {
           writeCookie("cpos_store_id", sid);
