@@ -726,11 +726,12 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         } catch (\Throwable $e) { /* ignore cache errors */ }
         if ($savedRemote) {
             $respSettings = $merged;
+            if (!isset($respSettings['settings_version'])) { $respSettings['settings_version'] = (int)($current['settings_version'] ?? 0) + 1; }
             if (array_key_exists('metrc_user_key', $respSettings)) {
                 $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '••••••••' : '';
             }
             if (array_key_exists('metrc_vendor_key', $respSettings)) {
-                $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : '';
+                $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '•••••••��' : '';
             }
             return response()->json(['success' => true, 'settings' => $respSettings]);
         }
