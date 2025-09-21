@@ -2560,16 +2560,16 @@ function cannabisPOS() {
             if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
           } catch (_) {}
           // Update local settings with API data
-          this.taxRate = (function(){
+          this.taxRate = (function(self){
             const st = Number(settings.sales_tax);
-            const fallback = Number.isFinite(st) ? st : Number(pos?.taxSettings?.stateRate || 0);
+            const fallback = Number.isFinite(st) ? st : Number((self.taxSettings && self.taxSettings.stateRate) || 0);
             return Number.isFinite(fallback) ? fallback : 0;
-          })();
-          this.medicalTaxRate = (function(){
+          })(this);
+          this.medicalTaxRate = (function(self){
             const med = Number(settings.medical_tax_rate);
-            const fallback = Number.isFinite(med) ? med : Number(pos?.taxSettings?.medicalRate || 0);
+            const fallback = Number.isFinite(med) ? med : Number((self.taxSettings && self.taxSettings.medicalRate) || 0);
             return Number.isFinite(fallback) ? fallback : 0;
-          })();
+          })(this);
           // Merge and map server settings to UI store settings (prefer newer)
           const preferServer = serverTs && serverTs >= localTs;
           if (preferServer) {
