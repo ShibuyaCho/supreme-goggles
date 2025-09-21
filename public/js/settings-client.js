@@ -213,7 +213,7 @@
       const res = await window.posAuth.apiRequest(
         "post",
         path.replace(/^\/api/, ""),
-        params ? { ...(body || {}), ...(params || {}) } : body || {},
+        body || {},
       );
       if (res && res.success && res.data) return res.data;
       if (res && res.data) return res.data;
@@ -523,6 +523,11 @@
               : null;
           this.saveLocal(sid, merged);
           try {
+            const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
+            localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
+            localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+          } catch (_) {}
+          try {
             writeCookie("cpos_store_id", sid);
           } catch (_) {}
           try {
@@ -675,9 +680,7 @@
       let last = null;
       for (let i = 0; i < 3; i++) {
         try {
-          const data = await httpPost("/api/settings/pos", merged, {
-            store: sid,
-          });
+          const data = await httpPost("/api/settings/pos", merged);
           const s =
             data && (data.settings || data) ? data.settings || data : merged;
           let m = { ...DEFAULTS, ...s };
@@ -795,6 +798,11 @@
               if (row && row.settings && typeof row.settings === "object") {
                 const m = { ...DEFAULTS, ...row.settings };
                 this.saveLocal(sid, m);
+                try {
+                  const compat = Object.assign({}, m, { lastUpdated: Date.now() });
+                  localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
+                  localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+                } catch (_) {}
                 try {
                   writeCookie("cpos_store_id", sid);
                 } catch (_) {}
