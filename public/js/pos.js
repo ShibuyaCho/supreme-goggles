@@ -1905,8 +1905,16 @@ function cannabisPOS() {
       try {
         // Persist locally
         try {
+          // Global legacy cache
           localStorage.setItem(
             "cannabisPOS-storeSettings",
+            JSON.stringify(this.storeSettings),
+          );
+          // Store-scoped cache
+          try { this.storeSettings.lastUpdated = Date.now(); } catch(_){ }
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          localStorage.setItem(
+            `cannabisPOS-storeSettings_${sid}`,
             JSON.stringify(this.storeSettings),
           );
         } catch (_) {}
@@ -2589,6 +2597,34 @@ function cannabisPOS() {
               settings.store_email || this.storeSettings.email;
             this.storeSettings.licenseNumber =
               settings.license_number || this.storeSettings.licenseNumber;
+            // Map tax & sales settings into UI state for current store
+            const rec = Number(settings.cannabis_tax);
+            const loc = Number(settings.excise_tax);
+            const st  = Number(settings.sales_tax);
+            const inc = typeof settings.tax_inclusive === 'boolean' ? settings.tax_inclusive : this.taxSettings.includeInPrice;
+            const med = Number(this.taxSettings.medicalRate || 0);
+            this.taxSettings = {
+              recreationalRate: Number.isFinite(rec) ? rec : this.taxSettings.recreationalRate,
+              medicalRate: Number.isFinite(med) ? med : 0,
+              includeInPrice: inc,
+              localRate: Number.isFinite(loc) ? loc : this.taxSettings.localRate,
+              stateRate: Number.isFinite(st) ? st : this.taxSettings.stateRate,
+            };
+            const minAmt = Number(settings.minimum_price_amount);
+            const minEn  = typeof settings.minimum_price_enabled === 'boolean' ? settings.minimum_price_enabled : this.salesSettings.enforceMinimumSale;
+            const dlim   = Number(settings.__ui_daily_limit);
+            const reqCust= typeof settings.require_customer === 'boolean' ? settings.require_customer : this.salesSettings.requireCustomerInfo;
+            this.salesSettings = {
+              minimumSale: Number.isFinite(minAmt) ? minAmt : this.salesSettings.minimumSale,
+              enforceMinimumSale: minEn,
+              dailyLimit: Number.isFinite(dlim) ? dlim : this.salesSettings.dailyLimit,
+              requireCustomerInfo: reqCust,
+            };
+            if (settings.auto_delete_zero_quantity !== undefined) this.autoDeleteZeroQuantity = !!settings.auto_delete_zero_quantity;
+            if (settings.auto_delete_zero_days !== undefined) {
+              const dz = Number(settings.auto_delete_zero_days);
+              if (Number.isFinite(dz)) this.autoDeleteZeroDays = Math.min(30, Math.max(1, dz));
+            }
           }
           if (
             preferServer &&
@@ -6310,6 +6346,7 @@ function cannabisPOS() {
 
     // Settings and data management
     loadSettings() {
+      const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
       try {
         const savedPrimaryNs = localStorage.getItem(
           `cannabisPOS-settings_${sid}`,
