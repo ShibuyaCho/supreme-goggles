@@ -3679,7 +3679,16 @@ function cannabisPOS() {
         if (!Array.isArray(list) || list.length === 0) {
           try {
             const resp = await fetch("/deals", {
-              headers: { Accept: "application/json" },
+              headers: (function(){
+                const h = { Accept: "application/json" };
+                try {
+                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                  const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                  if (sid) h["X-Store-ID"] = String(sid);
+                  if (sname) h["X-Store-Name"] = String(sname);
+                } catch (_) {}
+                return h;
+              }).call(this),
               credentials: "same-origin",
             });
             if (resp.ok) {
@@ -7574,7 +7583,16 @@ function cannabisPOS() {
       const doFetch = async () => {
         try {
           const resp = await fetch("/products", {
-            headers: { Accept: "application/json" },
+            headers: (function(){
+              const h = { Accept: "application/json" };
+              try {
+                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                if (sid) h["X-Store-ID"] = String(sid);
+                if (sname) h["X-Store-Name"] = String(sname);
+              } catch (_) {}
+              return h;
+            }).call(this),
             credentials: "same-origin",
           });
           if (resp.ok) {
@@ -7717,7 +7735,16 @@ function cannabisPOS() {
       try {
         const resp = await fetch("/employees", {
           method: "GET",
-          headers: { Accept: "application/json" },
+          headers: (function(){
+            const h = { Accept: "application/json" };
+            try {
+              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+              const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+              if (sid) h["X-Store-ID"] = String(sid);
+              if (sname) h["X-Store-Name"] = String(sname);
+            } catch (_) {}
+            return h;
+          }).call(this),
           credentials: "same-origin",
         });
         if (resp.ok) {
