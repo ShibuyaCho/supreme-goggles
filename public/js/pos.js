@@ -1258,10 +1258,17 @@ function cannabisPOS() {
             : [];
           this.products.unshift(created);
           try {
-            localStorage.setItem(
-              "cannabisPOS-products",
-              JSON.stringify({ data: this.products }),
-            );
+            (function(){
+              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+              localStorage.setItem(
+                `cannabisPOS-products_${sid}`,
+                JSON.stringify({ data: this.products }),
+              );
+              localStorage.setItem(
+                "cannabisPOS-products",
+                JSON.stringify({ data: this.products }),
+              );
+            }).call(this);
           } catch (_) {}
         }
         this.showToast("Product created", "success");
@@ -7052,10 +7059,17 @@ function cannabisPOS() {
               }
             } catch (_) {}
             try {
+              (function(){
+              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+              localStorage.setItem(
+                `cannabisPOS-products_${sid}`,
+                JSON.stringify({ data: this.products }),
+              );
               localStorage.setItem(
                 "cannabisPOS-products",
                 JSON.stringify({ data: this.products }),
               );
+            }).call(this);
             } catch (_) {}
             this.normalizeCollections && this.normalizeCollections();
             this.filterProducts && this.filterProducts();
@@ -7591,10 +7605,17 @@ function cannabisPOS() {
                   }
                 } catch (_) {}
                 try {
-                  localStorage.setItem(
-                    "cannabisPOS-products",
-                    JSON.stringify({ data: this.products }),
-                  );
+                  (function(){
+              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+              localStorage.setItem(
+                `cannabisPOS-products_${sid}`,
+                JSON.stringify({ data: this.products }),
+              );
+              localStorage.setItem(
+                "cannabisPOS-products",
+                JSON.stringify({ data: this.products }),
+              );
+            }).call(this);
                 } catch (_) {}
               }
             }
