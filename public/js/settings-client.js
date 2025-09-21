@@ -636,8 +636,9 @@
       const merged = { ...DEFAULTS, ...base, ...patched };
       this.saveLocal(sid, merged);
       try {
-        localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(merged));
-        localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(merged));
+        const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
+        localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
+        localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
       } catch (_) {}
       // Fire and retry server save
       let last = null;
