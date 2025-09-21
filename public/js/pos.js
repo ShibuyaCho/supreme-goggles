@@ -6838,6 +6838,7 @@ function cannabisPOS() {
           // Keep extras (non-critical) so UI can remember choices
           __ui_print_labels: !!this.printSettings.printLabels,
           __ui_receipt_template: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(this.printSettings.receiptTemplate),
+          receipt_template: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(this.printSettings.receiptTemplate),
         };
         const res = await (window.SettingsClient
           ? SettingsClient.save(payload)
