@@ -836,6 +836,37 @@ function settingsManager() {
                     }
                 });
             } catch (_) {}
+            // React to store switches from other tabs/windows
+            try {
+                window.addEventListener('storage', (e) => {
+                    if (e && e.key === 'pos_store') {
+                        try {
+                            const ps = JSON.parse(localStorage.getItem('pos_store') || '{}');
+                            if (ps && ps.id) {
+                                this.currentStoreSelect = String(ps.id);
+                                this.switchStore({ id: String(ps.id), name: ps.name || String(ps.id) });
+                            }
+                        } catch (_) {}
+                    }
+                });
+            } catch (_) {}
+            // Merge in external settings updates without clobbering local unsaved inputs
+            try {
+                window.addEventListener('settings:updated', (e) => {
+                    try {
+                        const s = e && e.detail && e.detail.settings ? e.detail.settings : null;
+                        if (s && typeof s === 'object') {
+                            const merged = Object.assign({}, this.settings || {}, s);
+                            this.settings = merged;
+                            this.saveSettingsToStorage();
+                        }
+                    } catch (_) {}
+                });
+            } catch (_) {}
+            // Ensure local persistence on page unload
+            try {
+                window.addEventListener('beforeunload', () => { try { this.saveSettingsToStorage(); } catch (_) {} });
+            } catch (_) {}
 
             // Set up save button listener
             document.getElementById('save-settings-btn').addEventListener('click', () => {
@@ -967,7 +998,7 @@ function settingsManager() {
         },
 
         saveSettingsToStorage() {
-            if (!this.hydrated) return;
+            // Always persist locally (even before server hydration) to avoid losing early edits
             try {
                 if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
                     const sid = SettingsClient.currentStoreId();
