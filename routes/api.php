@@ -507,6 +507,8 @@ Route::get('/settings/pos', function() {
     if (array_key_exists('metrc_vendor_key', $settings)) {
         $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
     }
+    // Ensure a version field exists for optimistic coordination
+    if (!isset($settings['settings_version'])) { $settings['settings_version'] = 0; }
     return response()->json([
         'success' => true,
         'settings' => $settings,
