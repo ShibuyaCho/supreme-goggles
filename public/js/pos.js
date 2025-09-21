@@ -12766,10 +12766,17 @@ function cannabisPOS() {
           10,
         );
         try {
-          localStorage.setItem(
-            "cannabisPOS-reports",
-            JSON.stringify(this.recentReports),
-          );
+          (function(){
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            localStorage.setItem(
+              `cannabisPOS-reports_${sid}`,
+              JSON.stringify(this.recentReports),
+            );
+            localStorage.setItem(
+              "cannabisPOS-reports",
+              JSON.stringify(this.recentReports),
+            );
+          }).call(this);
         } catch (_) {}
       } catch (_) {}
       try {
@@ -12834,11 +12841,18 @@ function cannabisPOS() {
             };
             this.recentReports = [item, ...this.recentReports].slice(0, 10);
             try {
-              localStorage.setItem(
-                "cannabisPOS-reports",
-                JSON.stringify(this.recentReports),
-              );
-            } catch (_) {}
+          (function(){
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            localStorage.setItem(
+              `cannabisPOS-reports_${sid}`,
+              JSON.stringify(this.recentReports),
+            );
+            localStorage.setItem(
+              "cannabisPOS-reports",
+              JSON.stringify(this.recentReports),
+            );
+          }).call(this);
+        } catch (_) {}
           }
         } catch (_) {}
         await this.fetchReportTemplates();
@@ -12890,11 +12904,18 @@ function cannabisPOS() {
             };
             this.recentReports = [item, ...this.recentReports].slice(0, 10);
             try {
-              localStorage.setItem(
-                "cannabisPOS-reports",
-                JSON.stringify(this.recentReports),
-              );
-            } catch (_) {}
+          (function(){
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            localStorage.setItem(
+              `cannabisPOS-reports_${sid}`,
+              JSON.stringify(this.recentReports),
+            );
+            localStorage.setItem(
+              "cannabisPOS-reports",
+              JSON.stringify(this.recentReports),
+            );
+          }).call(this);
+        } catch (_) {}
           } catch (_) {}
           await this.fetchReportTemplates();
           this.initializeReportData();
@@ -13172,11 +13193,18 @@ function cannabisPOS() {
         if (idx !== -1) {
           this.recentReports.splice(idx, 1);
           try {
+          (function(){
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            localStorage.setItem(
+              `cannabisPOS-reports_${sid}`,
+              JSON.stringify(this.recentReports),
+            );
             localStorage.setItem(
               "cannabisPOS-reports",
               JSON.stringify(this.recentReports),
             );
-          } catch (_) {}
+          }).call(this);
+        } catch (_) {}
         }
         this.showToast("Report deleted", "success");
       } catch (_) {}
