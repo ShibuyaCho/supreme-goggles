@@ -841,6 +841,11 @@ function settingsManager() {
             document.getElementById('save-settings-btn').addEventListener('click', () => {
                 this.saveSettings();
             });
+            // Wire Refresh METRC header button
+            try {
+                const btn = document.getElementById('settings-refresh-metrc');
+                if (btn) btn.addEventListener('click', () => { try { this.syncMetrcNow(); } catch(_) {} });
+            } catch(_) {}
 
             // Auto-save on change (persist locally and to server, debounced)
             this.$watch('settings', () => {
@@ -1101,7 +1106,7 @@ function settingsManager() {
                 const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
                 const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function') ? SettingsClient.currentStoreName() : '';
                 const client = window.axios || axios;
-                const res = await client.get('/api/settings/stores/open', { headers: { Accept: 'application/json' } });
+                const res = await client.get('/api/settings/stores/open', { headers: { Accept: 'application/json', 'X-Store-ID': String(sid||'default'), ...(sname?{ 'X-Store-Name': String(sname) }: {}) } });
                 const list = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
                 const normalized = list.map(r => ({ id: String(r.id), name: String(r.name || r.id), address: r.address || '', phone: r.phone || '', status: 'active', is_current: String(r.id) === sid }));
                 if (!normalized.find(s => s.id === sid)) {
