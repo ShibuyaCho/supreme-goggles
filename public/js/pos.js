@@ -13828,7 +13828,6 @@ document.addEventListener("DOMContentLoaded", function () {
                 } catch (_) {}
                 return h;
               }).call(this),
-              headers: { Accept: "application/json" },
             });
           } catch (_) {}
           try {
