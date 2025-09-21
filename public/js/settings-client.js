@@ -388,10 +388,23 @@
       };
       const clean = scrub(settings);
       try {
-        localStorage.setItem(LS_KEY(sid), JSON.stringify(clean));
+        const json = JSON.stringify(clean);
+        localStorage.setItem(LS_KEY(sid), json);
       } catch (_) {}
       try {
-        writeCookie(CK_KEY(sid), JSON.stringify(clean));
+        const json = JSON.stringify(clean);
+        if (json && json.length <= 3500) {
+          writeCookie(CK_KEY(sid), json);
+        } else {
+          const compact = JSON.stringify({
+            store_name: clean.store_name || "",
+            sales_tax: clean.sales_tax ?? 0,
+            excise_tax: clean.excise_tax ?? 0,
+            cannabis_tax: clean.cannabis_tax ?? (clean.sales_tax ?? 0),
+            receipt_autoprint: !!(clean.receipt_autoprint ?? clean.auto_print_receipt),
+          });
+          writeCookie(CK_KEY(sid), compact);
+        }
       } catch (_) {}
     },
 
