@@ -7538,7 +7538,8 @@ function cannabisPOS() {
 
     loadProducts() {
       try {
-        const saved = localStorage.getItem("cannabisPOS-products");
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function" ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default"));
+        const saved = localStorage.getItem(`cannabisPOS-products_${sid}`) || localStorage.getItem("cannabisPOS-products");
         if (saved) {
           const parsed = JSON.parse(saved);
           this.products = Array.isArray(parsed)
