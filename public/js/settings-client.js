@@ -373,11 +373,20 @@
       return null;
     },
     saveLocal(sid, settings) {
+      const scrub = (src) => {
+        try {
+          const s = { ...(src || {}) };
+          if (s.metrc_user_key !== undefined) delete s.metrc_user_key;
+          if (s.metrc_vendor_key !== undefined) delete s.metrc_vendor_key;
+          return s;
+        } catch (_) { return src; }
+      };
+      const clean = scrub(settings);
       try {
-        localStorage.setItem(LS_KEY(sid), JSON.stringify(settings));
+        localStorage.setItem(LS_KEY(sid), JSON.stringify(clean));
       } catch (_) {}
       try {
-        writeCookie(CK_KEY(sid), JSON.stringify(settings));
+        writeCookie(CK_KEY(sid), JSON.stringify(clean));
       } catch (_) {}
     },
 
