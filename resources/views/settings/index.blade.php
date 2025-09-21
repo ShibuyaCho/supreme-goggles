@@ -1082,11 +1082,13 @@ function settingsManager() {
                     this._lastPersistedJSON = JSON.stringify(this.settings);
                     this.showToast('Settings saved successfully!', 'success');
                 } else {
-                    this.showToast('Error saving settings', 'error');
+                    const msg = (res && (res.message || res.error)) ? (res.message || res.error) : 'Error saving settings';
+                    this.showToast(msg, 'error');
                 }
             } catch (error) {
+                const msg = (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
                 console.error('Error saving settings:', error);
-                this.showToast('Error saving settings', 'error');
+                this.showToast(msg, 'error');
             } finally {
                 this.saveSettingsToStorage();
             }
