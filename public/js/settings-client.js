@@ -302,8 +302,8 @@
       const print = {
         autoprint: !!merged.receipt_autoprint,
         printLabels: !!(merged.__ui_print_labels ?? merged.print_labels),
-        receiptTemplate: String(
-          merged.__ui_receipt_template ?? merged.receipt_template ?? "standard",
+        receiptTemplate: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(
+          merged.__ui_receipt_template ?? merged.receipt_template
         ),
         paperSize: String(merged.receipt_paper_size ?? "80mm"),
         categoriesAutoprint: Array.isArray(merged.receipt_categories_autoprint)
