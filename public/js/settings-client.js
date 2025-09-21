@@ -302,9 +302,12 @@
       const print = {
         autoprint: !!merged.receipt_autoprint,
         printLabels: !!(merged.__ui_print_labels ?? merged.print_labels),
-        receiptTemplate: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(
-          merged.__ui_receipt_template ?? merged.receipt_template
-        ),
+        receiptTemplate: (function (v) {
+          v = String(v || "standard");
+          return ["standard", "detailed", "minimal"].includes(v)
+            ? v
+            : "standard";
+        })(merged.__ui_receipt_template ?? merged.receipt_template),
         paperSize: String(merged.receipt_paper_size ?? "80mm"),
         categoriesAutoprint: Array.isArray(merged.receipt_categories_autoprint)
           ? merged.receipt_categories_autoprint
@@ -379,7 +382,9 @@
           if (s.metrc_user_key !== undefined) delete s.metrc_user_key;
           if (s.metrc_vendor_key !== undefined) delete s.metrc_vendor_key;
           return s;
-        } catch (_) { return src; }
+        } catch (_) {
+          return src;
+        }
       };
       const clean = scrub(settings);
       try {

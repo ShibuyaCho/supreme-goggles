@@ -642,7 +642,19 @@
                       :class="currentPage === 'employee-eval' ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:bg-gray-100'"
                       class="w-full text-left px-4 py-3 text-sm font-medium flex items-center transition-colors"
                     >
-                      <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                      <svg
+                        class="w-4 h-4 mr-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
                       Employee Eval
                     </button>
 
@@ -7624,111 +7636,43 @@
               </template>
 
               <template x-if="currentPage === 'metrc-vendors'">
-                <div class="space-y-6" x-init="if(typeof metrcTab==='undefined'){metrcTab='transfers'}; if(typeof vendorProductQuery==='undefined'){vendorProductQuery=''}; if(typeof metrcProductsSummary==='undefined'){metrcProductsSummary=[]}">
+                <div
+                  class="space-y-6"
+                  x-init="if(typeof metrcTab==='undefined'){metrcTab='transfers'}; if(typeof vendorProductQuery==='undefined'){vendorProductQuery=''}; if(typeof metrcProductsSummary==='undefined'){metrcProductsSummary=[]}"
+                >
                   <div class="flex items-center justify-between">
-                    <div class="inline-flex rounded-md shadow-sm border border-gray-200 bg-white overflow-hidden" role="tablist">
-                      <button @click="metrcTab='transfers'" :class="(typeof metrcTab==='undefined'?false:metrcTab==='transfers') ? 'bg-cannabis-green text-white' : 'bg-white text-gray-700 hover:bg-gray-50'" class="px-4 py-2 text-sm font-medium border-r">METRC Transfers</button>
-                      <button @click="metrcTab='products'; if((typeof metrcProductsSummary==='undefined' || !Array.isArray(metrcProductsSummary) || metrcProductsSummary.length===0) && typeof refreshMetrcProductsSummary==='function'){ refreshMetrcProductsSummary(); }" :class="(typeof metrcTab==='undefined'?false:metrcTab==='products') ? 'bg-cannabis-green text-white' : 'bg-white text-gray-700 hover:bg-gray-50'" class="px-4 py-2 text-sm font-medium">METRC Products</button>
-                    </div>
-                  </div>
-
-                  <div x-show="typeof metrcTab==='undefined' ? true : metrcTab==='transfers'" class="space-y-6">
-                  <div
-                    class="bg-purple-50 border border-purple-200 rounded-lg p-4"
-                  >
-                    <div class="flex items-center justify-between">
-                      <div class="flex items-center">
-                        <svg
-                          class="w-5 h-5 text-purple-600 mr-2"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M8 7V3a4 4 0 118 0v4h1a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2h1z"
-                          />
-                        </svg>
-                        <span class="text-purple-800 font-medium"
-                          >Incoming METRC Vendor Shipments</span
-                        >
-                      </div>
+                    <div
+                      class="inline-flex rounded-md shadow-sm border border-gray-200 bg-white overflow-hidden"
+                      role="tablist"
+                    >
                       <button
-                        @click="refreshVendorData()"
-                        class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
+                        @click="metrcTab='transfers'"
+                        :class="(typeof metrcTab==='undefined'?false:metrcTab==='transfers') ? 'bg-cannabis-green text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+                        class="px-4 py-2 text-sm font-medium border-r"
                       >
-                        <svg
-                          class="w-4 h-4"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                          />
-                        </svg>
-                        Refresh METRC Data
+                        METRC Transfers
+                      </button>
+                      <button
+                        @click="metrcTab='products'; if((typeof metrcProductsSummary==='undefined' || !Array.isArray(metrcProductsSummary) || metrcProductsSummary.length===0) && typeof refreshMetrcProductsSummary==='function'){ refreshMetrcProductsSummary(); }"
+                        :class="(typeof metrcTab==='undefined'?false:metrcTab==='products') ? 'bg-cannabis-green text-white' : 'bg-white text-gray-700 hover:bg-gray-50'"
+                        class="px-4 py-2 text-sm font-medium"
+                      >
+                        METRC Products
                       </button>
                     </div>
-                    <p class="text-purple-700 text-sm mt-1">
-                      View incoming vendor shipments with ETA, package details,
-                      and inventory import functionality.
-                    </p>
                   </div>
 
-                  <!-- Vendor Shipments Overview -->
-                  <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div class="bg-white border border-gray-200 rounded-lg p-4">
+                  <div
+                    x-show="typeof metrcTab==='undefined' ? true : metrcTab==='transfers'"
+                    class="space-y-6"
+                  >
+                    <div
+                      class="bg-purple-50 border border-purple-200 rounded-lg p-4"
+                    >
                       <div class="flex items-center justify-between">
-                        <div>
-                          <p class="text-sm font-medium text-gray-600">
-                            Expected Today
-                          </p>
-                          <p
-                            class="text-2xl font-bold text-purple-600"
-                            x-text="incomingVendors.filter(v => v.eta === 'today').length"
-                          ></p>
-                        </div>
-                        <div
-                          class="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center"
-                        >
+                        <div class="flex items-center">
                           <svg
-                            class="w-4 h-4 text-purple-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-4">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <p class="text-sm font-medium text-gray-600">
-                            This Week
-                          </p>
-                          <p
-                            class="text-2xl font-bold text-blue-600"
-                            x-text="incomingVendors.filter(v => v.eta === 'this-week').length"
-                          ></p>
-                        </div>
-                        <div
-                          class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center"
-                        >
-                          <svg
-                            class="w-4 h-4 text-blue-600"
+                            class="w-5 h-5 text-purple-600 mr-2"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -7740,25 +7684,16 @@
                               d="M8 7V3a4 4 0 118 0v4h1a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2h1z"
                             />
                           </svg>
+                          <span class="text-purple-800 font-medium"
+                            >Incoming METRC Vendor Shipments</span
+                          >
                         </div>
-                      </div>
-                    </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-4">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <p class="text-sm font-medium text-gray-600">
-                            Total Packages
-                          </p>
-                          <p
-                            class="text-2xl font-bold text-green-600"
-                            x-text="incomingVendors.reduce((sum, v) => sum + v.packages.length, 0)"
-                          ></p>
-                        </div>
-                        <div
-                          class="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center"
+                        <button
+                          @click="refreshVendorData()"
+                          class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
                         >
                           <svg
-                            class="w-4 h-4 text-green-600"
+                            class="w-4 h-4"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -7767,314 +7702,485 @@
                               stroke-linecap="round"
                               stroke-linejoin="round"
                               stroke-width="2"
-                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                             />
                           </svg>
-                        </div>
+                          Refresh METRC Data
+                        </button>
                       </div>
+                      <p class="text-purple-700 text-sm mt-1">
+                        View incoming vendor shipments with ETA, package
+                        details, and inventory import functionality.
+                      </p>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-lg p-4">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <p class="text-sm font-medium text-gray-600">
-                            Ready to Import
-                          </p>
-                          <p
-                            class="text-2xl font-bold text-orange-600"
-                            x-text="incomingVendors.filter(v => v.status === 'ready-to-import').length"
-                          ></p>
-                        </div>
-                        <div
-                          class="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center"
-                        >
-                          <svg
-                            class="w-4 h-4 text-orange-600"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              stroke-width="2"
-                              d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
-                            />
-                          </svg>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
 
-                  <!-- Vendor Shipments Table -->
-                  <div
-                    class="bg-white border border-gray-200 rounded-lg overflow-hidden"
-                  >
-                    <div class="p-6 border-b border-gray-200">
-                      <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-gray-900">
-                          Incoming Vendor Shipments
-                        </h3>
-                        <div
-                          class="flex items-center gap-2 min-w-0 overflow-hidden"
-                        >
-                          <span
-                            class="text-sm text-gray-500"
-                            x-text="'Total vendors: ' + incomingVendors.length"
-                          ></span>
+                    <!-- Vendor Shipments Overview -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div
+                        class="bg-white border border-gray-200 rounded-lg p-4"
+                      >
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <p class="text-sm font-medium text-gray-600">
+                              Expected Today
+                            </p>
+                            <p
+                              class="text-2xl font-bold text-purple-600"
+                              x-text="incomingVendors.filter(v => v.eta === 'today').length"
+                            ></p>
+                          </div>
+                          <div
+                            class="h-8 w-8 bg-purple-100 rounded-full flex items-center justify-center"
+                          >
+                            <svg
+                              class="w-4 h-4 text-purple-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                          </div>
                         </div>
                       </div>
-                      <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <input
-                          id="vendor-search"
-                          name="vendor-search"
-                          type="text"
-                          x-model="vendorSearchQuery"
-                          placeholder="Search vendors..."
-                          class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          aria-label="Search vendors"
-                        />
-                        <select
-                          id="vendor-status-filter"
-                          name="vendor-status-filter"
-                          x-model="vendorStatusFilter"
-                          class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          aria-label="Filter vendors by status"
-                        >
-                          <option value="">All Status</option>
-                          <option value="in-transit">In Transit</option>
-                          <option value="ready-to-import">
-                            Ready to Import
-                          </option>
-                          <option value="imported">Imported</option>
-                          <option value="delayed">Delayed</option>
-                        </select>
-                        <select
-                          id="vendor-eta-filter"
-                          name="vendor-eta-filter"
-                          x-model="vendorETAFilter"
-                          class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
-                          aria-label="Filter vendors by ETA"
-                        >
-                          <option value="">All ETA</option>
-                          <option value="today">Today</option>
-                          <option value="this-week">This Week</option>
-                          <option value="next-week">Next Week</option>
-                        </select>
+                      <div
+                        class="bg-white border border-gray-200 rounded-lg p-4"
+                      >
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <p class="text-sm font-medium text-gray-600">
+                              This Week
+                            </p>
+                            <p
+                              class="text-2xl font-bold text-blue-600"
+                              x-text="incomingVendors.filter(v => v.eta === 'this-week').length"
+                            ></p>
+                          </div>
+                          <div
+                            class="h-8 w-8 bg-blue-100 rounded-full flex items-center justify-center"
+                          >
+                            <svg
+                              class="w-4 h-4 text-blue-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M8 7V3a4 4 0 118 0v4h1a2 2 0 012 2v9a2 2 0 01-2 2H7a2 2 0 01-2-2V9a2 2 0 012-2h1z"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="bg-white border border-gray-200 rounded-lg p-4"
+                      >
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <p class="text-sm font-medium text-gray-600">
+                              Total Packages
+                            </p>
+                            <p
+                              class="text-2xl font-bold text-green-600"
+                              x-text="incomingVendors.reduce((sum, v) => sum + v.packages.length, 0)"
+                            ></p>
+                          </div>
+                          <div
+                            class="h-8 w-8 bg-green-100 rounded-full flex items-center justify-center"
+                          >
+                            <svg
+                              class="w-4 h-4 text-green-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                      <div
+                        class="bg-white border border-gray-200 rounded-lg p-4"
+                      >
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <p class="text-sm font-medium text-gray-600">
+                              Ready to Import
+                            </p>
+                            <p
+                              class="text-2xl font-bold text-orange-600"
+                              x-text="incomingVendors.filter(v => v.status === 'ready-to-import').length"
+                            ></p>
+                          </div>
+                          <div
+                            class="h-8 w-8 bg-orange-100 rounded-full flex items-center justify-center"
+                          >
+                            <svg
+                              class="w-4 h-4 text-orange-600"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"
+                              />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <div class="overflow-x-auto">
-                      <table class="w-full">
-                        <thead class="bg-gray-50">
-                          <tr>
-                            <th
-                              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              Vendor
-                            </th>
-                            <th
-                              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              ETA
-                            </th>
-                            <th
-                              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              Packages
-                            </th>
-                            <th
-                              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              Value
-                            </th>
-                            <th
-                              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              Status
-                            </th>
-                            <th
-                              class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                            >
-                              Actions
-                            </th>
-                          </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                          <template
-                            x-for="vendor in filteredVendors"
-                            :key="vendor.id"
+
+                    <!-- Vendor Shipments Table -->
+                    <div
+                      class="bg-white border border-gray-200 rounded-lg overflow-hidden"
+                    >
+                      <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                          <h3 class="text-lg font-semibold text-gray-900">
+                            Incoming Vendor Shipments
+                          </h3>
+                          <div
+                            class="flex items-center gap-2 min-w-0 overflow-hidden"
                           >
-                            <tr
-                              class="hover:bg-gray-50"
-                              :class="{'bg-purple-50': vendor.status === 'ready-to-import'}"
+                            <span
+                              class="text-sm text-gray-500"
+                              x-text="'Total vendors: ' + incomingVendors.length"
+                            ></span>
+                          </div>
+                        </div>
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <input
+                            id="vendor-search"
+                            name="vendor-search"
+                            type="text"
+                            x-model="vendorSearchQuery"
+                            placeholder="Search vendors..."
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            aria-label="Search vendors"
+                          />
+                          <select
+                            id="vendor-status-filter"
+                            name="vendor-status-filter"
+                            x-model="vendorStatusFilter"
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            aria-label="Filter vendors by status"
+                          >
+                            <option value="">All Status</option>
+                            <option value="in-transit">In Transit</option>
+                            <option value="ready-to-import">
+                              Ready to Import
+                            </option>
+                            <option value="imported">Imported</option>
+                            <option value="delayed">Delayed</option>
+                          </select>
+                          <select
+                            id="vendor-eta-filter"
+                            name="vendor-eta-filter"
+                            x-model="vendorETAFilter"
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                            aria-label="Filter vendors by ETA"
+                          >
+                            <option value="">All ETA</option>
+                            <option value="today">Today</option>
+                            <option value="this-week">This Week</option>
+                            <option value="next-week">Next Week</option>
+                          </select>
+                        </div>
+                      </div>
+                      <div class="overflow-x-auto">
+                        <table class="w-full">
+                          <thead class="bg-gray-50">
+                            <tr>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Vendor
+                              </th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                ETA
+                              </th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Packages
+                              </th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Value
+                              </th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Status
+                              </th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Actions
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody class="bg-white divide-y divide-gray-200">
+                            <template
+                              x-for="vendor in filteredVendors"
+                              :key="vendor.id"
                             >
-                              <td class="px-6 py-4">
-                                <div>
+                              <tr
+                                class="hover:bg-gray-50"
+                                :class="{'bg-purple-50': vendor.status === 'ready-to-import'}"
+                              >
+                                <td class="px-6 py-4">
+                                  <div>
+                                    <div
+                                      class="text-sm font-medium text-gray-900"
+                                      x-text="vendor.name"
+                                    ></div>
+                                    <div
+                                      class="text-sm text-gray-500"
+                                      x-text="`License: ${vendor.license}`"
+                                    ></div>
+                                    <div
+                                      class="text-xs text-gray-400"
+                                      x-text="`METRC ID: ${vendor.metrcId}`"
+                                    ></div>
+                                  </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
                                   <div
-                                    class="text-sm font-medium text-gray-900"
-                                    x-text="vendor.name"
+                                    class="text-sm text-gray-900"
+                                    x-text="vendor.etaDate"
                                   ></div>
                                   <div
-                                    class="text-sm text-gray-500"
-                                    x-text="`License: ${vendor.license}`"
+                                    class="text-xs text-gray-500"
+                                    x-text="vendor.etaTime"
+                                  ></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                  <div
+                                    class="text-sm text-gray-900"
+                                    x-text="vendor.packages.length + ' packages'"
                                   ></div>
                                   <div
-                                    class="text-xs text-gray-400"
-                                    x-text="`METRC ID: ${vendor.metrcId}`"
+                                    class="text-xs text-gray-500"
+                                    x-text="vendor.packages.reduce((sum, p) => sum + p.quantity, 0) + ' total items'"
                                   ></div>
-                                </div>
-                              </td>
-                              <td class="px-6 py-4 whitespace-nowrap">
-                                <div
-                                  class="text-sm text-gray-900"
-                                  x-text="vendor.etaDate"
-                                ></div>
-                                <div
-                                  class="text-xs text-gray-500"
-                                  x-text="vendor.etaTime"
-                                ></div>
-                              </td>
-                              <td class="px-6 py-4 whitespace-nowrap">
-                                <div
-                                  class="text-sm text-gray-900"
-                                  x-text="vendor.packages.length + ' packages'"
-                                ></div>
-                                <div
-                                  class="text-xs text-gray-500"
-                                  x-text="vendor.packages.reduce((sum, p) => sum + p.quantity, 0) + ' total items'"
-                                ></div>
-                              </td>
-                              <td class="px-6 py-4 whitespace-nowrap">
-                                <div
-                                  class="text-sm text-gray-900"
-                                  x-text="'$' + vendor.totalValue.toFixed(2)"
-                                ></div>
-                                <div
-                                  class="text-xs text-gray-500"
-                                  x-text="'Cost: $' + vendor.totalCost.toFixed(2)"
-                                ></div>
-                              </td>
-                              <td class="px-6 py-4 whitespace-nowrap">
-                                <span
-                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
-                                  :class="{
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                  <div
+                                    class="text-sm text-gray-900"
+                                    x-text="'$' + vendor.totalValue.toFixed(2)"
+                                  ></div>
+                                  <div
+                                    class="text-xs text-gray-500"
+                                    x-text="'Cost: $' + vendor.totalCost.toFixed(2)"
+                                  ></div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                  <span
+                                    class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
+                                    :class="{
                                                                       'bg-green-100 text-green-800': vendor.status === 'ready-to-import',
                                                                       'bg-blue-100 text-blue-800': vendor.status === 'in-transit',
                                                                       'bg-gray-100 text-gray-800': vendor.status === 'imported',
                                                                       'bg-red-100 text-red-800': vendor.status === 'delayed'
                                                                   }"
-                                  x-text="vendor.status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())"
-                                ></span>
-                              </td>
-                              <td
-                                class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
-                              >
-                                <div
-                                  class="flex items-center gap-2 min-w-0 overflow-hidden"
+                                    x-text="vendor.status.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())"
+                                  ></span>
+                                </td>
+                                <td
+                                  class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"
                                 >
-                                  <button
-                                    @click="viewVendorPackages(vendor)"
-                                    class="text-purple-600 hover:text-purple-900"
+                                  <div
+                                    class="flex items-center gap-2 min-w-0 overflow-hidden"
                                   >
-                                    View Packages
-                                  </button>
-                                  <button
-                                    @click="importVendorInventory(vendor)"
-                                    :disabled="vendor.status !== 'ready-to-import'"
-                                    :class="vendor.status === 'ready-to-import' ? 'text-green-600 hover:text-green-900' : 'text-gray-400'"
-                                    class="disabled:cursor-not-allowed"
-                                  >
-                                    Import
-                                  </button>
-                                  <button
-                                    @click="downloadManifest(vendor)"
-                                    class="text-blue-600 hover:text-blue-900"
-                                  >
-                                    Manifest
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          </template>
-                        </tbody>
-                      </table>
+                                    <button
+                                      @click="viewVendorPackages(vendor)"
+                                      class="text-purple-600 hover:text-purple-900"
+                                    >
+                                      View Packages
+                                    </button>
+                                    <button
+                                      @click="importVendorInventory(vendor)"
+                                      :disabled="vendor.status !== 'ready-to-import'"
+                                      :class="vendor.status === 'ready-to-import' ? 'text-green-600 hover:text-green-900' : 'text-gray-400'"
+                                      class="disabled:cursor-not-allowed"
+                                    >
+                                      Import
+                                    </button>
+                                    <button
+                                      @click="downloadManifest(vendor)"
+                                      class="text-blue-600 hover:text-blue-900"
+                                    >
+                                      Manifest
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            </template>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-medium text-gray-900">
+                          Real-time Tracking
+                        </h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                          Live updates from METRC system with vendor
+                          notifications
+                        </p>
+                      </div>
+                      <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-medium text-gray-900">
+                          Package Details
+                        </h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                          Complete manifests with strain, quantity, and
+                          compliance data
+                        </p>
+                      </div>
+                      <div class="bg-gray-50 p-4 rounded-lg">
+                        <h3 class="font-medium text-gray-900">Auto Import</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                          One-click inventory import with METRC tag validation
+                        </p>
+                      </div>
+                    </div>
+                    <div class="border border-gray-200 rounded-lg p-4">
+                      <p class="text-gray-600">
+                        Laravel Implementation:
+                        <code class="bg-gray-100 px-2 py-1 rounded text-sm"
+                          >/metrc-vendors</code
+                        >
+                      </p>
+                      <p class="text-sm text-gray-500 mt-1">
+                        ✅ Real-time METRC vendor shipment tracking with ETA
+                        monitoring
+                      </p>
+                      <p class="text-sm text-gray-500">
+                        ✅ Package detail viewing and inventory import
+                        functionality
+                      </p>
+                      <p class="text-sm text-gray-500">
+                        ✅ Manifest downloads and vendor communication system
+                      </p>
                     </div>
                   </div>
 
-                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                      <h3 class="font-medium text-gray-900">
-                        Real-time Tracking
-                      </h3>
-                      <p class="text-sm text-gray-600 mt-1">
-                        Live updates from METRC system with vendor notifications
-                      </p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                      <h3 class="font-medium text-gray-900">Package Details</h3>
-                      <p class="text-sm text-gray-600 mt-1">
-                        Complete manifests with strain, quantity, and compliance
-                        data
-                      </p>
-                    </div>
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                      <h3 class="font-medium text-gray-900">Auto Import</h3>
-                      <p class="text-sm text-gray-600 mt-1">
-                        One-click inventory import with METRC tag validation
-                      </p>
-                    </div>
-                  </div>
-                  <div class="border border-gray-200 rounded-lg p-4">
-                    <p class="text-gray-600">
-                      Laravel Implementation:
-                      <code class="bg-gray-100 px-2 py-1 rounded text-sm"
-                        >/metrc-vendors</code
-                      >
-                    </p>
-                    <p class="text-sm text-gray-500 mt-1">
-                      ✅ Real-time METRC vendor shipment tracking with ETA
-                      monitoring
-                    </p>
-                    <p class="text-sm text-gray-500">
-                      ✅ Package detail viewing and inventory import
-                      functionality
-                    </p>
-                    <p class="text-sm text-gray-500">
-                      ✅ Manifest downloads and vendor communication system
-                    </p>
-                  </div>
-                  </div>
-
-                  <div x-show="typeof metrcTab==='undefined' ? false : metrcTab==='products'" class="space-y-4">
+                  <div
+                    x-show="typeof metrcTab==='undefined' ? false : metrcTab==='products'"
+                    class="space-y-4"
+                  >
                     <div class="bg-white border border-gray-200 rounded-lg p-4">
                       <div class="flex items-center justify-between">
                         <div class="flex items-center gap-3">
-                          <h3 class="text-lg font-semibold text-gray-900">METRC Products</h3>
-                          <span class="text-sm text-gray-500" x-text="'Items: ' + ((typeof metrcProductsSummaryFiltered==='undefined'?[]:metrcProductsSummaryFiltered).length)"></span>
+                          <h3 class="text-lg font-semibold text-gray-900">
+                            METRC Products
+                          </h3>
+                          <span
+                            class="text-sm text-gray-500"
+                            x-text="'Items: ' + ((typeof metrcProductsSummaryFiltered==='undefined'?[]:metrcProductsSummaryFiltered).length)"
+                          ></span>
                         </div>
-                        <input x-model="vendorProductQuery" type="search" placeholder="Search product or tag..." class="w-64 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500" />
+                        <input
+                          x-model="vendorProductQuery"
+                          type="search"
+                          placeholder="Search product or tag..."
+                          class="w-64 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500"
+                        />
                       </div>
                     </div>
-                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div
+                      class="bg-white border border-gray-200 rounded-lg overflow-hidden"
+                    >
                       <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                           <thead class="bg-gray-50">
                             <tr>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tag</th>
-                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">METRC Qty</th>
-                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Inventory Qty</th>
-                              <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Variance</th>
-                              <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Product
+                              </th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Tag
+                              </th>
+                              <th
+                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                METRC Qty
+                              </th>
+                              <th
+                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Inventory Qty
+                              </th>
+                              <th
+                                class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Variance
+                              </th>
+                              <th
+                                class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                              >
+                                Unit
+                              </th>
                             </tr>
                           </thead>
                           <tbody class="bg-white divide-y divide-gray-200">
-                            <template x-for="r in (typeof metrcProductsSummaryFiltered==='undefined'?[]:metrcProductsSummaryFiltered)" :key="r.tag + '_' + r.name">
+                            <template
+                              x-for="r in (typeof metrcProductsSummaryFiltered==='undefined'?[]:metrcProductsSummaryFiltered)"
+                              :key="r.tag + '_' + r.name"
+                            >
                               <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4"><div class="text-sm text-gray-900" x-text="r.name"></div></td>
-                                <td class="px-6 py-4"><code class="text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded" x-text="r.tag || 'No Tag'"></code></td>
-                                <td class="px-6 py-4 text-right" x-text="r.metrc_qty"></td>
-                                <td class="px-6 py-4 text-right" x-text="r.inventory_qty"></td>
-                                <td class="px-6 py-4 text-right" :class="r.variance===0 ? 'text-gray-700' : (r.variance>0 ? 'text-green-700' : 'text-red-700')" x-text="r.variance"></td>
+                                <td class="px-6 py-4">
+                                  <div
+                                    class="text-sm text-gray-900"
+                                    x-text="r.name"
+                                  ></div>
+                                </td>
+                                <td class="px-6 py-4">
+                                  <code
+                                    class="text-xs font-mono text-purple-700 bg-purple-50 px-2 py-1 rounded"
+                                    x-text="r.tag || 'No Tag'"
+                                  ></code>
+                                </td>
+                                <td
+                                  class="px-6 py-4 text-right"
+                                  x-text="r.metrc_qty"
+                                ></td>
+                                <td
+                                  class="px-6 py-4 text-right"
+                                  x-text="r.inventory_qty"
+                                ></td>
+                                <td
+                                  class="px-6 py-4 text-right"
+                                  :class="r.variance===0 ? 'text-gray-700' : (r.variance>0 ? 'text-green-700' : 'text-red-700')"
+                                  x-text="r.variance"
+                                ></td>
                                 <td class="px-6 py-4" x-text="r.unit"></td>
                               </tr>
                             </template>
@@ -8091,58 +8197,157 @@
                   <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                     <div class="flex items-center justify-between">
                       <div class="flex items-center">
-                        <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                        <span class="text-blue-800 font-medium">Employee Evaluation</span>
+                        <svg
+                          class="w-5 h-5 text-blue-600 mr-2"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                        <span class="text-blue-800 font-medium"
+                          >Employee Evaluation</span
+                        >
                       </div>
-                      <div class="text-sm text-blue-700">Store-specific performance vs totals</div>
+                      <div class="text-sm text-blue-700">
+                        Store-specific performance vs totals
+                      </div>
                     </div>
                   </div>
 
-                  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div
+                    class="bg-white border border-gray-200 rounded-lg overflow-hidden"
+                  >
                     <div class="p-4 border-b flex items-center justify-between">
                       <h3 class="text-lg font-semibold">Performance Summary</h3>
-                      <div class="text-sm text-gray-500" x-text="'Employees: ' + (employeeEvalData.rows.length)"></div>
+                      <div
+                        class="text-sm text-gray-500"
+                        x-text="'Employees: ' + (employeeEvalData.rows.length)"
+                      ></div>
                     </div>
                     <div class="overflow-x-auto">
                       <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                           <tr>
-                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Transactions</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">% of Store</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Sales ($)</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">% of Store</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Discounts ($)</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">% of Store</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Returns</th>
-                            <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">Avg Order ($)</th>
+                            <th
+                              class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase"
+                            >
+                              Employee
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              Transactions
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              % of Store
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              Sales ($)
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              % of Store
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              Discounts ($)
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              % of Store
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              Returns
+                            </th>
+                            <th
+                              class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase"
+                            >
+                              Avg Order ($)
+                            </th>
                           </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                          <template x-for="r in employeeEvalData.rows" :key="r.name">
+                          <template
+                            x-for="r in employeeEvalData.rows"
+                            :key="r.name"
+                          >
                             <tr class="hover:bg-gray-50">
-                              <td class="px-4 py-2 text-sm text-gray-900" x-text="r.name"></td>
-                              <td class="px-4 py-2 text-right" x-text="r.tx"></td>
-                              <td class="px-4 py-2 text-right" x-text="(r.txPct).toFixed(1) + '%' "></td>
-                              <td class="px-4 py-2 text-right" x-text="r.sales.toFixed(2)"></td>
-                              <td class="px-4 py-2 text-right" x-text="(r.salesPct).toFixed(1) + '%' "></td>
-                              <td class="px-4 py-2 text-right" x-text="r.discounts.toFixed(2)"></td>
-                              <td class="px-4 py-2 text-right" x-text="(r.discPct).toFixed(1) + '%' "></td>
-                              <td class="px-4 py-2 text-right" x-text="r.returns"></td>
-                              <td class="px-4 py-2 text-right" x-text="r.avgOrder.toFixed(2)"></td>
+                              <td
+                                class="px-4 py-2 text-sm text-gray-900"
+                                x-text="r.name"
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="r.tx"
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="(r.txPct).toFixed(1) + '%' "
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="r.sales.toFixed(2)"
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="(r.salesPct).toFixed(1) + '%' "
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="r.discounts.toFixed(2)"
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="(r.discPct).toFixed(1) + '%' "
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="r.returns"
+                              ></td>
+                              <td
+                                class="px-4 py-2 text-right"
+                                x-text="r.avgOrder.toFixed(2)"
+                              ></td>
                             </tr>
                           </template>
                         </tbody>
                         <tfoot class="bg-gray-50">
                           <tr class="font-semibold">
                             <td class="px-4 py-2 text-right">Totals:</td>
-                            <td class="px-4 py-2 text-right" x-text="employeeEvalData.totals.tx"></td>
+                            <td
+                              class="px-4 py-2 text-right"
+                              x-text="employeeEvalData.totals.tx"
+                            ></td>
                             <td class="px-4 py-2 text-right">100%</td>
-                            <td class="px-4 py-2 text-right" x-text="employeeEvalData.totals.sales.toFixed(2)"></td>
+                            <td
+                              class="px-4 py-2 text-right"
+                              x-text="employeeEvalData.totals.sales.toFixed(2)"
+                            ></td>
                             <td class="px-4 py-2 text-right">100%</td>
-                            <td class="px-4 py-2 text-right" x-text="employeeEvalData.totals.discounts.toFixed(2)"></td>
+                            <td
+                              class="px-4 py-2 text-right"
+                              x-text="employeeEvalData.totals.discounts.toFixed(2)"
+                            ></td>
                             <td class="px-4 py-2 text-right">100%</td>
-                            <td class="px-4 py-2 text-right" x-text="employeeEvalData.totals.returns"></td>
+                            <td
+                              class="px-4 py-2 text-right"
+                              x-text="employeeEvalData.totals.returns"
+                            ></td>
                             <td class="px-4 py-2 text-right">—</td>
                           </tr>
                         </tfoot>
@@ -8150,28 +8355,52 @@
                     </div>
                   </div>
 
-                  <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                  <div
+                    class="bg-white border border-gray-200 rounded-lg overflow-hidden"
+                  >
                     <div class="p-4 border-b flex items-center justify-between">
                       <h3 class="text-lg font-semibold">Top Performers</h3>
-                      <div class="text-sm text-gray-500">Store leaders (top 3)</div>
+                      <div class="text-sm text-gray-500">
+                        Store leaders (top 3)
+                      </div>
                     </div>
                     <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
                       <!-- Top Sales -->
-                      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                      <div
+                        class="bg-blue-50 border border-blue-200 rounded-lg p-4"
+                      >
                         <div class="flex items-center justify-between mb-3">
                           <h4 class="font-semibold text-blue-900">Sales</h4>
-                          <span class="text-xs text-blue-700" x-text="'Total: $' + (employeeEvalData.totals.sales||0).toFixed(2)"></span>
+                          <span
+                            class="text-xs text-blue-700"
+                            x-text="'Total: $' + (employeeEvalData.totals.sales||0).toFixed(2)"
+                          ></span>
                         </div>
                         <div class="space-y-2">
-                          <template x-for="(r, i) in employeeEvalData.top.sales" :key="r.name + '_sales'">
+                          <template
+                            x-for="(r, i) in employeeEvalData.top.sales"
+                            :key="r.name + '_sales'"
+                          >
                             <div class="flex items-center justify-between py-1">
                               <div class="flex items-center gap-2 min-w-0">
-                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold" x-text="i===0?'1st':(i===1?'2nd':'3rd')"></span>
-                                <span class="truncate font-medium text-blue-900" x-text="r.name"></span>
+                                <span
+                                  class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-xs font-semibold"
+                                  x-text="i===0?'1st':(i===1?'2nd':'3rd')"
+                                ></span>
+                                <span
+                                  class="truncate font-medium text-blue-900"
+                                  x-text="r.name"
+                                ></span>
                               </div>
                               <div class="text-right">
-                                <div class="text-sm font-semibold text-blue-900" x-text="'$' + Number(r.value||0).toFixed(2)"></div>
-                                <div class="text-xs text-blue-700" x-text="Number(r.pct||0).toFixed(1) + '%'"></div>
+                                <div
+                                  class="text-sm font-semibold text-blue-900"
+                                  x-text="'$' + Number(r.value||0).toFixed(2)"
+                                ></div>
+                                <div
+                                  class="text-xs text-blue-700"
+                                  x-text="Number(r.pct||0).toFixed(1) + '%'"
+                                ></div>
                               </div>
                             </div>
                           </template>
@@ -8179,21 +8408,43 @@
                       </div>
 
                       <!-- Top Loyalty Sign-ups -->
-                      <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                      <div
+                        class="bg-purple-50 border border-purple-200 rounded-lg p-4"
+                      >
                         <div class="flex items-center justify-between mb-3">
-                          <h4 class="font-semibold text-purple-900">Loyalty Sign-ups</h4>
-                          <span class="text-xs text-purple-700" x-text="'Total: ' + (employeeEvalData.totals.loyalty||0)"></span>
+                          <h4 class="font-semibold text-purple-900">
+                            Loyalty Sign-ups
+                          </h4>
+                          <span
+                            class="text-xs text-purple-700"
+                            x-text="'Total: ' + (employeeEvalData.totals.loyalty||0)"
+                          ></span>
                         </div>
                         <div class="space-y-2">
-                          <template x-for="(r, i) in employeeEvalData.top.loyalty" :key="r.name + '_loyalty'">
+                          <template
+                            x-for="(r, i) in employeeEvalData.top.loyalty"
+                            :key="r.name + '_loyalty'"
+                          >
                             <div class="flex items-center justify-between py-1">
                               <div class="flex items-center gap-2 min-w-0">
-                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold" x-text="i===0?'1st':(i===1?'2nd':'3rd')"></span>
-                                <span class="truncate font-medium text-purple-900" x-text="r.name"></span>
+                                <span
+                                  class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-purple-100 text-purple-700 text-xs font-semibold"
+                                  x-text="i===0?'1st':(i===1?'2nd':'3rd')"
+                                ></span>
+                                <span
+                                  class="truncate font-medium text-purple-900"
+                                  x-text="r.name"
+                                ></span>
                               </div>
                               <div class="text-right">
-                                <div class="text-sm font-semibold text-purple-900" x-text="Number(r.value||0)"></div>
-                                <div class="text-xs text-purple-700" x-text="Number(r.pct||0).toFixed(1) + '%'"></div>
+                                <div
+                                  class="text-sm font-semibold text-purple-900"
+                                  x-text="Number(r.value||0)"
+                                ></div>
+                                <div
+                                  class="text-xs text-purple-700"
+                                  x-text="Number(r.pct||0).toFixed(1) + '%'"
+                                ></div>
                               </div>
                             </div>
                           </template>
@@ -8201,21 +8452,43 @@
                       </div>
 
                       <!-- Watchlist: Returns -->
-                      <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                      <div
+                        class="bg-red-50 border border-red-200 rounded-lg p-4"
+                      >
                         <div class="flex items-center justify-between mb-3">
-                          <h4 class="font-semibold text-red-900">Watchlist (Returns)</h4>
-                          <span class="text-xs text-red-700" x-text="'Total: ' + (employeeEvalData.totals.returns||0)"></span>
+                          <h4 class="font-semibold text-red-900">
+                            Watchlist (Returns)
+                          </h4>
+                          <span
+                            class="text-xs text-red-700"
+                            x-text="'Total: ' + (employeeEvalData.totals.returns||0)"
+                          ></span>
                         </div>
                         <div class="space-y-2">
-                          <template x-for="(r, i) in employeeEvalData.top.returns" :key="r.name + '_returns'">
+                          <template
+                            x-for="(r, i) in employeeEvalData.top.returns"
+                            :key="r.name + '_returns'"
+                          >
                             <div class="flex items-center justify-between py-1">
                               <div class="flex items-center gap-2 min-w-0">
-                                <span class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 text-red-700 text-xs font-semibold" x-text="i===0?'1st':(i===1?'2nd':'3rd')"></span>
-                                <span class="truncate font-medium text-red-900" x-text="r.name"></span>
+                                <span
+                                  class="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-100 text-red-700 text-xs font-semibold"
+                                  x-text="i===0?'1st':(i===1?'2nd':'3rd')"
+                                ></span>
+                                <span
+                                  class="truncate font-medium text-red-900"
+                                  x-text="r.name"
+                                ></span>
                               </div>
                               <div class="text-right">
-                                <div class="text-sm font-semibold text-red-900" x-text="Number(r.value||0)"></div>
-                                <div class="text-xs text-red-700" x-text="Number(r.pct||0).toFixed(1) + '%'"></div>
+                                <div
+                                  class="text-sm font-semibold text-red-900"
+                                  x-text="Number(r.value||0)"
+                                ></div>
+                                <div
+                                  class="text-xs text-red-700"
+                                  x-text="Number(r.pct||0).toFixed(1) + '%'"
+                                ></div>
                               </div>
                             </div>
                           </template>
@@ -8223,7 +8496,6 @@
                       </div>
                     </div>
                   </div>
-
                 </div>
               </template>
 

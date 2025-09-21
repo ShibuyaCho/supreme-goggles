@@ -120,7 +120,11 @@ class POSAuth {
           let store = null;
           const raw = localStorage.getItem("pos_store");
           if (raw) {
-            try { store = JSON.parse(raw); } catch (_) { store = null; }
+            try {
+              store = JSON.parse(raw);
+            } catch (_) {
+              store = null;
+            }
           }
           if (store && store.id) {
             let sid = String(store.id || "default")
@@ -131,11 +135,16 @@ class POSAuth {
             if (sid === "defaultstore") sid = "default";
             config.headers["X-Store-ID"] = sid || "default";
             sidSet = true;
-            const sname = (store.name || store.store_name || "");
+            const sname = store.name || store.store_name || "";
             if (sname) config.headers["X-Store-Name"] = String(sname);
-            if (store && store.orgId) config.headers["X-Org-ID"] = String(store.orgId);
+            if (store && store.orgId)
+              config.headers["X-Org-ID"] = String(store.orgId);
           }
-          if (!sidSet && window.SettingsClient && typeof SettingsClient.currentStoreId === "function") {
+          if (
+            !sidSet &&
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+          ) {
             let sid = String(SettingsClient.currentStoreId() || "default")
               .trim()
               .toLowerCase()
@@ -144,7 +153,10 @@ class POSAuth {
             if (sid === "defaultstore") sid = "default";
             config.headers["X-Store-ID"] = sid || "default";
             try {
-              const sname = (typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : "") || "";
+              const sname =
+                (typeof SettingsClient.currentStoreName === "function"
+                  ? SettingsClient.currentStoreName()
+                  : "") || "";
               if (sname) config.headers["X-Store-Name"] = String(sname);
             } catch (_) {}
           }

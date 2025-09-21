@@ -24,7 +24,9 @@ function cannabisPOS() {
       this.loadStoreContext();
       this.loadSettings();
       // Load local loyalty enrollments for current store
-      try { this.loadLoyaltyEnrollments && this.loadLoyaltyEnrollments(); } catch (_) {}
+      try {
+        this.loadLoyaltyEnrollments && this.loadLoyaltyEnrollments();
+      } catch (_) {}
       this.loadCartState();
       // Defer networked data until auth headers are set
       await (this.loadData && this.loadData());
@@ -601,10 +603,16 @@ function cannabisPOS() {
     // METRC section tabs and derived products list
     metrcTab: "transfers",
     vendorProductQuery: "",
-    setMetrcTab(tab){
+    setMetrcTab(tab) {
       this.metrcTab = tab;
-      if(tab==='products' && (!Array.isArray(this.metrcProductsSummary) || this.metrcProductsSummary.length===0)){
-        try{ this.refreshMetrcProductsSummary(); }catch(_){}
+      if (
+        tab === "products" &&
+        (!Array.isArray(this.metrcProductsSummary) ||
+          this.metrcProductsSummary.length === 0)
+      ) {
+        try {
+          this.refreshMetrcProductsSummary();
+        } catch (_) {}
       }
     },
     get metrcProducts() {
@@ -647,97 +655,215 @@ function cannabisPOS() {
       }
     },
     // Employee Evaluation computed stats (store-scoped)
-    get employeeEvalData(){
-      try{
-        const sales = Array.isArray(this.filteredSales) && this.filteredSales.length ? this.filteredSales : (Array.isArray(this.sales)?this.sales:[]);
-        const employees = Array.isArray(this.employees)?this.employees:[];
-        const totals = { tx:0, sales:0, discounts:0, returns:0, loyalty:0 };
+    get employeeEvalData() {
+      try {
+        const sales =
+          Array.isArray(this.filteredSales) && this.filteredSales.length
+            ? this.filteredSales
+            : Array.isArray(this.sales)
+              ? this.sales
+              : [];
+        const employees = Array.isArray(this.employees) ? this.employees : [];
+        const totals = {
+          tx: 0,
+          sales: 0,
+          discounts: 0,
+          returns: 0,
+          loyalty: 0,
+        };
         const byEmp = new Map();
-        for(const s of sales){
-          const emp = (s.employee||'Unknown').toString();
-          const row = byEmp.get(emp) || { name: emp, tx:0, sales:0, discounts:0, returns:0, loyaltySignups:0 };
+        for (const s of sales) {
+          const emp = (s.employee || "Unknown").toString();
+          const row = byEmp.get(emp) || {
+            name: emp,
+            tx: 0,
+            sales: 0,
+            discounts: 0,
+            returns: 0,
+            loyaltySignups: 0,
+          };
           row.tx += 1;
-          row.sales += Number(s.total||0);
-          try{ const dsum = Array.isArray(s.discounts)? s.discounts.reduce((a,b)=> a + Number(b.amount||0), 0) : 0; row.discounts += dsum; }catch(_){ }
-          const status = String(s.status||'');
-          const isReturn = /refund|return|void/i.test(status) || Number(s.total||0) < 0 || s.isVoided === true;
-          if(isReturn) row.returns += 1;
-          byEmp.set(emp,row);
-          totals.tx += 1; totals.sales += Number(s.total||0);
-          if(isReturn) totals.returns += 1;
+          row.sales += Number(s.total || 0);
+          try {
+            const dsum = Array.isArray(s.discounts)
+              ? s.discounts.reduce((a, b) => a + Number(b.amount || 0), 0)
+              : 0;
+            row.discounts += dsum;
+          } catch (_) {}
+          const status = String(s.status || "");
+          const isReturn =
+            /refund|return|void/i.test(status) ||
+            Number(s.total || 0) < 0 ||
+            s.isVoided === true;
+          if (isReturn) row.returns += 1;
+          byEmp.set(emp, row);
+          totals.tx += 1;
+          totals.sales += Number(s.total || 0);
+          if (isReturn) totals.returns += 1;
         }
         // Loyalty sign-ups (tracked locally per store)
-        const loyalty = Array.isArray(this.loyaltyEnrollments) ? this.loyaltyEnrollments : [];
-        const storeId = (this.selectedStore && this.selectedStore.id) ? String(this.selectedStore.id) : 'default';
+        const loyalty = Array.isArray(this.loyaltyEnrollments)
+          ? this.loyaltyEnrollments
+          : [];
+        const storeId =
+          this.selectedStore && this.selectedStore.id
+            ? String(this.selectedStore.id)
+            : "default";
         const loyaltyByEmp = new Map();
-        for(const e of loyalty){
-          if (e && (e.storeId||'default') === storeId){
-            const k = (e.employee || 'Unknown').toString();
-            loyaltyByEmp.set(k, (loyaltyByEmp.get(k)||0) + 1);
+        for (const e of loyalty) {
+          if (e && (e.storeId || "default") === storeId) {
+            const k = (e.employee || "Unknown").toString();
+            loyaltyByEmp.set(k, (loyaltyByEmp.get(k) || 0) + 1);
             totals.loyalty += 1;
           }
         }
-        totals.discounts = 0; byEmp.forEach(r=> totals.discounts += r.discounts);
-        for(const e of employees){ const name=(e.name||e.fullName||((e.firstName||'')+" "+(e.lastName||'')).trim()||e.employeeName)||e.employee||e.username||e.email||''; const key = name || (e.id!=null?`#${e.id}`:'Unknown'); if(!byEmp.has(key)) byEmp.set(key,{name:key, tx:0, sales:0, discounts:0, returns:0, loyaltySignups:0}); }
-        const rows = Array.from(byEmp.values()).map(r=>{
-          const loyaltySignups = loyaltyByEmp.get(r.name) || 0;
-          return ({
-            ...r,
-            loyaltySignups,
-            avgOrder: r.tx>0 ? r.sales/r.tx : 0,
-            txPct: totals.tx>0 ? (r.tx/totals.tx)*100 : 0,
-            salesPct: totals.sales!==0 ? (r.sales/totals.sales)*100 : 0,
-            discPct: totals.discounts!==0 ? (r.discounts/totals.discounts)*100 : 0,
-            retPct: totals.returns>0 ? (r.returns/totals.returns)*100 : 0,
-            loyaltyPct: totals.loyalty>0 ? (loyaltySignups/totals.loyalty)*100 : 0,
-          });
-        }).sort((a,b)=> b.sales - a.sales);
-        const topSales = rows.slice().sort((a,b)=> b.sales - a.sales).slice(0,3).map(r=>({ name:r.name, value:r.sales, pct: r.salesPct, tx:r.tx }));
-        const topLoyalty = rows.slice().sort((a,b)=> b.loyaltySignups - a.loyaltySignups).slice(0,3).map(r=>({ name:r.name, value:r.loyaltySignups, pct: r.loyaltyPct }));
-        const topReturns = rows.slice().sort((a,b)=> b.returns - a.returns).slice(0,3).map(r=>({ name:r.name, value:r.returns, pct: (totals.returns>0?(r.returns/totals.returns*100):0) }));
-        return { totals, rows, top:{ sales: topSales, loyalty: topLoyalty, returns: topReturns } };
-      }catch(_){ return { totals:{tx:0,sales:0,discounts:0,returns:0,loyalty:0}, rows:[], top:{ sales:[], loyalty:[], returns:[] } }; }
+        totals.discounts = 0;
+        byEmp.forEach((r) => (totals.discounts += r.discounts));
+        for (const e of employees) {
+          const name =
+            e.name ||
+            e.fullName ||
+            ((e.firstName || "") + " " + (e.lastName || "")).trim() ||
+            e.employeeName ||
+            e.employee ||
+            e.username ||
+            e.email ||
+            "";
+          const key = name || (e.id != null ? `#${e.id}` : "Unknown");
+          if (!byEmp.has(key))
+            byEmp.set(key, {
+              name: key,
+              tx: 0,
+              sales: 0,
+              discounts: 0,
+              returns: 0,
+              loyaltySignups: 0,
+            });
+        }
+        const rows = Array.from(byEmp.values())
+          .map((r) => {
+            const loyaltySignups = loyaltyByEmp.get(r.name) || 0;
+            return {
+              ...r,
+              loyaltySignups,
+              avgOrder: r.tx > 0 ? r.sales / r.tx : 0,
+              txPct: totals.tx > 0 ? (r.tx / totals.tx) * 100 : 0,
+              salesPct: totals.sales !== 0 ? (r.sales / totals.sales) * 100 : 0,
+              discPct:
+                totals.discounts !== 0
+                  ? (r.discounts / totals.discounts) * 100
+                  : 0,
+              retPct:
+                totals.returns > 0 ? (r.returns / totals.returns) * 100 : 0,
+              loyaltyPct:
+                totals.loyalty > 0
+                  ? (loyaltySignups / totals.loyalty) * 100
+                  : 0,
+            };
+          })
+          .sort((a, b) => b.sales - a.sales);
+        const topSales = rows
+          .slice()
+          .sort((a, b) => b.sales - a.sales)
+          .slice(0, 3)
+          .map((r) => ({
+            name: r.name,
+            value: r.sales,
+            pct: r.salesPct,
+            tx: r.tx,
+          }));
+        const topLoyalty = rows
+          .slice()
+          .sort((a, b) => b.loyaltySignups - a.loyaltySignups)
+          .slice(0, 3)
+          .map((r) => ({
+            name: r.name,
+            value: r.loyaltySignups,
+            pct: r.loyaltyPct,
+          }));
+        const topReturns = rows
+          .slice()
+          .sort((a, b) => b.returns - a.returns)
+          .slice(0, 3)
+          .map((r) => ({
+            name: r.name,
+            value: r.returns,
+            pct: totals.returns > 0 ? (r.returns / totals.returns) * 100 : 0,
+          }));
+        return {
+          totals,
+          rows,
+          top: { sales: topSales, loyalty: topLoyalty, returns: topReturns },
+        };
+      } catch (_) {
+        return {
+          totals: { tx: 0, sales: 0, discounts: 0, returns: 0, loyalty: 0 },
+          rows: [],
+          top: { sales: [], loyalty: [], returns: [] },
+        };
+      }
     },
 
     // Products summary from backend
     metrcProductsSummary: [],
     metrcProductsSummaryLoading: false,
-    async refreshMetrcProductsSummary(){
-      try{
+    async refreshMetrcProductsSummary() {
+      try {
         this.metrcProductsSummaryLoading = true;
-        const res = await (window.axios || axios).get('/api/metrc/products/summary', { headers:{ Accept:'application/json' }});
+        const res = await (window.axios || axios).get(
+          "/api/metrc/products/summary",
+          { headers: { Accept: "application/json" } },
+        );
         const rows = res?.data?.data || res?.data?.rows || res?.data || [];
-        this.metrcProductsSummary = (Array.isArray(rows)?rows:[]).map((r)=>({
-          name: r.name || r.ProductName || 'Unknown',
-          tag: r.tag || r.PackageLabel || '',
-          metrc_qty: Number(r.metrc_qty ?? r.metrcQty ?? r.metrc_quantity ?? r.quantity ?? 0),
-          inventory_qty: Number(r.inventory_qty ?? r.inventoryQty ?? r.flowhub_qty ?? 0),
-          variance: Number(r.inventory_qty ?? 0) - Number(r.metrc_qty ?? 0),
-          unit: r.unit || r.UnitOfMeasureName || r.unit_of_measure || '',
-          last_modified: r.last_modified || r.LastModified || r.updated_at || null,
-          sku: r.sku || r.SKU || ''
-        }));
-      } catch(_) { this.metrcProductsSummary = []; }
-      finally { this.metrcProductsSummaryLoading = false; }
+        this.metrcProductsSummary = (Array.isArray(rows) ? rows : []).map(
+          (r) => ({
+            name: r.name || r.ProductName || "Unknown",
+            tag: r.tag || r.PackageLabel || "",
+            metrc_qty: Number(
+              r.metrc_qty ?? r.metrcQty ?? r.metrc_quantity ?? r.quantity ?? 0,
+            ),
+            inventory_qty: Number(
+              r.inventory_qty ?? r.inventoryQty ?? r.flowhub_qty ?? 0,
+            ),
+            variance: Number(r.inventory_qty ?? 0) - Number(r.metrc_qty ?? 0),
+            unit: r.unit || r.UnitOfMeasureName || r.unit_of_measure || "",
+            last_modified:
+              r.last_modified || r.LastModified || r.updated_at || null,
+            sku: r.sku || r.SKU || "",
+          }),
+        );
+      } catch (_) {
+        this.metrcProductsSummary = [];
+      } finally {
+        this.metrcProductsSummaryLoading = false;
+      }
     },
-    get metrcProductsSummaryFiltered(){
-      try{
-        const q=(this.vendorProductQuery||'').toLowerCase();
-        let rows = Array.isArray(this.metrcProductsSummary)?this.metrcProductsSummary:[];
-        if(rows.length===0){
-          const base = Array.isArray(this.metrcProducts)?this.metrcProducts:[];
-          rows = base.map(r=>({
+    get metrcProductsSummaryFiltered() {
+      try {
+        const q = (this.vendorProductQuery || "").toLowerCase();
+        let rows = Array.isArray(this.metrcProductsSummary)
+          ? this.metrcProductsSummary
+          : [];
+        if (rows.length === 0) {
+          const base = Array.isArray(this.metrcProducts)
+            ? this.metrcProducts
+            : [];
+          rows = base.map((r) => ({
             name: r.name,
             tag: r.tag,
-            metrc_qty: Number(r.qty||0),
+            metrc_qty: Number(r.qty || 0),
             inventory_qty: 0,
-            variance: 0 - Number(r.qty||0),
-            unit: r.unit||''
+            variance: 0 - Number(r.qty || 0),
+            unit: r.unit || "",
           }));
         }
-        if(!q) return rows;
-        return rows.filter(r=>(`${r.name} ${r.tag} ${r.sku||''}`).toLowerCase().includes(q));
-      }catch(_){ return this.metrcProductsSummary||[]; }
+        if (!q) return rows;
+        return rows.filter((r) =>
+          `${r.name} ${r.tag} ${r.sku || ""}`.toLowerCase().includes(q),
+        );
+      } catch (_) {
+        return this.metrcProductsSummary || [];
+      }
     },
 
     get filteredVendors() {
@@ -1258,8 +1384,14 @@ function cannabisPOS() {
             : [];
           this.products.unshift(created);
           try {
-            (function(){
-              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            (function () {
+              const sid =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : this._currentStoreId
+                    ? this._currentStoreId()
+                    : "default";
               localStorage.setItem(
                 `cannabisPOS-products_${sid}`,
                 JSON.stringify({ data: this.products }),
@@ -1918,8 +2050,16 @@ function cannabisPOS() {
             JSON.stringify(this.storeSettings),
           );
           // Store-scoped cache
-          try { this.storeSettings.lastUpdated = Date.now(); } catch(_){ }
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          try {
+            this.storeSettings.lastUpdated = Date.now();
+          } catch (_) {}
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-storeSettings_${sid}`,
             JSON.stringify(this.storeSettings),
@@ -2167,13 +2307,27 @@ function cannabisPOS() {
       } finally {
         // Load persisted drawers
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-          const raw = localStorage.getItem(`pos_drawers_${sid}`) || localStorage.getItem("pos_drawers");
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
+          const raw =
+            localStorage.getItem(`pos_drawers_${sid}`) ||
+            localStorage.getItem("pos_drawers");
           if (raw) this.cashDrawers = JSON.parse(raw);
         } catch (_) {}
         // Load persisted rooms
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           const rawR =
             localStorage.getItem(`pos_rooms_${sid}`) ||
             localStorage.getItem("pos_rooms") ||
@@ -2278,11 +2432,21 @@ function cannabisPOS() {
           window.addEventListener("storage", (e) => {
             if (!e) return;
             if (e.key === "pos_store") {
-              try { this.loadSettings && this.loadSettings(); } catch(_){}
-              try { this.loadApiSettings && this.loadApiSettings(); } catch(_){}
-              try { this.loadPriceTiers && this.loadPriceTiers(); } catch(_){}
-              try { this._refreshProductsFromApi && this._refreshProductsFromApi(); } catch(_){}
-              try { this.filterProducts && this.filterProducts(); } catch(_){}
+              try {
+                this.loadSettings && this.loadSettings();
+              } catch (_) {}
+              try {
+                this.loadApiSettings && this.loadApiSettings();
+              } catch (_) {}
+              try {
+                this.loadPriceTiers && this.loadPriceTiers();
+              } catch (_) {}
+              try {
+                this._refreshProductsFromApi && this._refreshProductsFromApi();
+              } catch (_) {}
+              try {
+                this.filterProducts && this.filterProducts();
+              } catch (_) {}
             }
             if (e.key === "pos_last_sale_id" && e.newValue) {
               const [sid] = String(e.newValue).split(":");
@@ -2578,15 +2742,24 @@ function cannabisPOS() {
             if (raw) localTs = Number(JSON.parse(raw).lastUpdated || 0) || 0;
           } catch (_) {}
           // Update local settings with API data
-          this.taxRate = (function(self){
+          this.taxRate = (function (self) {
             const st = Number(settings.sales_tax);
             const rec = Number(settings.cannabis_tax);
-            let v = Number.isFinite(st) && st > 0 ? st : (Number.isFinite(rec) && rec > 0 ? rec : Number((self.taxSettings && self.taxSettings.stateRate) || 0));
+            let v =
+              Number.isFinite(st) && st > 0
+                ? st
+                : Number.isFinite(rec) && rec > 0
+                  ? rec
+                  : Number(
+                      (self.taxSettings && self.taxSettings.stateRate) || 0,
+                    );
             return Number.isFinite(v) ? v : 0;
           })(this);
-          this.medicalTaxRate = (function(self){
+          this.medicalTaxRate = (function (self) {
             const med = Number(settings.medical_tax_rate);
-            const fallback = Number.isFinite(med) ? med : Number((self.taxSettings && self.taxSettings.medicalRate) || 0);
+            const fallback = Number.isFinite(med)
+              ? med
+              : Number((self.taxSettings && self.taxSettings.medicalRate) || 0);
             return Number.isFinite(fallback) ? fallback : 0;
           })(this);
           // Merge and map server settings to UI store settings (prefer newer)
@@ -2621,30 +2794,50 @@ function cannabisPOS() {
             // Map tax & sales settings into UI state for current store
             const rec = Number(settings.cannabis_tax);
             const loc = Number(settings.excise_tax);
-            const st  = Number(settings.sales_tax);
-            const inc = typeof settings.tax_inclusive === 'boolean' ? settings.tax_inclusive : this.taxSettings.includeInPrice;
+            const st = Number(settings.sales_tax);
+            const inc =
+              typeof settings.tax_inclusive === "boolean"
+                ? settings.tax_inclusive
+                : this.taxSettings.includeInPrice;
             const med = Number(this.taxSettings.medicalRate || 0);
             this.taxSettings = {
-              recreationalRate: Number.isFinite(rec) ? rec : this.taxSettings.recreationalRate,
+              recreationalRate: Number.isFinite(rec)
+                ? rec
+                : this.taxSettings.recreationalRate,
               medicalRate: Number.isFinite(med) ? med : 0,
               includeInPrice: inc,
-              localRate: Number.isFinite(loc) ? loc : this.taxSettings.localRate,
+              localRate: Number.isFinite(loc)
+                ? loc
+                : this.taxSettings.localRate,
               stateRate: Number.isFinite(st) ? st : this.taxSettings.stateRate,
             };
             const minAmt = Number(settings.minimum_price_amount);
-            const minEn  = typeof settings.minimum_price_enabled === 'boolean' ? settings.minimum_price_enabled : this.salesSettings.enforceMinimumSale;
-            const dlim   = Number(settings.__ui_daily_limit);
-            const reqCust= typeof settings.require_customer === 'boolean' ? settings.require_customer : this.salesSettings.requireCustomerInfo;
+            const minEn =
+              typeof settings.minimum_price_enabled === "boolean"
+                ? settings.minimum_price_enabled
+                : this.salesSettings.enforceMinimumSale;
+            const dlim = Number(settings.__ui_daily_limit);
+            const reqCust =
+              typeof settings.require_customer === "boolean"
+                ? settings.require_customer
+                : this.salesSettings.requireCustomerInfo;
             this.salesSettings = {
-              minimumSale: Number.isFinite(minAmt) ? minAmt : this.salesSettings.minimumSale,
+              minimumSale: Number.isFinite(minAmt)
+                ? minAmt
+                : this.salesSettings.minimumSale,
               enforceMinimumSale: minEn,
-              dailyLimit: Number.isFinite(dlim) ? dlim : this.salesSettings.dailyLimit,
+              dailyLimit: Number.isFinite(dlim)
+                ? dlim
+                : this.salesSettings.dailyLimit,
               requireCustomerInfo: reqCust,
             };
-            if (settings.auto_delete_zero_quantity !== undefined) this.autoDeleteZeroQuantity = !!settings.auto_delete_zero_quantity;
+            if (settings.auto_delete_zero_quantity !== undefined)
+              this.autoDeleteZeroQuantity =
+                !!settings.auto_delete_zero_quantity;
             if (settings.auto_delete_zero_days !== undefined) {
               const dz = Number(settings.auto_delete_zero_days);
-              if (Number.isFinite(dz)) this.autoDeleteZeroDays = Math.min(30, Math.max(1, dz));
+              if (Number.isFinite(dz))
+                this.autoDeleteZeroDays = Math.min(30, Math.max(1, dz));
             }
           }
           if (
@@ -3679,16 +3872,26 @@ function cannabisPOS() {
         if (!Array.isArray(list) || list.length === 0) {
           try {
             const resp = await fetch("/deals", {
-              headers: (function(){
+              headers: function () {
                 const h = { Accept: "application/json" };
                 try {
-                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-                  const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                  const sid =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreId === "function"
+                      ? SettingsClient.currentStoreId()
+                      : this._currentStoreId
+                        ? this._currentStoreId()
+                        : "default";
+                  const sname =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreName === "function"
+                      ? SettingsClient.currentStoreName()
+                      : "";
                   if (sid) h["X-Store-ID"] = String(sid);
                   if (sname) h["X-Store-Name"] = String(sname);
                 } catch (_) {}
                 return h;
-              }).call(this),
+              }.call(this),
               credentials: "same-origin",
             });
             if (resp.ok) {
@@ -4573,8 +4776,12 @@ function cannabisPOS() {
         }
       }
       if (page === "metrc-vendors") {
-        try { this.refreshVendorData(); } catch (_) {}
-        try { this.refreshMetrcProductsSummary(); } catch (_) {}
+        try {
+          this.refreshVendorData();
+        } catch (_) {}
+        try {
+          this.refreshMetrcProductsSummary();
+        } catch (_) {}
       }
       if (page === "order-queue") {
         try {
@@ -4582,8 +4789,14 @@ function cannabisPOS() {
         } catch (_) {}
       }
       if (page === "employee-eval") {
-        try { if (!Array.isArray(this.sales) || this.sales.length===0) this.refreshSales(true); } catch(_){}
-        try { if (!Array.isArray(this.employees) || this.employees.length===0) this.fetchEmployeesFromApi && this.fetchEmployeesFromApi(); } catch(_){}
+        try {
+          if (!Array.isArray(this.sales) || this.sales.length === 0)
+            this.refreshSales(true);
+        } catch (_) {}
+        try {
+          if (!Array.isArray(this.employees) || this.employees.length === 0)
+            this.fetchEmployeesFromApi && this.fetchEmployeesFromApi();
+        } catch (_) {}
       }
     },
 
@@ -5395,10 +5608,20 @@ function cannabisPOS() {
       } catch (_) {}
       if (!Array.isArray(list) || list.length === 0) {
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           const uid = window.posAuth?.getUser?.()?.id || "anon";
           const key = `cannabisPOS-savedSales-${sid}-${uid}`;
-          list = JSON.parse(localStorage.getItem(key) || localStorage.getItem(`cannabisPOS-savedSales-${uid}`) || "[]");
+          list = JSON.parse(
+            localStorage.getItem(key) ||
+              localStorage.getItem(`cannabisPOS-savedSales-${uid}`) ||
+              "[]",
+          );
         } catch (_) {
           list = [];
         }
@@ -5418,10 +5641,20 @@ function cannabisPOS() {
         ) {
           await posAuth.apiRequest("delete", `/pos/saved-sales/${id}`);
         } else {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           const uid = window.posAuth?.getUser?.()?.id || "anon";
           const key = `cannabisPOS-savedSales-${sid}-${uid}`;
-          const list = JSON.parse(localStorage.getItem(key) || localStorage.getItem(`cannabisPOS-savedSales-${uid}`) || "[]");
+          const list = JSON.parse(
+            localStorage.getItem(key) ||
+              localStorage.getItem(`cannabisPOS-savedSales-${uid}`) ||
+              "[]",
+          );
           const next = list.filter((x) => x.id !== id);
           localStorage.setItem(key, JSON.stringify(next));
         }
@@ -5519,10 +5752,20 @@ function cannabisPOS() {
       } catch (_) {}
       if (!savedOk) {
         try {
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           const uid = window.posAuth?.getUser?.()?.id || "anon";
           const key = `cannabisPOS-savedSales-${sid}-${uid}`;
-          const list = JSON.parse(localStorage.getItem(key) || localStorage.getItem(`cannabisPOS-savedSales-${uid}`) || "[]");
+          const list = JSON.parse(
+            localStorage.getItem(key) ||
+              localStorage.getItem(`cannabisPOS-savedSales-${uid}`) ||
+              "[]",
+          );
           list.unshift(payload);
           localStorage.setItem(key, JSON.stringify(list.slice(0, 50)));
           savedOk = true;
@@ -5664,7 +5907,13 @@ function cannabisPOS() {
     cartStorageKey() {
       try {
         const uid = posAuth?.getUser()?.id || "anon";
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
         return `cannabisPOS-cart_${sid}-${uid}`;
       } catch (_) {
         return "cannabisPOS-cart-default-anon";
@@ -5706,7 +5955,13 @@ function cannabisPOS() {
     customersStorageKey() {
       try {
         const uid = posAuth?.getUser()?.id || "anon";
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
         return `cannabisPOS-customers_${sid}-${uid}`;
       } catch (_) {
         return "cannabisPOS-customers-default-anon";
@@ -5726,7 +5981,13 @@ function cannabisPOS() {
     loyaltyStorageKeys() {
       try {
         const uid = posAuth?.getUser()?.id || "anon";
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
         return [`cannabest-loyalty-${sid}-${uid}`, `cannabest-loyalty-${uid}`];
       } catch (_) {
         return ["cannabest-loyalty-default-anon", "cannabest-loyalty-anon"];
@@ -5824,7 +6085,10 @@ function cannabisPOS() {
       try {
         this.filterLoyaltyCustomers();
       } catch (_) {}
-      try { this.recordLoyaltyEnrollment && this.recordLoyaltyEnrollment(enrolled.id, enrolled.name); } catch (_) {}
+      try {
+        this.recordLoyaltyEnrollment &&
+          this.recordLoyaltyEnrollment(enrolled.id, enrolled.name);
+      } catch (_) {}
       this.showEnrollCustomerModal = false;
       this.enrollForm = {
         customerName: "",
@@ -6164,41 +6428,79 @@ function cannabisPOS() {
     loyaltyEnrollments: [],
     loyaltyEnrollmentsKey() {
       try {
-        const sid = (this.selectedStore && this.selectedStore.id) ? String(this.selectedStore.id) : 'default';
+        const sid =
+          this.selectedStore && this.selectedStore.id
+            ? String(this.selectedStore.id)
+            : "default";
         return `pos_loyalty_enrollments_${sid}`;
-      } catch (_) { return 'pos_loyalty_enrollments_default'; }
+      } catch (_) {
+        return "pos_loyalty_enrollments_default";
+      }
     },
     loadLoyaltyEnrollments() {
       try {
-        const raw = localStorage.getItem(this.loyaltyEnrollmentsKey()) || '[]';
+        const raw = localStorage.getItem(this.loyaltyEnrollmentsKey()) || "[]";
         const arr = JSON.parse(raw);
         this.loyaltyEnrollments = Array.isArray(arr) ? arr : [];
-      } catch (_) { this.loyaltyEnrollments = []; }
+      } catch (_) {
+        this.loyaltyEnrollments = [];
+      }
     },
     saveLoyaltyEnrollments() {
-      try { localStorage.setItem(this.loyaltyEnrollmentsKey(), JSON.stringify(Array.isArray(this.loyaltyEnrollments)?this.loyaltyEnrollments:[])); } catch (_) {}
+      try {
+        localStorage.setItem(
+          this.loyaltyEnrollmentsKey(),
+          JSON.stringify(
+            Array.isArray(this.loyaltyEnrollments)
+              ? this.loyaltyEnrollments
+              : [],
+          ),
+        );
+      } catch (_) {}
     },
     _currentEmployeeName() {
       try {
-        const u = (window.posAuth && window.posAuth.getUser && window.posAuth.getUser()) || {};
-        const n = (u.name || (u.employee && ((u.employee.first_name||'') + ' ' + (u.employee.last_name||'')).trim()) || '').trim();
-        return n || 'Unknown';
-      } catch (_) { return 'Unknown'; }
+        const u =
+          (window.posAuth &&
+            window.posAuth.getUser &&
+            window.posAuth.getUser()) ||
+          {};
+        const n = (
+          u.name ||
+          (u.employee &&
+            (
+              (u.employee.first_name || "") +
+              " " +
+              (u.employee.last_name || "")
+            ).trim()) ||
+          ""
+        ).trim();
+        return n || "Unknown";
+      } catch (_) {
+        return "Unknown";
+      }
     },
-    recordLoyaltyEnrollment(customerId, customerName){
-      try{
+    recordLoyaltyEnrollment(customerId, customerName) {
+      try {
         const entry = {
           customerId: customerId != null ? String(customerId) : null,
           customerName: customerName || null,
           employee: this._currentEmployeeName(),
           ts: Date.now(),
-          storeId: (this.selectedStore && this.selectedStore.id) ? String(this.selectedStore.id) : 'default',
+          storeId:
+            this.selectedStore && this.selectedStore.id
+              ? String(this.selectedStore.id)
+              : "default",
         };
-        const list = Array.isArray(this.loyaltyEnrollments) ? this.loyaltyEnrollments : [];
+        const list = Array.isArray(this.loyaltyEnrollments)
+          ? this.loyaltyEnrollments
+          : [];
         list.push(entry);
         this.loyaltyEnrollments = list;
         this.saveLoyaltyEnrollments();
-      }catch(_){ /* ignore */ }
+      } catch (_) {
+        /* ignore */
+      }
     },
 
     // Loyalty filtering and stats (for demo index.html)
@@ -6382,7 +6684,13 @@ function cannabisPOS() {
 
     // Settings and data management
     loadSettings() {
-      const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+      const sid =
+        window.SettingsClient &&
+        typeof SettingsClient.currentStoreId === "function"
+          ? SettingsClient.currentStoreId()
+          : this._currentStoreId
+            ? this._currentStoreId()
+            : "default";
       try {
         const savedPrimaryNs = localStorage.getItem(
           `cannabisPOS-settings_${sid}`,
@@ -6421,7 +6729,12 @@ function cannabisPOS() {
             this.printSettings = {
               autoprint: !!ps.autoprint,
               printLabels: !!ps.printLabels,
-              receiptTemplate: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(ps.receiptTemplate),
+              receiptTemplate: (function (v) {
+                v = String(v || "standard");
+                return ["standard", "detailed", "minimal"].includes(v)
+                  ? v
+                  : "standard";
+              })(ps.receiptTemplate),
               paperSize: ps.paperSize || "80mm",
               categoriesAutoprint: Array.isArray(ps.categoriesAutoprint)
                 ? ps.categoriesAutoprint
@@ -6541,9 +6854,20 @@ function cannabisPOS() {
           if (Object.prototype.hasOwnProperty.call(s, "__ui_print_labels")) {
             this.printSettings.printLabels = !!s.__ui_print_labels;
           }
-          if (Object.prototype.hasOwnProperty.call(s, "__ui_receipt_template")) {
-            const v = s.__ui_receipt_template || this.printSettings.receiptTemplate || "standard";
-            this.printSettings.receiptTemplate = ["standard","detailed","minimal"].includes(String(v)) ? String(v) : "standard";
+          if (
+            Object.prototype.hasOwnProperty.call(s, "__ui_receipt_template")
+          ) {
+            const v =
+              s.__ui_receipt_template ||
+              this.printSettings.receiptTemplate ||
+              "standard";
+            this.printSettings.receiptTemplate = [
+              "standard",
+              "detailed",
+              "minimal",
+            ].includes(String(v))
+              ? String(v)
+              : "standard";
           }
           // Persist locally
           try {
@@ -6860,8 +7184,18 @@ function cannabisPOS() {
           receipt_paper_size: this.printSettings.paperSize,
           // Keep extras (non-critical) so UI can remember choices
           __ui_print_labels: !!this.printSettings.printLabels,
-          __ui_receipt_template: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(this.printSettings.receiptTemplate),
-          receipt_template: (function(v){ v = String(v || "standard"); return ["standard","detailed","minimal"].includes(v) ? v : "standard"; })(this.printSettings.receiptTemplate),
+          __ui_receipt_template: (function (v) {
+            v = String(v || "standard");
+            return ["standard", "detailed", "minimal"].includes(v)
+              ? v
+              : "standard";
+          })(this.printSettings.receiptTemplate),
+          receipt_template: (function (v) {
+            v = String(v || "standard");
+            return ["standard", "detailed", "minimal"].includes(v)
+              ? v
+              : "standard";
+          })(this.printSettings.receiptTemplate),
         };
         const res = await (window.SettingsClient
           ? SettingsClient.save(payload)
@@ -7073,8 +7407,16 @@ function cannabisPOS() {
             this.products = arr;
             // Apply locally persisted product->tier assignments
             try {
-              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-              const mapRaw = localStorage.getItem(`cannabisPOS-productTierMap_${sid}`) || localStorage.getItem("cannabisPOS-productTierMap");
+              const sid =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : this._currentStoreId
+                    ? this._currentStoreId()
+                    : "default";
+              const mapRaw =
+                localStorage.getItem(`cannabisPOS-productTierMap_${sid}`) ||
+                localStorage.getItem("cannabisPOS-productTierMap");
               const map = mapRaw ? JSON.parse(mapRaw) : {};
               if (map && typeof map === "object") {
                 this.products = this.products.map((p) => ({
@@ -7088,17 +7430,23 @@ function cannabisPOS() {
               }
             } catch (_) {}
             try {
-              (function(){
-              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-              localStorage.setItem(
-                `cannabisPOS-products_${sid}`,
-                JSON.stringify({ data: this.products }),
-              );
-              localStorage.setItem(
-                "cannabisPOS-products",
-                JSON.stringify({ data: this.products }),
-              );
-            }).call(this);
+              (function () {
+                const sid =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                    ? SettingsClient.currentStoreId()
+                    : this._currentStoreId
+                      ? this._currentStoreId()
+                      : "default";
+                localStorage.setItem(
+                  `cannabisPOS-products_${sid}`,
+                  JSON.stringify({ data: this.products }),
+                );
+                localStorage.setItem(
+                  "cannabisPOS-products",
+                  JSON.stringify({ data: this.products }),
+                );
+              }).call(this);
             } catch (_) {}
             this.normalizeCollections && this.normalizeCollections();
             this.filterProducts && this.filterProducts();
@@ -7567,8 +7915,16 @@ function cannabisPOS() {
 
     loadProducts() {
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function" ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default"));
-        const saved = localStorage.getItem(`cannabisPOS-products_${sid}`) || localStorage.getItem("cannabisPOS-products");
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        const saved =
+          localStorage.getItem(`cannabisPOS-products_${sid}`) ||
+          localStorage.getItem("cannabisPOS-products");
         if (saved) {
           const parsed = JSON.parse(saved);
           this.products = Array.isArray(parsed)
@@ -7583,16 +7939,26 @@ function cannabisPOS() {
       const doFetch = async () => {
         try {
           const resp = await fetch("/products", {
-            headers: (function(){
+            headers: function () {
               const h = { Accept: "application/json" };
               try {
-                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-                const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                const sid =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                    ? SettingsClient.currentStoreId()
+                    : this._currentStoreId
+                      ? this._currentStoreId()
+                      : "default";
+                const sname =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreName === "function"
+                    ? SettingsClient.currentStoreName()
+                    : "";
                 if (sid) h["X-Store-ID"] = String(sid);
                 if (sname) h["X-Store-Name"] = String(sname);
               } catch (_) {}
               return h;
-            }).call(this),
+            }.call(this),
             credentials: "same-origin",
           });
           if (resp.ok) {
@@ -7605,8 +7971,14 @@ function cannabisPOS() {
             if (Array.isArray(items) && items.length) {
               this.products = items;
               try {
-                (function(){
-                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                (function () {
+                  const sid =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreId === "function"
+                      ? SettingsClient.currentStoreId()
+                      : this._currentStoreId
+                        ? this._currentStoreId()
+                        : "default";
                   localStorage.setItem(
                     `cannabisPOS-products_${sid}`,
                     JSON.stringify({ data: items }),
@@ -7622,16 +7994,26 @@ function cannabisPOS() {
         } catch (e) {
           try {
             const resp = await fetch("/api/products", {
-              headers: (function(){
+              headers: function () {
                 const h = { Accept: "application/json" };
                 try {
-                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-                  const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                  const sid =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreId === "function"
+                      ? SettingsClient.currentStoreId()
+                      : this._currentStoreId
+                        ? this._currentStoreId()
+                        : "default";
+                  const sname =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreName === "function"
+                      ? SettingsClient.currentStoreName()
+                      : "";
                   if (sid) h["X-Store-ID"] = String(sid);
                   if (sname) h["X-Store-Name"] = String(sname);
                 } catch (_) {}
                 return h;
-              }).call(this),
+              }.call(this),
             });
             if (resp.ok) {
               const data = await resp.json();
@@ -7644,8 +8026,16 @@ function cannabisPOS() {
                 this.products = items;
                 // Apply locally persisted product->tier assignments
                 try {
-                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-                  const mapRaw = localStorage.getItem(`cannabisPOS-productTierMap_${sid}`) || localStorage.getItem("cannabisPOS-productTierMap");
+                  const sid =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreId === "function"
+                      ? SettingsClient.currentStoreId()
+                      : this._currentStoreId
+                        ? this._currentStoreId()
+                        : "default";
+                  const mapRaw =
+                    localStorage.getItem(`cannabisPOS-productTierMap_${sid}`) ||
+                    localStorage.getItem("cannabisPOS-productTierMap");
                   const map = mapRaw ? JSON.parse(mapRaw) : {};
                   if (map && typeof map === "object") {
                     this.products = this.products.map((p) => ({
@@ -7659,17 +8049,23 @@ function cannabisPOS() {
                   }
                 } catch (_) {}
                 try {
-                  (function(){
-              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-              localStorage.setItem(
-                `cannabisPOS-products_${sid}`,
-                JSON.stringify({ data: this.products }),
-              );
-              localStorage.setItem(
-                "cannabisPOS-products",
-                JSON.stringify({ data: this.products }),
-              );
-            }).call(this);
+                  (function () {
+                    const sid =
+                      window.SettingsClient &&
+                      typeof SettingsClient.currentStoreId === "function"
+                        ? SettingsClient.currentStoreId()
+                        : this._currentStoreId
+                          ? this._currentStoreId()
+                          : "default";
+                    localStorage.setItem(
+                      `cannabisPOS-products_${sid}`,
+                      JSON.stringify({ data: this.products }),
+                    );
+                    localStorage.setItem(
+                      "cannabisPOS-products",
+                      JSON.stringify({ data: this.products }),
+                    );
+                  }).call(this);
                 } catch (_) {}
               }
             }
@@ -7735,16 +8131,26 @@ function cannabisPOS() {
       try {
         const resp = await fetch("/employees", {
           method: "GET",
-          headers: (function(){
+          headers: function () {
             const h = { Accept: "application/json" };
             try {
-              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-              const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+              const sid =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : this._currentStoreId
+                    ? this._currentStoreId()
+                    : "default";
+              const sname =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreName === "function"
+                  ? SettingsClient.currentStoreName()
+                  : "";
               if (sid) h["X-Store-ID"] = String(sid);
               if (sname) h["X-Store-Name"] = String(sname);
             } catch (_) {}
             return h;
-          }).call(this),
+          }.call(this),
           credentials: "same-origin",
         });
         if (resp.ok) {
@@ -9316,13 +9722,24 @@ function cannabisPOS() {
           })();
           // Persist to local product->tier map to survive any session/logout
           try {
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : this._currentStoreId
+                  ? this._currentStoreId()
+                  : "default";
             const keyNs = `cannabisPOS-productTierMap_${sid}`;
-            const raw = localStorage.getItem(keyNs) || localStorage.getItem("cannabisPOS-productTierMap");
+            const raw =
+              localStorage.getItem(keyNs) ||
+              localStorage.getItem("cannabisPOS-productTierMap");
             const map = raw ? JSON.parse(raw) : {};
             map[String(id)] = this.editData.priceTier || null;
             localStorage.setItem(keyNs, JSON.stringify(map));
-            localStorage.setItem("cannabisPOS-productTierMap", JSON.stringify(map));
+            localStorage.setItem(
+              "cannabisPOS-productTierMap",
+              JSON.stringify(map),
+            );
           } catch (_) {}
         }
       } catch (_) {}
@@ -9693,7 +10110,10 @@ function cannabisPOS() {
               enrolledInLoyalty: true,
             };
         } catch (_) {}
-        try { this.recordLoyaltyEnrollment && this.recordLoyaltyEnrollment(finalCustomer.id, finalCustomer.name); } catch (_) {}
+        try {
+          this.recordLoyaltyEnrollment &&
+            this.recordLoyaltyEnrollment(finalCustomer.id, finalCustomer.name);
+        } catch (_) {}
       }
 
       this.showToast(
@@ -9866,16 +10286,26 @@ function cannabisPOS() {
           res = { success: r.status >= 200 && r.status < 300, data: r.data };
         } else {
           const r = await fetch("/api/metrc/test-connection", {
-            headers: (function(){
+            headers: function () {
               const h = { Accept: "application/json" };
               try {
-                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-                const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                const sid =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                    ? SettingsClient.currentStoreId()
+                    : this._currentStoreId
+                      ? this._currentStoreId()
+                      : "default";
+                const sname =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreName === "function"
+                    ? SettingsClient.currentStoreName()
+                    : "";
                 if (sid) h["X-Store-ID"] = String(sid);
                 if (sname) h["X-Store-Name"] = String(sname);
               } catch (_) {}
               return h;
-            }).call(this),
+            }.call(this),
           });
           const data = await r.json().catch(() => ({}));
           res = { success: r.ok, data };
@@ -10264,23 +10694,35 @@ function cannabisPOS() {
 
           // Save to localStorage
           try {
-            (function(){
-              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            (function () {
+              const sid =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : this._currentStoreId
+                    ? this._currentStoreId()
+                    : "default";
               localStorage.setItem(
                 `cannabisPOS-products_${sid}`,
                 JSON.stringify(this.products),
               );
-              (function(){
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-          localStorage.setItem(
-            `cannabisPOS-products_${sid}`,
-            JSON.stringify(this.products),
-          );
-          localStorage.setItem(
-            "cannabisPOS-products",
-            JSON.stringify(this.products),
-          );
-        }).call(this);
+              (function () {
+                const sid =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                    ? SettingsClient.currentStoreId()
+                    : this._currentStoreId
+                      ? this._currentStoreId()
+                      : "default";
+                localStorage.setItem(
+                  `cannabisPOS-products_${sid}`,
+                  JSON.stringify(this.products),
+                );
+                localStorage.setItem(
+                  "cannabisPOS-products",
+                  JSON.stringify(this.products),
+                );
+              }).call(this);
             }).call(this);
           } catch (error) {
             console.error("Error saving products to localStorage:", error);
@@ -10738,8 +11180,14 @@ function cannabisPOS() {
       this.products.push(newProduct);
 
       try {
-        (function(){
-          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        (function () {
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
           localStorage.setItem(
             `cannabisPOS-products_${sid}`,
             JSON.stringify(this.products),
@@ -10879,8 +11327,17 @@ function cannabisPOS() {
         : [];
       this.facilityRooms.push(newRoom);
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_rooms_${sid}`, JSON.stringify(this.facilityRooms));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `pos_rooms_${sid}`,
+          JSON.stringify(this.facilityRooms),
+        );
         localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
       } catch (_) {}
       try {
@@ -10922,10 +11379,19 @@ function cannabisPOS() {
           updatedAt: new Date().toISOString(),
         };
         try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_rooms_${sid}`, JSON.stringify(this.facilityRooms));
-        localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
-      } catch (_) {}
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.currentStoreId === "function"
+              ? SettingsClient.currentStoreId()
+              : this._currentStoreId
+                ? this._currentStoreId()
+                : "default";
+          localStorage.setItem(
+            `pos_rooms_${sid}`,
+            JSON.stringify(this.facilityRooms),
+          );
+          localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
+        } catch (_) {}
         try {
           this.logActivity &&
             this.logActivity(
@@ -10963,8 +11429,17 @@ function cannabisPOS() {
         (r) => String(r.id) !== String(room.id),
       );
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_rooms_${sid}`, JSON.stringify(this.facilityRooms));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `pos_rooms_${sid}`,
+          JSON.stringify(this.facilityRooms),
+        );
         localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
       } catch (_) {}
       try {
@@ -11017,8 +11492,17 @@ function cannabisPOS() {
       this.cashDrawers = this.cashDrawers || [];
       this.cashDrawers.push(newDrawer);
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `pos_drawers_${sid}`,
+          JSON.stringify(this.cashDrawers),
+        );
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       try {
@@ -11063,8 +11547,17 @@ function cannabisPOS() {
       drawer.status = "open";
       drawer.openedAt = new Date().toISOString();
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `pos_drawers_${sid}`,
+          JSON.stringify(this.cashDrawers),
+        );
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity("drawer", "opened", drawer.name);
@@ -11074,8 +11567,17 @@ function cannabisPOS() {
       if (!drawer) return;
       drawer.status = "closed";
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `pos_drawers_${sid}`,
+          JSON.stringify(this.cashDrawers),
+        );
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity("drawer", "closed", drawer.name);
@@ -11219,8 +11721,17 @@ function cannabisPOS() {
         (d) => String(d.id) !== String(drawer.id),
       );
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `pos_drawers_${sid}`,
+          JSON.stringify(this.cashDrawers),
+        );
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity("drawer", "deleted", drawer.name);
@@ -11232,8 +11743,17 @@ function cannabisPOS() {
       if (!name) return;
       drawer.assignedEmployee = name;
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        localStorage.setItem(
+          `pos_drawers_${sid}`,
+          JSON.stringify(this.cashDrawers),
+        );
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity(
@@ -12345,8 +12865,16 @@ function cannabisPOS() {
     initializeReportData() {
       // Load saved reports from localStorage
       try {
-        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-        const savedReports = localStorage.getItem(`cannabisPOS-reports_${sid}`) || localStorage.getItem("cannabisPOS-reports");
+        const sid =
+          window.SettingsClient &&
+          typeof SettingsClient.currentStoreId === "function"
+            ? SettingsClient.currentStoreId()
+            : this._currentStoreId
+              ? this._currentStoreId()
+              : "default";
+        const savedReports =
+          localStorage.getItem(`cannabisPOS-reports_${sid}`) ||
+          localStorage.getItem("cannabisPOS-reports");
         if (savedReports) {
           this.recentReports = JSON.parse(savedReports);
         }
@@ -12604,8 +13132,14 @@ function cannabisPOS() {
           }
 
           // Save to localStorage (store-scoped + legacy)
-          (function(){
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          (function () {
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : this._currentStoreId
+                  ? this._currentStoreId()
+                  : "default";
             localStorage.setItem(
               `cannabisPOS-reports_${sid}`,
               JSON.stringify(this.recentReports),
@@ -12823,8 +13357,14 @@ function cannabisPOS() {
           10,
         );
         try {
-          (function(){
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          (function () {
+            const sid =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreId === "function"
+                ? SettingsClient.currentStoreId()
+                : this._currentStoreId
+                  ? this._currentStoreId()
+                  : "default";
             localStorage.setItem(
               `cannabisPOS-reports_${sid}`,
               JSON.stringify(this.recentReports),
@@ -12898,18 +13438,24 @@ function cannabisPOS() {
             };
             this.recentReports = [item, ...this.recentReports].slice(0, 10);
             try {
-          (function(){
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-            localStorage.setItem(
-              `cannabisPOS-reports_${sid}`,
-              JSON.stringify(this.recentReports),
-            );
-            localStorage.setItem(
-              "cannabisPOS-reports",
-              JSON.stringify(this.recentReports),
-            );
-          }).call(this);
-        } catch (_) {}
+              (function () {
+                const sid =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                    ? SettingsClient.currentStoreId()
+                    : this._currentStoreId
+                      ? this._currentStoreId()
+                      : "default";
+                localStorage.setItem(
+                  `cannabisPOS-reports_${sid}`,
+                  JSON.stringify(this.recentReports),
+                );
+                localStorage.setItem(
+                  "cannabisPOS-reports",
+                  JSON.stringify(this.recentReports),
+                );
+              }).call(this);
+            } catch (_) {}
           }
         } catch (_) {}
         await this.fetchReportTemplates();
@@ -12961,18 +13507,24 @@ function cannabisPOS() {
             };
             this.recentReports = [item, ...this.recentReports].slice(0, 10);
             try {
-          (function(){
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-            localStorage.setItem(
-              `cannabisPOS-reports_${sid}`,
-              JSON.stringify(this.recentReports),
-            );
-            localStorage.setItem(
-              "cannabisPOS-reports",
-              JSON.stringify(this.recentReports),
-            );
-          }).call(this);
-        } catch (_) {}
+              (function () {
+                const sid =
+                  window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                    ? SettingsClient.currentStoreId()
+                    : this._currentStoreId
+                      ? this._currentStoreId()
+                      : "default";
+                localStorage.setItem(
+                  `cannabisPOS-reports_${sid}`,
+                  JSON.stringify(this.recentReports),
+                );
+                localStorage.setItem(
+                  "cannabisPOS-reports",
+                  JSON.stringify(this.recentReports),
+                );
+              }).call(this);
+            } catch (_) {}
           } catch (_) {}
           await this.fetchReportTemplates();
           this.initializeReportData();
@@ -13250,18 +13802,24 @@ function cannabisPOS() {
         if (idx !== -1) {
           this.recentReports.splice(idx, 1);
           try {
-          (function(){
-            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-            localStorage.setItem(
-              `cannabisPOS-reports_${sid}`,
-              JSON.stringify(this.recentReports),
-            );
-            localStorage.setItem(
-              "cannabisPOS-reports",
-              JSON.stringify(this.recentReports),
-            );
-          }).call(this);
-        } catch (_) {}
+            (function () {
+              const sid =
+                window.SettingsClient &&
+                typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : this._currentStoreId
+                    ? this._currentStoreId()
+                    : "default";
+              localStorage.setItem(
+                `cannabisPOS-reports_${sid}`,
+                JSON.stringify(this.recentReports),
+              );
+              localStorage.setItem(
+                "cannabisPOS-reports",
+                JSON.stringify(this.recentReports),
+              );
+            }).call(this);
+          } catch (_) {}
         }
         this.showToast("Report deleted", "success");
       } catch (_) {}
@@ -13562,8 +14120,16 @@ document.addEventListener("DOMContentLoaded", function () {
         return scope.products;
     } catch (_) {}
     try {
-      const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function" ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default"));
-      const saved = localStorage.getItem(`cannabisPOS-products_${sid}`) || localStorage.getItem("cannabisPOS-products");
+      const sid =
+        window.SettingsClient &&
+        typeof SettingsClient.currentStoreId === "function"
+          ? SettingsClient.currentStoreId()
+          : this._currentStoreId
+            ? this._currentStoreId()
+            : "default";
+      const saved =
+        localStorage.getItem(`cannabisPOS-products_${sid}`) ||
+        localStorage.getItem("cannabisPOS-products");
       if (saved) {
         const parsed = JSON.parse(saved);
         const arr = Array.isArray(parsed?.data)
@@ -13845,16 +14411,26 @@ document.addEventListener("DOMContentLoaded", function () {
           try {
             await fetch(`/api/reports/templates/${encodeURIComponent(id)}`, {
               method: "DELETE",
-              headers: (function(){
+              headers: function () {
                 const h = { Accept: "application/json" };
                 try {
-                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
-                  const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                  const sid =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreId === "function"
+                      ? SettingsClient.currentStoreId()
+                      : this._currentStoreId
+                        ? this._currentStoreId()
+                        : "default";
+                  const sname =
+                    window.SettingsClient &&
+                    typeof SettingsClient.currentStoreName === "function"
+                      ? SettingsClient.currentStoreName()
+                      : "";
                   if (sid) h["X-Store-ID"] = String(sid);
                   if (sname) h["X-Store-Name"] = String(sname);
                 } catch (_) {}
                 return h;
-              }).call(this),
+              }.call(this),
             });
           } catch (_) {}
           try {
