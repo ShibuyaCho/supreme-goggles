@@ -634,6 +634,10 @@
         patched.metrc_vendor_key = base.metrc_vendor_key || "";
       const merged = { ...DEFAULTS, ...base, ...patched };
       this.saveLocal(sid, merged);
+      try {
+        localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(merged));
+        localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(merged));
+      } catch (_) {}
       // Fire and retry server save
       let last = null;
       for (let i = 0; i < 3; i++) {
