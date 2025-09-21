@@ -6873,6 +6873,7 @@ function cannabisPOS() {
             30,
             Math.max(1, Number(this.autoDeleteZeroDays) || 1),
           ),
+          weight_threshold: Number(this.weightThreshold) || 0,
         };
         // Persist locally for resilience
         try {
