@@ -575,6 +575,8 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         }
         // Preserve explicit clears: do not drop null/empty string values; allow client to intentionally clear fields
         $merged = array_merge(is_array($current)?$current:[], is_array($incoming)?$incoming:[]);
+        // Bump a simple settings_version to coordinate multi-tab saves
+        $merged['settings_version'] = (int)($current['settings_version'] ?? 0) + 1;
         // Normalize array fields sent as JSON strings and ensure correct types
         foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours','role_permissions'] as $field) {
             if (isset($merged[$field]) && is_string($merged[$field])) {
