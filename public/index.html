@@ -830,6 +830,23 @@
             return;
           }
         } catch (e) {}
+        try {
+          let pct = 20;
+          try {
+            const rawStore = localStorage.getItem('pos_store');
+            const sid = (function(){ if(rawStore){ try{ const s=JSON.parse(rawStore); return (s&&s.id)||'default'; }catch(_){ } } return 'default'; })();
+            const raw = localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem('cannabisPOS-taxSettings');
+            if (raw) {
+              const t = JSON.parse(raw);
+              const st = Number(t.stateRate || 0);
+              const rec = Number(t.recreationalRate || 0);
+              const v = (Number.isFinite(st) && st > 0) ? st : rec;
+              if (Number.isFinite(v)) pct = v;
+            }
+          } catch (_) {}
+          const el = document.getElementById('tax-display');
+          if (el) el.textContent = `Tax: ${pct}%`;
+        } catch (_) {}
         showToast("Cannabis POS System Ready!", "success");
       });
     </script>
