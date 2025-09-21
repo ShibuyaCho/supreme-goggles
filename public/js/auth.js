@@ -129,6 +129,11 @@ class POSAuth {
               if (sid === "defaultstore") sid = "default";
               config.headers["X-Store-ID"] = sid || "default";
             }
+            // Include store display name when available
+            try {
+              const sname = (store && (store.name || store.store_name)) || (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : "");
+              if (sname) config.headers["X-Store-Name"] = String(sname);
+            } catch (_) {}
             if (store && store.orgId)
               config.headers["X-Org-ID"] = String(store.orgId);
           }
