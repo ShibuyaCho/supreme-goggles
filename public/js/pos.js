@@ -7566,10 +7566,17 @@ function cannabisPOS() {
             if (Array.isArray(items) && items.length) {
               this.products = items;
               try {
-                localStorage.setItem(
-                  "cannabisPOS-products",
-                  JSON.stringify({ data: items }),
-                );
+                (function(){
+                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                  localStorage.setItem(
+                    `cannabisPOS-products_${sid}`,
+                    JSON.stringify({ data: items }),
+                  );
+                  localStorage.setItem(
+                    "cannabisPOS-products",
+                    JSON.stringify({ data: items }),
+                  );
+                }).call(this);
               } catch (e) {}
             }
           }
