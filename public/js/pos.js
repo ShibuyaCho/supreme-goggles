@@ -5707,9 +5707,10 @@ function cannabisPOS() {
     loyaltyStorageKeys() {
       try {
         const uid = posAuth?.getUser()?.id || "anon";
-        return [`cannabest-loyalty-${uid}`, "cannabest-loyalty"];
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        return [`cannabest-loyalty-${sid}-${uid}`, `cannabest-loyalty-${uid}`];
       } catch (_) {
-        return ["cannabest-loyalty-anon", "cannabest-loyalty"];
+        return ["cannabest-loyalty-default-anon", "cannabest-loyalty-anon"];
       }
     },
     _addToLoyaltyLocal(entry) {
