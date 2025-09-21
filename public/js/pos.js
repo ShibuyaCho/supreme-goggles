@@ -13444,7 +13444,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return scope.products;
     } catch (_) {}
     try {
-      const saved = localStorage.getItem("cannabisPOS-products");
+      const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === "function" ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : "default"));
+      const saved = localStorage.getItem(`cannabisPOS-products_${sid}`) || localStorage.getItem("cannabisPOS-products");
       if (saved) {
         const parsed = JSON.parse(saved);
         const arr = Array.isArray(parsed?.data)
