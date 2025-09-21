@@ -704,6 +704,11 @@
           } catch (_) {}
           this.saveLocal(sid, m);
           try {
+            const compat = Object.assign({}, m, { lastUpdated: Date.now() });
+            localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
+            localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+          } catch (_) {}
+          try {
             writeCookie("cpos_store_id", sid);
           } catch (_) {}
           try {
