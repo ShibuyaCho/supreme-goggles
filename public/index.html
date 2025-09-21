@@ -708,6 +708,14 @@
         taxAmountEl.textContent = `$${taxAmount.toFixed(2)}`;
         totalAmountEl.textContent = `$${total.toFixed(2)}`;
         checkoutBtn.disabled = false;
+        try {
+          const labelSpans = document.querySelectorAll('#pos-page .border-t .flex.justify-between.text-sm span:first-child');
+          if (labelSpans && labelSpans[1]) labelSpans[1].textContent = `Tax (${taxRatePct}%):`;
+        } catch (_) {}
+        try {
+          const el = document.getElementById('tax-display');
+          if (el) el.textContent = `Tax: ${taxRatePct}%`;
+        } catch (_) {}
       }
 
       function processPayment() {
