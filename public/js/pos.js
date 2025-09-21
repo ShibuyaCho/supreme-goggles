@@ -2167,12 +2167,15 @@ function cannabisPOS() {
       } finally {
         // Load persisted drawers
         try {
-          const raw = localStorage.getItem("pos_drawers");
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+          const raw = localStorage.getItem(`pos_drawers_${sid}`) || localStorage.getItem("pos_drawers");
           if (raw) this.cashDrawers = JSON.parse(raw);
         } catch (_) {}
         // Load persisted rooms
         try {
+          const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
           const rawR =
+            localStorage.getItem(`pos_rooms_${sid}`) ||
             localStorage.getItem("pos_rooms") ||
             localStorage.getItem("rd-rooms");
           if (rawR) this.facilityRooms = JSON.parse(rawR);
@@ -7050,7 +7053,8 @@ function cannabisPOS() {
             this.products = arr;
             // Apply locally persisted product->tier assignments
             try {
-              const mapRaw = localStorage.getItem("cannabisPOS-productTierMap");
+              const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+              const mapRaw = localStorage.getItem(`cannabisPOS-productTierMap_${sid}`) || localStorage.getItem("cannabisPOS-productTierMap");
               const map = mapRaw ? JSON.parse(mapRaw) : {};
               if (map && typeof map === "object") {
                 this.products = this.products.map((p) => ({
@@ -7602,9 +7606,8 @@ function cannabisPOS() {
                 this.products = items;
                 // Apply locally persisted product->tier assignments
                 try {
-                  const mapRaw = localStorage.getItem(
-                    "cannabisPOS-productTierMap",
-                  );
+                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                  const mapRaw = localStorage.getItem(`cannabisPOS-productTierMap_${sid}`) || localStorage.getItem("cannabisPOS-productTierMap");
                   const map = mapRaw ? JSON.parse(mapRaw) : {};
                   if (map && typeof map === "object") {
                     this.products = this.products.map((p) => ({
@@ -9266,11 +9269,13 @@ function cannabisPOS() {
           })();
           // Persist to local product->tier map to survive any session/logout
           try {
-            const key = "cannabisPOS-productTierMap";
-            const raw = localStorage.getItem(key);
+            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+            const keyNs = `cannabisPOS-productTierMap_${sid}`;
+            const raw = localStorage.getItem(keyNs) || localStorage.getItem("cannabisPOS-productTierMap");
             const map = raw ? JSON.parse(raw) : {};
             map[String(id)] = this.editData.priceTier || null;
-            localStorage.setItem(key, JSON.stringify(map));
+            localStorage.setItem(keyNs, JSON.stringify(map));
+            localStorage.setItem("cannabisPOS-productTierMap", JSON.stringify(map));
           } catch (_) {}
         }
       } catch (_) {}
@@ -10818,6 +10823,8 @@ function cannabisPOS() {
         : [];
       this.facilityRooms.push(newRoom);
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_rooms_${sid}`, JSON.stringify(this.facilityRooms));
         localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
       } catch (_) {}
       try {
@@ -10859,8 +10866,10 @@ function cannabisPOS() {
           updatedAt: new Date().toISOString(),
         };
         try {
-          localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
-        } catch (_) {}
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_rooms_${sid}`, JSON.stringify(this.facilityRooms));
+        localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
+      } catch (_) {}
         try {
           this.logActivity &&
             this.logActivity(
@@ -10898,6 +10907,8 @@ function cannabisPOS() {
         (r) => String(r.id) !== String(room.id),
       );
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_rooms_${sid}`, JSON.stringify(this.facilityRooms));
         localStorage.setItem("pos_rooms", JSON.stringify(this.facilityRooms));
       } catch (_) {}
       try {
@@ -10950,6 +10961,8 @@ function cannabisPOS() {
       this.cashDrawers = this.cashDrawers || [];
       this.cashDrawers.push(newDrawer);
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       try {
@@ -10994,6 +11007,8 @@ function cannabisPOS() {
       drawer.status = "open";
       drawer.openedAt = new Date().toISOString();
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity("drawer", "opened", drawer.name);
@@ -11003,6 +11018,8 @@ function cannabisPOS() {
       if (!drawer) return;
       drawer.status = "closed";
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity("drawer", "closed", drawer.name);
@@ -11146,6 +11163,8 @@ function cannabisPOS() {
         (d) => String(d.id) !== String(drawer.id),
       );
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity("drawer", "deleted", drawer.name);
@@ -11157,6 +11176,8 @@ function cannabisPOS() {
       if (!name) return;
       drawer.assignedEmployee = name;
       try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        localStorage.setItem(`pos_drawers_${sid}`, JSON.stringify(this.cashDrawers));
         localStorage.setItem("pos_drawers", JSON.stringify(this.cashDrawers));
       } catch (_) {}
       this.logActivity(
