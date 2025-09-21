@@ -717,6 +717,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         } catch (\Throwable $e) { /* ignore local errors */ }
         // Persist to Cache for environments without DB access
         try {
+            \Illuminate\Support\Facades\Cache::forget('pos_settings:' . $storeId);
             \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $merged, now()->addYears(5));
         } catch (\Throwable $e) { /* ignore cache errors */ }
         if ($savedRemote) {
