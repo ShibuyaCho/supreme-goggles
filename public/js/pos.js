@@ -2276,7 +2276,15 @@ function cannabisPOS() {
         // Cross-tab live updates via localStorage broadcast
         try {
           window.addEventListener("storage", (e) => {
-            if (e && e.key === "pos_last_sale_id" && e.newValue) {
+            if (!e) return;
+            if (e.key === "pos_store") {
+              try { this.loadSettings && this.loadSettings(); } catch(_){}
+              try { this.loadApiSettings && this.loadApiSettings(); } catch(_){}
+              try { this.loadPriceTiers && this.loadPriceTiers(); } catch(_){}
+              try { this._refreshProductsFromApi && this._refreshProductsFromApi(); } catch(_){}
+              try { this.filterProducts && this.filterProducts(); } catch(_){}
+            }
+            if (e.key === "pos_last_sale_id" && e.newValue) {
               const [sid] = String(e.newValue).split(":");
               if (sid) this.appendSaleById(sid);
             }
@@ -5647,9 +5655,10 @@ function cannabisPOS() {
     cartStorageKey() {
       try {
         const uid = posAuth?.getUser()?.id || "anon";
-        return `cannabisPOS-cart-${uid}`;
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        return `cannabisPOS-cart_${sid}-${uid}`;
       } catch (_) {
-        return "cannabisPOS-cart-anon";
+        return "cannabisPOS-cart-default-anon";
       }
     },
     persistCartState() {
@@ -5688,9 +5697,10 @@ function cannabisPOS() {
     customersStorageKey() {
       try {
         const uid = posAuth?.getUser()?.id || "anon";
-        return `cannabisPOS-customers-${uid}`;
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        return `cannabisPOS-customers_${sid}-${uid}`;
       } catch (_) {
-        return "cannabisPOS-customers-anon";
+        return "cannabisPOS-customers-default-anon";
       }
     },
     _saveCustomersLocal() {
@@ -7594,7 +7604,16 @@ function cannabisPOS() {
         } catch (e) {
           try {
             const resp = await fetch("/api/products", {
-              headers: { Accept: "application/json" },
+              headers: (function(){
+                const h = { Accept: "application/json" };
+                try {
+                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                  const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                  if (sid) h["X-Store-ID"] = String(sid);
+                  if (sname) h["X-Store-Name"] = String(sname);
+                } catch (_) {}
+                return h;
+              }).call(this),
             });
             if (resp.ok) {
               const data = await resp.json();
@@ -9820,7 +9839,16 @@ function cannabisPOS() {
           res = { success: r.status >= 200 && r.status < 300, data: r.data };
         } else {
           const r = await fetch("/api/metrc/test-connection", {
-            headers: { Accept: "application/json" },
+            headers: (function(){
+              const h = { Accept: "application/json" };
+              try {
+                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                if (sid) h["X-Store-ID"] = String(sid);
+                if (sname) h["X-Store-Name"] = String(sname);
+              } catch (_) {}
+              return h;
+            }).call(this),
           });
           const data = await r.json().catch(() => ({}));
           res = { success: r.ok, data };
@@ -13790,6 +13818,16 @@ document.addEventListener("DOMContentLoaded", function () {
           try {
             await fetch(`/api/reports/templates/${encodeURIComponent(id)}`, {
               method: "DELETE",
+              headers: (function(){
+                const h = { Accept: "application/json" };
+                try {
+                  const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+                  const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function' ? SettingsClient.currentStoreName() : '');
+                  if (sid) h["X-Store-ID"] = String(sid);
+                  if (sname) h["X-Store-Name"] = String(sname);
+                } catch (_) {}
+                return h;
+              }).call(this),
               headers: { Accept: "application/json" },
             });
           } catch (_) {}
