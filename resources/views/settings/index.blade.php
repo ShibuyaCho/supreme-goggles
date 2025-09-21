@@ -1070,9 +1070,15 @@ function settingsManager() {
                 if (res && res.success && res.settings) {
                     this.settings = Object.assign({}, this.settings, res.settings);
                     this.saveSettingsToStorage();
+                } else if (res && res.success === false) {
+                    const msg = (res.message || res.error) || 'Autosave failed';
+                    this.showToast(msg, 'error');
                 }
                 this._lastPersistedJSON = JSON.stringify(this.settings);
-            } catch (_) {}
+            } catch (e) {
+                const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
+                this.showToast(msg, 'error');
+            }
         },
 
         async saveSettings() {
