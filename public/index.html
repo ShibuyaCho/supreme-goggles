@@ -688,7 +688,19 @@
           (sum, item) => sum + item.price * item.quantity,
           0,
         );
-        const taxRate = 0.2; // 20% tax
+        let taxRatePct = 20;
+        try {
+          const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if(raw){ const s=JSON.parse(raw); return (s&&s.id)||'default'; } }catch(_){ } return 'default'; })();
+          const raw = localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem('cannabisPOS-taxSettings');
+          if (raw) {
+            const t = JSON.parse(raw);
+            const st = Number(t.stateRate || 0);
+            const rec = Number(t.recreationalRate || 0);
+            const v = (Number.isFinite(st) && st > 0) ? st : rec;
+            if (Number.isFinite(v)) taxRatePct = v;
+          }
+        } catch (_) {}
+        const taxRate = (Number(taxRatePct) || 0) / 100
         const taxAmount = subtotal * taxRate;
         const total = subtotal + taxAmount;
 
