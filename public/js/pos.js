@@ -12289,7 +12289,8 @@ function cannabisPOS() {
     initializeReportData() {
       // Load saved reports from localStorage
       try {
-        const savedReports = localStorage.getItem("cannabisPOS-reports");
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function' ? SettingsClient.currentStoreId() : (this._currentStoreId ? this._currentStoreId() : 'default'));
+        const savedReports = localStorage.getItem(`cannabisPOS-reports_${sid}`) || localStorage.getItem("cannabisPOS-reports");
         if (savedReports) {
           this.recentReports = JSON.parse(savedReports);
         }
