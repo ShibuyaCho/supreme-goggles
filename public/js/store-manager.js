@@ -41,7 +41,11 @@
     try {
       const raw = String(input || "").trim();
       if (raw.includes("Today's Herbal Choice")) return raw;
-      if (raw.toUpperCase().startsWith("THC ") && window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") {
+      if (
+        raw.toUpperCase().startsWith("THC ") &&
+        window.SettingsClient &&
+        typeof SettingsClient.canonicalizeId === "function"
+      ) {
         return SettingsClient.canonicalizeId(raw, raw);
       }
     } catch (_) {}
@@ -142,7 +146,11 @@
         );
         if (res && res.data && res.data.success) {
           try {
-            const canonId = (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") ? SettingsClient.canonicalizeId(sid, sname) : sid;
+            const canonId =
+              window.SettingsClient &&
+              typeof SettingsClient.canonicalizeId === "function"
+                ? SettingsClient.canonicalizeId(sid, sname)
+                : sid;
             localStorage.setItem(
               "pos_store",
               JSON.stringify({ id: canonId, name: sname }),
@@ -383,9 +391,11 @@
         btn.addEventListener("click", () => {
           const rawId = btn.getAttribute("data-id") || "";
           const rawName = btn.getAttribute("data-name") || rawId;
-          const sid = (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function")
-            ? SettingsClient.canonicalizeId(rawId, rawName)
-            : rawId;
+          const sid =
+            window.SettingsClient &&
+            typeof SettingsClient.canonicalizeId === "function"
+              ? SettingsClient.canonicalizeId(rawId, rawName)
+              : rawId;
           const sname = rawName || sid;
           try {
             localStorage.setItem(

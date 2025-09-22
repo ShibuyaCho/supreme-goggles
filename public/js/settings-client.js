@@ -132,7 +132,10 @@
         return "default";
       }
       const s = JSON.parse(raw);
-      const id = canonicalizeId(s && s.id ? s.id : "", s && s.name ? s.name : "");
+      const id = canonicalizeId(
+        s && s.id ? s.id : "",
+        s && s.name ? s.name : "",
+      );
       try {
         writeCookie("cpos_store_id", id || "default");
       } catch (_) {}
