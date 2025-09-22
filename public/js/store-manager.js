@@ -372,8 +372,12 @@
         .join("");
       listEl.querySelectorAll("button[data-id]").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const sid = sanitizeStoreId(btn.getAttribute("data-id"));
-          const sname = btn.getAttribute("data-name") || sid;
+          const rawId = btn.getAttribute("data-id") || "";
+          const rawName = btn.getAttribute("data-name") || rawId;
+          const sid = (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function")
+            ? SettingsClient.canonicalizeId(rawId, rawName)
+            : rawId;
+          const sname = rawName || sid;
           try {
             localStorage.setItem(
               "pos_store",
