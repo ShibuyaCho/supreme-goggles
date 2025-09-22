@@ -351,6 +351,27 @@
     } catch (_) {}
   }
 
+  function pick(obj, keys){ const out={}; keys.forEach(k=>{ if (Object.prototype.hasOwnProperty.call(obj,k)) out[k]=obj[k]; }); return out; }
+  const SEC = {
+    'Store_Information': [
+      'store_address','store_phone','store_email','website','store_manager','license_number','receipt_footer','business_hours'
+    ],
+    'Tax_Configuration': [
+      'sales_tax','excise_tax','cannabis_tax','tax_inclusive'
+    ],
+    'Sales_&_Transaction_Settings': [
+      'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold'
+    ],
+    'Printing_Preferences': [
+      'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels'
+    ],
+    'Metrc_Integration': [
+      'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales'
+    ],
+    'Auto_Delete_Zero-Quantity_Products': [
+      'auto_delete_zero_quantity','auto_delete_zero_days'
+    ],
+  };
   async function getFromServer(sid, noCache = false) {
     // Read directly from Supabase pos_settings (no API hop)
     const tryIds = [sid];
@@ -370,17 +391,22 @@
         const arr = await r.json();
         const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
         if (row) {
-          let settings = {};
-          if (row.settings && typeof row.settings === "object")
-            settings = row.settings;
-          else if (row.settings && typeof row.settings === "string") {
-            try {
-              settings = JSON.parse(row.settings);
-            } catch (_) {
-              settings = {};
+          // Compose from dedicated columns if present; fallback to legacy settings
+          let composed = {};
+          try { if (row['Store_Information'] && typeof row['Store_Information']==='object') composed = Object.assign(composed, row['Store_Information']); } catch(_){}
+          try { if (row['Tax_Configuration'] && typeof row['Tax_Configuration']==='object') composed = Object.assign(composed, row['Tax_Configuration']); } catch(_){}
+          try { if (row['Sales_&_Transaction_Settings'] && typeof row['Sales_&_Transaction_Settings']==='object') composed = Object.assign(composed, row['Sales_&_Transaction_Settings']); } catch(_){}
+          try { if (row['Printing_Preferences'] && typeof row['Printing_Preferences']==='object') composed = Object.assign(composed, row['Printing_Preferences']); } catch(_){}
+          try { if (row['Metrc_Integration'] && typeof row['Metrc_Integration']==='object') composed = Object.assign(composed, row['Metrc_Integration']); } catch(_){}
+          try { if (row['Auto_Delete_Zero-Quantity_Products'] && typeof row['Auto_Delete_Zero-Quantity_Products']==='object') composed = Object.assign(composed, row['Auto_Delete_Zero-Quantity_Products']); } catch(_){}
+          if (row.store_name) composed.store_name = row.store_name;
+          // Legacy support
+          if ((!composed || Object.keys(composed).length===0) && row.settings){
+            if (typeof row.settings==='object') composed = row.settings; else {
+              try { composed = JSON.parse(row.settings); } catch(_) { composed = {}; }
             }
           }
-          return { settings, updated_at: row.updated_at || null };
+          return { settings: composed, updated_at: row.updated_at || null };
         }
       } catch (_) {}
     }
@@ -747,10 +773,21 @@
       try {
         const sidNow = currentStoreId();
         const nowIso = new Date().toISOString();
+        const payload = [{
+          id: sidNow,
+          store_name: merged.store_name ?? '',
+          updated_at: nowIso,
+          'Store_Information': pick(merged, SEC['Store_Information']),
+          'Tax_Configuration': pick(merged, SEC['Tax_Configuration']),
+          'Sales_&_Transaction_Settings': pick(merged, SEC['Sales_&_Transaction_Settings']),
+          'Printing_Preferences': pick(merged, SEC['Printing_Preferences']),
+          'Metrc_Integration': pick(merged, SEC['Metrc_Integration']),
+          'Auto_Delete_Zero-Quantity_Products': pick(merged, SEC['Auto_Delete_Zero-Quantity_Products']),
+        }];
         const r0 = await supaReq(`pos_settings?on_conflict=id`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([{ id: sidNow, settings: merged, updated_at: nowIso }]),
+          body: JSON.stringify(payload),
         });
         if (!r0 || !r0.ok) {
           try { const txt = r0 ? await r0.text() : ''; last = new Error(`supabase upsert failed (${r0?.status||'n/a'}): ${txt}`); } catch(eTxt){ last = eTxt; }
@@ -767,7 +804,16 @@
             if (ver0 && ver0.ok) {
               const arr0 = await ver0.json();
               const row0 = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
-              const m0 = row0 && row0.settings && typeof row0.settings === "object" ? { ...DEFAULTS, ...row0.settings } : { ...DEFAULTS, ...merged };
+              let composed0 = {};
+              try { if (row0['Store_Information']) composed0 = Object.assign(composed0, row0['Store_Information']); } catch(_){}
+              try { if (row0['Tax_Configuration']) composed0 = Object.assign(composed0, row0['Tax_Configuration']); } catch(_){}
+              try { if (row0['Sales_&_Transaction_Settings']) composed0 = Object.assign(composed0, row0['Sales_&_Transaction_Settings']); } catch(_){}
+              try { if (row0['Printing_Preferences']) composed0 = Object.assign(composed0, row0['Printing_Preferences']); } catch(_){}
+              try { if (row0['Metrc_Integration']) composed0 = Object.assign(composed0, row0['Metrc_Integration']); } catch(_){}
+              try { if (row0['Auto_Delete_Zero-Quantity_Products']) composed0 = Object.assign(composed0, row0['Auto_Delete_Zero-Quantity_Products']); } catch(_){}
+              if (row0.store_name) composed0.store_name = row0.store_name;
+              if (!composed0 || Object.keys(composed0).length===0) composed0 = merged;
+              const m0 = { ...DEFAULTS, ...composed0 };
               this.saveLocal(sidNow, m0);
               try {
                 const compat0 = Object.assign({}, m0, { lastUpdated: Date.now() });
@@ -901,9 +947,17 @@
         const r = await supaReq(`pos_settings?on_conflict=id`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([
-            { id: sid, settings: merged, updated_at: now },
-          ]),
+          body: JSON.stringify([{
+            id: sid,
+            store_name: merged.store_name ?? '',
+            updated_at: now,
+            'Store_Information': pick(merged, SEC['Store_Information']),
+            'Tax_Configuration': pick(merged, SEC['Tax_Configuration']),
+            'Sales_&_Transaction_Settings': pick(merged, SEC['Sales_&_Transaction_Settings']),
+            'Printing_Preferences': pick(merged, SEC['Printing_Preferences']),
+            'Metrc_Integration': pick(merged, SEC['Metrc_Integration']),
+            'Auto_Delete_Zero-Quantity_Products': pick(merged, SEC['Auto_Delete_Zero-Quantity_Products']),
+          }]),
         });
         if (r.ok) {
           // Verify read-after-write
@@ -915,8 +969,16 @@
             if (ver.ok) {
               const arr = await ver.json();
               const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-              if (row && row.settings && typeof row.settings === "object") {
-                const m = { ...DEFAULTS, ...row.settings };
+              if (row) {
+                let composedR = {};
+                try { if (row['Store_Information']) composedR = Object.assign(composedR, row['Store_Information']); } catch(_){}
+                try { if (row['Tax_Configuration']) composedR = Object.assign(composedR, row['Tax_Configuration']); } catch(_){}
+                try { if (row['Sales_&_Transaction_Settings']) composedR = Object.assign(composedR, row['Sales_&_Transaction_Settings']); } catch(_){}
+                try { if (row['Printing_Preferences']) composedR = Object.assign(composedR, row['Printing_Preferences']); } catch(_){}
+                try { if (row['Metrc_Integration']) composedR = Object.assign(composedR, row['Metrc_Integration']); } catch(_){}
+                try { if (row['Auto_Delete_Zero-Quantity_Products']) composedR = Object.assign(composedR, row['Auto_Delete_Zero-Quantity_Products']); } catch(_){}
+                if (row.store_name) composedR.store_name = row.store_name;
+                const m = { ...DEFAULTS, ...composedR };
                 this.saveLocal(sid, m);
                 try {
                   const compat = Object.assign({}, m, {
