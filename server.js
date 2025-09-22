@@ -217,7 +217,7 @@ app.get("/", (_req, res) => {
         </div>
       </div>
       <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-        <h3 class="font-semibold text-green-800 mb-2">🌿 Cannabis Features Ready</h3>
+        <h3 class="font-semibold text-green-800 mb-2">�� Cannabis Features Ready</h3>
         <div class="text-sm text-green-700 grid grid-cols-2 gap-2">
           <div>• METRC Compliance</div>
           <div>• Oregon State Limits</div>
@@ -1080,8 +1080,17 @@ app.post("/api/settings/pos", async (req, res) => {
       if (r0.ok) {
         const arr = await r0.json();
         const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-        if (row && row.settings && typeof row.settings === "object")
-          current = row.settings;
+        if (row && typeof row === 'object') {
+          let cur = {};
+          try { if (row["Store_Information"]) cur = Object.assign(cur, row["Store_Information"]); } catch(_){}
+          try { if (row["Tax_Configuration"]) cur = Object.assign(cur, row["Tax_Configuration"]); } catch(_){}
+          try { if (row["Sales_&_Transaction_Settings"]) cur = Object.assign(cur, row["Sales_&_Transaction_Settings"]); } catch(_){}
+          try { if (row["Printing_Preferences"]) cur = Object.assign(cur, row["Printing_Preferences"]); } catch(_){}
+          try { if (row["Metrc_Integration"]) cur = Object.assign(cur, row["Metrc_Integration"]); } catch(_){}
+          try { if (row["Auto_Delete_Zero-Quantity_Products"]) cur = Object.assign(cur, row["Auto_Delete_Zero-Quantity_Products"]); } catch(_){}
+          if (row.store_name) cur.store_name = row.store_name;
+          current = cur;
+        }
       }
     } catch (_) {}
     function isMasked(v) {
