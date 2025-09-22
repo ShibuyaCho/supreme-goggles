@@ -2101,7 +2101,10 @@ function cannabisPOS() {
         } catch (_) {
           res = null;
         }
-        if (!res || (res.success !== true && !(res.data && res.data.success === true))) {
+        if (
+          !res ||
+          (res.success !== true && !(res.data && res.data.success === true))
+        ) {
           // Retry once via SettingsClient
           try {
             await new Promise((r) => setTimeout(r, 250));
@@ -2114,7 +2117,10 @@ function cannabisPOS() {
             res = null;
           }
         }
-        if (!res || (res.success !== true && !(res.data && res.data.success === true))) {
+        if (
+          !res ||
+          (res.success !== true && !(res.data && res.data.success === true))
+        ) {
           // Last-resort: direct Supabase REST upsert to guarantee persistence
           try {
             let sid =
@@ -2124,8 +2130,15 @@ function cannabisPOS() {
                 : typeof this._currentStoreId === "function"
                   ? this._currentStoreId()
                   : "default";
-            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === "function") ? String(SettingsClient.currentStoreName() || "") : "";
-            if (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") {
+            const sname =
+              window.SettingsClient &&
+              typeof SettingsClient.currentStoreName === "function"
+                ? String(SettingsClient.currentStoreName() || "")
+                : "";
+            if (
+              window.SettingsClient &&
+              typeof SettingsClient.canonicalizeId === "function"
+            ) {
               sid = SettingsClient.canonicalizeId(sid, sname);
             } else {
               sid = String(sid || "default").trim();
