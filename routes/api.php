@@ -692,7 +692,12 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $merged['store_name'] ?? null,
-                'settings' => $merged,
+                'Store_Information' => $cols['Store_Information'],
+                'Tax_Configuration' => $cols['Tax_Configuration'],
+                'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                'Printing_Preferences' => $cols['Printing_Preferences'],
+                'Metrc_Integration' => $cols['Metrc_Integration'],
+                'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
                 'updated_at' => now()->toIso8601String(),
             ]]);
             // Also write to legacy id for backward-compatibility
@@ -709,8 +714,13 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $legacy,
                         'store_name' => $merged['store_name'] ?? null,
-                        'settings' => $merged,
-                        'updated_at' => now()->toIso8601String(),
+                'Store_Information' => $cols['Store_Information'],
+                'Tax_Configuration' => $cols['Tax_Configuration'],
+                'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                'Printing_Preferences' => $cols['Printing_Preferences'],
+                'Metrc_Integration' => $cols['Metrc_Integration'],
+                'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                'updated_at' => now()->toIso8601String(),
                     ]]);
                 } catch (\Throwable $e) { /* ignore */ }
             }
