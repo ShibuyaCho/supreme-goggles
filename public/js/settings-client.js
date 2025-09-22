@@ -978,10 +978,22 @@
           } catch (_) {}
         }
       } catch (_) {}
+      let msg = 'settings save failed';
+      try {
+        if (last && typeof last === 'object') {
+          msg = last.message || msg;
+          if (!msg && last.response && last.response.data) {
+            msg = String(last.response.data.message || last.response.data.error || msg);
+          }
+        } else if (typeof last === 'string' && last) {
+          msg = last;
+        }
+      } catch(_){}
       return {
         success: false,
         settings: merged,
-        error: last || new Error("settings save failed"),
+        message: msg,
+        error: last || new Error(msg),
       };
     },
   };
