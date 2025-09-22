@@ -134,9 +134,10 @@
         );
         if (res && res.data && res.data.success) {
           try {
+            const canonId = (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") ? SettingsClient.canonicalizeId(sid, sname) : sid;
             localStorage.setItem(
               "pos_store",
-              JSON.stringify({ id: sid, name: sname }),
+              JSON.stringify({ id: canonId, name: sname }),
             );
           } catch (_) {}
           try {
