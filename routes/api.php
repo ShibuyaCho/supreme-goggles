@@ -331,7 +331,7 @@ Route::get('/settings/pos', function() {
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                 'id' => 'eq.' . $storeId,
-                'select' => '*',,
+                'select' => '*',
             ]);
             $row = null;
             if ($resp->ok()) {
@@ -348,7 +348,7 @@ Route::get('/settings/pos', function() {
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.defaultstore',
-                    'select' => '*',,
+                    'select' => '*',
                 ]);
                 if ($resp2->ok()) {
                     $arr2 = $resp2->json();
@@ -370,7 +370,7 @@ Route::get('/settings/pos', function() {
                             'X-Store-ID' => $storeId,
                         ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $fid,
-                            'select' => '*',,
+                            'select' => '*',
                         ]);
                         if ($respF->ok()) {
                             $arrF = $respF->json();
@@ -552,7 +552,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
-                'select' => '*',,
+                'select' => '*',
                 ]);
                 if ($resp0->ok()) {
                     $arr = $resp0->json();
@@ -761,7 +761,7 @@ Route::get('/settings/stores/open', function() {
                 'X-Store-ID' => $storeId,
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                'select' => '*',,
+                'select' => '*',
                 'order' => 'updated_at.desc'
             ]);
             if ($resp->ok()) {
@@ -1061,7 +1061,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
-                'select' => '*',,
+                'select' => '*',
                 ]);
                 if ($get->ok()) {
                     $ga = $get->json();
@@ -1167,7 +1167,7 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                         'id' => 'eq.' . $storeId,
-                'select' => '*',,
+                'select' => '*',
                     ]);
                     if ($get->ok()) {
                         $ga = $get->json();
@@ -1735,7 +1735,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                                 'id' => 'eq.' . $storeId,
-                'select' => '*',,
+                'select' => '*',
                             ]);
                             if ($resp->ok()) { $ok = true; break; }
                         } catch (\Throwable $e) {
@@ -1923,7 +1923,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
-                'select' => '*',,
+                'select' => '*',
                         ]);
                         if ($resp0->ok()) {
                             $arr0 = $resp0->json();
@@ -2015,7 +2015,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
-                'select' => '*',,
+                'select' => '*',
                         ]);
                         if ($verify->ok()) {
                             $arr = $verify->json();
@@ -2085,7 +2085,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'X-Store-ID' => $storeId,
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                'select' => '*',,
+                'select' => '*',
                         'order' => 'updated_at.desc'
                     ]);
                     if ($resp->ok()) {
