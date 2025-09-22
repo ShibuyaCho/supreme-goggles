@@ -625,7 +625,10 @@ class POSAuth {
       try {
         let sid = "default";
         let sname = "";
-        if (window.SettingsClient && typeof window.SettingsClient.currentStoreId === "function") {
+        if (
+          window.SettingsClient &&
+          typeof window.SettingsClient.currentStoreId === "function"
+        ) {
           sid = String(window.SettingsClient.currentStoreId() || "default");
           if (typeof window.SettingsClient.currentStoreName === "function") {
             sname = String(window.SettingsClient.currentStoreName() || "");
