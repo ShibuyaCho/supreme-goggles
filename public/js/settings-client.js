@@ -742,8 +742,45 @@
           JSON.stringify(compat),
         );
       } catch (_) {}
-      // Fire and retry server save
+      // First, try direct Supabase upsert (authoritative). If it succeeds, update caches and return success immediately.
       let last = null;
+      try {
+        const sidNow = currentStoreId();
+        const nowIso = new Date().toISOString();
+        const r0 = await supaReq(`pos_settings?on_conflict=id`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify([{ id: sidNow, settings: merged, updated_at: nowIso }]),
+        });
+        if (r0 && r0.ok) {
+          try {
+            const ver0 = await supaReq(
+              `pos_settings?id=eq.${encodeURIComponent(sidNow)}&select=*`,
+              { method: "GET" },
+            );
+            if (ver0.ok) {
+              const arr0 = await ver0.json();
+              const row0 = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
+              const m0 = row0 && row0.settings && typeof row0.settings === "object" ? { ...DEFAULTS, ...row0.settings } : { ...DEFAULTS, ...merged };
+              this.saveLocal(sidNow, m0);
+              try {
+                const compat0 = Object.assign({}, m0, { lastUpdated: Date.now() });
+                localStorage.setItem(`cannabisPOS-storeSettings_${sidNow}`, JSON.stringify(compat0));
+                localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat0));
+              } catch (_) {}
+              try { writeCookie("cpos_store_id", sidNow); } catch (_) {}
+              try { localStorage.setItem("cannabisPOS-weightThreshold", String(m0.weight_threshold ?? 0)); } catch (_) {}
+              try { writeUiCachesFromSettings(m0); } catch (_) {}
+              try {
+                window.dispatchEvent(new CustomEvent("settings:updated", { detail: { settings: m0, storeId: sidNow } }));
+                try { window.dispatchEvent(new CustomEvent("settings-updated", { detail: m0 })); } catch (_) {}
+              } catch (_) {}
+              return { success: true, settings: m0 };
+            }
+          } catch (e) { last = e; }
+        }
+      } catch (e) { last = e; }
+      // Fire and retry server save
       for (let i = 0; i < 3; i++) {
         try {
           const data = await httpPost("/api/settings/pos", merged);
