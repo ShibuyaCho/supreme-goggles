@@ -621,6 +621,31 @@ class POSAuth {
         }
       }
 
+      // Attach store-scoped headers so all authenticated requests hit the correct store
+      try {
+        let sid = "default";
+        let sname = "";
+        if (window.SettingsClient && typeof window.SettingsClient.currentStoreId === "function") {
+          sid = String(window.SettingsClient.currentStoreId() || "default");
+          if (typeof window.SettingsClient.currentStoreName === "function") {
+            sname = String(window.SettingsClient.currentStoreName() || "");
+          }
+        } else {
+          try {
+            const raw = localStorage.getItem("pos_store");
+            if (raw) {
+              const o = JSON.parse(raw) || {};
+              if (o && o.id) sid = String(o.id);
+              if (o && o.name) sname = String(o.name);
+            }
+          } catch (_) {}
+        }
+        config.headers = Object.assign({}, config.headers || {}, {
+          "X-Store-ID": sid || "default",
+          ...(sname ? { "X-Store-Name": sname } : {}),
+        });
+      } catch (_) {}
+
       const response = await axios(config);
       return {
         success: true,
