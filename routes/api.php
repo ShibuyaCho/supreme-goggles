@@ -505,7 +505,7 @@ Route::get('/settings/pos', function() {
         $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
     }
     if (array_key_exists('metrc_vendor_key', $settings)) {
-        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
+        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••��•••••' : '';
     }
     // Ensure a version field exists for optimistic coordination
     if (!isset($settings['settings_version'])) { $settings['settings_version'] = 0; }
@@ -559,8 +559,13 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 if ($resp0->ok()) {
                     $arr = $resp0->json();
                     $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
-                    if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
-                        $current = $row['settings'];
+                    if (is_array($row)) {
+                        $cur = [];
+                        foreach (['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col) {
+                            if (isset($row[$col]) && is_array($row[$col])) { $cur = array_merge($cur, $row[$col]); }
+                        }
+                        if (isset($row['store_name']) && is_string($row['store_name'])) { $cur['store_name'] = $row['store_name']; }
+                        $current = $cur;
                     }
                 }
             } catch (\Throwable $e) {}
