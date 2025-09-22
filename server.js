@@ -1017,9 +1017,34 @@ app.post("/api/settings/pos", async (req, res) => {
           : req.headers?.["x-store-id"])) ||
       qsStore ||
       "default";
-    const storeId = String(rawId || "default")
-      .trim()
-      .replace(/[^A-Za-z0-9_.-]/g, "");
+    const rawName =
+      (req &&
+        (req.header
+          ? req.header("X-Store-Name")
+          : req.headers?.["x-store-name"])) || "";
+    function canonicalize(id, name) {
+      try {
+        const sid = String(id || "").trim();
+        const sname = String(name || "").trim();
+        if (sid.includes("Today's Herbal Choice")) return sid;
+        if (sname.includes("Today's Herbal Choice")) return sname;
+        const alias = {
+          "THC Barbur": "Today's Herbal Choice Barbur",
+          "THC Stayton": "Today's Herbal Choice Stayton",
+          "THC Molalla": "Today's Herbal Choice Molalla",
+          "THC Milwaukie": "Today's Herbal Choice Milwaukie",
+          "THC Forest Grove": "Today's Herbal Choice Forest Grove",
+          "THC Tillamook": "Today's Herbal Choice Tillamook",
+          "THC Rainier": "Today's Herbal Choice Rainier",
+        };
+        if (alias[sname]) return alias[sname];
+        // Last resort: sanitize minimal safe id (no spaces/apostrophes)
+        return String(sid || sname || "default").replace(/\s+/g, "").replace(/[^A-Za-z0-9_.-]/g, "");
+      } catch (_) {
+        return String(id || name || "default").replace(/\s+/g, "").replace(/[^A-Za-z0-9_.-]/g, "");
+      }
+    }
+    const storeId = canonicalize(rawId, rawName);
     // Fetch current settings to merge
     let current = {};
     try {
