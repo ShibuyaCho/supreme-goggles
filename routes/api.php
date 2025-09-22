@@ -776,8 +776,8 @@ Route::get('/settings/stores/open', function() {
                 foreach ((array)$arr as $row) {
                     $id = (string)($row['id'] ?? '');
                     $name = $id;
-                    if (isset($row['settings']) && is_array($row['settings']) && isset($row['settings']['store_name'])) {
-                        $name = (string)$row['settings']['store_name'];
+                    if (isset($row['store_name']) && is_string($row['store_name'])) {
+                        $name = (string)$row['store_name'];
                     }
                     $stores[] = [
                         'id' => $id,
@@ -2100,9 +2100,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         foreach ((array)$arr as $row) {
                             $id = (string)($row['id'] ?? '');
                             $name = $id;
-                            if (isset($row['settings']) && is_array($row['settings']) && isset($row['settings']['store_name'])) {
-                                $name = (string)$row['settings']['store_name'];
-                            }
+                    if (isset($row['store_name']) && is_string($row['store_name'])) {
+                        $name = (string)$row['store_name'];
+                    }
                             $stores[] = [
                                 'id' => $id,
                                 'name' => $name,
