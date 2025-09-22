@@ -217,7 +217,7 @@ app.get("/", (_req, res) => {
         </div>
       </div>
       <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-        <h3 class="font-semibold text-green-800 mb-2">�� Cannabis Features Ready</h3>
+        <h3 class="font-semibold text-green-800 mb-2">🌿 Cannabis Features Ready</h3>
         <div class="text-sm text-green-700 grid grid-cols-2 gap-2">
           <div>• METRC Compliance</div>
           <div>• Oregon State Limits</div>
@@ -1198,16 +1198,22 @@ app.post("/api/settings/pos", async (req, res) => {
     } catch (_) {}
     const mergedFull = { ...defaults, ...merged };
 
-    // Write to primary id
+    // Write to primary id using sectioned columns
+    const sectionPick = (src, keys) => keys.reduce((o,k)=>{ if (Object.prototype.hasOwnProperty.call(src,k)) o[k]=src[k]; return o; },{});
+    const payloadPrimary = [{
+      id: storeId,
+      store_name: mergedFull.store_name || '',
+      updated_at: new Date().toISOString(),
+      "Store_Information": sectionPick(mergedFull, ["store_address","store_phone","store_email","website","store_manager","license_number","receipt_footer","business_hours"]),
+      "Tax_Configuration": sectionPick(mergedFull, ["sales_tax","excise_tax","cannabis_tax","tax_inclusive"]),
+      "Sales_&_Transaction_Settings": sectionPick(mergedFull, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
+      "Printing_Preferences": sectionPick(mergedFull, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels"]),
+      "Metrc_Integration": sectionPick(mergedFull, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
+      "Auto_Delete_Zero-Quantity_Products": sectionPick(mergedFull, ["auto_delete_zero_quantity","auto_delete_zero_days"]),
+    }];
     let r = await supaFetch("pos_settings", {
       method: "POST",
-      body: [
-        {
-          id: storeId,
-          settings: mergedFull,
-          updated_at: new Date().toISOString(),
-        },
-      ],
+      body: payloadPrimary,
       query: { on_conflict: "id" },
     });
     // Also write to legacy id if applicable
