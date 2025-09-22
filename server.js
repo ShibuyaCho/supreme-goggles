@@ -1220,15 +1220,10 @@ app.post("/api/settings/pos", async (req, res) => {
     if (storeId === "default" || storeId === "defaultstore") {
       const legacy = storeId === "default" ? "defaultstore" : "default";
       try {
+        const payloadLegacy = payloadPrimary.map(p=>({ ...p, id: legacy }));
         await supaFetch("pos_settings", {
           method: "POST",
-          body: [
-            {
-              id: legacy,
-              settings: mergedFull,
-              updated_at: new Date().toISOString(),
-            },
-          ],
+          body: payloadLegacy,
           query: { on_conflict: "id" },
         });
       } catch (_) {}
