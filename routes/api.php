@@ -320,8 +320,6 @@ Route::get('/settings/pos', function() {
     $storeId = request()->header('X-Store-ID');
     $storeId = is_string($storeId) ? trim($storeId) : '';
     if ($storeId === '' || $storeId === null) $storeId = 'default';
-    // sanitize id for safety
-    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
     $updatedAtRemote = null; $updatedAtLocal = null;
     if ($supabaseUrl && $supabaseKey) {
         try {
@@ -541,7 +539,6 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
     $storeId = $request->header('X-Store-ID');
     $storeId = is_string($storeId) ? trim($storeId) : '';
     if ($storeId === '' || $storeId === null) $storeId = 'default';
-    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
     try {
         // Merge with current
         $current = [];
