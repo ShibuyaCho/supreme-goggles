@@ -2101,7 +2101,7 @@ function cannabisPOS() {
         } catch (_) {
           res = null;
         }
-        if (!res || res.success !== true) {
+        if (!res || (res.success !== true && !(res.data && res.data.success === true))) {
           // Retry once via SettingsClient
           try {
             await new Promise((r) => setTimeout(r, 250));
@@ -2114,7 +2114,7 @@ function cannabisPOS() {
             res = null;
           }
         }
-        if (!res || res.success !== true) {
+        if (!res || (res.success !== true && !(res.data && res.data.success === true))) {
           // Last-resort: direct Supabase REST upsert to guarantee persistence
           try {
             let sid =
@@ -2124,11 +2124,12 @@ function cannabisPOS() {
                 : typeof this._currentStoreId === "function"
                   ? this._currentStoreId()
                   : "default";
-            sid = String(sid || "default")
-              .trim()
-              .toLowerCase()
-              .replace(/\s+/g, "")
-              .replace(/[^a-z0-9_.-]/g, "");
+            const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === "function") ? String(SettingsClient.currentStoreName() || "") : "";
+            if (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") {
+              sid = SettingsClient.canonicalizeId(sid, sname);
+            } else {
+              sid = String(sid || "default").trim();
+            }
             if (sid === "defaultstore") sid = "default";
 
             // Merge with current server-side settings to avoid overwriting unrelated fields
@@ -2151,6 +2152,7 @@ function cannabisPOS() {
                     Accept: "application/json",
                     "Content-Type": "application/json",
                     "X-Store-ID": sid,
+                    ...(sname ? { "X-Store-Name": sname } : {}),
                   },
                 },
               );
