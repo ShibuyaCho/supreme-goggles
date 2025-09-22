@@ -1040,10 +1040,12 @@ function settingsManager() {
 
         _saveTimer: null,
         _lastPersistedJSON: '',
+        _saveSeq: 0,
         _saveSettingsDebounced() {
             if (!this.hydrated) return;
             try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
-            this._saveTimer = setTimeout(() => this._persistSettings(), 500);
+            const seq = ++this._saveSeq;
+            this._saveTimer = setTimeout(() => this._persistSettings(seq), 500);
         },
         _computePatch(cur, prev) {
             const patch = {};
@@ -1060,8 +1062,9 @@ function settingsManager() {
             } catch (_) {}
             return patch;
         },
-        async _persistSettings() {
+        async _persistSettings(seq) {
             if (!this.hydrated) return;
+            const isLatest = () => seq === this._saveSeq;
             try {
                 const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
                 const patch = this._computePatch(this.settings, prev);
@@ -1070,19 +1073,23 @@ function settingsManager() {
                 if (res && res.success && res.settings) {
                     this.settings = Object.assign({}, this.settings, res.settings);
                     this.saveSettingsToStorage();
+                    if (isLatest()) this._lastPersistedJSON = JSON.stringify(this.settings);
                 } else if (res && res.success === false) {
                     const msg = (res.message || res.error) || 'Autosave failed';
-                    this.showToast(msg, 'error');
+                    if (isLatest()) this.showToast(msg, 'error');
                 }
-                this._lastPersistedJSON = JSON.stringify(this.settings);
+                if (isLatest()) this._lastPersistedJSON = JSON.stringify(this.settings);
             } catch (e) {
                 const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
-                this.showToast(msg, 'error');
+                if (isLatest()) this.showToast(msg, 'error');
             }
         },
 
         async saveSettings() {
             try {
+                // Cancel any pending autosave and advance sequence so older requests won't toast
+                try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
+                this._saveSeq++;
                 const res = await (window.SettingsClient ? SettingsClient.save(this.settings) : Promise.resolve({ success:false }));
                 if (res && res.success) {
                     this._lastPersistedJSON = JSON.stringify(this.settings);
