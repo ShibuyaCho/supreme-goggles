@@ -991,10 +991,15 @@ app.get("/api/settings/pos", async (req, res) => {
       }
     }
     if (settingsRow) {
-      const s =
-        settingsRow.settings && typeof settingsRow.settings === "object"
-          ? { ...defaults, ...settingsRow.settings }
-          : defaults;
+      let composed = {};
+      try { if (settingsRow["Store_Information"]) composed = Object.assign(composed, settingsRow["Store_Information"]); } catch(_){}
+      try { if (settingsRow["Tax_Configuration"]) composed = Object.assign(composed, settingsRow["Tax_Configuration"]); } catch(_){}
+      try { if (settingsRow["Sales_&_Transaction_Settings"]) composed = Object.assign(composed, settingsRow["Sales_&_Transaction_Settings"]); } catch(_){}
+      try { if (settingsRow["Printing_Preferences"]) composed = Object.assign(composed, settingsRow["Printing_Preferences"]); } catch(_){}
+      try { if (settingsRow["Metrc_Integration"]) composed = Object.assign(composed, settingsRow["Metrc_Integration"]); } catch(_){}
+      try { if (settingsRow["Auto_Delete_Zero-Quantity_Products"]) composed = Object.assign(composed, settingsRow["Auto_Delete_Zero-Quantity_Products"]); } catch(_){}
+      if (settingsRow.store_name) composed.store_name = settingsRow.store_name;
+      const s = { ...defaults, ...composed };
       try {
         if (Object.prototype.hasOwnProperty.call(s, "metrc_user_key")) {
           s.metrc_user_key = s.metrc_user_key ? "••••••••" : "";
