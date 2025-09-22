@@ -126,24 +126,13 @@
       if (!raw) {
         const ck = readCookie("cpos_store_id");
         if (ck && typeof ck === "string") {
-          let cid = ck
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, "")
-            .replace(/[^a-z0-9_.-]/g, "");
-          if (cid === "defaultstore") cid = "default";
+          const cid = canonicalizeId(ck, "");
           return cid || "default";
         }
         return "default";
       }
       const s = JSON.parse(raw);
-      let id = s && s.id ? String(s.id) : "default";
-      id = id
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "")
-        .replace(/[^a-z0-9_.-]/g, "");
-      if (id === "defaultstore") id = "default";
+      const id = canonicalizeId(s && s.id ? s.id : "", s && s.name ? s.name : "");
       try {
         writeCookie("cpos_store_id", id || "default");
       } catch (_) {}
@@ -182,6 +171,41 @@
     try {
       document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${COOKIE_MAX_AGE}`;
     } catch (_) {}
+  }
+
+  const STORE_ID_ALIAS = {
+    "THC Barbur": "Today's Herbal Choice Barbur",
+    "THC Stayton": "Today's Herbal Choice Stayton",
+    "THC Molalla": "Today's Herbal Choice Molalla",
+    "THC Milwaukie": "Today's Herbal Choice Milwaukie",
+    "THC Forest Grove": "Today's Herbal Choice Forest Grove",
+    "THC Tillamook": "Today's Herbal Choice Tillamook",
+    "THC Rainier": "Today's Herbal Choice Rainier",
+    thcbarbur: "Today's Herbal Choice Barbur",
+    thcstayton: "Today's Herbal Choice Stayton",
+    thcmolalla: "Today's Herbal Choice Molalla",
+    thcmilwaukie: "Today's Herbal Choice Milwaukie",
+    thcforestgrove: "Today's Herbal Choice Forest Grove",
+    thctillamook: "Today's Herbal Choice Tillamook",
+    thcrainier: "Today's Herbal Choice Rainier",
+  };
+  function canonicalizeId(rawId, rawName) {
+    try {
+      const id = (rawId == null ? "" : String(rawId)).trim();
+      const name = (rawName == null ? "" : String(rawName)).trim();
+      if (id && id.includes("Today's Herbal Choice")) return id;
+      if (name && name.includes("Today's Herbal Choice")) return name;
+      if (STORE_ID_ALIAS[name]) return STORE_ID_ALIAS[name];
+      const slug = (id || name)
+        .toLowerCase()
+        .replace(/\s+/g, "")
+        .replace(/[^a-z0-9_.-]/g, "");
+      if (STORE_ID_ALIAS[slug]) return STORE_ID_ALIAS[slug];
+      if (id) return id;
+      return name || "default";
+    } catch (_) {
+      return (rawId && String(rawId)) || "default";
+    }
   }
 
   async function httpGet(path, params) {
@@ -923,5 +947,6 @@
   };
 
   SettingsClient.currentStoreName = currentStoreName;
+  SettingsClient.canonicalizeId = canonicalizeId;
   window.SettingsClient = SettingsClient;
 })();
