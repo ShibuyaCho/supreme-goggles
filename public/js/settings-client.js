@@ -279,6 +279,7 @@
         apikey: key,
         Authorization: `Bearer ${key}`,
         Accept: "application/json",
+        Prefer: "resolution=merge-duplicates,return=representation",
         "X-Store-ID": sid,
       },
       (init && init.headers) || {},
