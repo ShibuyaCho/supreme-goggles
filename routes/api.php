@@ -355,8 +355,9 @@ Route::get('/settings/pos', function() {
                     $row = (is_array($arr2) && isset($arr2[0])) ? $arr2[0] : null;
                 }
             }
-            if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
-                $settingsRemote = $row['settings'];
+            if (is_array($row)) {
+                $compose = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if(isset($r['store_name']) && is_string($r['store_name'])) $out['store_name'] = $r['store_name']; return $out; };
+                $settingsRemote = $compose($row);
                 $updatedAtRemote = $row['updated_at'] ?? null;
             } else {
                 // Fallback: try default, then legacy defaultstore
@@ -375,8 +376,9 @@ Route::get('/settings/pos', function() {
                         if ($respF->ok()) {
                             $arrF = $respF->json();
                             $rowF = (is_array($arrF) && isset($arrF[0])) ? $arrF[0] : null;
-                            if (is_array($rowF) && isset($rowF['settings']) && is_array($rowF['settings'])) {
-                                $settingsRemote = $rowF['settings'];
+                            if (is_array($rowF)) {
+                                $composeF = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if(isset($r['store_name']) && is_string($r['store_name'])) $out['store_name'] = $r['store_name']; return $out; };
+                                $settingsRemote = $composeF($rowF);
                                 $updatedAtRemote = $rowF['updated_at'] ?? null;
                                 break;
                             }
