@@ -127,16 +127,18 @@ class POSAuth {
             }
           }
           if (store && store.id) {
-            let sid = String(store.id || "default")
-              .trim()
-              .toLowerCase()
-              .replace(/\s+/g, "")
-              .replace(/[^a-z0-9_.-]/g, "");
-            if (sid === "defaultstore") sid = "default";
-            config.headers["X-Store-ID"] = sid || "default";
-            sidSet = true;
+            let sidRaw = String(store.id || "default").trim();
             const sname = store.name || store.store_name || "";
-            if (sname) config.headers["X-Store-Name"] = String(sname);
+            let sid = sidRaw;
+            try {
+              if (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") {
+                sid = SettingsClient.canonicalizeId(sidRaw, sname || sidRaw);
+              }
+            } catch (_) {}
+            if (sid === "defaultstore") sid = "default";
+            if (!config.headers["X-Store-ID"]) config.headers["X-Store-ID"] = sid || "default";
+            if (sname && !config.headers["X-Store-Name"]) config.headers["X-Store-Name"] = String(sname);
+            sidSet = true;
             if (store && store.orgId)
               config.headers["X-Org-ID"] = String(store.orgId);
           }
@@ -145,19 +147,15 @@ class POSAuth {
             window.SettingsClient &&
             typeof SettingsClient.currentStoreId === "function"
           ) {
-            let sid = String(SettingsClient.currentStoreId() || "default")
-              .trim()
-              .toLowerCase()
-              .replace(/\s+/g, "")
-              .replace(/[^a-z0-9_.-]/g, "");
+            let sid = String(SettingsClient.currentStoreId() || "default").trim();
             if (sid === "defaultstore") sid = "default";
-            config.headers["X-Store-ID"] = sid || "default";
+            if (!config.headers["X-Store-ID"]) config.headers["X-Store-ID"] = sid || "default";
             try {
               const sname =
                 (typeof SettingsClient.currentStoreName === "function"
                   ? SettingsClient.currentStoreName()
                   : "") || "";
-              if (sname) config.headers["X-Store-Name"] = String(sname);
+              if (sname && !config.headers["X-Store-Name"]) config.headers["X-Store-Name"] = String(sname);
             } catch (_) {}
           }
         } catch (e) {}
