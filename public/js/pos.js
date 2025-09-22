@@ -140,10 +140,16 @@ function cannabisPOS() {
         const raw = localStorage.getItem("pos_store");
         const s = raw ? JSON.parse(raw) : null;
         if (s && s.id) {
-          let id = String(s.id).trim().toLowerCase();
-          id = id.replace(/\s+/g, "").replace(/[^a-z0-9_.-]/g, "");
+          let idRaw = String(s.id).trim();
+          const nameRaw = String(s.name || s.store_name || idRaw);
+          let id = idRaw;
+          try {
+            if (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") {
+              id = SettingsClient.canonicalizeId(idRaw, nameRaw);
+            }
+          } catch (_) {}
           if (id === "defaultstore") id = "default";
-          this.selectedStore = { id, name: s.name || s.id };
+          this.selectedStore = { id, name: nameRaw };
           try {
             localStorage.setItem(
               "pos_store",
