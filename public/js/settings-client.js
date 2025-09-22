@@ -752,13 +752,19 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify([{ id: sidNow, settings: merged, updated_at: nowIso }]),
         });
+        if (!r0 || !r0.ok) {
+          try { const txt = r0 ? await r0.text() : ''; last = new Error(`supabase upsert failed (${r0?.status||'n/a'}): ${txt}`); } catch(eTxt){ last = eTxt; }
+        }
         if (r0 && r0.ok) {
           try {
             const ver0 = await supaReq(
               `pos_settings?id=eq.${encodeURIComponent(sidNow)}&select=*`,
               { method: "GET" },
             );
-            if (ver0.ok) {
+            if (!ver0 || !ver0.ok) {
+              try { const txt = ver0 ? await ver0.text() : ''; last = new Error(`supabase verify failed (${ver0?.status||'n/a'}): ${txt}`); } catch(eTxt){ last = eTxt; }
+            }
+            if (ver0 && ver0.ok) {
               const arr0 = await ver0.json();
               const row0 = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
               const m0 = row0 && row0.settings && typeof row0.settings === "object" ? { ...DEFAULTS, ...row0.settings } : { ...DEFAULTS, ...merged };
