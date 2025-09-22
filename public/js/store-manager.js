@@ -37,6 +37,14 @@
     }
   }
   function sanitizeStoreId(input) {
+    // Preserve canonical THC -> Today's Herbal Choice IDs if present
+    try {
+      const raw = String(input || "").trim();
+      if (raw.includes("Today's Herbal Choice")) return raw;
+      if (raw.toUpperCase().startsWith("THC ") && window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") {
+        return SettingsClient.canonicalizeId(raw, raw);
+      }
+    } catch (_) {}
     let id = String(input || "")
       .trim()
       .toLowerCase();
