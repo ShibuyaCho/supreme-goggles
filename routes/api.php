@@ -224,6 +224,25 @@ Route::post('/drawers-open', function(\Illuminate\Http\Request $request) {
 // Activity logging (best-effort; may be a no-op)
 Route::post('/activity', function(\Illuminate\Http\Request $request){
     try { \Illuminate\Support\Facades\Log::info('Activity', ['payload'=>$request->all()]); } catch (\Throwable $e) {}
+    // Also persist to Supabase activity_logs (best-effort)
+    try {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        if ($supabaseUrl && $supabaseKey) {
+            $payload = $request->all();
+            \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'Prefer' => 'return=representation'
+            ])->post($supabaseUrl . '/rest/v1/activity_logs', [[
+                'actor_user_id' => $request->user()->id ?? null,
+                'action' => (string)($payload['action'] ?? 'activity'),
+                'payload' => $payload,
+                'created_at' => now()->toIso8601String(),
+            ]]);
+        }
+    } catch (\Throwable $e) { /* ignore */ }
     return response()->json(['success'=>true]);
 });
 Route::post('/deals', [DealsController::class, 'store']);
