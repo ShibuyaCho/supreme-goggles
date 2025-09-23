@@ -344,19 +344,19 @@ Route::get('/settings/pos', function() {
     $updatedAtRemote = null; $updatedAtLocal = null;
     if ($supabaseUrl && $supabaseKey) {
         try {
+            $params = [ 'select' => '*' ];
+            if ($storeName !== '') {
+                $params['or'] = '(store_name.eq.' . $storeName . ',id.eq.' . $storeId . ')';
+            } else {
+                $params['id'] = 'eq.' . $storeId;
+            }
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
                 'apikey' => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                // Prefer matching by store_name OR id when a friendly name header is provided
-                'or' => $storeName !== '' ? '(store_name.eq.' . $storeName . ',id.eq.' . $storeId . ')' : null,
-                // Fallback filter by id to satisfy PostgREST when no OR is used
-                'id' => $storeName === '' ? ('eq.' . $storeId) : null,
-                'select' => '*',
-            ]);
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
             $row = null;
             if ($resp->ok()) {
                 $arr = $resp->json();
@@ -430,25 +430,9 @@ Route::get('/settings/pos', function() {
             }
         } catch (\Throwable $e) {}
     }
-    // Local DB overlay (fills gaps and provides fallback)
-    try {
-        $local = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
-        if (!$local) {
-            // Fallback to default, then defaultstore
-            foreach (['default','defaultstore'] as $fid) {
-                if ($fid === $storeId) continue;
-                $try = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $fid)->first();
-                if ($try) { $local = $try; break; }
-            }
-        }
-        if ($local && isset($local->settings)) {
-            $decoded = json_decode($local->settings, true);
-            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-                $settingsLocal = $decoded;
-                $updatedAtLocal = $local->updated_at ?? null;
-            }
-        }
-    } catch (\Throwable $e) {}
+    // Local DB overlay disabled to prevent stale data overriding Supabase edits
+    $settingsLocal = [];
+    $updatedAtLocal = null;
 
     // Read from Cache unless bypass requested
     try {
@@ -481,32 +465,10 @@ Route::get('/settings/pos', function() {
     if (is_array($settingsCache))  $settings = $mergeNonNull($settings, $settingsCache);
 
     $hasRemote = is_array($settingsRemote) && !empty($settingsRemote);
-    $hasLocal  = is_array($settingsLocal)  && !empty($settingsLocal);
-    $primary = [];
-    $secondary = [];
-    if ($hasRemote && $hasLocal) {
-        // Decide freshest by updated_at
-        $useRemote = false;
-        try {
-            if ($updatedAtRemote && $updatedAtLocal) {
-                $useRemote = strcmp((string)$updatedAtRemote, (string)$updatedAtLocal) >= 0;
-            } elseif ($updatedAtRemote && !$updatedAtLocal) {
-                $useRemote = true;
-            } else {
-                $useRemote = false;
-            }
-        } catch (\Throwable $e) { $useRemote = true; }
-        if ($useRemote) { $primary = $settingsRemote; $secondary = $settingsLocal; }
-        else { $primary = $settingsLocal; $secondary = $settingsRemote; }
-    } elseif ($hasRemote) {
-        $primary = $settingsRemote;
-    } elseif ($hasLocal) {
-        $primary = $settingsLocal;
+    // Prefer Supabase when present; do not fallback to local unless remote is empty
+    if ($hasRemote) {
+        $settings = $mergeNonNull($settings, $settingsRemote);
     }
-
-    // Apply freshest fully (preserves explicit clears), then fill gaps from the other source
-    if (!empty($primary))   $settings = $mergeNonNull($settings, $primary);
-    if (!empty($secondary)) $settings = $fillMissing($settings, $secondary);
 
     // Coerce known numeric and boolean fields to correct types
     foreach (['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'] as $n) {
@@ -1946,7 +1908,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             }
             // Mask METRC keys in response
             if (array_key_exists('metrc_user_key', $settings)) {
-                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
+                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '��•••••••' : '';
             }
             if (array_key_exists('metrc_vendor_key', $settings)) {
                 $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
