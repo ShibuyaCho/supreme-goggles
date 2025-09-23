@@ -2066,7 +2066,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                         $fresh['metrc_user_key'] = !empty($fresh['metrc_user_key']) ? '••••••••' : '';
                     }
                     if (array_key_exists('metrc_vendor_key', $fresh)) {
-                        $fresh['metrc_vendor_key'] = !empty($fresh['metrc_vendor_key']) ? '•••���••••' : '';
+                        $fresh['metrc_vendor_key'] = !empty($fresh['metrc_vendor_key']) ? '••••••••' : '';
                     }
                 }
                 return response()->json(['success' => true, 'settings' => $fresh]);
