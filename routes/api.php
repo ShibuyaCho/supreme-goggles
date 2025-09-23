@@ -1233,7 +1233,6 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
-                'settings' => $cur,
                 'updated_at' => now()->toIso8601String(),
             ]]);
             } catch (\Throwable $e) { /* ignore */ }
