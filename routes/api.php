@@ -505,7 +505,7 @@ Route::get('/settings/pos', function() {
         $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
     }
     if (array_key_exists('metrc_vendor_key', $settings)) {
-        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••��•••••' : '';
+        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••��•���•••' : '';
     }
     // Ensure a version field exists for optimistic coordination
     if (!isset($settings['settings_version'])) { $settings['settings_version'] = 0; }
@@ -1982,6 +1982,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 if ($supabaseUrl && $supabaseKey) {
                     try {
                         $resp = null; $success = false;
+                        $lastStatus = null; $lastBody = null;
                         for ($i=0; $i<3; $i++) {
                             try {
                                 $resp = \Illuminate\Support\Facades\Http::withHeaders([
@@ -2003,12 +2004,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
                                     'updated_at' => now()->toIso8601String(),
                                 ]]);
                                 if ($resp->successful()) { $success = true; break; }
+                                $lastStatus = $resp->status(); $lastBody = $resp->body();
                             } catch (\Throwable $e) {
                                 \Illuminate\Support\Facades\Log::warning('Supabase settings save failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
                             }
                             usleep(150000 * ($i+1));
                         }
-                        if ($success) { $saved = true; }
+                        if ($success) { $saved = true; } else { return response()->json(['success'=>false,'message'=>'Supabase upsert failed','supabase_status'=>$lastStatus,'supabase_error'=>$lastBody], $lastStatus ?: 502); }
                     } catch (\Throwable $e) { /* fall back to DB */ }
                 }
 
