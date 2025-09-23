@@ -546,16 +546,14 @@
     for (const id of tryIds) {
       try {
         const sname = currentStoreName();
-        const filter = sname && sname.trim()
-          ? `pos_settings?or=(store_name.eq.${encodeURIComponent(sname.trim())},id.eq.${encodeURIComponent(id)})&select=*`
-          : `pos_settings?id=eq.${encodeURIComponent(id)}&select=*`;
-        const r = await supaReqRetry(
-          filter,
-          {
-            method: "GET",
-            headers: noCache ? { "Cache-Control": "no-cache" } : {},
-          },
-        );
+        const filter =
+          sname && sname.trim()
+            ? `pos_settings?or=(store_name.eq.${encodeURIComponent(sname.trim())},id.eq.${encodeURIComponent(id)})&select=*`
+            : `pos_settings?id=eq.${encodeURIComponent(id)}&select=*`;
+        const r = await supaReqRetry(filter, {
+          method: "GET",
+          headers: noCache ? { "Cache-Control": "no-cache" } : {},
+        });
         if (!r.ok) continue;
         const arr = await r.json();
         const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
@@ -698,8 +696,11 @@
         const data =
           resp && typeof resp === "object" ? resp.settings || resp : {};
         const localPrev = this.loadLocal(sid) || {};
-        const hasServer = data && typeof data === "object" && Object.keys(data).length > 0;
-        const merged = hasServer ? { ...DEFAULTS, ...data } : { ...DEFAULTS, ...localPrev };
+        const hasServer =
+          data && typeof data === "object" && Object.keys(data).length > 0;
+        const merged = hasServer
+          ? { ...DEFAULTS, ...data }
+          : { ...DEFAULTS, ...localPrev };
         function isMasked(v) {
           return (
             typeof v === "string" &&
@@ -794,7 +795,10 @@
               ? data.settings || data
               : {};
           const localPrev = this.loadLocal(sid) || {};
-          const hasServer = settings && typeof settings === "object" && Object.keys(settings).length > 0;
+          const hasServer =
+            settings &&
+            typeof settings === "object" &&
+            Object.keys(settings).length > 0;
           if (
             (!Number.isFinite(Number(settings.cannabis_tax)) ||
               Number(settings.cannabis_tax) === 0) &&
@@ -802,7 +806,9 @@
           ) {
             settings.cannabis_tax = Number(settings.sales_tax);
           }
-          const merged = hasServer ? { ...DEFAULTS, ...settings } : { ...DEFAULTS, ...localPrev };
+          const merged = hasServer
+            ? { ...DEFAULTS, ...settings }
+            : { ...DEFAULTS, ...localPrev };
           const updatedAt =
             data && (data.settings_updated_at || data.updated_at)
               ? data.settings_updated_at || data.updated_at
