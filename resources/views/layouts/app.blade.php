@@ -143,7 +143,7 @@
         }
     </style>
     <!-- Core libraries -->
-    <script src="{{ asset('lib/axios/axios.min.js') }}" defer></script>
+    <script src="{{ asset('lib/axios/axios.min.js') }}"></script>
     <script>
       (function(){
         try {
