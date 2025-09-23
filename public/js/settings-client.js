@@ -295,6 +295,22 @@
     return fetch(url, Object.assign({}, init || {}, { headers }));
   }
 
+  async function supaReqRetry(path, init, attempts = 3) {
+    let lastErr = null;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await supaReq(path, init);
+        if (res && res.ok) return res;
+        lastErr = new Error(`supabase ${init && init.method ? init.method : 'GET'} failed (${res?.status || 'n/a'})`);
+      } catch (e) {
+        lastErr = e;
+      }
+      await new Promise((r) => setTimeout(r, 150 * (i + 1)));
+    }
+    if (lastErr) throw lastErr;
+    return supaReq(path, init);
+  }
+
   function writeUiCachesFromSettings(merged) {
     try {
       const stateRate = Number(merged.sales_tax ?? 0) || 0;
@@ -432,7 +448,7 @@
     if (!tryIds.includes("default")) tryIds.push("default");
     for (const id of tryIds) {
       try {
-        const r = await supaReq(
+        const r = await supaReqRetry(
           `pos_settings?id=eq.${encodeURIComponent(id)}&select=*`,
           {
             method: "GET",
@@ -894,7 +910,7 @@
             ),
           },
         ];
-        let r0 = await supaReq(`pos_settings?on_conflict=id`, {
+        let r0 = await supaReqRetry(`pos_settings?on_conflict=id`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -910,7 +926,7 @@
           }
           // Fallback: PATCH existing row by id (avoids on_conflict semantics)
           try {
-            const rPatch = await supaReq(
+            const rPatch = await supaReqRetry(
               `pos_settings?id=eq.${encodeURIComponent(sidNow)}`,
               {
                 method: "PATCH",
@@ -940,7 +956,7 @@
         }
         if (r0 && r0.ok) {
           try {
-            const ver0 = await supaReq(
+            const ver0 = await supaReqRetry(
               `pos_settings?id=eq.${encodeURIComponent(sidNow)}&select=*`,
               { method: "GET" },
             );
@@ -1183,7 +1199,7 @@
       try {
         const sid = currentStoreId();
         const now = new Date().toISOString();
-        const r = await supaReq(`pos_settings?on_conflict=id`, {
+        const r = await supaReqRetry(`pos_settings?on_conflict=id`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify([
@@ -1209,7 +1225,7 @@
         if (r.ok) {
           // Verify read-after-write
           try {
-            const ver = await supaReq(
+            const ver = await supaReqRetry(
               `pos_settings?id=eq.${encodeURIComponent(sid)}&select=*`,
               { method: "GET" },
             );
