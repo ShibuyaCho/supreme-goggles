@@ -793,7 +793,7 @@
           'Metrc_Integration': pick(merged, SEC['Metrc_Integration']),
           'Auto_Delete_Zero-Quantity_Products': pick(merged, SEC['Auto_Delete_Zero-Quantity_Products']),
         }];
-        const r0 = await supaReq(`pos_settings?on_conflict=id`, {
+        let r0 = await supaReq(`pos_settings?on_conflict=id`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
