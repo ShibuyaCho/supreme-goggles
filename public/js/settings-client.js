@@ -545,8 +545,12 @@
     if (!tryIds.includes("default")) tryIds.push("default");
     for (const id of tryIds) {
       try {
+        const sname = currentStoreName();
+        const filter = sname && sname.trim()
+          ? `pos_settings?or=(store_name.eq.${encodeURIComponent(sname.trim())},id.eq.${encodeURIComponent(id)})&select=*`
+          : `pos_settings?id=eq.${encodeURIComponent(id)}&select=*`;
         const r = await supaReqRetry(
-          `pos_settings?id=eq.${encodeURIComponent(id)}&select=*`,
+          filter,
           {
             method: "GET",
             headers: noCache ? { "Cache-Control": "no-cache" } : {},
