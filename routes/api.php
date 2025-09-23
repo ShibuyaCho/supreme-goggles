@@ -728,6 +728,27 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
                 'updated_at' => now()->toIso8601String(),
             ]]);
+            // Fallback: if upsert fails, try PATCH update by id
+            if (!$resp->successful()) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'resolution=merge-duplicates,return=representation',
+                        'X-Store-ID' => $storeId,
+                    ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($storeId), [
+                        'store_name' => $merged['store_name'] ?? null,
+                        'Store_Information' => $cols['Store_Information'],
+                        'Tax_Configuration' => $cols['Tax_Configuration'],
+                        'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                        'Printing_Preferences' => $cols['Printing_Preferences'],
+                        'Metrc_Integration' => $cols['Metrc_Integration'],
+                        'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                        'updated_at' => now()->toIso8601String(),
+                    ]);
+                } catch (\Throwable $e) { /* ignore */ }
+            }
             // Also write to legacy id for backward-compatibility
             if ($storeId === 'default' || $storeId === 'defaultstore') {
                 try {
