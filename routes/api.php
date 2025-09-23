@@ -1757,8 +1757,9 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     if ($ok) {
                         $arr = $resp->json();
                         $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
-                        if (is_array($row) && isset($row['settings']) && is_array($row['settings'])) {
-                            $cached = $row['settings'];
+                        if (is_array($row)) {
+                            $compose = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if (isset($r['store_name'])) $out['store_name']=$r['store_name']; return $out; };
+                            $cached = $compose($row);
                             try { \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $cached, now()->addYears(5)); } catch (\Throwable $e) {}
                         }
                     }
