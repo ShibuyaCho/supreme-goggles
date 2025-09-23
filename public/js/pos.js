@@ -8155,7 +8155,8 @@ function cannabisPOS() {
       // Prefer Laravel web endpoint to ensure DB persistence, then fallback to /api proxy
       let list = [];
       try {
-        const resp = await fetch("/employees", {
+        // Use JSON API to avoid HTML responses from auth-protected web routes
+        const resp = await fetch("/api/employees", {
           method: "GET",
           headers: function () {
             const h = { Accept: "application/json" };
