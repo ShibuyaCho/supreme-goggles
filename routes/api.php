@@ -335,10 +335,12 @@ Route::get('/settings/pos', function() {
     $settingsRemote = [];
     $settingsLocal = [];
     $settingsCache = [];
-    // Multi-store: scope by X-Store-ID header when present
+    // Multi-store: scope by headers when present
     $storeId = request()->header('X-Store-ID');
     $storeId = is_string($storeId) ? trim($storeId) : '';
     if ($storeId === '' || $storeId === null) $storeId = 'default';
+    $storeName = request()->header('X-Store-Name');
+    $storeName = is_string($storeName) ? trim($storeName) : '';
     $updatedAtRemote = null; $updatedAtLocal = null;
     if ($supabaseUrl && $supabaseKey) {
         try {
@@ -349,13 +351,34 @@ Route::get('/settings/pos', function() {
                 'X-Store-ID' => $storeId,
 
             ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
-                'id' => 'eq.' . $storeId,
+                // Prefer matching by store_name OR id when a friendly name header is provided
+                'or' => $storeName !== '' ? '(store_name.eq.' . $storeName . ',id.eq.' . $storeId . ')' : null,
+                // Fallback filter by id to satisfy PostgREST when no OR is used
+                'id' => $storeName === '' ? ('eq.' . $storeId) : null,
                 'select' => '*',
             ]);
             $row = null;
             if ($resp->ok()) {
                 $arr = $resp->json();
                 $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+            }
+            // Secondary attempt: if no row and storeName provided, try by name only (handles non-unique or sanitized ids)
+            if (!$row && $storeName !== '') {
+                try {
+                    $respByName = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'X-Store-ID' => $storeId,
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'store_name' => 'eq.' . $storeName,
+                        'select' => '*',
+                    ]);
+                    if ($respByName->ok()) {
+                        $arrByName = $respByName->json();
+                        $row = (is_array($arrByName) && isset($arrByName[0])) ? $arrByName[0] : null;
+                    }
+                } catch (\Throwable $e) { /* ignore */ }
             }
             // Legacy fallback: defaultstore
             if (!$row && $storeId === 'default') {
