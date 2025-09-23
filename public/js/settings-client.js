@@ -695,7 +695,8 @@
         const data =
           resp && typeof resp === "object" ? resp.settings || resp : {};
         const localPrev = this.loadLocal(sid) || {};
-        const merged = { ...DEFAULTS, ...data };
+        const hasServer = data && typeof data === "object" && Object.keys(data).length > 0;
+        const merged = hasServer ? { ...DEFAULTS, ...data } : { ...DEFAULTS, ...localPrev };
         function isMasked(v) {
           return (
             typeof v === "string" &&
@@ -789,6 +790,8 @@
             data && typeof data === "object" && (data.settings || data)
               ? data.settings || data
               : {};
+          const localPrev = this.loadLocal(sid) || {};
+          const hasServer = settings && typeof settings === "object" && Object.keys(settings).length > 0;
           if (
             (!Number.isFinite(Number(settings.cannabis_tax)) ||
               Number(settings.cannabis_tax) === 0) &&
@@ -796,7 +799,7 @@
           ) {
             settings.cannabis_tax = Number(settings.sales_tax);
           }
-          const merged = { ...DEFAULTS, ...settings };
+          const merged = hasServer ? { ...DEFAULTS, ...settings } : { ...DEFAULTS, ...localPrev };
           const updatedAt =
             data && (data.settings_updated_at || data.updated_at)
               ? data.settings_updated_at || data.updated_at
