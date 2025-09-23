@@ -1396,6 +1396,22 @@ app.get("/api/employees", async (_req, res) => {
   }
 });
 
+// Employees: get by id or employee_id (open)
+app.get("/api/employees/:id", async (req, res) => {
+  try {
+    const idRaw = String(req.params.id || "");
+    const target = /^\d+$/.test(idRaw)
+      ? `employees?id=eq.${encodeURIComponent(idRaw)}`
+      : `employees?employee_id=eq.${encodeURIComponent(idRaw)}`;
+    const r = await supaFetch(target, { method: "GET" });
+    const rows = r.ok ? await r.json() : [];
+    const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
+    return res.json({ success: true, employee: row });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: "Failed to fetch employee" });
+  }
+});
+
 // Employees: next-id (dev + supabase-backed)
 app.get("/api/employees/next-id", async (_req, res) => {
   async function getNextEmpId() {
@@ -1743,6 +1759,27 @@ app.delete("/api/customers/:id", async (req, res) => {
     return res
       .status(500)
       .json({ success: false, error: "Failed to delete customer" });
+  }
+});
+
+// Products: list (open, mirrors Laravel /api/products)
+app.get("/api/products", async (req, res) => {
+  try {
+    const search = (req.query?.search || "").toString().trim();
+    const category = (req.query?.category || "").toString().trim();
+    let qp = "products?select=*";
+    const filters = [];
+    if (search)
+      filters.push(
+        `or=(name.ilike.*${encodeURIComponent(search)}*,sku.ilike.*${encodeURIComponent(search)}*,metrc_tag.ilike.*${encodeURIComponent(search)}*)`,
+      );
+    if (category) filters.push(`category=eq.${encodeURIComponent(category)}`);
+    if (filters.length) qp += `&${filters.join("&")}`;
+    const r = await supaFetch(qp, { method: "GET" });
+    const payload = r.ok ? await r.json() : [];
+    return res.json({ success: true, products: Array.isArray(payload) ? payload : [] });
+  } catch (e) {
+    return res.json({ success: true, products: [] });
   }
 });
 
@@ -3655,6 +3692,17 @@ app.post("/api/sales/diag/create", async (_req, res) => {
     });
   } catch (e) {
     res.status(500).json({ success: false, error: String(e?.message || e) });
+  }
+});
+
+// METRC: test-connection (open, dev implementation)
+app.get("/api/metrc/test-connection", async (_req, res) => {
+  try {
+    const configured = !!(process.env.METRC_BASE_URL && process.env.METRC_USER_KEY && process.env.METRC_VENDOR_KEY);
+    const test = { success: configured };
+    return res.json({ success: true, configured, connected: configured, data: { connection_test: test }, facility: process.env.METRC_FACILITY || null });
+  } catch (e) {
+    return res.status(500).json({ success: false, error: "Failed to test METRC" });
   }
 });
 
