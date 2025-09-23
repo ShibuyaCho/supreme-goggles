@@ -1129,11 +1129,10 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
         ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
-                'settings' => $cur,
                 'updated_at' => now()->toIso8601String(),
             ]]);
-        } catch (\Throwable $e) { /* ignore */ }
-        return response()->json(['success' => true, 'tier' => $created], 201);
+            } catch (\Throwable $e) { /* ignore */ }
+            return response()->json(['success' => true, 'tier' => $created], 201);
     } catch (\Throwable $e) {
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
