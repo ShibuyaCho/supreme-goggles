@@ -1072,6 +1072,7 @@
           msg = last;
         }
       } catch(_){}
+      try { await fetch('/api/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'settings-save-error', storeId: sid, message: msg})}); } catch(_){}
       return {
         success: false,
         settings: merged,
