@@ -3786,6 +3786,201 @@ app.get("/api/analytics/end-of-day", async (req, res) => {
   }
 });
 
+// Analytics: Overview (open, mirrors Laravel /api/analytics/overview-open)
+app.get("/api/analytics/overview-open", async (req, res) => {
+  try {
+    const tz = String(req.query?.tz || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+    const tf = String(req.query?.timeframe || "today").toLowerCase();
+    function rangeFor(tf) {
+      const toIso = (d) => d.toISOString();
+      let start, end;
+      const atMidnight = (d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0));
+      switch (tf) {
+        case "week": {
+          const d = new Date();
+          const day = d.getUTCDay();
+          const diff = (day + 6) % 7; // Monday=0
+          start = atMidnight(new Date(Date.now() - diff * 86400000));
+          end = new Date(start.getTime() + 7 * 86400000 - 1);
+          break;
+        }
+        case "month": {
+          const d = new Date();
+          start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
+          end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 0, 0, 0) - 1);
+          break;
+        }
+        case "custom": {
+          const s = req.query?.start_date ? new Date(String(req.query.start_date)) : new Date();
+          const e = req.query?.end_date ? new Date(String(req.query.end_date)) : new Date();
+          start = atMidnight(s);
+          end = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate(), 23, 59, 59));
+          break;
+        }
+        case "today":
+        default: {
+          start = atMidnight(new Date());
+          end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 23, 59, 59));
+          break;
+        }
+      }
+      return { startIso: toIso(start), endIso: toIso(end), start, end };
+    }
+    const { startIso, endIso, start, end } = rangeFor(tf);
+
+    // Fetch sales in range (Supabase)
+    const r = await supaFetch("sales", {
+      method: "GET",
+      query: {
+        select:
+          "id,customer,customer_id,employee_id,total,total_amount,created_at,store_id,cart,payment_method,tax,discount_amount",
+        or: "(status.eq.completed,status.eq.Completed,status.eq.COMPLETED,status.is.null)",
+        and: `(created_at.gte.${startIso},created_at.lte.${endIso})`,
+        limit: "2000",
+      },
+    });
+    const sales = r.ok ? (await r.json()) : [];
+    const list = Array.isArray(sales) ? sales : [];
+
+    // Sales summary
+    const sum = (a, b) => a + b;
+    const revenue = list.map((s) => Number(s.total_amount ?? s.total ?? 0)).reduce(sum, 0);
+    const transactions = list.length;
+    const customers = list.filter((s) => !!(s.customer_id || (s.customer && typeof s.customer === "object"))).length;
+    const avgOrderValue = transactions > 0 ? revenue / transactions : 0;
+
+    // Previous period for simple change metrics
+    const periodDays = Math.max(1, Math.round((end - start + 1) / 86400000));
+    const prevStart = new Date(start.getTime() - periodDays * 86400000);
+    const prevEnd = new Date(end.getTime() - periodDays * 86400000);
+    let prevRevenue = 0,
+      prevTx = 0,
+      prevCust = 0,
+      prevAvg = 0;
+    try {
+      const pr = await supaFetch("sales", {
+        method: "GET",
+        query: {
+          select: "total,total_amount,customer,customer_id,created_at",
+          or: "(status.eq.completed,status.eq.Completed,status.eq.COMPLETED,status.is.null)",
+          and: `(created_at.gte.${prevStart.toISOString()},created_at.lte.${prevEnd.toISOString()})`,
+          limit: "2000",
+        },
+      });
+      const prow = pr.ok ? await pr.json() : [];
+      const plist = Array.isArray(prow) ? prow : [];
+      prevRevenue = plist.map((s) => Number(s.total_amount ?? s.total ?? 0)).reduce(sum, 0);
+      prevTx = plist.length;
+      prevCust = plist.filter((s) => !!(s.customer_id || s.customer)).length;
+      prevAvg = prevTx > 0 ? prevRevenue / prevTx : 0;
+    } catch {}
+    const pct = (cur, prev) => (prev === 0 ? (cur > 0 ? 100 : 0) : ((cur - prev) / prev) * 100);
+
+    const salesData = {
+      revenue,
+      transactions,
+      customers,
+      avgOrderValue,
+      change: {
+        revenue: pct(revenue, prevRevenue),
+        transactions: pct(transactions, prevTx),
+        customers: pct(customers, prevCust),
+        avgOrderValue: pct(avgOrderValue, prevAvg),
+      },
+    };
+
+    // Categories from cart items
+    const byCat = new Map();
+    const byProd = new Map();
+    for (const s of list) {
+      const cart = Array.isArray(s.cart) ? s.cart : [];
+      for (const it of cart) {
+        const category = String(
+          it?.product_category || it?.category || it?.product?.category || "Uncategorized",
+        );
+        const name = String(it?.product_name || it?.name || "Product");
+        const qty = Number(it?.quantity || 0);
+        const price = Number(it?.unit_price ?? it?.price ?? 0);
+        const line = Number(it?.total_price ?? qty * price);
+        byCat.set(category, (byCat.get(category) || 0) + line);
+        byProd.set(name + "||" + category, (byProd.get(name + "||" + category) || 0) + line);
+      }
+    }
+    const totalRev = Array.from(byCat.values()).reduce(sum, 0) || 1;
+    const categoryData = Array.from(byCat.entries())
+      .map(([category, rev]) => ({ category, revenue: rev, percentage: (rev / totalRev) * 100 }))
+      .sort((a, b) => b.revenue - a.revenue);
+
+    // Employees
+    const empMap = new Map();
+    for (const s of list) {
+      const emp = String(s.employee_id || "");
+      const amt = Number(s.total_amount ?? s.total ?? 0);
+      if (!emp) continue;
+      const cur = empMap.get(emp) || { name: emp, sales: 0, transactions: 0, avgOrder: 0 };
+      cur.sales += amt;
+      cur.transactions += 1;
+      empMap.set(emp, cur);
+    }
+    const employees = Array.from(empMap.values()).map((e) => ({
+      name: e.name,
+      sales: e.sales,
+      transactions: e.transactions,
+      avgOrder: e.transactions > 0 ? e.sales / e.transactions : 0,
+    }));
+
+    // Open carts (best-effort)
+    let open = { total: 0, avgMinutes: 0, maxMinutes: 0 };
+    try {
+      const rc = await supaFetch("saved_sales", { method: "GET", query: { select: "id,created_at", limit: "1000" } });
+      if (rc.ok) {
+        const rows = await rc.json();
+        const now = Date.now();
+        const mins = (iso) => Math.max(0, Math.round((now - Date.parse(iso)) / 60000));
+        const arr = (Array.isArray(rows) ? rows : []).map((r) => mins(r.created_at));
+        const total = arr.length;
+        const avg = total ? arr.reduce((a, b) => a + b, 0) / total : 0;
+        const max = total ? Math.max(...arr) : 0;
+        open = { total, avgMinutes: Math.round(avg * 10) / 10, maxMinutes: max };
+      }
+    } catch {}
+
+    // Company view by store
+    const byStore = new Map();
+    for (const s of list) {
+      const sid = String(s.store_id || "default");
+      const amt = Number(s.total_amount ?? s.total ?? 0);
+      const cur = byStore.get(sid) || { store_id: sid, transactions: 0, revenue: 0 };
+      cur.transactions += 1;
+      cur.revenue += amt;
+      byStore.set(sid, cur);
+    }
+    const stores = Array.from(byStore.values());
+    const overallTx = stores.reduce((a, s) => a + s.transactions, 0);
+    const overallRev = stores.reduce((a, s) => a + s.revenue, 0);
+    const company = {
+      stores,
+      overall: {
+        transactions: overallTx,
+        revenue: overallRev,
+        avg: overallTx > 0 ? overallRev / overallTx : 0,
+      },
+      hasStoreDimension: true,
+    };
+
+    res.json({
+      range: { start: startIso, end: endIso },
+      sales: salesData,
+      categories: categoryData,
+      employees,
+      openCarts: open,
+      company,
+    });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to compute overview" });
+  }
+});
+
 // Analytics: ASPD (Average Sales Per Day) using Supabase sales.cart
 app.get("/api/analytics/aspd", async (req, res) => {
   try {
