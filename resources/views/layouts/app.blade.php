@@ -164,7 +164,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
     <script src="{{ asset('js/realtime.js') }}" defer></script>
-    <script src="{{ asset('js/settings-client.js') }}" defer></script>
+    <script src="{{ asset('js/settings-client.js') }}"></script>
     <script src="{{ asset('js/auth.js') }}" defer></script>
     <script>
       (function(){
