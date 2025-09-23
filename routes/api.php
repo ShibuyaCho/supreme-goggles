@@ -682,14 +682,23 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         $merged = array_replace_recursive($defaultsAll, $merged);
         $savedRemote = false;
         if ($supabaseUrl && $supabaseKey) {
+            // Build sectioned column payloads from merged settings
+            $pick = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) { $out[$k] = $src[$k]; } } return $out; };
+            $cols = [
+                'Store_Information' => $pick($merged, ['store_address','store_phone','store_email','website','store_manager','license_number','receipt_footer','business_hours']),
+                'Tax_Configuration' => $pick($merged, ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']),
+                'Sales_&_Transaction_Settings' => $pick($merged, ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']),
+                'Printing_Preferences' => $pick($merged, ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels']),
+                'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']),
+                'Auto_Delete_Zero-Quantity_Products' => $pick($merged, ['auto_delete_zero_quantity','auto_delete_zero_days']),
+            ];
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
-            'apikey' => $supabaseKey,
-            'Authorization' => 'Bearer ' . $supabaseKey,
-            'Accept' => 'application/json',
-            'Prefer' => 'resolution=merge-duplicates,return=representation',
-            'X-Store-ID' => $storeId,
-
-        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'Prefer' => 'resolution=merge-duplicates,return=representation',
+                'X-Store-ID' => $storeId,
+            ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $merged['store_name'] ?? null,
                 'Store_Information' => $cols['Store_Information'],
@@ -705,22 +714,21 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 try {
                     $legacy = $storeId === 'default' ? 'defaultstore' : 'default';
                     \Illuminate\Support\Facades\Http::withHeaders([
-            'apikey' => $supabaseKey,
-            'Authorization' => 'Bearer ' . $supabaseKey,
-            'Accept' => 'application/json',
-            'Prefer' => 'resolution=merge-duplicates,return=representation',
-            'X-Store-ID' => $storeId,
-
-        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'resolution=merge-duplicates,return=representation',
+                        'X-Store-ID' => $storeId,
+                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $legacy,
                         'store_name' => $merged['store_name'] ?? null,
-                'Store_Information' => $cols['Store_Information'],
-                'Tax_Configuration' => $cols['Tax_Configuration'],
-                'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
-                'Printing_Preferences' => $cols['Printing_Preferences'],
-                'Metrc_Integration' => $cols['Metrc_Integration'],
-                'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
-                'updated_at' => now()->toIso8601String(),
+                        'Store_Information' => $cols['Store_Information'],
+                        'Tax_Configuration' => $cols['Tax_Configuration'],
+                        'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                        'Printing_Preferences' => $cols['Printing_Preferences'],
+                        'Metrc_Integration' => $cols['Metrc_Integration'],
+                        'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                        'updated_at' => now()->toIso8601String(),
                     ]]);
                 } catch (\Throwable $e) { /* ignore */ }
             }
