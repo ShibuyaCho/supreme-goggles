@@ -2012,12 +2012,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                     } catch (\Throwable $e) { /* fall back to DB */ }
                 }
 
-                if (!$saved) {
-                    \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
-                        ['id' => $storeId],
-                        ['settings' => json_encode($settings), 'updated_at' => now()]
-                    );
-                }
+                // Do not write legacy blob to local DB when remote fails
 
                 // Read-after-write verification from Supabase when available
                 $fresh = $settings;
