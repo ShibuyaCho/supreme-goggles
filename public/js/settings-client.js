@@ -219,7 +219,11 @@
         path.replace(/^\/api/, ""),
         params || {},
       );
-      if (res && res.success && res.data) return res.data;
+      if (res && res.success === false) {
+        const err = new Error(res.message || "API request failed");
+        err.response = { data: res, status: res.status };
+        throw err;
+      }
       if (res && res.data) return res.data;
     }
     const sid = currentStoreId();
@@ -242,7 +246,11 @@
         path.replace(/^\/api/, ""),
         body || {},
       );
-      if (res && res.success && res.data) return res.data;
+      if (res && res.success === false) {
+        const err = new Error(res.message || "API request failed");
+        err.response = { data: res, status: res.status };
+        throw err;
+      }
       if (res && res.data) return res.data;
     }
     const sid = currentStoreId();
