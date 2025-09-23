@@ -734,14 +734,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             }
             if ($resp->successful()) { $savedRemote = true; }
         }
-        // Always persist locally as a fallback for reliability
-        try {
-            \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
-                ['id' => $storeId],
-                ['settings' => json_encode($merged), 'updated_at' => now()]
-            );
-        } catch (\Throwable $e) { /* ignore local errors */ }
-        // Persist to Cache for environments without DB access
+        // Cache for UI hydration only (no legacy DB writes)
         try {
             \Illuminate\Support\Facades\Cache::forget('pos_settings:' . $storeId);
             \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $merged, now()->addYears(5));
@@ -757,15 +750,10 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             }
             return response()->json(['success' => true, 'settings' => $respSettings]);
         }
-        // Remote failed but local saved: still return success with flag
-        $respSettings = $merged;
-        if (array_key_exists('metrc_user_key', $respSettings)) {
-            $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '••••••••' : '';
-        }
-        if (array_key_exists('metrc_vendor_key', $respSettings)) {
-            $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : '';
-        }
-        return response()->json(['success' => true, 'saved_local' => true, 'settings' => $respSettings]);
+        // Remote failed: surface exact Supabase error
+        $status = method_exists($resp,'status') ? $resp->status() : 502;
+        $body = method_exists($resp,'body') ? $resp->body() : '';
+        return response()->json(['success'=>false,'message'=>'Supabase upsert failed','supabase_status'=>$status,'supabase_error'=>$body], $status ?: 502);
     } catch (\Throwable $e) {
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
