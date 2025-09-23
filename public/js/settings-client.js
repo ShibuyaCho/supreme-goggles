@@ -360,25 +360,68 @@
     } catch (_) {}
   }
 
-  function pick(obj, keys){ const out={}; keys.forEach(k=>{ if (Object.prototype.hasOwnProperty.call(obj,k)) out[k]=obj[k]; }); return out; }
+  function pick(obj, keys) {
+    const out = {};
+    keys.forEach((k) => {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = obj[k];
+    });
+    return out;
+  }
   const SEC = {
-    'Store_Information': [
-      'store_address','store_phone','store_email','website','store_manager','license_number','receipt_footer','business_hours'
+    Store_Information: [
+      "store_address",
+      "store_phone",
+      "store_email",
+      "website",
+      "store_manager",
+      "license_number",
+      "receipt_footer",
+      "business_hours",
     ],
-    'Tax_Configuration': [
-      'sales_tax','excise_tax','cannabis_tax','tax_inclusive'
+    Tax_Configuration: [
+      "sales_tax",
+      "excise_tax",
+      "cannabis_tax",
+      "tax_inclusive",
     ],
-    'Sales_&_Transaction_Settings': [
-      'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold'
+    "Sales_&_Transaction_Settings": [
+      "require_customer",
+      "age_verification",
+      "limit_enforcement",
+      "accept_cash",
+      "accept_debit",
+      "accept_check",
+      "round_to_nearest",
+      "minimum_price_enabled",
+      "minimum_price_amount",
+      "minimum_price_categories",
+      "inventory_view_mode",
+      "expandable_cart",
+      "weight_threshold",
     ],
-    'Printing_Preferences': [
-      'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels'
+    Printing_Preferences: [
+      "receipt_autoprint",
+      "receipt_categories_autoprint",
+      "receipt_show_tax_breakdown",
+      "receipt_show_metrc",
+      "receipt_show_loyalty",
+      "receipt_show_qr_code",
+      "default_receipt_printer",
+      "receipt_paper_size",
+      "exit_label_categories",
+      "receipt_template",
+      "print_labels",
     ],
-    'Metrc_Integration': [
-      'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales'
+    Metrc_Integration: [
+      "metrc_enabled",
+      "metrc_user_key",
+      "metrc_vendor_key",
+      "metrc_facility",
+      "metrc_auto_push_sales",
     ],
-    'Auto_Delete_Zero-Quantity_Products': [
-      'auto_delete_zero_quantity','auto_delete_zero_days'
+    "Auto_Delete_Zero-Quantity_Products": [
+      "auto_delete_zero_quantity",
+      "auto_delete_zero_days",
     ],
   };
   async function getFromServer(sid, noCache = false) {
@@ -402,17 +445,67 @@
         if (row) {
           // Compose from dedicated columns if present; fallback to legacy settings
           let composed = {};
-          try { if (row['Store_Information'] && typeof row['Store_Information']==='object') composed = Object.assign(composed, row['Store_Information']); } catch(_){}
-          try { if (row['Tax_Configuration'] && typeof row['Tax_Configuration']==='object') composed = Object.assign(composed, row['Tax_Configuration']); } catch(_){}
-          try { if (row['Sales_&_Transaction_Settings'] && typeof row['Sales_&_Transaction_Settings']==='object') composed = Object.assign(composed, row['Sales_&_Transaction_Settings']); } catch(_){}
-          try { if (row['Printing_Preferences'] && typeof row['Printing_Preferences']==='object') composed = Object.assign(composed, row['Printing_Preferences']); } catch(_){}
-          try { if (row['Metrc_Integration'] && typeof row['Metrc_Integration']==='object') composed = Object.assign(composed, row['Metrc_Integration']); } catch(_){}
-          try { if (row['Auto_Delete_Zero-Quantity_Products'] && typeof row['Auto_Delete_Zero-Quantity_Products']==='object') composed = Object.assign(composed, row['Auto_Delete_Zero-Quantity_Products']); } catch(_){}
+          try {
+            if (
+              row["Store_Information"] &&
+              typeof row["Store_Information"] === "object"
+            )
+              composed = Object.assign(composed, row["Store_Information"]);
+          } catch (_) {}
+          try {
+            if (
+              row["Tax_Configuration"] &&
+              typeof row["Tax_Configuration"] === "object"
+            )
+              composed = Object.assign(composed, row["Tax_Configuration"]);
+          } catch (_) {}
+          try {
+            if (
+              row["Sales_&_Transaction_Settings"] &&
+              typeof row["Sales_&_Transaction_Settings"] === "object"
+            )
+              composed = Object.assign(
+                composed,
+                row["Sales_&_Transaction_Settings"],
+              );
+          } catch (_) {}
+          try {
+            if (
+              row["Printing_Preferences"] &&
+              typeof row["Printing_Preferences"] === "object"
+            )
+              composed = Object.assign(composed, row["Printing_Preferences"]);
+          } catch (_) {}
+          try {
+            if (
+              row["Metrc_Integration"] &&
+              typeof row["Metrc_Integration"] === "object"
+            )
+              composed = Object.assign(composed, row["Metrc_Integration"]);
+          } catch (_) {}
+          try {
+            if (
+              row["Auto_Delete_Zero-Quantity_Products"] &&
+              typeof row["Auto_Delete_Zero-Quantity_Products"] === "object"
+            )
+              composed = Object.assign(
+                composed,
+                row["Auto_Delete_Zero-Quantity_Products"],
+              );
+          } catch (_) {}
           if (row.store_name) composed.store_name = row.store_name;
           // Legacy support
-          if ((!composed || Object.keys(composed).length===0) && row.settings){
-            if (typeof row.settings==='object') composed = row.settings; else {
-              try { composed = JSON.parse(row.settings); } catch(_) { composed = {}; }
+          if (
+            (!composed || Object.keys(composed).length === 0) &&
+            row.settings
+          ) {
+            if (typeof row.settings === "object") composed = row.settings;
+            else {
+              try {
+                composed = JSON.parse(row.settings);
+              } catch (_) {
+                composed = {};
+              }
             }
           }
           return { settings: composed, updated_at: row.updated_at || null };
@@ -782,37 +875,67 @@
       try {
         const sidNow = currentStoreId();
         const nowIso = new Date().toISOString();
-        const payload = [{
-          id: sidNow,
-          store_name: merged.store_name ?? '',
-          updated_at: nowIso,
-          'Store_Information': pick(merged, SEC['Store_Information']),
-          'Tax_Configuration': pick(merged, SEC['Tax_Configuration']),
-          'Sales_&_Transaction_Settings': pick(merged, SEC['Sales_&_Transaction_Settings']),
-          'Printing_Preferences': pick(merged, SEC['Printing_Preferences']),
-          'Metrc_Integration': pick(merged, SEC['Metrc_Integration']),
-          'Auto_Delete_Zero-Quantity_Products': pick(merged, SEC['Auto_Delete_Zero-Quantity_Products']),
-        }];
+        const payload = [
+          {
+            id: sidNow,
+            store_name: merged.store_name ?? "",
+            updated_at: nowIso,
+            Store_Information: pick(merged, SEC["Store_Information"]),
+            Tax_Configuration: pick(merged, SEC["Tax_Configuration"]),
+            "Sales_&_Transaction_Settings": pick(
+              merged,
+              SEC["Sales_&_Transaction_Settings"],
+            ),
+            Printing_Preferences: pick(merged, SEC["Printing_Preferences"]),
+            Metrc_Integration: pick(merged, SEC["Metrc_Integration"]),
+            "Auto_Delete_Zero-Quantity_Products": pick(
+              merged,
+              SEC["Auto_Delete_Zero-Quantity_Products"],
+            ),
+          },
+        ];
         let r0 = await supaReq(`pos_settings?on_conflict=id`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
         if (!r0 || !r0.ok) {
-          try { const txt = r0 ? await r0.text() : ''; last = new Error(`supabase upsert failed (${r0?.status||'n/a'}): ${txt}`); } catch(eTxt){ last = eTxt; }
+          try {
+            const txt = r0 ? await r0.text() : "";
+            last = new Error(
+              `supabase upsert failed (${r0?.status || "n/a"}): ${txt}`,
+            );
+          } catch (eTxt) {
+            last = eTxt;
+          }
           // Fallback: PATCH existing row by id (avoids on_conflict semantics)
           try {
             const rPatch = await supaReq(
               `pos_settings?id=eq.${encodeURIComponent(sidNow)}`,
               {
                 method: "PATCH",
-                headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
+                headers: {
+                  "Content-Type": "application/json",
+                  Prefer: "resolution=merge-duplicates,return=representation",
+                },
                 body: JSON.stringify(payload[0]),
               },
             );
-            if (rPatch && rPatch.ok) { r0 = rPatch; }
+            if (rPatch && rPatch.ok) {
+              r0 = rPatch;
+            }
           } catch (ePatch) {
-            try { await fetch('/api/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'settings-save-patch-failed', storeId:sidNow, message:String(ePatch && ePatch.message || 'patch failed')})}); } catch(_) {}
+            try {
+              await fetch("/api/activity", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  action: "settings-save-patch-failed",
+                  storeId: sidNow,
+                  message: String((ePatch && ePatch.message) || "patch failed"),
+                }),
+              });
+            } catch (_) {}
           }
         }
         if (r0 && r0.ok) {
@@ -822,39 +945,112 @@
               { method: "GET" },
             );
             if (!ver0 || !ver0.ok) {
-              try { const txt = ver0 ? await ver0.text() : ''; last = new Error(`supabase verify failed (${ver0?.status||'n/a'}): ${txt}`); } catch(eTxt){ last = eTxt; }
+              try {
+                const txt = ver0 ? await ver0.text() : "";
+                last = new Error(
+                  `supabase verify failed (${ver0?.status || "n/a"}): ${txt}`,
+                );
+              } catch (eTxt) {
+                last = eTxt;
+              }
             }
             if (ver0 && ver0.ok) {
               const arr0 = await ver0.json();
               const row0 = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
               let composed0 = {};
-              try { if (row0['Store_Information']) composed0 = Object.assign(composed0, row0['Store_Information']); } catch(_){}
-              try { if (row0['Tax_Configuration']) composed0 = Object.assign(composed0, row0['Tax_Configuration']); } catch(_){}
-              try { if (row0['Sales_&_Transaction_Settings']) composed0 = Object.assign(composed0, row0['Sales_&_Transaction_Settings']); } catch(_){}
-              try { if (row0['Printing_Preferences']) composed0 = Object.assign(composed0, row0['Printing_Preferences']); } catch(_){}
-              try { if (row0['Metrc_Integration']) composed0 = Object.assign(composed0, row0['Metrc_Integration']); } catch(_){}
-              try { if (row0['Auto_Delete_Zero-Quantity_Products']) composed0 = Object.assign(composed0, row0['Auto_Delete_Zero-Quantity_Products']); } catch(_){}
+              try {
+                if (row0["Store_Information"])
+                  composed0 = Object.assign(
+                    composed0,
+                    row0["Store_Information"],
+                  );
+              } catch (_) {}
+              try {
+                if (row0["Tax_Configuration"])
+                  composed0 = Object.assign(
+                    composed0,
+                    row0["Tax_Configuration"],
+                  );
+              } catch (_) {}
+              try {
+                if (row0["Sales_&_Transaction_Settings"])
+                  composed0 = Object.assign(
+                    composed0,
+                    row0["Sales_&_Transaction_Settings"],
+                  );
+              } catch (_) {}
+              try {
+                if (row0["Printing_Preferences"])
+                  composed0 = Object.assign(
+                    composed0,
+                    row0["Printing_Preferences"],
+                  );
+              } catch (_) {}
+              try {
+                if (row0["Metrc_Integration"])
+                  composed0 = Object.assign(
+                    composed0,
+                    row0["Metrc_Integration"],
+                  );
+              } catch (_) {}
+              try {
+                if (row0["Auto_Delete_Zero-Quantity_Products"])
+                  composed0 = Object.assign(
+                    composed0,
+                    row0["Auto_Delete_Zero-Quantity_Products"],
+                  );
+              } catch (_) {}
               if (row0.store_name) composed0.store_name = row0.store_name;
-              if (!composed0 || Object.keys(composed0).length===0) composed0 = merged;
+              if (!composed0 || Object.keys(composed0).length === 0)
+                composed0 = merged;
               const m0 = { ...DEFAULTS, ...composed0 };
               this.saveLocal(sidNow, m0);
               try {
-                const compat0 = Object.assign({}, m0, { lastUpdated: Date.now() });
-                localStorage.setItem(`cannabisPOS-storeSettings_${sidNow}`, JSON.stringify(compat0));
-                localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat0));
+                const compat0 = Object.assign({}, m0, {
+                  lastUpdated: Date.now(),
+                });
+                localStorage.setItem(
+                  `cannabisPOS-storeSettings_${sidNow}`,
+                  JSON.stringify(compat0),
+                );
+                localStorage.setItem(
+                  "cannabisPOS-storeSettings",
+                  JSON.stringify(compat0),
+                );
               } catch (_) {}
-              try { writeCookie("cpos_store_id", sidNow); } catch (_) {}
-              try { localStorage.setItem("cannabisPOS-weightThreshold", String(m0.weight_threshold ?? 0)); } catch (_) {}
-              try { writeUiCachesFromSettings(m0); } catch (_) {}
               try {
-                window.dispatchEvent(new CustomEvent("settings:updated", { detail: { settings: m0, storeId: sidNow } }));
-                try { window.dispatchEvent(new CustomEvent("settings-updated", { detail: m0 })); } catch (_) {}
+                writeCookie("cpos_store_id", sidNow);
+              } catch (_) {}
+              try {
+                localStorage.setItem(
+                  "cannabisPOS-weightThreshold",
+                  String(m0.weight_threshold ?? 0),
+                );
+              } catch (_) {}
+              try {
+                writeUiCachesFromSettings(m0);
+              } catch (_) {}
+              try {
+                window.dispatchEvent(
+                  new CustomEvent("settings:updated", {
+                    detail: { settings: m0, storeId: sidNow },
+                  }),
+                );
+                try {
+                  window.dispatchEvent(
+                    new CustomEvent("settings-updated", { detail: m0 }),
+                  );
+                } catch (_) {}
               } catch (_) {}
               return { success: true, settings: m0 };
             }
-          } catch (e) { last = e; }
+          } catch (e) {
+            last = e;
+          }
         }
-      } catch (e) { last = e; }
+      } catch (e) {
+        last = e;
+      }
       // Fire and retry server save
       for (let i = 0; i < 3; i++) {
         try {
@@ -970,17 +1166,25 @@
         const r = await supaReq(`pos_settings?on_conflict=id`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify([{
-            id: sid,
-            store_name: merged.store_name ?? '',
-            updated_at: now,
-            'Store_Information': pick(merged, SEC['Store_Information']),
-            'Tax_Configuration': pick(merged, SEC['Tax_Configuration']),
-            'Sales_&_Transaction_Settings': pick(merged, SEC['Sales_&_Transaction_Settings']),
-            'Printing_Preferences': pick(merged, SEC['Printing_Preferences']),
-            'Metrc_Integration': pick(merged, SEC['Metrc_Integration']),
-            'Auto_Delete_Zero-Quantity_Products': pick(merged, SEC['Auto_Delete_Zero-Quantity_Products']),
-          }]),
+          body: JSON.stringify([
+            {
+              id: sid,
+              store_name: merged.store_name ?? "",
+              updated_at: now,
+              Store_Information: pick(merged, SEC["Store_Information"]),
+              Tax_Configuration: pick(merged, SEC["Tax_Configuration"]),
+              "Sales_&_Transaction_Settings": pick(
+                merged,
+                SEC["Sales_&_Transaction_Settings"],
+              ),
+              Printing_Preferences: pick(merged, SEC["Printing_Preferences"]),
+              Metrc_Integration: pick(merged, SEC["Metrc_Integration"]),
+              "Auto_Delete_Zero-Quantity_Products": pick(
+                merged,
+                SEC["Auto_Delete_Zero-Quantity_Products"],
+              ),
+            },
+          ]),
         });
         if (r.ok) {
           // Verify read-after-write
@@ -994,12 +1198,48 @@
               const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
               if (row) {
                 let composedR = {};
-                try { if (row['Store_Information']) composedR = Object.assign(composedR, row['Store_Information']); } catch(_){}
-                try { if (row['Tax_Configuration']) composedR = Object.assign(composedR, row['Tax_Configuration']); } catch(_){}
-                try { if (row['Sales_&_Transaction_Settings']) composedR = Object.assign(composedR, row['Sales_&_Transaction_Settings']); } catch(_){}
-                try { if (row['Printing_Preferences']) composedR = Object.assign(composedR, row['Printing_Preferences']); } catch(_){}
-                try { if (row['Metrc_Integration']) composedR = Object.assign(composedR, row['Metrc_Integration']); } catch(_){}
-                try { if (row['Auto_Delete_Zero-Quantity_Products']) composedR = Object.assign(composedR, row['Auto_Delete_Zero-Quantity_Products']); } catch(_){}
+                try {
+                  if (row["Store_Information"])
+                    composedR = Object.assign(
+                      composedR,
+                      row["Store_Information"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row["Tax_Configuration"])
+                    composedR = Object.assign(
+                      composedR,
+                      row["Tax_Configuration"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row["Sales_&_Transaction_Settings"])
+                    composedR = Object.assign(
+                      composedR,
+                      row["Sales_&_Transaction_Settings"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row["Printing_Preferences"])
+                    composedR = Object.assign(
+                      composedR,
+                      row["Printing_Preferences"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row["Metrc_Integration"])
+                    composedR = Object.assign(
+                      composedR,
+                      row["Metrc_Integration"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row["Auto_Delete_Zero-Quantity_Products"])
+                    composedR = Object.assign(
+                      composedR,
+                      row["Auto_Delete_Zero-Quantity_Products"],
+                    );
+                } catch (_) {}
                 if (row.store_name) composedR.store_name = row.store_name;
                 const m = { ...DEFAULTS, ...composedR };
                 this.saveLocal(sid, m);
@@ -1069,18 +1309,30 @@
           } catch (_) {}
         }
       } catch (_) {}
-      let msg = 'settings save failed';
+      let msg = "settings save failed";
       try {
-        if (last && typeof last === 'object') {
+        if (last && typeof last === "object") {
           msg = last.message || msg;
           if (!msg && last.response && last.response.data) {
-            msg = String(last.response.data.message || last.response.data.error || msg);
+            msg = String(
+              last.response.data.message || last.response.data.error || msg,
+            );
           }
-        } else if (typeof last === 'string' && last) {
+        } else if (typeof last === "string" && last) {
           msg = last;
         }
-      } catch(_){}
-      try { await fetch('/api/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'settings-save-error', storeId: sid, message: msg})}); } catch(_){}
+      } catch (_) {}
+      try {
+        await fetch("/api/activity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "settings-save-error",
+            storeId: sid,
+            message: msg,
+          }),
+        });
+      } catch (_) {}
       return {
         success: false,
         settings: merged,
