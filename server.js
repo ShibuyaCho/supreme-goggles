@@ -961,9 +961,13 @@ app.get("/api/settings/pos", async (req, res) => {
           "THC Rainier": "Today's Herbal Choice Rainier",
         };
         if (alias[sname]) return alias[sname];
-        return String(sid || sname || "default").replace(/\s+/g, "").replace(/[^A-Za-z0-9_.-]/g, "");
+        return String(sid || sname || "default")
+          .replace(/\s+/g, "")
+          .replace(/[^A-Za-z0-9_.-]/g, "");
       } catch (_) {
-        return String(id || name || "default").replace(/\s+/g, "").replace(/[^A-Za-z0-9_.-]/g, "");
+        return String(id || name || "default")
+          .replace(/\s+/g, "")
+          .replace(/[^A-Za-z0-9_.-]/g, "");
       }
     }
     const storeId = canonicalize(rawId, storeNameRaw);
@@ -992,12 +996,39 @@ app.get("/api/settings/pos", async (req, res) => {
     }
     if (settingsRow) {
       let composed = {};
-      try { if (settingsRow["Store_Information"]) composed = Object.assign(composed, settingsRow["Store_Information"]); } catch(_){}
-      try { if (settingsRow["Tax_Configuration"]) composed = Object.assign(composed, settingsRow["Tax_Configuration"]); } catch(_){}
-      try { if (settingsRow["Sales_&_Transaction_Settings"]) composed = Object.assign(composed, settingsRow["Sales_&_Transaction_Settings"]); } catch(_){}
-      try { if (settingsRow["Printing_Preferences"]) composed = Object.assign(composed, settingsRow["Printing_Preferences"]); } catch(_){}
-      try { if (settingsRow["Metrc_Integration"]) composed = Object.assign(composed, settingsRow["Metrc_Integration"]); } catch(_){}
-      try { if (settingsRow["Auto_Delete_Zero-Quantity_Products"]) composed = Object.assign(composed, settingsRow["Auto_Delete_Zero-Quantity_Products"]); } catch(_){}
+      try {
+        if (settingsRow["Store_Information"])
+          composed = Object.assign(composed, settingsRow["Store_Information"]);
+      } catch (_) {}
+      try {
+        if (settingsRow["Tax_Configuration"])
+          composed = Object.assign(composed, settingsRow["Tax_Configuration"]);
+      } catch (_) {}
+      try {
+        if (settingsRow["Sales_&_Transaction_Settings"])
+          composed = Object.assign(
+            composed,
+            settingsRow["Sales_&_Transaction_Settings"],
+          );
+      } catch (_) {}
+      try {
+        if (settingsRow["Printing_Preferences"])
+          composed = Object.assign(
+            composed,
+            settingsRow["Printing_Preferences"],
+          );
+      } catch (_) {}
+      try {
+        if (settingsRow["Metrc_Integration"])
+          composed = Object.assign(composed, settingsRow["Metrc_Integration"]);
+      } catch (_) {}
+      try {
+        if (settingsRow["Auto_Delete_Zero-Quantity_Products"])
+          composed = Object.assign(
+            composed,
+            settingsRow["Auto_Delete_Zero-Quantity_Products"],
+          );
+      } catch (_) {}
       if (settingsRow.store_name) composed.store_name = settingsRow.store_name;
       const s = { ...defaults, ...composed };
       try {
@@ -1044,7 +1075,8 @@ app.post("/api/settings/pos", async (req, res) => {
       (req &&
         (req.header
           ? req.header("X-Store-Name")
-          : req.headers?.["x-store-name"])) || "";
+          : req.headers?.["x-store-name"])) ||
+      "";
     function canonicalize(id, name) {
       try {
         const sid = String(id || "").trim();
@@ -1062,9 +1094,13 @@ app.post("/api/settings/pos", async (req, res) => {
         };
         if (alias[sname]) return alias[sname];
         // Last resort: sanitize minimal safe id (no spaces/apostrophes)
-        return String(sid || sname || "default").replace(/\s+/g, "").replace(/[^A-Za-z0-9_.-]/g, "");
+        return String(sid || sname || "default")
+          .replace(/\s+/g, "")
+          .replace(/[^A-Za-z0-9_.-]/g, "");
       } catch (_) {
-        return String(id || name || "default").replace(/\s+/g, "").replace(/[^A-Za-z0-9_.-]/g, "");
+        return String(id || name || "default")
+          .replace(/\s+/g, "")
+          .replace(/[^A-Za-z0-9_.-]/g, "");
       }
     }
     const storeId = canonicalize(rawId, rawName);
@@ -1080,14 +1116,35 @@ app.post("/api/settings/pos", async (req, res) => {
       if (r0.ok) {
         const arr = await r0.json();
         const row = Array.isArray(arr) && arr[0] ? arr[0] : null;
-        if (row && typeof row === 'object') {
+        if (row && typeof row === "object") {
           let cur = {};
-          try { if (row["Store_Information"]) cur = Object.assign(cur, row["Store_Information"]); } catch(_){}
-          try { if (row["Tax_Configuration"]) cur = Object.assign(cur, row["Tax_Configuration"]); } catch(_){}
-          try { if (row["Sales_&_Transaction_Settings"]) cur = Object.assign(cur, row["Sales_&_Transaction_Settings"]); } catch(_){}
-          try { if (row["Printing_Preferences"]) cur = Object.assign(cur, row["Printing_Preferences"]); } catch(_){}
-          try { if (row["Metrc_Integration"]) cur = Object.assign(cur, row["Metrc_Integration"]); } catch(_){}
-          try { if (row["Auto_Delete_Zero-Quantity_Products"]) cur = Object.assign(cur, row["Auto_Delete_Zero-Quantity_Products"]); } catch(_){}
+          try {
+            if (row["Store_Information"])
+              cur = Object.assign(cur, row["Store_Information"]);
+          } catch (_) {}
+          try {
+            if (row["Tax_Configuration"])
+              cur = Object.assign(cur, row["Tax_Configuration"]);
+          } catch (_) {}
+          try {
+            if (row["Sales_&_Transaction_Settings"])
+              cur = Object.assign(cur, row["Sales_&_Transaction_Settings"]);
+          } catch (_) {}
+          try {
+            if (row["Printing_Preferences"])
+              cur = Object.assign(cur, row["Printing_Preferences"]);
+          } catch (_) {}
+          try {
+            if (row["Metrc_Integration"])
+              cur = Object.assign(cur, row["Metrc_Integration"]);
+          } catch (_) {}
+          try {
+            if (row["Auto_Delete_Zero-Quantity_Products"])
+              cur = Object.assign(
+                cur,
+                row["Auto_Delete_Zero-Quantity_Products"],
+              );
+          } catch (_) {}
           if (row.store_name) cur.store_name = row.store_name;
           current = cur;
         }
@@ -1199,18 +1256,73 @@ app.post("/api/settings/pos", async (req, res) => {
     const mergedFull = { ...defaults, ...merged };
 
     // Write to primary id using sectioned columns
-    const sectionPick = (src, keys) => keys.reduce((o,k)=>{ if (Object.prototype.hasOwnProperty.call(src,k)) o[k]=src[k]; return o; },{});
-    const payloadPrimary = [{
-      id: storeId,
-      store_name: mergedFull.store_name || '',
-      updated_at: new Date().toISOString(),
-      "Store_Information": sectionPick(mergedFull, ["store_address","store_phone","store_email","website","store_manager","license_number","receipt_footer","business_hours"]),
-      "Tax_Configuration": sectionPick(mergedFull, ["sales_tax","excise_tax","cannabis_tax","tax_inclusive"]),
-      "Sales_&_Transaction_Settings": sectionPick(mergedFull, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
-      "Printing_Preferences": sectionPick(mergedFull, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels"]),
-      "Metrc_Integration": sectionPick(mergedFull, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
-      "Auto_Delete_Zero-Quantity_Products": sectionPick(mergedFull, ["auto_delete_zero_quantity","auto_delete_zero_days"]),
-    }];
+    const sectionPick = (src, keys) =>
+      keys.reduce((o, k) => {
+        if (Object.prototype.hasOwnProperty.call(src, k)) o[k] = src[k];
+        return o;
+      }, {});
+    const payloadPrimary = [
+      {
+        id: storeId,
+        store_name: mergedFull.store_name || "",
+        updated_at: new Date().toISOString(),
+        Store_Information: sectionPick(mergedFull, [
+          "store_address",
+          "store_phone",
+          "store_email",
+          "website",
+          "store_manager",
+          "license_number",
+          "receipt_footer",
+          "business_hours",
+        ]),
+        Tax_Configuration: sectionPick(mergedFull, [
+          "sales_tax",
+          "excise_tax",
+          "cannabis_tax",
+          "tax_inclusive",
+        ]),
+        "Sales_&_Transaction_Settings": sectionPick(mergedFull, [
+          "require_customer",
+          "age_verification",
+          "limit_enforcement",
+          "accept_cash",
+          "accept_debit",
+          "accept_check",
+          "round_to_nearest",
+          "minimum_price_enabled",
+          "minimum_price_amount",
+          "minimum_price_categories",
+          "inventory_view_mode",
+          "expandable_cart",
+          "weight_threshold",
+        ]),
+        Printing_Preferences: sectionPick(mergedFull, [
+          "receipt_autoprint",
+          "receipt_categories_autoprint",
+          "receipt_show_tax_breakdown",
+          "receipt_show_metrc",
+          "receipt_show_loyalty",
+          "receipt_show_qr_code",
+          "default_receipt_printer",
+          "receipt_paper_size",
+          "exit_label_categories",
+          "receipt_template",
+          "print_labels",
+        ]),
+        Metrc_Integration: sectionPick(mergedFull, [
+          "metrc_enabled",
+          "metrc_user_key",
+          "metrc_vendor_key",
+          "metrc_facility",
+          "metrc_auto_push_sales",
+        ]),
+        "Auto_Delete_Zero-Quantity_Products": sectionPick(mergedFull, [
+          "auto_delete_zero_quantity",
+          "auto_delete_zero_days",
+        ]),
+      },
+    ];
     let r = await supaFetch("pos_settings", {
       method: "POST",
       body: payloadPrimary,
@@ -1218,14 +1330,21 @@ app.post("/api/settings/pos", async (req, res) => {
     });
     if (!r || !r.ok) {
       let errTxt = "";
-      try { errTxt = await r.text(); } catch(_) {}
-      return res.status((r && r.status) || 502).json({ success:false, error: errTxt || `Supabase upsert failed (${r && r.status})` });
+      try {
+        errTxt = await r.text();
+      } catch (_) {}
+      return res
+        .status((r && r.status) || 502)
+        .json({
+          success: false,
+          error: errTxt || `Supabase upsert failed (${r && r.status})`,
+        });
     }
     // Also write to legacy id if applicable
     if (storeId === "default" || storeId === "defaultstore") {
       const legacy = storeId === "default" ? "defaultstore" : "default";
       try {
-        const payloadLegacy = payloadPrimary.map(p=>({ ...p, id: legacy }));
+        const payloadLegacy = payloadPrimary.map((p) => ({ ...p, id: legacy }));
         await supaFetch("pos_settings", {
           method: "POST",
           body: payloadLegacy,
