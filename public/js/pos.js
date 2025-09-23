@@ -2161,35 +2161,26 @@ function cannabisPOS() {
               mergedForFallback = { ...cur, ...payload };
             } catch (_) {}
 
-            // Route fallback through Laravel to standardize writes and cache
+            // Delegate to SettingsClient unified save logic for reliability and better errors
             try {
-              await (window.axios || axios).post(
-                "/api/settings/pos",
-                mergedForFallback,
-                {
-                  headers: {
-                    Accept: "application/json",
-                    "Content-Type": "application/json",
-                    "X-Store-ID": sid,
-                    ...(sname ? { "X-Store-Name": sname } : {}),
-                  },
-                },
-              );
-              try {
-                await (window.SettingsClient
-                  ? SettingsClient.get(true)
-                  : Promise.resolve());
-              } catch (_) {}
-              this.showToast("Settings saved successfully", "success");
+              const res = await (window.SettingsClient
+                ? SettingsClient.save(mergedForFallback)
+                : Promise.resolve({ success: false }));
+              if (res && res.success) {
+                try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch (_) {}
+                this.showToast("Settings saved successfully", "success");
+                return;
+              }
+              const msg = (res && (res.message || res.error)) ? String(res.message || res.error) : "Failed to save settings";
+              this.showToast(msg, "error");
               return;
-            } catch (_) {
-              /* fall through to error */
+            } catch (e) {
+              const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || "Failed to save settings";
+              this.showToast(msg, "error");
+              return;
             }
           } catch (_) {}
-          this.showToast(
-            "Failed to save settings (saved locally, will retry)",
-            "error",
-          );
+          this.showToast("Failed to save settings", "error");
           return;
         }
         // API path succeeded
