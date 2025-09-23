@@ -1216,6 +1216,11 @@ app.post("/api/settings/pos", async (req, res) => {
       body: payloadPrimary,
       query: { on_conflict: "id" },
     });
+    if (!r || !r.ok) {
+      let errTxt = "";
+      try { errTxt = await r.text(); } catch(_) {}
+      return res.status((r && r.status) || 502).json({ success:false, error: errTxt || `Supabase upsert failed (${r && r.status})` });
+    }
     // Also write to legacy id if applicable
     if (storeId === "default" || storeId === "defaultstore") {
       const legacy = storeId === "default" ? "defaultstore" : "default";
