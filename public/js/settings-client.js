@@ -230,7 +230,12 @@
     const sname = currentStoreName();
     const headers = { Accept: "application/json", "X-Store-ID": sid };
     if (sname) headers["X-Store-Name"] = sname;
-    const ax = typeof window !== "undefined" && window.axios ? window.axios : (typeof axios !== "undefined" ? axios : null);
+    const ax =
+      typeof window !== "undefined" && window.axios
+        ? window.axios
+        : typeof axios !== "undefined"
+          ? axios
+          : null;
     if (ax) {
       const cfg = { headers };
       if (params) {
@@ -241,7 +246,10 @@
       return r.data;
     }
     const url = new URL(path, location.origin);
-    if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+    if (params)
+      Object.entries(params).forEach(([k, v]) =>
+        url.searchParams.set(k, String(v)),
+      );
     const res = await fetch(url.toString(), { headers });
     if (!res.ok) throw new Error(`GET ${path} failed ${res.status}`);
     return res.json();
@@ -274,7 +282,12 @@
       const token = meta && meta.getAttribute("content");
       if (token) headers["X-CSRF-TOKEN"] = token;
     } catch (_) {}
-    const ax = typeof window !== "undefined" && window.axios ? window.axios : (typeof axios !== "undefined" ? axios : null);
+    const ax =
+      typeof window !== "undefined" && window.axios
+        ? window.axios
+        : typeof axios !== "undefined"
+          ? axios
+          : null;
     if (ax) {
       const cfg = { headers };
       if (params) {
@@ -285,8 +298,15 @@
       return r.data;
     }
     const url = new URL(path, location.origin);
-    if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
-    const res = await fetch(url.toString(), { method: "POST", headers, body: JSON.stringify(body || {}) });
+    if (params)
+      Object.entries(params).forEach(([k, v]) =>
+        url.searchParams.set(k, String(v)),
+      );
+    const res = await fetch(url.toString(), {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body || {}),
+    });
     if (!res.ok) throw new Error(`POST ${path} failed ${res.status}`);
     return res.json();
   }
@@ -310,7 +330,10 @@
     const controller = new AbortController();
     const to = setTimeout(() => controller.abort(), 10000);
     try {
-      return await fetch(url, Object.assign({}, init || {}, { headers, signal: controller.signal }));
+      return await fetch(
+        url,
+        Object.assign({}, init || {}, { headers, signal: controller.signal }),
+      );
     } finally {
       clearTimeout(to);
     }
@@ -322,7 +345,9 @@
       try {
         const res = await supaReq(path, init);
         if (res && res.ok) return res;
-        lastErr = new Error(`supabase ${init && init.method ? init.method : 'GET'} failed (${res?.status || 'n/a'})`);
+        lastErr = new Error(
+          `supabase ${init && init.method ? init.method : "GET"} failed (${res?.status || "n/a"})`,
+        );
       } catch (e) {
         lastErr = e;
       }
@@ -462,13 +487,18 @@
     ],
   };
 
-  function outboxKey(sid){ return `cpos_settings_outbox_${sid}`; }
-  async function flushSettingsOutbox(sid){
+  function outboxKey(sid) {
+    return `cpos_settings_outbox_${sid}`;
+  }
+  async function flushSettingsOutbox(sid) {
     try {
       const raw = localStorage.getItem(outboxKey(sid));
       if (!raw) return false;
       const payload = JSON.parse(raw);
-      if (!payload || typeof payload !== 'object') { localStorage.removeItem(outboxKey(sid)); return false; }
+      if (!payload || typeof payload !== "object") {
+        localStorage.removeItem(outboxKey(sid));
+        return false;
+      }
       const nowIso = new Date().toISOString();
       const row = {
         id: sid,
@@ -476,17 +506,37 @@
         updated_at: nowIso,
         Store_Information: pick(payload, SEC["Store_Information"]),
         Tax_Configuration: pick(payload, SEC["Tax_Configuration"]),
-        "Sales_&_Transaction_Settings": pick(payload, SEC["Sales_&_Transaction_Settings"]),
+        "Sales_&_Transaction_Settings": pick(
+          payload,
+          SEC["Sales_&_Transaction_Settings"],
+        ),
         Printing_Preferences: pick(payload, SEC["Printing_Preferences"]),
         Metrc_Integration: pick(payload, SEC["Metrc_Integration"]),
-        "Auto_Delete_Zero-Quantity_Products": pick(payload, SEC["Auto_Delete_Zero-Quantity_Products"]),
+        "Auto_Delete_Zero-Quantity_Products": pick(
+          payload,
+          SEC["Auto_Delete_Zero-Quantity_Products"],
+        ),
       };
-      const r = await supaReqRetry(`pos_settings?on_conflict=id`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([row]) });
-      if (r && r.ok) { localStorage.removeItem(outboxKey(sid)); return true; }
-    } catch(_) {}
+      const r = await supaReqRetry(`pos_settings?on_conflict=id`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify([row]),
+      });
+      if (r && r.ok) {
+        localStorage.removeItem(outboxKey(sid));
+        return true;
+      }
+    } catch (_) {}
     return false;
   }
-  try { setInterval(() => { try { const sid = currentStoreId(); flushSettingsOutbox(sid); } catch(_) {} }, 15000); } catch(_){ }
+  try {
+    setInterval(() => {
+      try {
+        const sid = currentStoreId();
+        flushSettingsOutbox(sid);
+      } catch (_) {}
+    }, 15000);
+  } catch (_) {}
 
   async function getFromServer(sid, noCache = false) {
     // Read directly from Supabase pos_settings (no API hop)
@@ -631,7 +681,9 @@
 
     async get(force = false) {
       const sid = currentStoreId();
-      try { await flushSettingsOutbox(sid); } catch(_) {}
+      try {
+        await flushSettingsOutbox(sid);
+      } catch (_) {}
       if (!force) {
         const local = this.loadLocal(sid);
         if (local)
@@ -1115,22 +1167,56 @@
         }
         // Upsert succeeded but verification failed; treat as success with optimistic caches
         if (r0 && r0.ok) {
-          try { this.saveLocal(sidNow, merged); } catch(_) {}
           try {
-            const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
-            localStorage.setItem(`cannabisPOS-storeSettings_${sidNow}`, JSON.stringify(compat));
-            localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
-          } catch(_) {}
-          try { writeCookie("cpos_store_id", sidNow); } catch(_) {}
-          try { localStorage.setItem("cannabisPOS-weightThreshold", String(merged.weight_threshold ?? 0)); } catch(_) {}
-          try { writeUiCachesFromSettings(merged); } catch(_) {}
+            this.saveLocal(sidNow, merged);
+          } catch (_) {}
           try {
-            window.dispatchEvent(new CustomEvent("settings:updated", { detail: { settings: merged, storeId: sidNow } }));
-            try { window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged })); } catch(_) {}
-          } catch(_) {}
+            const compat = Object.assign({}, merged, {
+              lastUpdated: Date.now(),
+            });
+            localStorage.setItem(
+              `cannabisPOS-storeSettings_${sidNow}`,
+              JSON.stringify(compat),
+            );
+            localStorage.setItem(
+              "cannabisPOS-storeSettings",
+              JSON.stringify(compat),
+            );
+          } catch (_) {}
           try {
-            await fetch("/api/activity", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "settings-save-verified-soft-fail", storeId: sidNow }) });
-          } catch(_) {}
+            writeCookie("cpos_store_id", sidNow);
+          } catch (_) {}
+          try {
+            localStorage.setItem(
+              "cannabisPOS-weightThreshold",
+              String(merged.weight_threshold ?? 0),
+            );
+          } catch (_) {}
+          try {
+            writeUiCachesFromSettings(merged);
+          } catch (_) {}
+          try {
+            window.dispatchEvent(
+              new CustomEvent("settings:updated", {
+                detail: { settings: merged, storeId: sidNow },
+              }),
+            );
+            try {
+              window.dispatchEvent(
+                new CustomEvent("settings-updated", { detail: merged }),
+              );
+            } catch (_) {}
+          } catch (_) {}
+          try {
+            await fetch("/api/activity", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                action: "settings-save-verified-soft-fail",
+                storeId: sidNow,
+              }),
+            });
+          } catch (_) {}
           return { success: true, settings: merged };
         }
       } catch (e) {
@@ -1393,19 +1479,51 @@
             }
           } catch (_) {}
           // Upsert succeeded but verification failed; accept optimistic success
-          try { this.saveLocal(sid, merged); } catch(_) {}
           try {
-            const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
-            localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
-            localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
-          } catch(_) {}
-          try { writeCookie("cpos_store_id", sid); } catch(_) {}
-          try { const sid2 = currentStoreId(); localStorage.setItem(`cannabisPOS-weightThreshold_${sid2}`, String(merged.weight_threshold ?? 0)); localStorage.setItem("cannabisPOS-weightThreshold", String(merged.weight_threshold ?? 0)); } catch(_) {}
-          try { writeUiCachesFromSettings(merged); } catch(_) {}
+            this.saveLocal(sid, merged);
+          } catch (_) {}
           try {
-            window.dispatchEvent(new CustomEvent("settings:updated", { detail: { settings: merged, storeId: sid } }));
-            try { window.dispatchEvent(new CustomEvent("settings-updated", { detail: merged })); } catch(_) {}
-          } catch(_) {}
+            const compat = Object.assign({}, merged, {
+              lastUpdated: Date.now(),
+            });
+            localStorage.setItem(
+              `cannabisPOS-storeSettings_${sid}`,
+              JSON.stringify(compat),
+            );
+            localStorage.setItem(
+              "cannabisPOS-storeSettings",
+              JSON.stringify(compat),
+            );
+          } catch (_) {}
+          try {
+            writeCookie("cpos_store_id", sid);
+          } catch (_) {}
+          try {
+            const sid2 = currentStoreId();
+            localStorage.setItem(
+              `cannabisPOS-weightThreshold_${sid2}`,
+              String(merged.weight_threshold ?? 0),
+            );
+            localStorage.setItem(
+              "cannabisPOS-weightThreshold",
+              String(merged.weight_threshold ?? 0),
+            );
+          } catch (_) {}
+          try {
+            writeUiCachesFromSettings(merged);
+          } catch (_) {}
+          try {
+            window.dispatchEvent(
+              new CustomEvent("settings:updated", {
+                detail: { settings: merged, storeId: sid },
+              }),
+            );
+            try {
+              window.dispatchEvent(
+                new CustomEvent("settings-updated", { detail: merged }),
+              );
+            } catch (_) {}
+          } catch (_) {}
           return { success: true, settings: merged };
         }
       } catch (_) {}
@@ -1433,7 +1551,9 @@
           }),
         });
       } catch (_) {}
-      try { localStorage.setItem(outboxKey(sid), JSON.stringify(merged)); } catch(_) {}
+      try {
+        localStorage.setItem(outboxKey(sid), JSON.stringify(merged));
+      } catch (_) {}
       return {
         success: false,
         settings: merged,
