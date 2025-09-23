@@ -792,6 +792,20 @@
         });
         if (!r0 || !r0.ok) {
           try { const txt = r0 ? await r0.text() : ''; last = new Error(`supabase upsert failed (${r0?.status||'n/a'}): ${txt}`); } catch(eTxt){ last = eTxt; }
+          // Fallback: PATCH existing row by id (avoids on_conflict semantics)
+          try {
+            const rPatch = await supaReq(
+              `pos_settings?id=eq.${encodeURIComponent(sidNow)}`,
+              {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=representation" },
+                body: JSON.stringify(payload[0]),
+              },
+            );
+            if (rPatch && rPatch.ok) { r0 = rPatch; }
+          } catch (ePatch) {
+            try { await fetch('/api/activity',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'settings-save-patch-failed', storeId:sidNow, message:String(ePatch && ePatch.message || 'patch failed')})}); } catch(_) {}
+          }
         }
         if (r0 && r0.ok) {
           try {
