@@ -1333,12 +1333,10 @@ app.post("/api/settings/pos", async (req, res) => {
       try {
         errTxt = await r.text();
       } catch (_) {}
-      return res
-        .status((r && r.status) || 502)
-        .json({
-          success: false,
-          error: errTxt || `Supabase upsert failed (${r && r.status})`,
-        });
+      return res.status((r && r.status) || 502).json({
+        success: false,
+        error: errTxt || `Supabase upsert failed (${r && r.status})`,
+      });
     }
     // Also write to legacy id if applicable
     if (storeId === "default" || storeId === "defaultstore") {
@@ -1408,7 +1406,9 @@ app.get("/api/employees/:id", async (req, res) => {
     const row = Array.isArray(rows) && rows[0] ? rows[0] : null;
     return res.json({ success: true, employee: row });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to fetch employee" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to fetch employee" });
   }
 });
 
@@ -1777,7 +1777,10 @@ app.get("/api/products", async (req, res) => {
     if (filters.length) qp += `&${filters.join("&")}`;
     const r = await supaFetch(qp, { method: "GET" });
     const payload = r.ok ? await r.json() : [];
-    return res.json({ success: true, products: Array.isArray(payload) ? payload : [] });
+    return res.json({
+      success: true,
+      products: Array.isArray(payload) ? payload : [],
+    });
   } catch (e) {
     return res.json({ success: true, products: [] });
   }
@@ -3698,11 +3701,23 @@ app.post("/api/sales/diag/create", async (_req, res) => {
 // METRC: test-connection (open, dev implementation)
 app.get("/api/metrc/test-connection", async (_req, res) => {
   try {
-    const configured = !!(process.env.METRC_BASE_URL && process.env.METRC_USER_KEY && process.env.METRC_VENDOR_KEY);
+    const configured = !!(
+      process.env.METRC_BASE_URL &&
+      process.env.METRC_USER_KEY &&
+      process.env.METRC_VENDOR_KEY
+    );
     const test = { success: configured };
-    return res.json({ success: true, configured, connected: configured, data: { connection_test: test }, facility: process.env.METRC_FACILITY || null });
+    return res.json({
+      success: true,
+      configured,
+      connected: configured,
+      data: { connection_test: test },
+      facility: process.env.METRC_FACILITY || null,
+    });
   } catch (e) {
-    return res.status(500).json({ success: false, error: "Failed to test METRC" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Failed to test METRC" });
   }
 });
 
@@ -3837,12 +3852,26 @@ app.get("/api/analytics/end-of-day", async (req, res) => {
 // Analytics: Overview (open, mirrors Laravel /api/analytics/overview-open)
 app.get("/api/analytics/overview-open", async (req, res) => {
   try {
-    const tz = String(req.query?.tz || Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC");
+    const tz = String(
+      req.query?.tz ||
+        Intl.DateTimeFormat().resolvedOptions().timeZone ||
+        "UTC",
+    );
     const tf = String(req.query?.timeframe || "today").toLowerCase();
     function rangeFor(tf) {
       const toIso = (d) => d.toISOString();
       let start, end;
-      const atMidnight = (d) => new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate(), 0, 0, 0));
+      const atMidnight = (d) =>
+        new Date(
+          Date.UTC(
+            d.getUTCFullYear(),
+            d.getUTCMonth(),
+            d.getUTCDate(),
+            0,
+            0,
+            0,
+          ),
+        );
       switch (tf) {
         case "week": {
           const d = new Date();
@@ -3854,21 +3883,47 @@ app.get("/api/analytics/overview-open", async (req, res) => {
         }
         case "month": {
           const d = new Date();
-          start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0));
-          end = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 0, 0, 0) - 1);
+          start = new Date(
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1, 0, 0, 0),
+          );
+          end = new Date(
+            Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1, 0, 0, 0) - 1,
+          );
           break;
         }
         case "custom": {
-          const s = req.query?.start_date ? new Date(String(req.query.start_date)) : new Date();
-          const e = req.query?.end_date ? new Date(String(req.query.end_date)) : new Date();
+          const s = req.query?.start_date
+            ? new Date(String(req.query.start_date))
+            : new Date();
+          const e = req.query?.end_date
+            ? new Date(String(req.query.end_date))
+            : new Date();
           start = atMidnight(s);
-          end = new Date(Date.UTC(e.getUTCFullYear(), e.getUTCMonth(), e.getUTCDate(), 23, 59, 59));
+          end = new Date(
+            Date.UTC(
+              e.getUTCFullYear(),
+              e.getUTCMonth(),
+              e.getUTCDate(),
+              23,
+              59,
+              59,
+            ),
+          );
           break;
         }
         case "today":
         default: {
           start = atMidnight(new Date());
-          end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate(), 23, 59, 59));
+          end = new Date(
+            Date.UTC(
+              start.getUTCFullYear(),
+              start.getUTCMonth(),
+              start.getUTCDate(),
+              23,
+              59,
+              59,
+            ),
+          );
           break;
         }
       }
@@ -3887,14 +3942,19 @@ app.get("/api/analytics/overview-open", async (req, res) => {
         limit: "2000",
       },
     });
-    const sales = r.ok ? (await r.json()) : [];
+    const sales = r.ok ? await r.json() : [];
     const list = Array.isArray(sales) ? sales : [];
 
     // Sales summary
     const sum = (a, b) => a + b;
-    const revenue = list.map((s) => Number(s.total_amount ?? s.total ?? 0)).reduce(sum, 0);
+    const revenue = list
+      .map((s) => Number(s.total_amount ?? s.total ?? 0))
+      .reduce(sum, 0);
     const transactions = list.length;
-    const customers = list.filter((s) => !!(s.customer_id || (s.customer && typeof s.customer === "object"))).length;
+    const customers = list.filter(
+      (s) =>
+        !!(s.customer_id || (s.customer && typeof s.customer === "object")),
+    ).length;
     const avgOrderValue = transactions > 0 ? revenue / transactions : 0;
 
     // Previous period for simple change metrics
@@ -3917,12 +3977,15 @@ app.get("/api/analytics/overview-open", async (req, res) => {
       });
       const prow = pr.ok ? await pr.json() : [];
       const plist = Array.isArray(prow) ? prow : [];
-      prevRevenue = plist.map((s) => Number(s.total_amount ?? s.total ?? 0)).reduce(sum, 0);
+      prevRevenue = plist
+        .map((s) => Number(s.total_amount ?? s.total ?? 0))
+        .reduce(sum, 0);
       prevTx = plist.length;
       prevCust = plist.filter((s) => !!(s.customer_id || s.customer)).length;
       prevAvg = prevTx > 0 ? prevRevenue / prevTx : 0;
     } catch {}
-    const pct = (cur, prev) => (prev === 0 ? (cur > 0 ? 100 : 0) : ((cur - prev) / prev) * 100);
+    const pct = (cur, prev) =>
+      prev === 0 ? (cur > 0 ? 100 : 0) : ((cur - prev) / prev) * 100;
 
     const salesData = {
       revenue,
@@ -3944,19 +4007,29 @@ app.get("/api/analytics/overview-open", async (req, res) => {
       const cart = Array.isArray(s.cart) ? s.cart : [];
       for (const it of cart) {
         const category = String(
-          it?.product_category || it?.category || it?.product?.category || "Uncategorized",
+          it?.product_category ||
+            it?.category ||
+            it?.product?.category ||
+            "Uncategorized",
         );
         const name = String(it?.product_name || it?.name || "Product");
         const qty = Number(it?.quantity || 0);
         const price = Number(it?.unit_price ?? it?.price ?? 0);
         const line = Number(it?.total_price ?? qty * price);
         byCat.set(category, (byCat.get(category) || 0) + line);
-        byProd.set(name + "||" + category, (byProd.get(name + "||" + category) || 0) + line);
+        byProd.set(
+          name + "||" + category,
+          (byProd.get(name + "||" + category) || 0) + line,
+        );
       }
     }
     const totalRev = Array.from(byCat.values()).reduce(sum, 0) || 1;
     const categoryData = Array.from(byCat.entries())
-      .map(([category, rev]) => ({ category, revenue: rev, percentage: (rev / totalRev) * 100 }))
+      .map(([category, rev]) => ({
+        category,
+        revenue: rev,
+        percentage: (rev / totalRev) * 100,
+      }))
       .sort((a, b) => b.revenue - a.revenue);
 
     // Employees
@@ -3965,7 +4038,12 @@ app.get("/api/analytics/overview-open", async (req, res) => {
       const emp = String(s.employee_id || "");
       const amt = Number(s.total_amount ?? s.total ?? 0);
       if (!emp) continue;
-      const cur = empMap.get(emp) || { name: emp, sales: 0, transactions: 0, avgOrder: 0 };
+      const cur = empMap.get(emp) || {
+        name: emp,
+        sales: 0,
+        transactions: 0,
+        avgOrder: 0,
+      };
       cur.sales += amt;
       cur.transactions += 1;
       empMap.set(emp, cur);
@@ -3980,16 +4058,26 @@ app.get("/api/analytics/overview-open", async (req, res) => {
     // Open carts (best-effort)
     let open = { total: 0, avgMinutes: 0, maxMinutes: 0 };
     try {
-      const rc = await supaFetch("saved_sales", { method: "GET", query: { select: "id,created_at", limit: "1000" } });
+      const rc = await supaFetch("saved_sales", {
+        method: "GET",
+        query: { select: "id,created_at", limit: "1000" },
+      });
       if (rc.ok) {
         const rows = await rc.json();
         const now = Date.now();
-        const mins = (iso) => Math.max(0, Math.round((now - Date.parse(iso)) / 60000));
-        const arr = (Array.isArray(rows) ? rows : []).map((r) => mins(r.created_at));
+        const mins = (iso) =>
+          Math.max(0, Math.round((now - Date.parse(iso)) / 60000));
+        const arr = (Array.isArray(rows) ? rows : []).map((r) =>
+          mins(r.created_at),
+        );
         const total = arr.length;
         const avg = total ? arr.reduce((a, b) => a + b, 0) / total : 0;
         const max = total ? Math.max(...arr) : 0;
-        open = { total, avgMinutes: Math.round(avg * 10) / 10, maxMinutes: max };
+        open = {
+          total,
+          avgMinutes: Math.round(avg * 10) / 10,
+          maxMinutes: max,
+        };
       }
     } catch {}
 
@@ -3998,7 +4086,11 @@ app.get("/api/analytics/overview-open", async (req, res) => {
     for (const s of list) {
       const sid = String(s.store_id || "default");
       const amt = Number(s.total_amount ?? s.total ?? 0);
-      const cur = byStore.get(sid) || { store_id: sid, transactions: 0, revenue: 0 };
+      const cur = byStore.get(sid) || {
+        store_id: sid,
+        transactions: 0,
+        revenue: 0,
+      };
       cur.transactions += 1;
       cur.revenue += amt;
       byStore.set(sid, cur);
