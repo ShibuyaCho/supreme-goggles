@@ -228,18 +228,26 @@
     }
     const sid = currentStoreId();
     const sname = currentStoreName();
-    const cfg = { headers: { Accept: "application/json", "X-Store-ID": sid } };
-    if (sname) cfg.headers["X-Store-Name"] = sname;
-    if (params) {
-      cfg.params = params;
-      if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
+    const headers = { Accept: "application/json", "X-Store-ID": sid };
+    if (sname) headers["X-Store-Name"] = sname;
+    const ax = typeof window !== "undefined" && window.axios ? window.axios : (typeof axios !== "undefined" ? axios : null);
+    if (ax) {
+      const cfg = { headers };
+      if (params) {
+        cfg.params = params;
+        if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
+      }
+      const r = await ax.get(path, cfg);
+      return r.data;
     }
-    const r = await (window.axios || axios).get(path, cfg);
-    return r.data;
+    const url = new URL(path, location.origin);
+    if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+    const res = await fetch(url.toString(), { headers });
+    if (!res.ok) throw new Error(`GET ${path} failed ${res.status}`);
+    return res.json();
   }
   async function httpPost(path, body, params) {
     // Use backend API for settings to leverage Laravel cache/validation
-    // Fallback for other endpoints (unchanged)
     if (window.posAuth) {
       const res = await window.posAuth.apiRequest(
         "post",
@@ -255,25 +263,32 @@
     }
     const sid = currentStoreId();
     const sname = currentStoreName();
-    const cfg = {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-        "X-Store-ID": sid,
-        ...(sname ? { "X-Store-Name": sname } : {}),
-      },
+    const headers = {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+      "X-Store-ID": sid,
+      ...(sname ? { "X-Store-Name": sname } : {}),
     };
     try {
       const meta = document.querySelector('meta[name="csrf-token"]');
       const token = meta && meta.getAttribute("content");
-      if (token) cfg.headers["X-CSRF-TOKEN"] = token;
+      if (token) headers["X-CSRF-TOKEN"] = token;
     } catch (_) {}
-    if (params) {
-      cfg.params = params;
-      if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
+    const ax = typeof window !== "undefined" && window.axios ? window.axios : (typeof axios !== "undefined" ? axios : null);
+    if (ax) {
+      const cfg = { headers };
+      if (params) {
+        cfg.params = params;
+        if (params.nocache) cfg.headers["Cache-Control"] = "no-cache";
+      }
+      const r = await ax.post(path, body || {}, cfg);
+      return r.data;
     }
-    const r = await (window.axios || axios).post(path, body || {}, cfg);
-    return r.data;
+    const url = new URL(path, location.origin);
+    if (params) Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
+    const res = await fetch(url.toString(), { method: "POST", headers, body: JSON.stringify(body || {}) });
+    if (!res.ok) throw new Error(`POST ${path} failed ${res.status}`);
+    return res.json();
   }
 
   async function supaReq(path, init) {
@@ -292,7 +307,13 @@
       },
       (init && init.headers) || {},
     );
-    return fetch(url, Object.assign({}, init || {}, { headers }));
+    const controller = new AbortController();
+    const to = setTimeout(() => controller.abort(), 10000);
+    try {
+      return await fetch(url, Object.assign({}, init || {}, { headers, signal: controller.signal }));
+    } finally {
+      clearTimeout(to);
+    }
   }
 
   async function supaReqRetry(path, init, attempts = 3) {
