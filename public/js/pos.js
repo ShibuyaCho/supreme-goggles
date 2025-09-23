@@ -144,7 +144,10 @@ function cannabisPOS() {
           const nameRaw = String(s.name || s.store_name || idRaw);
           let id = idRaw;
           try {
-            if (window.SettingsClient && typeof SettingsClient.canonicalizeId === "function") {
+            if (
+              window.SettingsClient &&
+              typeof SettingsClient.canonicalizeId === "function"
+            ) {
               id = SettingsClient.canonicalizeId(idRaw, nameRaw);
             }
           } catch (_) {}
@@ -2167,15 +2170,26 @@ function cannabisPOS() {
                 ? SettingsClient.save(mergedForFallback)
                 : Promise.resolve({ success: false }));
               if (res && res.success) {
-                try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve()); } catch (_) {}
+                try {
+                  await (window.SettingsClient
+                    ? SettingsClient.get(true)
+                    : Promise.resolve());
+                } catch (_) {}
                 this.showToast("Settings saved successfully", "success");
                 return;
               }
-              const msg = (res && (res.message || res.error)) ? String(res.message || res.error) : "Failed to save settings";
+              const msg =
+                res && (res.message || res.error)
+                  ? String(res.message || res.error)
+                  : "Failed to save settings";
               this.showToast(msg, "error");
               return;
             } catch (e) {
-              const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || "Failed to save settings";
+              const msg =
+                e?.response?.data?.message ||
+                e?.response?.data?.error ||
+                e?.message ||
+                "Failed to save settings";
               this.showToast(msg, "error");
               return;
             }
