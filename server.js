@@ -1267,13 +1267,11 @@ app.post("/api/settings/pos", async (req, res) => {
         store_name: mergedFull.store_name || "",
         updated_at: new Date().toISOString(),
         Store_Information: sectionPick(mergedFull, [
+          "store_name",
+          "license_number",
           "store_address",
           "store_phone",
           "store_email",
-          "website",
-          "store_manager",
-          "license_number",
-          "receipt_footer",
           "business_hours",
         ]),
         Tax_Configuration: sectionPick(mergedFull, [
@@ -1309,6 +1307,7 @@ app.post("/api/settings/pos", async (req, res) => {
           "exit_label_categories",
           "receipt_template",
           "print_labels",
+          "receipt_footer",
         ]),
         Metrc_Integration: sectionPick(mergedFull, [
           "metrc_enabled",

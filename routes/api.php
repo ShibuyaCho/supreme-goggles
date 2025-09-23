@@ -704,10 +704,10 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             // Build sectioned column payloads from merged settings
             $pick = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) { $out[$k] = $src[$k]; } } return $out; };
             $cols = [
-                'Store_Information' => $pick($merged, ['store_address','store_phone','store_email','website','store_manager','license_number','receipt_footer','business_hours']),
+                'Store_Information' => $pick($merged, ['store_name','license_number','store_address','store_phone','store_email','business_hours']),
                 'Tax_Configuration' => $pick($merged, ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']),
                 'Sales_&_Transaction_Settings' => $pick($merged, ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']),
-                'Printing_Preferences' => $pick($merged, ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels']),
+                'Printing_Preferences' => $pick($merged, ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']),
                 'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']),
                 'Auto_Delete_Zero-Quantity_Products' => $pick($merged, ['auto_delete_zero_quantity','auto_delete_zero_days']),
             ];

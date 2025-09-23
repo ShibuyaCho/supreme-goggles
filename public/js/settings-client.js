@@ -431,13 +431,11 @@
   }
   const SEC = {
     Store_Information: [
+      "store_name",
+      "license_number",
       "store_address",
       "store_phone",
       "store_email",
-      "website",
-      "store_manager",
-      "license_number",
-      "receipt_footer",
       "business_hours",
     ],
     Tax_Configuration: [
@@ -473,6 +471,7 @@
       "exit_label_categories",
       "receipt_template",
       "print_labels",
+      "receipt_footer",
     ],
     Metrc_Integration: [
       "metrc_enabled",
