@@ -461,6 +461,33 @@
       "auto_delete_zero_days",
     ],
   };
+
+  function outboxKey(sid){ return `cpos_settings_outbox_${sid}`; }
+  async function flushSettingsOutbox(sid){
+    try {
+      const raw = localStorage.getItem(outboxKey(sid));
+      if (!raw) return false;
+      const payload = JSON.parse(raw);
+      if (!payload || typeof payload !== 'object') { localStorage.removeItem(outboxKey(sid)); return false; }
+      const nowIso = new Date().toISOString();
+      const row = {
+        id: sid,
+        store_name: payload.store_name || null,
+        updated_at: nowIso,
+        Store_Information: pick(payload, SEC["Store_Information"]),
+        Tax_Configuration: pick(payload, SEC["Tax_Configuration"]),
+        "Sales_&_Transaction_Settings": pick(payload, SEC["Sales_&_Transaction_Settings"]),
+        Printing_Preferences: pick(payload, SEC["Printing_Preferences"]),
+        Metrc_Integration: pick(payload, SEC["Metrc_Integration"]),
+        "Auto_Delete_Zero-Quantity_Products": pick(payload, SEC["Auto_Delete_Zero-Quantity_Products"]),
+      };
+      const r = await supaReqRetry(`pos_settings?on_conflict=id`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify([row]) });
+      if (r && r.ok) { localStorage.removeItem(outboxKey(sid)); return true; }
+    } catch(_) {}
+    return false;
+  }
+  try { setInterval(() => { try { const sid = currentStoreId(); flushSettingsOutbox(sid); } catch(_) {} }, 15000); } catch(_){ }
+
   async function getFromServer(sid, noCache = false) {
     // Read directly from Supabase pos_settings (no API hop)
     const tryIds = [sid];
@@ -604,6 +631,7 @@
 
     async get(force = false) {
       const sid = currentStoreId();
+      try { await flushSettingsOutbox(sid); } catch(_) {}
       if (!force) {
         const local = this.loadLocal(sid);
         if (local)
@@ -1405,6 +1433,7 @@
           }),
         });
       } catch (_) {}
+      try { localStorage.setItem(outboxKey(sid), JSON.stringify(merged)); } catch(_) {}
       return {
         success: false,
         settings: merged,
