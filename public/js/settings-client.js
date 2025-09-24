@@ -1474,9 +1474,19 @@
           return { success: true, settings: m };
         } catch (e) {
           try{
-            const msg = (e && e.response && e.response.data && e.response.data.message) ? String(e.response.data.message) : "";
+            const resp = e && e.response && e.response.data ? e.response.data : null;
+            const msg = resp && resp.message ? String(resp.message) : "";
             if (msg === 'verification_mismatch'){
               try{ await backgroundReconcile(merged, currentStoreId()); }catch(_){ }
+            }
+            const status = e && e.response && e.response.status ? Number(e.response.status) : 0;
+            if (status === 409 && msg === 'stale_write' && resp && resp.server_settings){
+              try {
+                const srv = resp.server_settings || {};
+                if (typeof resp.server_version === 'number') merged.settings_version = resp.server_version;
+                Object.assign(merged, srv);
+                continue; // retry loop with merged
+              } catch(_){ }
             }
           }catch(_){ }
           last = e;
