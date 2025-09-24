@@ -1353,6 +1353,7 @@
           try {
             backgroundReconcile(merged, sidNow);
           } catch (_) {}
+          try { localStorage.removeItem(outboxKey(sidNow)); } catch(_){ }
           return { success: true, settings: merged };
         }
       } catch (e) {
