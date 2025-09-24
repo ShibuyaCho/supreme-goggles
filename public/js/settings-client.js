@@ -1034,6 +1034,7 @@
 
     async save(patch) {
       const sid = currentStoreId();
+      try { await flushSettingsOutbox(sid); } catch(_){ }
       let base = this.loadLocal(sid) || {};
       // Prefetch current from API to avoid overwriting other fields
       try {
