@@ -324,7 +324,7 @@
           const base = (window.__SUPABASE_URL || "").replace(/\/$/, "");
           const key = window.__SUPABASE_ANON_KEY || "";
           if (base && key) {
-            const url = `${base}/rest/v1/pos_settings?select=id,settings,updated_at&order=updated_at.desc`;
+            const url = `${base}/rest/v1/pos_settings?select=id,store_name,\"Store_Information\",updated_at&order=updated_at.desc`;
             const r = await fetch(url, {
               headers: {
                 apikey: key,
@@ -336,9 +336,10 @@
               const arr = await r.json();
               rows = (arr || []).map((row) => {
                 const id = String(row.id || "");
-                const name = row?.settings?.store_name
-                  ? String(row.settings.store_name)
-                  : id;
+                const si = row && row["Store_Information"] && typeof row["Store_Information"] === 'object' ? row["Store_Information"] : {};
+                const name = row?.store_name
+                  ? String(row.store_name)
+                  : (si && si.store_name ? String(si.store_name) : id);
                 return { id, name, updated_at: row.updated_at || null };
               });
             }
