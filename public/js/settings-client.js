@@ -248,7 +248,10 @@
     const sid = currentStoreId();
     const sname = currentStoreName();
     const headers = { Accept: "application/json", "X-Store-ID": sid };
-    if (sname) headers["X-Store-Name"] = sname;
+    try {
+      const cname = canonicalizeId('', sname || sid);
+      headers["X-Store-Name"] = cname || (sname || '');
+    } catch(_) { if (sname) headers["X-Store-Name"] = sname; }
     const ax =
       typeof window !== "undefined" && window.axios
         ? window.axios
