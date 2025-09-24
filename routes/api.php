@@ -696,6 +696,28 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']),
                 'Auto_Delete_Zero-Quantity_Products' => $pick($merged, ['auto_delete_zero_quantity','auto_delete_zero_days']),
             ];
+            // Resolve target row: if a row exists for this store_name, update that row to avoid unique store_name collisions
+            $targetId = $storeId;
+            try {
+                $snameQ = trim((string)($merged['store_name'] ?? ''));
+                if ($snameQ !== '') {
+                    $findByName = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'X-Store-ID' => $storeId,
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'store_name' => 'eq.' . $snameQ,
+                        'select' => 'id,store_name',
+                        'limit' => 1,
+                    ]);
+                    if ($findByName->ok()) {
+                        $fa = $findByName->json();
+                        $fr = (is_array($fa) && isset($fa[0])) ? $fa[0] : null;
+                        if ($fr && isset($fr['id'])) { $targetId = (string)$fr['id']; }
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
             $resp = \Illuminate\Support\Facades\Http::withHeaders([
                 'apikey' => $supabaseKey,
                 'Authorization' => 'Bearer ' . $supabaseKey,
@@ -703,7 +725,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Prefer' => 'resolution=merge-duplicates,return=representation',
                 'X-Store-ID' => $storeId,
             ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
-                'id' => $storeId,
+                'id' => $targetId,
                 'store_name' => $merged['store_name'] ?? null,
                 'Store_Information' => $cols['Store_Information'],
                 'Tax_Configuration' => $cols['Tax_Configuration'],
