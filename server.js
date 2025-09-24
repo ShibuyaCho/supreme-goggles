@@ -1261,9 +1261,24 @@ app.post("/api/settings/pos", async (req, res) => {
         if (Object.prototype.hasOwnProperty.call(src, k)) o[k] = src[k];
         return o;
       }, {});
+    // Resolve target row: if a row exists for this store_name, update that row to avoid unique store_name collisions
+    let targetId = storeId;
+    try {
+      const snameQ = String(mergedFull.store_name || "").trim();
+      if (snameQ) {
+        const rFind = await supaFetch(
+          `pos_settings?store_name=eq.${encodeURIComponent(snameQ)}&select=id,store_name&limit=1`,
+          { method: "GET" },
+        );
+        if (rFind && rFind.ok) {
+          const arr = await rFind.json();
+          if (Array.isArray(arr) && arr[0] && arr[0].id) targetId = String(arr[0].id);
+        }
+      }
+    } catch (_) {}
     const payloadPrimary = [
       {
-        id: storeId,
+        id: targetId,
         store_name: mergedFull.store_name || "",
         updated_at: new Date().toISOString(),
         Store_Information: sectionPick(mergedFull, [
@@ -1328,14 +1343,40 @@ app.post("/api/settings/pos", async (req, res) => {
       query: { on_conflict: "id" },
     });
     if (!r || !r.ok) {
-      let errTxt = "";
+      // Try PATCH on resolved id excluding store_name to bypass unique constraint
       try {
-        errTxt = await r.text();
+        const patchBody = {
+          Store_Information: payloadPrimary[0].Store_Information,
+          Tax_Configuration: payloadPrimary[0].Tax_Configuration,
+          "Sales_&_Transaction_Settings": payloadPrimary[0]["Sales_&_Transaction_Settings"],
+          Printing_Preferences: payloadPrimary[0].Printing_Preferences,
+          Metrc_Integration: payloadPrimary[0].Metrc_Integration,
+          "Auto_Delete_Zero-Quantity_Products": payloadPrimary[0]["Auto_Delete_Zero-Quantity_Products"],
+          updated_at: new Date().toISOString(),
+        };
+        const rPatch = await supaFetch(
+          `pos_settings?id=eq.${encodeURIComponent(targetId)}`,
+          { method: "PATCH", body: patchBody },
+        );
+        if (rPatch && rPatch.ok) {
+          r = rPatch;
+        } else if (mergedFull.store_name) {
+          // Last resort: patch by store_name
+          const rPatchName = await supaFetch(
+            `pos_settings?store_name=eq.${encodeURIComponent(mergedFull.store_name)}`,
+            { method: "PATCH", body: patchBody },
+          );
+          if (rPatchName && rPatchName.ok) r = rPatchName;
+        }
       } catch (_) {}
-      return res.status((r && r.status) || 502).json({
-        success: false,
-        error: errTxt || `Supabase upsert failed (${r && r.status})`,
-      });
+      if (!r || !r.ok) {
+        let errTxt = "";
+        try { errTxt = await r.text(); } catch (_) {}
+        return res.status((r && r.status) || 502).json({
+          success: false,
+          error: errTxt || `Supabase upsert/patch failed (${r && r.status})`,
+        });
+      }
     }
     // Also write to legacy id if applicable
     if (storeId === "default" || storeId === "defaultstore") {
