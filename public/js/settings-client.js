@@ -1744,4 +1744,18 @@
   SettingsClient.currentStoreName = currentStoreName;
   SettingsClient.canonicalizeId = canonicalizeId;
   window.SettingsClient = SettingsClient;
+
+  // Periodic reconcile (once per minute)
+  try {
+    let lastRecon = 0;
+    setInterval(function(){
+      try{
+        if (document.hidden) return;
+        const now = Date.now(); if (now - lastRecon < 60000) return; lastRecon = now;
+        const sid = currentStoreId();
+        const local = SettingsClient.loadLocal(sid);
+        if (local) backgroundReconcile(local, sid);
+      } catch(_){}
+    }, 15000);
+  } catch(_){ }
 })();
