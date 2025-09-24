@@ -330,6 +330,7 @@
                 apikey: key,
                 Authorization: `Bearer ${key}`,
                 Accept: "application/json",
+                'Cache-Control': 'no-cache'
               },
             });
             if (r.ok) {
