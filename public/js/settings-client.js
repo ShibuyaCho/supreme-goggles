@@ -1340,6 +1340,15 @@
       for (let i = 0; i < 3; i++) {
         try {
           const data = await httpPost("/api/settings/pos", merged);
+          // Sync local store context if server resolved a different canonical id/name
+          try{
+            const sidSrv = (function(){ try{ return String((data && data.store_id) || (data && data.settings && data.settings.id) || ""); }catch(_){ return ""; } })();
+            const snameSrv = (function(){ try{ return String((data && data.store_name) || (data && data.settings && data.settings.store_name) || ""); }catch(_){ return ""; } })();
+            const cid = canonicalizeId(sidSrv || currentStoreId(), snameSrv || currentStoreName());
+            if (cid && cid !== currentStoreId()){
+              try { localStorage.setItem('pos_store', JSON.stringify({ id: cid, name: snameSrv || cid })); writeCookie('cpos_store_id', cid); window.dispatchEvent(new Event('storage')); } catch(_){ }
+            }
+          }catch(_){ }
           const s =
             data && (data.settings || data) ? data.settings || data : merged;
           let m = { ...DEFAULTS, ...s };
