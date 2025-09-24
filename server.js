@@ -947,8 +947,9 @@ app.get("/api/settings/pos", async (req, res) => {
     const storeNameRaw = String(rawName || "").trim();
     function canonicalize(id, name) {
       try {
-        const sid = String(id || "").trim();
-        const sname = String(name || "").trim();
+        const norm = (s)=> String(s==null?"":s).replace(/[’‘`]/g, "'").trim();
+        const sid = norm(id);
+        const sname = norm(name);
         if (sid.includes("Today's Herbal Choice")) return sid;
         if (sname.includes("Today's Herbal Choice")) return sname;
         const alias = {
@@ -961,6 +962,16 @@ app.get("/api/settings/pos", async (req, res) => {
           "THC Rainier": "Today's Herbal Choice Rainier",
         };
         if (alias[sname]) return alias[sname];
+        const slug = String(sid || sname || "default")
+          .toLowerCase()
+          .replace(/[’‘`]/g, "")
+          .replace(/\s+/g, "")
+          .replace(/[^a-z0-9_.-]/g, "");
+        if (/^todaysherbalchoice[a-z]/.test(slug)) {
+          const branch = slug.replace(/^todaysherbalchoice/, "");
+          const titled = branch.replace(/(^|\b)([a-z])/g, (m,_b,c)=>c.toUpperCase());
+          return "Today's Herbal Choice " + titled.replace(/([a-z])([A-Z])/g, "$1 $2");
+        }
         return String(sid || sname || "default")
           .replace(/\s+/g, "")
           .replace(/[^A-Za-z0-9_.-]/g, "");
@@ -1033,7 +1044,7 @@ app.get("/api/settings/pos", async (req, res) => {
       const s = { ...defaults, ...composed };
       try {
         if (Object.prototype.hasOwnProperty.call(s, "metrc_user_key")) {
-          s.metrc_user_key = s.metrc_user_key ? "••••••••" : "";
+          s.metrc_user_key = s.metrc_user_key ? "��•••••••" : "";
         }
         if (Object.prototype.hasOwnProperty.call(s, "metrc_vendor_key")) {
           s.metrc_vendor_key = s.metrc_vendor_key ? "••••••••" : "";
@@ -1079,8 +1090,9 @@ app.post("/api/settings/pos", async (req, res) => {
       "";
     function canonicalize(id, name) {
       try {
-        const sid = String(id || "").trim();
-        const sname = String(name || "").trim();
+        const norm = (s)=> String(s==null?"":s).replace(/[’‘`]/g, "'").trim();
+        const sid = norm(id);
+        const sname = norm(name);
         if (sid.includes("Today's Herbal Choice")) return sid;
         if (sname.includes("Today's Herbal Choice")) return sname;
         const alias = {
@@ -1093,6 +1105,16 @@ app.post("/api/settings/pos", async (req, res) => {
           "THC Rainier": "Today's Herbal Choice Rainier",
         };
         if (alias[sname]) return alias[sname];
+        const slug = String(sid || sname || "default")
+          .toLowerCase()
+          .replace(/[’‘`]/g, "")
+          .replace(/\s+/g, "")
+          .replace(/[^a-z0-9_.-]/g, "");
+        if (/^todaysherbalchoice[a-z]/.test(slug)) {
+          const branch = slug.replace(/^todaysherbalchoice/, "");
+          const titled = branch.replace(/(^|\b)([a-z])/g, (m,_b,c)=>c.toUpperCase());
+          return "Today's Herbal Choice " + titled.replace(/([a-z])([A-Z])/g, "$1 $2");
+        }
         // Last resort: sanitize minimal safe id (no spaces/apostrophes)
         return String(sid || sname || "default")
           .replace(/\s+/g, "")
