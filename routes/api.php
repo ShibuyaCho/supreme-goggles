@@ -553,10 +553,24 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
     }
     $supabaseUrl = env('SUPABASE_URL');
     $supabaseKey = env('SUPABASE_ANON_KEY');
-    // Multi-store: scope by X-Store-ID header when present
-    $storeId = $request->header('X-Store-ID');
-    $storeId = is_string($storeId) ? trim($storeId) : '';
+    // Multi-store: scope by X-Store-ID/Name with normalization and aliases
+    $norm = function($s){ return trim(strtr((string)($s??''), ["’"=>"'","‘"=>"'","`"=>"'"])); };
+    $alias = [
+        'THC Barbur' => "Today's Herbal Choice Barbur",
+        'THC Stayton' => "Today's Herbal Choice Stayton",
+        'THC Molalla' => "Today's Herbal Choice Molalla",
+        'THC Milwaukie' => "Today's Herbal Choice Milwaukie",
+        'THC Forest Grove' => "Today's Herbal Choice Forest Grove",
+        'THC Tillamook' => "Today's Herbal Choice Tillamook",
+        'THC Rainier' => "Today's Herbal Choice Rainier",
+    ];
+    $storeId = $norm($request->header('X-Store-ID'));
     if ($storeId === '' || $storeId === null) $storeId = 'default';
+    $storeNameHeader = $norm($request->header('X-Store-Name'));
+    if (isset($alias[$storeNameHeader])) $storeNameHeader = $alias[$storeNameHeader];
+    if (stripos($storeId, "Today's Herbal Choice") !== false) { $incoming['store_name'] = $storeId; }
+    elseif (!empty($incoming['store_name'])) { $incoming['store_name'] = $norm($incoming['store_name']); if (isset($alias[$incoming['store_name']])) $incoming['store_name'] = $alias[$incoming['store_name']]; }
+    elseif ($storeNameHeader !== '') { $incoming['store_name'] = $storeNameHeader; }
     try {
         // Merge with current
         $current = [];
