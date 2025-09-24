@@ -1707,6 +1707,7 @@
       try {
         localStorage.setItem(outboxKey(sid), JSON.stringify(merged));
       } catch (_) {}
+      try { saveSnapshot(sid, merged); } catch(_){ }
       return {
         success: false,
         settings: merged,
