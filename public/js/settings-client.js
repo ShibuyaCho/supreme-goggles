@@ -307,6 +307,10 @@
       const token = meta && meta.getAttribute("content");
       if (token) headers["X-CSRF-TOKEN"] = token;
     } catch (_) {}
+    try {
+      const ver = (body && typeof body === 'object') ? body.settings_version : null;
+      if (typeof ver === 'number' && Number.isFinite(ver)) headers['X-Settings-Version'] = String(ver);
+    } catch(_){}
     const ax =
       typeof window !== "undefined" && window.axios
         ? window.axios
