@@ -1561,6 +1561,7 @@
                 if (row.store_name) composedR.store_name = row.store_name;
                 const m = { ...DEFAULTS, ...composedR };
                 this.saveLocal(sid, m);
+                try { saveSnapshot(sid, m); } catch(_){ }
                 try {
                   const compat = Object.assign({}, m, {
                     lastUpdated: Date.now(),
