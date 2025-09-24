@@ -638,6 +638,13 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 if (json_last_error() === JSON_ERROR_NONE) $merged[$field] = $decoded;
             }
         }
+        // Deduplicate and sort arrays for idempotency
+        foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories'] as $af) {
+            if (isset($merged[$af]) && is_array($merged[$af])) {
+                $merged[$af] = array_values(array_unique(array_map('strval', $merged[$af])));
+                sort($merged[$af], SORT_STRING);
+            }
+        }
         // Coerce booleans for known toggle fields
         foreach ([
             'receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
