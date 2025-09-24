@@ -382,6 +382,15 @@
     return supaReq(path, init);
   }
 
+  function saveSnapshot(sid, settings){
+    try{
+      const key = `cpos_settings_snapshots_${sid}`;
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const entry = { ts: Date.now(), settings };
+      const next = [entry].concat(Array.isArray(list)?list:[]).slice(0,5);
+      localStorage.setItem(key, JSON.stringify(next));
+    }catch(_){ }
+  }
   function writeUiCachesFromSettings(merged) {
     try {
       const stateRate = Number(merged.sales_tax ?? 0) || 0;
