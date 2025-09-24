@@ -486,67 +486,83 @@
     ],
   };
 
-  function extractSections(src){
+  function extractSections(src) {
     const s = src || {};
     return {
       Store_Information: pick(s, SEC["Store_Information"]),
       Tax_Configuration: pick(s, SEC["Tax_Configuration"]),
-      "Sales_&_Transaction_Settings": pick(s, SEC["Sales_&_Transaction_Settings"]),
+      "Sales_&_Transaction_Settings": pick(
+        s,
+        SEC["Sales_&_Transaction_Settings"],
+      ),
       Printing_Preferences: pick(s, SEC["Printing_Preferences"]),
       Metrc_Integration: pick(s, SEC["Metrc_Integration"]),
-      "Auto_Delete_Zero-Quantity_Products": pick(s, SEC["Auto_Delete_Zero-Quantity_Products"]),
+      "Auto_Delete_Zero-Quantity_Products": pick(
+        s,
+        SEC["Auto_Delete_Zero-Quantity_Products"],
+      ),
       store_name: s.store_name || null,
     };
   }
-  function deepNormalize(value){
-    const norm = (v)=>{
+  function deepNormalize(value) {
+    const norm = (v) => {
       if (v == null) return v;
-      if (Array.isArray(v)){
+      if (Array.isArray(v)) {
         const arr = v.map(norm);
         // Sort arrays of primitives; for objects sort by JSON string
-        if (arr.every(x => x == null || typeof x !== 'object')){
-          return arr.slice().sort((a,b)=>{
-            const sa = typeof a === 'string' ? a : String(a);
-            const sb = typeof b === 'string' ? b : String(b);
+        if (arr.every((x) => x == null || typeof x !== "object")) {
+          return arr.slice().sort((a, b) => {
+            const sa = typeof a === "string" ? a : String(a);
+            const sb = typeof b === "string" ? b : String(b);
             return sa.localeCompare(sb);
           });
         }
-        return arr.slice().sort((a,b)=> JSON.stringify(a).localeCompare(JSON.stringify(b)));
+        return arr
+          .slice()
+          .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)));
       }
-      if (typeof v === 'object'){
+      if (typeof v === "object") {
         const keys = Object.keys(v).sort();
         const out = {};
-        for (const k of keys){ out[k] = norm(v[k]); }
+        for (const k of keys) {
+          out[k] = norm(v[k]);
+        }
         return out;
       }
       return v;
     };
     return norm(value);
   }
-  async function backgroundReconcile(expected, sid){
-    try{
+  async function backgroundReconcile(expected, sid) {
+    try {
       const storeId = sid || currentStoreId();
       const want = deepNormalize(extractSections(expected));
-      for (let i=0;i<8;i++){
-        await new Promise(r=>setTimeout(r, 250));
+      for (let i = 0; i < 8; i++) {
+        await new Promise((r) => setTimeout(r, 250));
         let cur = null;
-        try{
-          const g = await httpGet('/api/settings/pos', { nocache:true });
-          const s = (g && (g.settings||g)) ? (g.settings||g) : {};
+        try {
+          const g = await httpGet("/api/settings/pos", { nocache: true });
+          const s = g && (g.settings || g) ? g.settings || g : {};
           cur = deepNormalize(extractSections(s));
-        }catch(_){ cur=null; }
+        } catch (_) {
+          cur = null;
+        }
         if (cur && JSON.stringify(cur) === JSON.stringify(want)) return true;
-        try{
+        try {
           const nowIso = new Date().toISOString();
           const row = Object.assign({ id: storeId, updated_at: nowIso }, want);
           await supaReqRetry(`pos_settings?on_conflict=id`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify([row])
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify([row]),
           });
-        }catch(_){ /* retry loop */ }
+        } catch (_) {
+          /* retry loop */
+        }
       }
-    }catch(_){ /* swallow */ }
+    } catch (_) {
+      /* swallow */
+    }
     return false;
   }
 
@@ -1293,7 +1309,9 @@
               }),
             });
           } catch (_) {}
-          try{ backgroundReconcile(merged, sidNow); }catch(_){}
+          try {
+            backgroundReconcile(merged, sidNow);
+          } catch (_) {}
           return { success: true, settings: merged };
         }
       } catch (e) {
@@ -1401,7 +1419,9 @@
               }
             } catch (_) {}
           } catch (_) {}
-          try{ backgroundReconcile(m, sid); }catch(_){}
+          try {
+            backgroundReconcile(m, sid);
+          } catch (_) {}
           return { success: true, settings: m };
         } catch (e) {
           last = e;
@@ -1602,7 +1622,9 @@
               );
             } catch (_) {}
           } catch (_) {}
-          try{ backgroundReconcile(merged, sid); }catch(_){}
+          try {
+            backgroundReconcile(merged, sid);
+          } catch (_) {}
           return { success: true, settings: merged };
         }
       } catch (_) {}

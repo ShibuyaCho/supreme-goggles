@@ -1272,7 +1272,8 @@ app.post("/api/settings/pos", async (req, res) => {
         );
         if (rFind && rFind.ok) {
           const arr = await rFind.json();
-          if (Array.isArray(arr) && arr[0] && arr[0].id) targetId = String(arr[0].id);
+          if (Array.isArray(arr) && arr[0] && arr[0].id)
+            targetId = String(arr[0].id);
         }
       }
     } catch (_) {}
@@ -1348,10 +1349,12 @@ app.post("/api/settings/pos", async (req, res) => {
         const patchBody = {
           Store_Information: payloadPrimary[0].Store_Information,
           Tax_Configuration: payloadPrimary[0].Tax_Configuration,
-          "Sales_&_Transaction_Settings": payloadPrimary[0]["Sales_&_Transaction_Settings"],
+          "Sales_&_Transaction_Settings":
+            payloadPrimary[0]["Sales_&_Transaction_Settings"],
           Printing_Preferences: payloadPrimary[0].Printing_Preferences,
           Metrc_Integration: payloadPrimary[0].Metrc_Integration,
-          "Auto_Delete_Zero-Quantity_Products": payloadPrimary[0]["Auto_Delete_Zero-Quantity_Products"],
+          "Auto_Delete_Zero-Quantity_Products":
+            payloadPrimary[0]["Auto_Delete_Zero-Quantity_Products"],
           updated_at: new Date().toISOString(),
         };
         const rPatch = await supaFetch(
@@ -1371,7 +1374,9 @@ app.post("/api/settings/pos", async (req, res) => {
       } catch (_) {}
       if (!r || !r.ok) {
         let errTxt = "";
-        try { errTxt = await r.text(); } catch (_) {}
+        try {
+          errTxt = await r.text();
+        } catch (_) {}
         return res.status((r && r.status) || 502).json({
           success: false,
           error: errTxt || `Supabase upsert/patch failed (${r && r.status})`,

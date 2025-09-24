@@ -71,7 +71,10 @@
               event: "*",
               schema: "public",
               table,
-              filter: (table === 'customers' || table === 'loyalty_members') ? undefined : (filter || undefined),
+              filter:
+                table === "customers" || table === "loyalty_members"
+                  ? undefined
+                  : filter || undefined,
             },
             (payload) => {
               const info = {
