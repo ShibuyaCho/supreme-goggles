@@ -530,6 +530,8 @@ Route::get('/settings/pos', function() {
         'success' => true,
         'settings' => $settings,
         'settings_updated_at' => $settingsUpdatedAt,
+        'store_id' => $storeId,
+        'store_name' => isset($settings['store_name']) ? (string)$settings['store_name'] : '',
         'tax_rate' => $settings['sales_tax'] ?? 0.0,
         'currency' => 'USD',
         'timezone' => config('app.timezone'),
