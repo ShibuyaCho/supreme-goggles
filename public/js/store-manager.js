@@ -309,7 +309,7 @@
         try {
           const res = await (window.axios || axios).get(
             "/api/settings/stores",
-            { headers: { Accept: "application/json" } },
+            { headers: { Accept: "application/json", "Cache-Control": "no-cache" } },
           );
           rows =
             res && res.data && Array.isArray(res.data.stores)
