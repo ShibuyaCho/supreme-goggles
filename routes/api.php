@@ -335,12 +335,24 @@ Route::get('/settings/pos', function() {
     $settingsRemote = [];
     $settingsLocal = [];
     $settingsCache = [];
-    // Multi-store: scope by headers when present
-    $storeId = request()->header('X-Store-ID');
-    $storeId = is_string($storeId) ? trim($storeId) : '';
+    // Multi-store: scope by headers when present (normalize smart quotes and aliases)
+    $norm = function($s){ return trim(strtr((string)($s??''), ["’"=>"'","‘"=>"'","`"=>"'"])); };
+    $alias = [
+        'THC Barbur' => "Today's Herbal Choice Barbur",
+        'THC Stayton' => "Today's Herbal Choice Stayton",
+        'THC Molalla' => "Today's Herbal Choice Molalla",
+        'THC Milwaukie' => "Today's Herbal Choice Milwaukie",
+        'THC Forest Grove' => "Today's Herbal Choice Forest Grove",
+        'THC Tillamook' => "Today's Herbal Choice Tillamook",
+        'THC Rainier' => "Today's Herbal Choice Rainier",
+    ];
+    $storeId = $norm(request()->header('X-Store-ID'));
     if ($storeId === '' || $storeId === null) $storeId = 'default';
-    $storeName = request()->header('X-Store-Name');
-    $storeName = is_string($storeName) ? trim($storeName) : '';
+    $storeName = $norm(request()->header('X-Store-Name'));
+    if (isset($alias[$storeName])) $storeName = $alias[$storeName];
+    if (stripos($storeId, "Today's Herbal Choice") !== false) { $storeName = $storeId; }
+    elseif (stripos($storeName, "Today's Herbal Choice") !== false) { /* keep storeName */ }
+    elseif (isset($alias[$storeName])) { $storeName = $alias[$storeName]; }
     $updatedAtRemote = null; $updatedAtLocal = null;
     if ($supabaseUrl && $supabaseKey) {
         try {
