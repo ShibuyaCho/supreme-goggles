@@ -1290,6 +1290,7 @@
                   );
                 } catch (_) {}
               } catch (_) {}
+              try { localStorage.removeItem(outboxKey(sidNow)); } catch(_){ }
               return { success: true, settings: m0 };
             }
           } catch (e) {
