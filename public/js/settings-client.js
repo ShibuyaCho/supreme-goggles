@@ -191,21 +191,40 @@
     thcforestgrove: "Today's Herbal Choice Forest Grove",
     thctillamook: "Today's Herbal Choice Tillamook",
     thcrainier: "Today's Herbal Choice Rainier",
+    // Canonicalize common full-name slugs (with/without smart quotes)
+    todaysherbalchoicebarbur: "Today's Herbal Choice Barbur",
+    todaysherbalchoicestayton: "Today's Herbal Choice Stayton",
+    todaysherbalchoicemolalla: "Today's Herbal Choice Molalla",
+    todaysherbalchoicemilwaukie: "Today's Herbal Choice Milwaukie",
+    todaysherbalchoiceforestgrove: "Today's Herbal Choice Forest Grove",
+    todaysherbalchoicetillamook: "Today's Herbal Choice Tillamook",
+    todaysherbalchoicerainier: "Today's Herbal Choice Rainier",
   };
   function canonicalizeId(rawId, rawName) {
     try {
-      const id = (rawId == null ? "" : String(rawId)).trim();
-      const name = (rawName == null ? "" : String(rawName)).trim();
-      if (id && id.includes("Today's Herbal Choice")) return id;
-      if (name && name.includes("Today's Herbal Choice")) return name;
-      if (STORE_ID_ALIAS[name]) return STORE_ID_ALIAS[name];
-      const slug = (id || name)
+      const norm = (s)=> String(s==null?"":s)
+        .replace(/[’‘`]/g, "'")
+        .replace(/\u2019/g, "'")
+        .trim();
+      const idRaw = norm(rawId);
+      const nameRaw = norm(rawName);
+      if (idRaw && idRaw.includes("Today's Herbal Choice")) return idRaw;
+      if (nameRaw && nameRaw.includes("Today's Herbal Choice")) return nameRaw;
+      if (STORE_ID_ALIAS[nameRaw]) return STORE_ID_ALIAS[nameRaw];
+      const slug = (idRaw || nameRaw)
         .toLowerCase()
+        .replace(/[’‘`]/g, "")
         .replace(/\s+/g, "")
         .replace(/[^a-z0-9_.-]/g, "");
       if (STORE_ID_ALIAS[slug]) return STORE_ID_ALIAS[slug];
-      if (id) return id;
-      return name || "default";
+      if (/^todaysherbalchoice[a-z]/.test(slug)) {
+        // Map "todaysherbalchoice<branch>" => canonical title case string
+        const branch = slug.replace(/^todaysherbalchoice/, "");
+        const titled = branch.replace(/(^|\b)([a-z])/g, (m,_b,c)=>c.toUpperCase());
+        return "Today's Herbal Choice " + titled.replace(/([a-z])([A-Z])/g, "$1 $2");
+      }
+      if (idRaw) return idRaw;
+      return nameRaw || "default";
     } catch (_) {
       return (rawId && String(rawId)) || "default";
     }
