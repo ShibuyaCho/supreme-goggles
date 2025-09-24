@@ -1452,6 +1452,12 @@
           } catch (_) {}
           return { success: true, settings: m };
         } catch (e) {
+          try{
+            const msg = (e && e.response && e.response.data && e.response.data.message) ? String(e.response.data.message) : "";
+            if (msg === 'verification_mismatch'){
+              try{ await backgroundReconcile(merged, currentStoreId()); }catch(_){ }
+            }
+          }catch(_){ }
           last = e;
           await new Promise((r) => setTimeout(r, 200 * (i + 1)));
         }
