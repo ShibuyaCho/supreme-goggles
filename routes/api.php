@@ -463,6 +463,7 @@ Route::get('/settings/pos', function() {
         }
         return $base;
     };
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
     $fillMissing = function(array $base, array $overlay) {
         foreach ($overlay as $k => $v) {
             if (!array_key_exists($k, $base)) {
