@@ -1337,6 +1337,7 @@
               }
             } catch (_) {}
           } catch (_) {}
+          try{ backgroundReconcile(m, sid); }catch(_){}
           return { success: true, settings: m };
         } catch (e) {
           last = e;
