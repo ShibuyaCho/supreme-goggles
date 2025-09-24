@@ -1229,6 +1229,7 @@
               }),
             });
           } catch (_) {}
+          try{ backgroundReconcile(merged, sidNow); }catch(_){}
           return { success: true, settings: merged };
         }
       } catch (e) {
