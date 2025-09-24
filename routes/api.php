@@ -535,7 +535,7 @@ Route::get('/settings/pos', function() {
         'tax_rate' => $settings['sales_tax'] ?? 0.0,
         'currency' => 'USD',
         'timezone' => config('app.timezone'),
-    ]);
+    ])->header('Vary','X-Store-ID, X-Store-Name');
 });
 Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
     \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'public', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
