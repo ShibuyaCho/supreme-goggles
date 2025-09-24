@@ -759,6 +759,47 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             }
             if ($resp->successful()) { $savedRemote = true; }
         }
+        // Strict read-after-write verification
+        if ($savedRemote) {
+            try {
+                $params = [ 'select' => '*' ];
+                $snameH = is_string($merged['store_name'] ?? '') ? trim($merged['store_name']) : '';
+                if ($snameH !== '') { $params['or'] = '(store_name.eq.' . $snameH . ',id.eq.' . $storeId . ')'; }
+                else { $params['id'] = 'eq.' . $storeId; }
+                $ver = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Cache-Control' => 'no-cache',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+                if ($ver->ok()) {
+                    $va = $ver->json();
+                    $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                    if ($vr) {
+                        $pickR = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) { $out[$k] = $src[$k]; } } return $out; };
+                        $remoteCols = [
+                            'Store_Information' => isset($vr['Store_Information']) && is_array($vr['Store_Information']) ? $pickR($vr['Store_Information'], ['store_name','license_number','store_address','store_phone','store_email','business_hours']) : [],
+                            'Tax_Configuration' => isset($vr['Tax_Configuration']) && is_array($vr['Tax_Configuration']) ? $pickR($vr['Tax_Configuration'], ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']) : [],
+                            'Sales_&_Transaction_Settings' => isset($vr['Sales_&_Transaction_Settings']) && is_array($vr['Sales_&_Transaction_Settings']) ? $pickR($vr['Sales_&_Transaction_Settings'], ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']) : [],
+                            'Printing_Preferences' => isset($vr['Printing_Preferences']) && is_array($vr['Printing_Preferences']) ? $pickR($vr['Printing_Preferences'], ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']) : [],
+                            'Metrc_Integration' => isset($vr['Metrc_Integration']) && is_array($vr['Metrc_Integration']) ? $pickR($vr['Metrc_Integration'], ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']) : [],
+                            'Auto_Delete_Zero-Quantity_Products' => isset($vr['Auto_Delete_Zero-Quantity_Products']) && is_array($vr['Auto_Delete_Zero-Quantity_Products']) ? $pickR($vr['Auto_Delete_Zero-Quantity_Products'], ['auto_delete_zero_quantity','auto_delete_zero_days']) : [],
+                        ];
+                        $norm = function($v) use (&$norm){ if (is_array($v)) { ksort($v); foreach ($v as $kk=>$vv){ $v[$kk] = $norm($vv); } } return $v; };
+                        $a = json_encode($norm($cols));
+                        $b = json_encode($norm($remoteCols));
+                        if ($a !== $b) {
+                            return response()->json([
+                                'success'=>false,
+                                'message'=>'verification_mismatch',
+                                'expected'=>$cols,
+                                'actual'=>$remoteCols,
+                            ], 502);
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { /* fallthrough */ }
+        }
         // Cache for UI hydration only (no legacy DB writes)
         try {
             \Illuminate\Support\Facades\Cache::forget('pos_settings:' . $storeId);
