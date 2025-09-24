@@ -857,6 +857,51 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         $a = json_encode($norm($cols));
                         $b = json_encode($norm($remoteCols));
                         if ($a !== $b) {
+                            // Attempt auto-repair: force PATCH of computed columns, then re-verify once
+                            try {
+                                $repair = \Illuminate\Support\Facades\Http::withHeaders([
+                                    'apikey' => $supabaseKey,
+                                    'Authorization' => 'Bearer ' . $supabaseKey,
+                                    'Accept' => 'application/json',
+                                    'Prefer' => 'resolution=merge-duplicates,return=representation',
+                                    'X-Store-ID' => $storeId,
+                                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($vr['id'] ?? $storeId), [
+                                    'Store_Information' => $cols['Store_Information'],
+                                    'Tax_Configuration' => $cols['Tax_Configuration'],
+                                    'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                                    'Printing_Preferences' => $cols['Printing_Preferences'],
+                                    'Metrc_Integration' => $cols['Metrc_Integration'],
+                                    'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                                    'updated_at' => now()->toIso8601String(),
+                                ]);
+                                if ($repair->successful()){
+                                    $ver2 = \Illuminate\Support\Facades\Http::withHeaders([
+                                        'apikey' => $supabaseKey,
+                                        'Authorization' => 'Bearer ' . $supabaseKey,
+                                        'Accept' => 'application/json',
+                                        'Cache-Control' => 'no-cache',
+                                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+                                    if ($ver2->ok()){
+                                        $va2 = $ver2->json();
+                                        $vr2 = (is_array($va2) && isset($va2[0])) ? $va2[0] : null;
+                                        if ($vr2) {
+                                            $remoteCols2 = [
+                                                'Store_Information' => isset($vr2['Store_Information']) && is_array($vr2['Store_Information']) ? $pickR($vr2['Store_Information'], ['store_name','license_number','store_address','store_phone','store_email','business_hours']) : [],
+                                                'Tax_Configuration' => isset($vr2['Tax_Configuration']) && is_array($vr2['Tax_Configuration']) ? $pickR($vr2['Tax_Configuration'], ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']) : [],
+                                                'Sales_&_Transaction_Settings' => isset($vr2['Sales_&_Transaction_Settings']) && is_array($vr2['Sales_&_Transaction_Settings']) ? $pickR($vr2['Sales_&_Transaction_Settings'], ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']) : [],
+                                                'Printing_Preferences' => isset($vr2['Printing_Preferences']) && is_array($vr2['Printing_Preferences']) ? $pickR($vr2['Printing_Preferences'], ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']) : [],
+                                                'Metrc_Integration' => isset($vr2['Metrc_Integration']) && is_array($vr2['Metrc_Integration']) ? $pickR($vr2['Metrc_Integration'], ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']) : [],
+                                                'Auto_Delete_Zero-Quantity_Products' => isset($vr2['Auto_Delete_Zero-Quantity_Products']) && is_array($vr2['Auto_Delete_Zero-Quantity_Products']) ? $pickR($vr2['Auto_Delete_Zero-Quantity_Products'], ['auto_delete_zero_quantity','auto_delete_zero_days']) : [],
+                                            ];
+                                            $b2 = json_encode($norm($remoteCols2));
+                                            if ($a === $b2) {
+                                                $settings = $mergeNonNull($settings, $settingsRemote);
+                                                return response()->json(['success'=>true,'settings'=>$settings]);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (\Throwable $e) { /* fall through */ }
                             return response()->json([
                                 'success'=>false,
                                 'message'=>'verification_mismatch',
