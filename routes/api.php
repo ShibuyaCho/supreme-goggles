@@ -603,6 +603,23 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 }
             } catch (\Throwable $e) {}
         }
+        // Reject stale writes when client provides a version older than server
+        try {
+            $clientVersion = null;
+            if (isset($incoming['settings_version'])) $clientVersion = (int)$incoming['settings_version'];
+            elseif ($request->hasHeader('X-Settings-Version')) $clientVersion = (int)$request->header('X-Settings-Version');
+            if ($clientVersion !== null && isset($current['settings_version'])) {
+                $serverVersion = (int)$current['settings_version'];
+                if ($clientVersion < $serverVersion) {
+                    return response()->json([
+                        'success'=>false,
+                        'message'=>'stale_write',
+                        'server_version'=>$serverVersion,
+                        'server_settings'=>$current,
+                    ], 409);
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
         // Preserve existing METRC keys if incoming is masked
         $maskPattern = '/^(?:[•*]+)$/u';
         foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
