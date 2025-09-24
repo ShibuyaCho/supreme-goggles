@@ -297,8 +297,11 @@
       "Content-Type": "application/json",
       Accept: "application/json",
       "X-Store-ID": sid,
-      ...(sname ? { "X-Store-Name": sname } : {}),
     };
+    try {
+      const cname = canonicalizeId('', sname || sid);
+      headers["X-Store-Name"] = cname || (sname || '');
+    } catch(_) { if (sname) headers["X-Store-Name"] = sname; }
     try {
       const meta = document.querySelector('meta[name="csrf-token"]');
       const token = meta && meta.getAttribute("content");
