@@ -1683,6 +1683,30 @@
     },
   };
 
+  // Hardening: flush outbox and reconcile on connectivity/visibility changes
+  try {
+    window.addEventListener('online', function(){
+      try { flushSettingsOutbox(currentStoreId()); } catch(_){ }
+      try { const local = SettingsClient.loadLocal(currentStoreId()); if (local) backgroundReconcile(local, currentStoreId()); } catch(_){ }
+    });
+    document.addEventListener('visibilitychange', function(){
+      if (document.visibilityState === 'visible'){
+        try { flushSettingsOutbox(currentStoreId()); } catch(_){ }
+      }
+    });
+  } catch(_){}
+
+  // Track server updated_at to avoid stale cache overlays
+  try {
+    window.addEventListener('settings:updated', function(e){
+      try {
+        const sid = (e && e.detail && e.detail.storeId) ? e.detail.storeId : currentStoreId();
+        const stamp = (e && e.detail && e.detail.settings && e.detail.settings.updated_at) ? e.detail.settings.updated_at : null;
+        if (stamp) localStorage.setItem(`cpos_settings_updated_at_${sid}`, String(stamp));
+      } catch(_){ }
+    });
+  } catch(_){}
+
   SettingsClient.currentStoreName = currentStoreName;
   SettingsClient.canonicalizeId = canonicalizeId;
   window.SettingsClient = SettingsClient;
