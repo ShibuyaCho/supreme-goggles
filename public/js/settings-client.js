@@ -1538,6 +1538,7 @@
               );
             } catch (_) {}
           } catch (_) {}
+          try{ backgroundReconcile(merged, sid); }catch(_){}
           return { success: true, settings: merged };
         }
       } catch (_) {}
