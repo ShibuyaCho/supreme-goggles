@@ -1042,7 +1042,7 @@
       function isMasked(v) {
         return (
           typeof v === "string" &&
-          (v.trim() === "••��•••••" || /^[*•]+$/.test(v.trim()))
+          (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
         );
       }
       // Preserve explicit clears: do not strip null/empty strings from patch
@@ -1296,6 +1296,7 @@
           try {
             this.saveLocal(sidNow, merged);
           } catch (_) {}
+          try { saveSnapshot(sidNow, merged); } catch(_){ }
           try {
             const compat = Object.assign({}, merged, {
               lastUpdated: Date.now(),
