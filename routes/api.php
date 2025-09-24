@@ -742,6 +742,8 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']),
                 'Auto_Delete_Zero-Quantity_Products' => $pick($merged, ['auto_delete_zero_quantity','auto_delete_zero_days']),
             ];
+            // Enforce consistency: mirror top-level store_name into Store_Information
+            try { if (!isset($cols['Store_Information']['store_name']) || $cols['Store_Information']['store_name'] !== ($merged['store_name'] ?? null)) { $cols['Store_Information']['store_name'] = $merged['store_name'] ?? null; } } catch (\Throwable $e) { /* ignore */ }
             // Resolve target row: if a row exists for this store_name, update that row to avoid unique store_name collisions
             $targetId = $storeId;
             try {
