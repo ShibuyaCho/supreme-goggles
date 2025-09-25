@@ -729,7 +729,7 @@
       };
       const r = await supaReqRetry(`pos_settings?on_conflict=id`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "X-Store-ID": sid },
         body: JSON.stringify([row]),
       });
       if (r && r.ok) {
