@@ -1596,10 +1596,11 @@ app.post("/api/settings/pos", async (req, res) => {
     } catch (_) {}
 
     let r = await supaFetch("pos_settings", {
-      method: "POST",
-      body: payloadPrimary,
-      query: { on_conflict: "id" },
-    });
+  method: "POST",
+  body: payloadPrimary,
+  query: { on_conflict: "id" },
+  headers: { "X-Store-ID": targetId },
+});
     if (!r || !r.ok) {
       // Try PATCH on resolved id excluding store_name to bypass unique constraint
       try {
@@ -1616,7 +1617,7 @@ app.post("/api/settings/pos", async (req, res) => {
         };
         const rPatch = await supaFetch(
           `pos_settings?id=eq.${encodeURIComponent(targetId)}`,
-          { method: "PATCH", body: patchBody },
+          { method: "PATCH", body: patchBody, headers: { "X-Store-ID": targetId } },
         );
         if (rPatch && rPatch.ok) {
           r = rPatch;
@@ -1624,7 +1625,7 @@ app.post("/api/settings/pos", async (req, res) => {
           // Last resort: patch by store_name
           const rPatchName = await supaFetch(
             `pos_settings?store_name=eq.${encodeURIComponent(mergedFull.store_name)}`,
-            { method: "PATCH", body: patchBody },
+            { method: "PATCH", body: patchBody, headers: { "X-Store-ID": targetId } },
           );
           if (rPatchName && rPatchName.ok) r = rPatchName;
         }
@@ -1746,7 +1747,7 @@ app.post("/api/settings/pos", async (req, res) => {
           if (a !== b) {
             const repair = await supaFetch(
               `pos_settings?id=eq.${encodeURIComponent(targetId)}`,
-              { method: "PATCH", body: payloadPrimary[0] },
+              { method: "PATCH", body: payloadPrimary[0], headers: { "X-Store-ID": targetId } },
             );
             if (repair && repair.ok) {
               const ver2 = await supaFetch(
@@ -1859,10 +1860,11 @@ app.post("/api/settings/pos", async (req, res) => {
       try {
         const payloadLegacy = payloadPrimary.map((p) => ({ ...p, id: legacy }));
         await supaFetch("pos_settings", {
-          method: "POST",
-          body: payloadLegacy,
-          query: { on_conflict: "id" },
-        });
+  method: "POST",
+  body: payloadLegacy,
+  query: { on_conflict: "id" },
+  headers: { "X-Store-ID": legacy },
+});
       } catch (_) {}
     }
     const payload = r.ok ? await r.json() : null;
