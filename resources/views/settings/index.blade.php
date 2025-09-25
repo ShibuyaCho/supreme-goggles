@@ -1117,7 +1117,7 @@ function settingsManager() {
                     const keys = Object.keys(patch).filter(k => persistable.has(k));
                     const persisted = keys.length === 0 || keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(before[k]));
                     if (!persisted && isLatest()) {
-                        const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
+                        const msg = (e?.response?.data?.supabase_error) || (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
                         this.showToast(msg, 'error');
                     }
                 } catch(_) {
