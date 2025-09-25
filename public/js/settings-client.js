@@ -176,6 +176,35 @@
     } catch (_) {}
   }
 
+  // Cross-tab mutex using localStorage with TTL
+  async function acquireCrossTabMutex(key, token, waitMs = 4000) {
+    const start = Date.now();
+    while (Date.now() - start < waitMs) {
+      try {
+        const now = Date.now();
+        const raw = localStorage.getItem(key);
+        let cur = null;
+        try { cur = raw ? JSON.parse(raw) : null; } catch(_) { cur = null; }
+        if (!cur || typeof cur !== 'object' || (now - (cur.ts || 0)) > waitMs) {
+          localStorage.setItem(key, JSON.stringify({ ts: now, token }));
+          // Verify we own the lock
+          const chk = localStorage.getItem(key);
+          let obj = null; try { obj = chk ? JSON.parse(chk) : null; } catch(_) { obj = null; }
+          if (obj && obj.token === token) return true;
+        }
+      } catch(_) {}
+      await new Promise(r=>setTimeout(r, 50));
+    }
+    return false;
+  }
+  function releaseCrossTabMutex(key, token) {
+    try {
+      const raw = localStorage.getItem(key);
+      const obj = raw ? JSON.parse(raw) : null;
+      if (obj && obj.token === token) localStorage.removeItem(key);
+    } catch(_) {}
+  }
+
   const STORE_ID_ALIAS = {
     "THC Barbur": "Today's Herbal Choice Barbur",
     "THC Stayton": "Today's Herbal Choice Stayton",
@@ -825,8 +854,30 @@
       } catch (_) {}
       if (!force) {
         const local = this.loadLocal(sid);
-        if (local)
-          return { success: true, settings: { ...DEFAULTS, ...local } };
+        if (local) {
+          const mergedLocal = { ...DEFAULTS, ...local };
+          try {
+            setTimeout(async () => {
+              try {
+                const resp2 = await httpGet("/api/settings/pos", { nocache: true });
+                const data2 = resp2 && (resp2.settings || resp2) ? (resp2.settings || resp2) : {};
+                if (data2 && Object.keys(data2).length) {
+                  const next = { ...DEFAULTS, ...data2 };
+                  const sid2 = currentStoreId();
+                  SettingsClient.saveLocal(sid2, next);
+                  try {
+                    const compat2 = Object.assign({}, next, { lastUpdated: Date.now() });
+                    localStorage.setItem(`cannabisPOS-storeSettings_${sid2}`, JSON.stringify(compat2));
+                    localStorage.setItem('cannabisPOS-storeSettings', JSON.stringify(compat2));
+                  } catch(_) {}
+                  try { writeUiCachesFromSettings(next); } catch(_) {}
+                  try { window.dispatchEvent(new CustomEvent('settings:updated', { detail: { settings: next, storeId: sid2 } })); } catch(_) {}
+                }
+              } catch(_) {}
+            }, 0);
+          } catch(_) {}
+          return { success: true, settings: mergedLocal };
+        }
       }
       // 1) Try Laravel API first (authoritative merge of defaults + remote + local DB)
       try {
@@ -1058,6 +1109,10 @@
       this._saving = true;
       try {
         const sid = currentStoreId();
+        const _mutexKey = `cpos_settings_mutex_${sid}`;
+        const _mutexToken = Math.random().toString(36).slice(2);
+        let _mutexHeld = false;
+        try { _mutexHeld = await acquireCrossTabMutex(_mutexKey, _mutexToken, 5000); } catch(_){ }
         try { await flushSettingsOutbox(sid); } catch(_){ }
         let base = this.loadLocal(sid) || {};
         let serverCurrent = null;
@@ -1805,6 +1860,7 @@
       };
     } finally {
       this._saving = false;
+      try { const sid = currentStoreId(); const _k = `cpos_settings_mutex_${sid}`; if (typeof _mutexToken !== 'undefined') releaseCrossTabMutex(_k, _mutexToken); } catch(_){ }
     }
   },
   _saving: false,
