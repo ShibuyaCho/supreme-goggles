@@ -767,6 +767,11 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']),
                 'Auto_Delete_Zero-Quantity_Products' => $pick($merged, ['auto_delete_zero_quantity','auto_delete_zero_days']),
             ];
+            // Coerce numeric/boolean types for stable equality
+            $numKeys = ['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'];
+            $boolKeys = ['tax_inclusive','receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','expandable_cart','metrc_enabled','metrc_auto_push_sales','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion'];
+            $coerce = function($arr) use ($numKeys,$boolKeys){ foreach ($arr as $k=>&$v){ if (is_array($v)) { $v = $coerce($v); } else { if (in_array($k,$numKeys,true)) { if (is_string($v) || is_numeric($v)) $v = 0 + $v; } if (in_array($k,$boolKeys,true)) { if (is_string($v)) { $s = strtolower($v); if ($s==='true'||$s==='1') $v=true; elseif ($s==='false'||$s==='0') $v=false; } } } } return $arr; };
+            $cols = $coerce($cols);
             // Enforce consistency: mirror top-level store_name into Store_Information
             try { if (!isset($cols['Store_Information']['store_name']) || $cols['Store_Information']['store_name'] !== ($merged['store_name'] ?? null)) { $cols['Store_Information']['store_name'] = $merged['store_name'] ?? null; } } catch (\Throwable $e) { /* ignore */ }
             // Resolve target row: if a row exists for this store_name, update that row to avoid unique store_name collisions
