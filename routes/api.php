@@ -795,7 +795,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             try {
                 $paramsChk = [ 'select' => '*' ];
                 $snameH = is_string($merged['store_name'] ?? '') ? trim($merged['store_name']) : '';
-                if ($snameH !== '') { $paramsChk['or'] = '(store_name.eq.' . $snameH . ',id.eq.' . $storeId . ')'; } else { $paramsChk['id'] = 'eq.' . $storeId; }
+                if ($snameH !== '') { $paramsChk['or'] = '(store_name.eq.' . $snameH . ',id.eq.' . $targetId . ')'; } else { $paramsChk['id'] = 'eq.' . $targetId; }
                 $verChk = \Illuminate\Support\Facades\Http::withHeaders([
                     'apikey' => $supabaseKey,
                     'Authorization' => 'Bearer ' . $supabaseKey,
@@ -914,8 +914,8 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             try {
                 $params = [ 'select' => '*' ];
                 $snameH = is_string($merged['store_name'] ?? '') ? trim($merged['store_name']) : '';
-                if ($snameH !== '') { $params['or'] = '(store_name.eq.' . $snameH . ',id.eq.' . $storeId . ')'; }
-                else { $params['id'] = 'eq.' . $storeId; }
+                if ($snameH !== '') { $params['or'] = '(store_name.eq.' . $snameH . ',id.eq.' . $targetId . ')'; }
+                else { $params['id'] = 'eq.' . $targetId; }
                 $ver = \Illuminate\Support\Facades\Http::withHeaders([
                     'apikey' => $supabaseKey,
                     'Authorization' => 'Bearer ' . $supabaseKey,
