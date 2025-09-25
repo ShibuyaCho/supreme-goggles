@@ -989,7 +989,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                                 'message'=>'verification_mismatch',
                                 'expected'=>$cols,
                                 'actual'=>$remoteCols,
-                            ], 502);
+                            ], 502)->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0')->header('Vary','X-Store-ID, X-Store-Name');
                         }
                     }
                 }
@@ -1009,7 +1009,9 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             if (array_key_exists('metrc_vendor_key', $respSettings)) {
                 $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : '';
             }
-            return response()->json(['success' => true, 'settings' => $respSettings, 'store_id' => $storeId, 'store_name' => (string)($respSettings['store_name'] ?? '')])->header('Vary','X-Store-ID, X-Store-Name');
+            return response()->json(['success' => true, 'settings' => $respSettings, 'store_id' => $storeId, 'store_name' => (string)($respSettings['store_name'] ?? '')])
+                ->header('Vary','X-Store-ID, X-Store-Name')
+                ->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0');
         }
         // Remote failed: surface exact Supabase error
         $status = method_exists($resp,'status') ? $resp->status() : 502;
