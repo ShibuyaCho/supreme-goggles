@@ -1094,9 +1094,9 @@ function settingsManager() {
                     ]);
                         const keys = Object.keys(patch).filter(k => persistable.has(k));
                         const persisted = keys.length === 0 || keys.every(k => JSON.stringify(coerce(k,srv[k])) === JSON.stringify(coerce(k,before[k])));
-                        if (!persisted && isLatest()) this.showToast((res.message||res.error)||'Autosave failed', 'error');
+                        if (!persisted && isLatest()) this.showToast((res?.supabase_error || res?.message || res?.error) || 'Autosave failed', 'error');
                     } catch(_) {
-                        if (isLatest()) this.showToast((res.message||res.error)||'Autosave failed', 'error');
+                        if (isLatest()) this.showToast((res?.supabase_error || res?.message || res?.error) || 'Autosave failed', 'error');
                     }
                 }
             } catch (e) {
