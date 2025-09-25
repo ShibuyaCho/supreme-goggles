@@ -1066,7 +1066,7 @@
           patched.metrc_user_key = base.metrc_user_key || "";
         if (isMasked(patched.metrc_vendor_key))
           patched.metrc_vendor_key = base.metrc_vendor_key || "";
-        // Normalize arrays possibly sent as JSON strings
+        // Normalize arrays possibly sent as JSON strings, then dedupe/sort (except structured business_hours)
         [
           "exit_label_categories",
           "receipt_categories_autoprint",
@@ -1079,6 +1079,10 @@
               const p = JSON.parse(v);
               if (Array.isArray(p)) patched[k] = p;
             } catch (_) {}
+          }
+          if (Array.isArray(patched[k]) && k !== 'business_hours'){
+            const uniq = Array.from(new Set(patched[k].map(String))).sort();
+            patched[k] = uniq;
           }
         });
         // Clamp numerics to sane ranges
