@@ -1169,11 +1169,11 @@ function settingsManager() {
                             this.saveSettingsToStorage();
                             this.showToast('Settings saved successfully!', 'success');
                         } else {
-                            const msg = (res && (res.message || res.error)) ? (res.message || res.error) : 'Error saving settings';
+                            const msg = (res?.supabase_error) || (res && (res.message || res.error) ? (res.message || res.error) : '') || 'Error saving settings';
                             this.showToast(msg, 'error');
                         }
                     } catch(_) {
-                        const msg = (res && (res.message || res.error)) ? (res.message || res.error) : 'Error saving settings';
+                        const msg = (res?.supabase_error) || (res && (res.message || res.error) ? (res.message || res.error) : '') || 'Error saving settings';
                         this.showToast(msg, 'error');
                     }
                 }
