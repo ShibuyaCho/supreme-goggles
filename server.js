@@ -1060,6 +1060,8 @@ app.get("/api/settings/pos", async (req, res) => {
         success: true,
         settings: s,
         settings_updated_at: settingsRow.updated_at || null,
+        store_id: storeId,
+        store_name: s.store_name || storeName,
         tax_rate: s.sales_tax ?? 20.0,
         currency: "USD",
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -1409,7 +1411,7 @@ app.post("/api/settings/pos", async (req, res) => {
           if (a === b) {
             const responseSettings = { ...mergedFull };
             if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")) responseSettings.metrc_user_key = responseSettings.metrc_user_key ? "••••••••" : "";
-            if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_vendor_key")) responseSettings.metrc_vendor_key = responseSettings.metrc_vendor_key ? "••••••••" : "";
+            if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_vendor_key")) responseSettings.metrc_vendor_key = responseSettings.metrc_vendor_key ? "��•••••••" : "";
             return res.json({ success:true, settings: responseSettings, store_id: targetId, store_name: responseSettings.store_name || "" });
           }
         }
