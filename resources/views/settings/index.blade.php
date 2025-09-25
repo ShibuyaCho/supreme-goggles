@@ -1113,6 +1113,8 @@ function settingsManager() {
             try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
             this._saveSeq++;
             const snapshot = JSON.parse(JSON.stringify(this.settings));
+            const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
+            const changedKeys = (()=>{ try{ const ks=new Set([...Object.keys(snapshot),...Object.keys(prev)]); const out=[]; ks.forEach(k=>{ if (JSON.stringify(snapshot[k]) !== JSON.stringify(prev[k])) out.push(k); }); return out; }catch(_){ return Object.keys(snapshot||{}); } })();
             try {
                 const res = await (window.SettingsClient ? SettingsClient.save(this.settings) : Promise.resolve({ success:false }));
                 if (res && res.success) {
@@ -1123,8 +1125,8 @@ function settingsManager() {
                     try {
                         const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
                         const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
-                        const keys = Object.keys(snapshot||{});
-                        const persisted = keys.some(k => JSON.stringify(srv[k]) === JSON.stringify(snapshot[k]));
+                        const keys = changedKeys;
+                        const persisted = keys.length>0 ? keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(snapshot[k])) : false;
                         if (persisted) {
                             this._lastPersistedJSON = JSON.stringify(srv);
                             this.settings = { ...this.settings, ...srv };
@@ -1144,8 +1146,8 @@ function settingsManager() {
                 try {
                     const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
                     const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
-                    const keys = Object.keys(snapshot||{});
-                    const persisted = keys.some(k => JSON.stringify(srv[k]) === JSON.stringify(snapshot[k]));
+                    const keys = changedKeys;
+                    const persisted = keys.length>0 ? keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(snapshot[k])) : false;
                     if (persisted) {
                         this._lastPersistedJSON = JSON.stringify(srv);
                         this.settings = { ...this.settings, ...srv };
