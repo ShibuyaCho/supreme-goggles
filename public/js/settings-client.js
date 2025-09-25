@@ -272,7 +272,9 @@
       Object.entries(params).forEach(([k, v]) =>
         url.searchParams.set(k, String(v)),
       );
-    const res = await fetch(url.toString(), { headers });
+    const fetchHeaders = Object.assign({}, headers);
+    if (params && params.nocache) fetchHeaders["Cache-Control"] = "no-cache";
+    const res = await fetch(url.toString(), { headers: fetchHeaders });
     if (!res.ok) throw new Error(`GET ${path} failed ${res.status}`);
     return res.json();
   }
