@@ -1461,6 +1461,84 @@ app.post("/api/settings/pos", async (req, res) => {
         });
       }
     }
+    // Read-after-write verification; attempt auto-repair once
+    try {
+      const ver = await supaFetch(
+        mergedFull.store_name
+          ? `pos_settings?or=(store_name.eq.${encodeURIComponent(mergedFull.store_name)},id.eq.${encodeURIComponent(targetId)})&select=*`
+          : `pos_settings?id=eq.${encodeURIComponent(targetId)}&select=*`,
+        { method: "GET", headers: { "Cache-Control": "no-cache" } },
+      );
+      if (ver && ver.ok) {
+        const arr = await ver.json();
+        const vr = Array.isArray(arr) && arr[0] ? arr[0] : null;
+        if (vr) {
+          const pickR = (src, keys)=> keys.reduce((o,k)=>{ if (src && Object.prototype.hasOwnProperty.call(src,k)) o[k]=src[k]; return o; },{});
+          const remoteCols = {
+            Store_Information: pickR(vr["Store_Information"]||{}, ["store_name","license_number","store_address","store_phone","store_email","business_hours"]),
+            Tax_Configuration: pickR(vr["Tax_Configuration"]||{}, ["sales_tax","excise_tax","cannabis_tax","tax_inclusive"]),
+            "Sales_&_Transaction_Settings": pickR(vr["Sales_&_Transaction_Settings"]||{}, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
+            Printing_Preferences: pickR(vr["Printing_Preferences"]||{}, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels","receipt_footer"]),
+            Metrc_Integration: pickR(vr["Metrc_Integration"]||{}, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
+            "Auto_Delete_Zero-Quantity_Products": pickR(vr["Auto_Delete_Zero-Quantity_Products"]||{}, ["auto_delete_zero_quantity","auto_delete_zero_days"]),
+          };
+          const norm = (v)=>{ if (Array.isArray(v)) return v.slice().sort(); if (v && typeof v === 'object'){ const o={}; Object.keys(v).sort().forEach(k=> o[k]=norm(v[k])); return o; } return v; };
+          const a = JSON.stringify(norm(payloadPrimary[0]));
+          const b = JSON.stringify(norm({
+            id: targetId,
+            store_name: mergedFull.store_name || "",
+            Store_Information: remoteCols.Store_Information,
+            Tax_Configuration: remoteCols.Tax_Configuration,
+            "Sales_&_Transaction_Settings": remoteCols["Sales_&_Transaction_Settings"],
+            Printing_Preferences: remoteCols.Printing_Preferences,
+            Metrc_Integration: remoteCols.Metrc_Integration,
+            "Auto_Delete_Zero-Quantity_Products": remoteCols["Auto_Delete_Zero-Quantity_Products"],
+          }));
+          if (a !== b) {
+            const repair = await supaFetch(
+              `pos_settings?id=eq.${encodeURIComponent(targetId)}`,
+              { method: "PATCH", body: payloadPrimary[0] },
+            );
+            if (repair && repair.ok) {
+              const ver2 = await supaFetch(
+                mergedFull.store_name
+                  ? `pos_settings?or=(store_name.eq.${encodeURIComponent(mergedFull.store_name)},id.eq.${encodeURIComponent(targetId)})&select=*`
+                  : `pos_settings?id=eq.${encodeURIComponent(targetId)}&select=*`,
+                { method: "GET", headers: { "Cache-Control": "no-cache" } },
+              );
+              if (ver2 && ver2.ok) {
+                const arr2 = await ver2.json();
+                const vr2 = Array.isArray(arr2) && arr2[0] ? arr2[0] : null;
+                if (vr2) {
+                  const remoteCols2 = {
+                    Store_Information: pickR(vr2["Store_Information"]||{}, ["store_name","license_number","store_address","store_phone","store_email","business_hours"]),
+                    Tax_Configuration: pickR(vr2["Tax_Configuration"]||{}, ["sales_tax","excise_tax","cannabis_tax","tax_inclusive"]),
+                    "Sales_&_Transaction_Settings": pickR(vr2["Sales_&_Transaction_Settings"]||{}, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
+                    Printing_Preferences: pickR(vr2["Printing_Preferences"]||{}, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels","receipt_footer"]),
+                    Metrc_Integration: pickR(vr2["Metrc_Integration"]||{}, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
+                    "Auto_Delete_Zero-Quantity_Products": pickR(vr2["Auto_Delete_Zero-Quantity_Products"]||{}, ["auto_delete_zero_quantity","auto_delete_days"]),
+                  };
+                  const b2 = JSON.stringify(norm({
+                    id: targetId,
+                    store_name: mergedFull.store_name || "",
+                    Store_Information: remoteCols2.Store_Information,
+                    Tax_Configuration: remoteCols2.Tax_Configuration,
+                    "Sales_&_Transaction_Settings": remoteCols2["Sales_&_Transaction_Settings"],
+                    Printing_Preferences: remoteCols2.Printing_Preferences,
+                    Metrc_Integration: remoteCols2.Metrc_Integration,
+                    "Auto_Delete_Zero-Quantity_Products": remoteCols2["Auto_Delete_Zero-Quantity_Products"],
+                  }));
+                  if (a !== b2) {
+                    return res.status(502).json({ success:false, message: "verification_mismatch", expected: payloadPrimary[0], actual: remoteCols2 });
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch(_){ }
+
     // Also write to legacy id if applicable
     if (storeId === "default" || storeId === "defaultstore") {
       const legacy = storeId === "default" ? "defaultstore" : "default";
