@@ -1291,6 +1291,22 @@ app.post("/api/settings/pos", async (req, res) => {
         merged[k] = Array.from(new Set(merged[k].map(String))).sort();
       }
     });
+    // Normalize business_hours entries
+    try {
+      const order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      if (Array.isArray(merged.business_hours)){
+        merged.business_hours = merged.business_hours.map((it)=>{
+          const dayRaw = String((it && it.day) || '').trim();
+          const day = order.includes(dayRaw) ? dayRaw : (dayRaw ? (dayRaw[0].toUpperCase()+dayRaw.slice(1).toLowerCase()) : 'Monday');
+          return {
+            day,
+            is_open: !!(it && it.is_open),
+            open_time: (it && typeof it.open_time === 'string' && it.open_time) ? it.open_time : '09:00',
+            close_time: (it && typeof it.close_time === 'string' && it.close_time) ? it.close_time : '21:00',
+          };
+        }).sort((a,b)=> order.indexOf(a.day)-order.indexOf(b.day));
+      }
+    } catch(_){}
     try {
       const st = Number(merged.sales_tax ?? 0);
       const rec = Number(merged.cannabis_tax ?? 0);
@@ -1420,7 +1436,7 @@ app.post("/api/settings/pos", async (req, res) => {
           }));
           if (a === b) {
             const responseSettings = { ...mergedFull };
-            if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")) responseSettings.metrc_user_key = responseSettings.metrc_user_key ? "••••••••" : "";
+            if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")) responseSettings.metrc_user_key = responseSettings.metrc_user_key ? "•••��••••" : "";
             if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_vendor_key")) responseSettings.metrc_vendor_key = responseSettings.metrc_vendor_key ? "��•••••••" : "";
             return res.json({ success:true, settings: responseSettings, store_id: targetId, store_name: responseSettings.store_name || "" });
           }
