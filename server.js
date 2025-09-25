@@ -57,7 +57,12 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 async function supaFetch(
   path,
-  { method = "GET", body = null, query = null, headers: extraHeaders = {} } = {},
+  {
+    method = "GET",
+    body = null,
+    query = null,
+    headers: extraHeaders = {},
+  } = {},
 ) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return {
@@ -812,7 +817,10 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res) => {
 // Settings: POS get
 app.get("/api/settings/pos", async (req, res) => {
   res.setHeader("Vary", "X-Store-ID, X-Store-Name");
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, max-age=0",
+  );
   // Defaults (mirrors Laravel defaults)
   const defaults = {
     sales_tax: 0.0,
@@ -959,7 +967,10 @@ app.get("/api/settings/pos", async (req, res) => {
     const storeNameRaw = String(rawName || "").trim();
     function canonicalize(id, name) {
       try {
-        const norm = (s)=> String(s==null?"":s).replace(/[’‘`]/g, "'").trim();
+        const norm = (s) =>
+          String(s == null ? "" : s)
+            .replace(/[’‘`]/g, "'")
+            .trim();
         const sid = norm(id);
         const sname = norm(name);
         if (sid.includes("Today's Herbal Choice")) return sid;
@@ -981,8 +992,13 @@ app.get("/api/settings/pos", async (req, res) => {
           .replace(/[^a-z0-9_.-]/g, "");
         if (/^todaysherbalchoice[a-z]/.test(slug)) {
           const branch = slug.replace(/^todaysherbalchoice/, "");
-          const titled = branch.replace(/(^|\b)([a-z])/g, (m,_b,c)=>c.toUpperCase());
-          return "Today's Herbal Choice " + titled.replace(/([a-z])([A-Z])/g, "$1 $2");
+          const titled = branch.replace(/(^|\b)([a-z])/g, (m, _b, c) =>
+            c.toUpperCase(),
+          );
+          return (
+            "Today's Herbal Choice " +
+            titled.replace(/([a-z])([A-Z])/g, "$1 $2")
+          );
         }
         return String(sid || sname || "default")
           .replace(/\s+/g, "")
@@ -1078,8 +1094,18 @@ app.get("/api/settings/pos", async (req, res) => {
   return res.json({
     success: true,
     settings: defaults,
-    store_id: (req && (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"])) || "default",
-    store_name: (req && (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"])) || "",
+    store_id:
+      (req &&
+        (req.header
+          ? req.header("X-Store-ID")
+          : req.headers?.["x-store-id"])) ||
+      "default",
+    store_name:
+      (req &&
+        (req.header
+          ? req.header("X-Store-Name")
+          : req.headers?.["x-store-name"])) ||
+      "",
     tax_rate: defaults.sales_tax ?? 20.0,
     currency: "USD",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -1089,7 +1115,10 @@ app.get("/api/settings/pos", async (req, res) => {
 // Settings: POS update
 app.post("/api/settings/pos", async (req, res) => {
   res.setHeader("Vary", "X-Store-ID, X-Store-Name");
-  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+  res.setHeader(
+    "Cache-Control",
+    "no-store, no-cache, must-revalidate, max-age=0",
+  );
   const incoming = req.body?.settings || req.body || {};
   try {
     // Determine store scope
@@ -1109,7 +1138,10 @@ app.post("/api/settings/pos", async (req, res) => {
       "";
     function canonicalize(id, name) {
       try {
-        const norm = (s)=> String(s==null?"":s).replace(/[’‘`]/g, "'").trim();
+        const norm = (s) =>
+          String(s == null ? "" : s)
+            .replace(/[’‘`]/g, "'")
+            .trim();
         const sid = norm(id);
         const sname = norm(name);
         if (sid.includes("Today's Herbal Choice")) return sid;
@@ -1131,8 +1163,13 @@ app.post("/api/settings/pos", async (req, res) => {
           .replace(/[^a-z0-9_.-]/g, "");
         if (/^todaysherbalchoice[a-z]/.test(slug)) {
           const branch = slug.replace(/^todaysherbalchoice/, "");
-          const titled = branch.replace(/(^|\b)([a-z])/g, (m,_b,c)=>c.toUpperCase());
-          return "Today's Herbal Choice " + titled.replace(/([a-z])([A-Z])/g, "$1 $2");
+          const titled = branch.replace(/(^|\b)([a-z])/g, (m, _b, c) =>
+            c.toUpperCase(),
+          );
+          return (
+            "Today's Herbal Choice " +
+            titled.replace(/([a-z])([A-Z])/g, "$1 $2")
+          );
         }
         // Last resort: sanitize minimal safe id (no spaces/apostrophes)
         return String(sid || sname || "default")
@@ -1286,27 +1323,51 @@ app.post("/api/settings/pos", async (req, res) => {
     };
     let merged = { ...current, ...incomingClean };
     merged = normalizeArrays(coerceNumbers(coerceBooleans(merged)));
-    ["exit_label_categories","receipt_categories_autoprint","minimum_price_categories"].forEach((k)=>{
-      if (Array.isArray(merged[k])){
+    [
+      "exit_label_categories",
+      "receipt_categories_autoprint",
+      "minimum_price_categories",
+    ].forEach((k) => {
+      if (Array.isArray(merged[k])) {
         merged[k] = Array.from(new Set(merged[k].map(String))).sort();
       }
     });
     // Normalize business_hours entries
     try {
-      const order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-      if (Array.isArray(merged.business_hours)){
-        merged.business_hours = merged.business_hours.map((it)=>{
-          const dayRaw = String((it && it.day) || '').trim();
-          const day = order.includes(dayRaw) ? dayRaw : (dayRaw ? (dayRaw[0].toUpperCase()+dayRaw.slice(1).toLowerCase()) : 'Monday');
-          return {
-            day,
-            is_open: !!(it && it.is_open),
-            open_time: (it && typeof it.open_time === 'string' && it.open_time) ? it.open_time : '09:00',
-            close_time: (it && typeof it.close_time === 'string' && it.close_time) ? it.close_time : '21:00',
-          };
-        }).sort((a,b)=> order.indexOf(a.day)-order.indexOf(b.day));
+      const order = [
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+        "Sunday",
+      ];
+      if (Array.isArray(merged.business_hours)) {
+        merged.business_hours = merged.business_hours
+          .map((it) => {
+            const dayRaw = String((it && it.day) || "").trim();
+            const day = order.includes(dayRaw)
+              ? dayRaw
+              : dayRaw
+                ? dayRaw[0].toUpperCase() + dayRaw.slice(1).toLowerCase()
+                : "Monday";
+            return {
+              day,
+              is_open: !!(it && it.is_open),
+              open_time:
+                it && typeof it.open_time === "string" && it.open_time
+                  ? it.open_time
+                  : "09:00",
+              close_time:
+                it && typeof it.close_time === "string" && it.close_time
+                  ? it.close_time
+                  : "21:00",
+            };
+          })
+          .sort((a, b) => order.indexOf(a.day) - order.indexOf(b.day));
       }
-    } catch(_){}
+    } catch (_) {}
     try {
       const st = Number(merged.sales_tax ?? 0);
       const rec = Number(merged.cannabis_tax ?? 0);
@@ -1413,36 +1474,126 @@ app.post("/api/settings/pos", async (req, res) => {
         const arr = await verChk.json();
         const vr = Array.isArray(arr) && arr[0] ? arr[0] : null;
         if (vr) {
-          const pickR = (src, keys)=> keys.reduce((o,k)=>{ if (src && Object.prototype.hasOwnProperty.call(src,k)) o[k]=src[k]; return o; },{});
+          const pickR = (src, keys) =>
+            keys.reduce((o, k) => {
+              if (src && Object.prototype.hasOwnProperty.call(src, k))
+                o[k] = src[k];
+              return o;
+            }, {});
           const remoteCols = {
-            Store_Information: pickR(vr["Store_Information"]||{}, ["store_name","license_number","store_address","store_phone","store_email","business_hours"]),
-            Tax_Configuration: pickR(vr["Tax_Configuration"]||{}, ["sales_tax","excise_tax","cannabis_tax","tax_inclusive"]),
-            "Sales_&_Transaction_Settings": pickR(vr["Sales_&_Transaction_Settings"]||{}, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
-            Printing_Preferences: pickR(vr["Printing_Preferences"]||{}, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels","receipt_footer"]),
-            Metrc_Integration: pickR(vr["Metrc_Integration"]||{}, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
-            "Auto_Delete_Zero-Quantity_Products": pickR(vr["Auto_Delete_Zero-Quantity_Products"]||{}, ["auto_delete_zero_quantity","auto_delete_zero_days"]),
+            Store_Information: pickR(vr["Store_Information"] || {}, [
+              "store_name",
+              "license_number",
+              "store_address",
+              "store_phone",
+              "store_email",
+              "business_hours",
+            ]),
+            Tax_Configuration: pickR(vr["Tax_Configuration"] || {}, [
+              "sales_tax",
+              "excise_tax",
+              "cannabis_tax",
+              "tax_inclusive",
+            ]),
+            "Sales_&_Transaction_Settings": pickR(
+              vr["Sales_&_Transaction_Settings"] || {},
+              [
+                "require_customer",
+                "age_verification",
+                "limit_enforcement",
+                "accept_cash",
+                "accept_debit",
+                "accept_check",
+                "round_to_nearest",
+                "minimum_price_enabled",
+                "minimum_price_amount",
+                "minimum_price_categories",
+                "inventory_view_mode",
+                "expandable_cart",
+                "weight_threshold",
+              ],
+            ),
+            Printing_Preferences: pickR(vr["Printing_Preferences"] || {}, [
+              "receipt_autoprint",
+              "receipt_categories_autoprint",
+              "receipt_show_tax_breakdown",
+              "receipt_show_metrc",
+              "receipt_show_loyalty",
+              "receipt_show_qr_code",
+              "default_receipt_printer",
+              "receipt_paper_size",
+              "exit_label_categories",
+              "receipt_template",
+              "print_labels",
+              "receipt_footer",
+            ]),
+            Metrc_Integration: pickR(vr["Metrc_Integration"] || {}, [
+              "metrc_enabled",
+              "metrc_user_key",
+              "metrc_vendor_key",
+              "metrc_facility",
+              "metrc_auto_push_sales",
+            ]),
+            "Auto_Delete_Zero-Quantity_Products": pickR(
+              vr["Auto_Delete_Zero-Quantity_Products"] || {},
+              ["auto_delete_zero_quantity", "auto_delete_zero_days"],
+            ),
           };
-          const norm = (v)=>{ if (Array.isArray(v)) return v.slice().sort(); if (v && typeof v === 'object'){ const o={}; Object.keys(v).sort().forEach(k=> o[k]=norm(v[k])); return o; } return v; };
+          const norm = (v) => {
+            if (Array.isArray(v)) return v.slice().sort();
+            if (v && typeof v === "object") {
+              const o = {};
+              Object.keys(v)
+                .sort()
+                .forEach((k) => (o[k] = norm(v[k])));
+              return o;
+            }
+            return v;
+          };
           const a = JSON.stringify(norm(payloadPrimary[0]));
-          const b = JSON.stringify(norm({
-            id: targetId,
-            store_name: mergedFull.store_name || "",
-            Store_Information: remoteCols.Store_Information,
-            Tax_Configuration: remoteCols.Tax_Configuration,
-            "Sales_&_Transaction_Settings": remoteCols["Sales_&_Transaction_Settings"],
-            Printing_Preferences: remoteCols.Printing_Preferences,
-            Metrc_Integration: remoteCols.Metrc_Integration,
-            "Auto_Delete_Zero-Quantity_Products": remoteCols["Auto_Delete_Zero-Quantity_Products"],
-          }));
+          const b = JSON.stringify(
+            norm({
+              id: targetId,
+              store_name: mergedFull.store_name || "",
+              Store_Information: remoteCols.Store_Information,
+              Tax_Configuration: remoteCols.Tax_Configuration,
+              "Sales_&_Transaction_Settings":
+                remoteCols["Sales_&_Transaction_Settings"],
+              Printing_Preferences: remoteCols.Printing_Preferences,
+              Metrc_Integration: remoteCols.Metrc_Integration,
+              "Auto_Delete_Zero-Quantity_Products":
+                remoteCols["Auto_Delete_Zero-Quantity_Products"],
+            }),
+          );
           if (a === b) {
             const responseSettings = { ...mergedFull };
-            if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_user_key")) responseSettings.metrc_user_key = responseSettings.metrc_user_key ? "•••��••••" : "";
-            if (Object.prototype.hasOwnProperty.call(responseSettings, "metrc_vendor_key")) responseSettings.metrc_vendor_key = responseSettings.metrc_vendor_key ? "��•••••••" : "";
-            return res.json({ success:true, settings: responseSettings, store_id: targetId, store_name: responseSettings.store_name || "" });
+            if (
+              Object.prototype.hasOwnProperty.call(
+                responseSettings,
+                "metrc_user_key",
+              )
+            )
+              responseSettings.metrc_user_key = responseSettings.metrc_user_key
+                ? "•••��••••"
+                : "";
+            if (
+              Object.prototype.hasOwnProperty.call(
+                responseSettings,
+                "metrc_vendor_key",
+              )
+            )
+              responseSettings.metrc_vendor_key =
+                responseSettings.metrc_vendor_key ? "��•••••••" : "";
+            return res.json({
+              success: true,
+              settings: responseSettings,
+              store_id: targetId,
+              store_name: responseSettings.store_name || "",
+            });
           }
         }
       }
-    } catch(_){ }
+    } catch (_) {}
 
     let r = await supaFetch("pos_settings", {
       method: "POST",
@@ -1501,27 +1652,97 @@ app.post("/api/settings/pos", async (req, res) => {
         const arr = await ver.json();
         const vr = Array.isArray(arr) && arr[0] ? arr[0] : null;
         if (vr) {
-          const pickR = (src, keys)=> keys.reduce((o,k)=>{ if (src && Object.prototype.hasOwnProperty.call(src,k)) o[k]=src[k]; return o; },{});
+          const pickR = (src, keys) =>
+            keys.reduce((o, k) => {
+              if (src && Object.prototype.hasOwnProperty.call(src, k))
+                o[k] = src[k];
+              return o;
+            }, {});
           const remoteCols = {
-            Store_Information: pickR(vr["Store_Information"]||{}, ["store_name","license_number","store_address","store_phone","store_email","business_hours"]),
-            Tax_Configuration: pickR(vr["Tax_Configuration"]||{}, ["sales_tax","excise_tax","cannabis_tax","tax_inclusive"]),
-            "Sales_&_Transaction_Settings": pickR(vr["Sales_&_Transaction_Settings"]||{}, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
-            Printing_Preferences: pickR(vr["Printing_Preferences"]||{}, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels","receipt_footer"]),
-            Metrc_Integration: pickR(vr["Metrc_Integration"]||{}, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
-            "Auto_Delete_Zero-Quantity_Products": pickR(vr["Auto_Delete_Zero-Quantity_Products"]||{}, ["auto_delete_zero_quantity","auto_delete_zero_days"]),
+            Store_Information: pickR(vr["Store_Information"] || {}, [
+              "store_name",
+              "license_number",
+              "store_address",
+              "store_phone",
+              "store_email",
+              "business_hours",
+            ]),
+            Tax_Configuration: pickR(vr["Tax_Configuration"] || {}, [
+              "sales_tax",
+              "excise_tax",
+              "cannabis_tax",
+              "tax_inclusive",
+            ]),
+            "Sales_&_Transaction_Settings": pickR(
+              vr["Sales_&_Transaction_Settings"] || {},
+              [
+                "require_customer",
+                "age_verification",
+                "limit_enforcement",
+                "accept_cash",
+                "accept_debit",
+                "accept_check",
+                "round_to_nearest",
+                "minimum_price_enabled",
+                "minimum_price_amount",
+                "minimum_price_categories",
+                "inventory_view_mode",
+                "expandable_cart",
+                "weight_threshold",
+              ],
+            ),
+            Printing_Preferences: pickR(vr["Printing_Preferences"] || {}, [
+              "receipt_autoprint",
+              "receipt_categories_autoprint",
+              "receipt_show_tax_breakdown",
+              "receipt_show_metrc",
+              "receipt_show_loyalty",
+              "receipt_show_qr_code",
+              "default_receipt_printer",
+              "receipt_paper_size",
+              "exit_label_categories",
+              "receipt_template",
+              "print_labels",
+              "receipt_footer",
+            ]),
+            Metrc_Integration: pickR(vr["Metrc_Integration"] || {}, [
+              "metrc_enabled",
+              "metrc_user_key",
+              "metrc_vendor_key",
+              "metrc_facility",
+              "metrc_auto_push_sales",
+            ]),
+            "Auto_Delete_Zero-Quantity_Products": pickR(
+              vr["Auto_Delete_Zero-Quantity_Products"] || {},
+              ["auto_delete_zero_quantity", "auto_delete_zero_days"],
+            ),
           };
-          const norm = (v)=>{ if (Array.isArray(v)) return v.slice().sort(); if (v && typeof v === 'object'){ const o={}; Object.keys(v).sort().forEach(k=> o[k]=norm(v[k])); return o; } return v; };
+          const norm = (v) => {
+            if (Array.isArray(v)) return v.slice().sort();
+            if (v && typeof v === "object") {
+              const o = {};
+              Object.keys(v)
+                .sort()
+                .forEach((k) => (o[k] = norm(v[k])));
+              return o;
+            }
+            return v;
+          };
           const a = JSON.stringify(norm(payloadPrimary[0]));
-          const b = JSON.stringify(norm({
-            id: targetId,
-            store_name: mergedFull.store_name || "",
-            Store_Information: remoteCols.Store_Information,
-            Tax_Configuration: remoteCols.Tax_Configuration,
-            "Sales_&_Transaction_Settings": remoteCols["Sales_&_Transaction_Settings"],
-            Printing_Preferences: remoteCols.Printing_Preferences,
-            Metrc_Integration: remoteCols.Metrc_Integration,
-            "Auto_Delete_Zero-Quantity_Products": remoteCols["Auto_Delete_Zero-Quantity_Products"],
-          }));
+          const b = JSON.stringify(
+            norm({
+              id: targetId,
+              store_name: mergedFull.store_name || "",
+              Store_Information: remoteCols.Store_Information,
+              Tax_Configuration: remoteCols.Tax_Configuration,
+              "Sales_&_Transaction_Settings":
+                remoteCols["Sales_&_Transaction_Settings"],
+              Printing_Preferences: remoteCols.Printing_Preferences,
+              Metrc_Integration: remoteCols.Metrc_Integration,
+              "Auto_Delete_Zero-Quantity_Products":
+                remoteCols["Auto_Delete_Zero-Quantity_Products"],
+            }),
+          );
           if (a !== b) {
             const repair = await supaFetch(
               `pos_settings?id=eq.${encodeURIComponent(targetId)}`,
@@ -1539,25 +1760,90 @@ app.post("/api/settings/pos", async (req, res) => {
                 const vr2 = Array.isArray(arr2) && arr2[0] ? arr2[0] : null;
                 if (vr2) {
                   const remoteCols2 = {
-                    Store_Information: pickR(vr2["Store_Information"]||{}, ["store_name","license_number","store_address","store_phone","store_email","business_hours"]),
-                    Tax_Configuration: pickR(vr2["Tax_Configuration"]||{}, ["sales_tax","excise_tax","cannabis_tax","tax_inclusive"]),
-                    "Sales_&_Transaction_Settings": pickR(vr2["Sales_&_Transaction_Settings"]||{}, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
-                    Printing_Preferences: pickR(vr2["Printing_Preferences"]||{}, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels","receipt_footer"]),
-                    Metrc_Integration: pickR(vr2["Metrc_Integration"]||{}, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
-                    "Auto_Delete_Zero-Quantity_Products": pickR(vr2["Auto_Delete_Zero-Quantity_Products"]||{}, ["auto_delete_zero_quantity","auto_delete_zero_days"]),
+                    Store_Information: pickR(vr2["Store_Information"] || {}, [
+                      "store_name",
+                      "license_number",
+                      "store_address",
+                      "store_phone",
+                      "store_email",
+                      "business_hours",
+                    ]),
+                    Tax_Configuration: pickR(vr2["Tax_Configuration"] || {}, [
+                      "sales_tax",
+                      "excise_tax",
+                      "cannabis_tax",
+                      "tax_inclusive",
+                    ]),
+                    "Sales_&_Transaction_Settings": pickR(
+                      vr2["Sales_&_Transaction_Settings"] || {},
+                      [
+                        "require_customer",
+                        "age_verification",
+                        "limit_enforcement",
+                        "accept_cash",
+                        "accept_debit",
+                        "accept_check",
+                        "round_to_nearest",
+                        "minimum_price_enabled",
+                        "minimum_price_amount",
+                        "minimum_price_categories",
+                        "inventory_view_mode",
+                        "expandable_cart",
+                        "weight_threshold",
+                      ],
+                    ),
+                    Printing_Preferences: pickR(
+                      vr2["Printing_Preferences"] || {},
+                      [
+                        "receipt_autoprint",
+                        "receipt_categories_autoprint",
+                        "receipt_show_tax_breakdown",
+                        "receipt_show_metrc",
+                        "receipt_show_loyalty",
+                        "receipt_show_qr_code",
+                        "default_receipt_printer",
+                        "receipt_paper_size",
+                        "exit_label_categories",
+                        "receipt_template",
+                        "print_labels",
+                        "receipt_footer",
+                      ],
+                    ),
+                    Metrc_Integration: pickR(vr2["Metrc_Integration"] || {}, [
+                      "metrc_enabled",
+                      "metrc_user_key",
+                      "metrc_vendor_key",
+                      "metrc_facility",
+                      "metrc_auto_push_sales",
+                    ]),
+                    "Auto_Delete_Zero-Quantity_Products": pickR(
+                      vr2["Auto_Delete_Zero-Quantity_Products"] || {},
+                      ["auto_delete_zero_quantity", "auto_delete_zero_days"],
+                    ),
                   };
-                  const b2 = JSON.stringify(norm({
-                    id: targetId,
-                    store_name: mergedFull.store_name || "",
-                    Store_Information: remoteCols2.Store_Information,
-                    Tax_Configuration: remoteCols2.Tax_Configuration,
-                    "Sales_&_Transaction_Settings": remoteCols2["Sales_&_Transaction_Settings"],
-                    Printing_Preferences: remoteCols2.Printing_Preferences,
-                    Metrc_Integration: remoteCols2.Metrc_Integration,
-                    "Auto_Delete_Zero-Quantity_Products": remoteCols2["Auto_Delete_Zero-Quantity_Products"],
-                  }));
+                  const b2 = JSON.stringify(
+                    norm({
+                      id: targetId,
+                      store_name: mergedFull.store_name || "",
+                      Store_Information: remoteCols2.Store_Information,
+                      Tax_Configuration: remoteCols2.Tax_Configuration,
+                      "Sales_&_Transaction_Settings":
+                        remoteCols2["Sales_&_Transaction_Settings"],
+                      Printing_Preferences: remoteCols2.Printing_Preferences,
+                      Metrc_Integration: remoteCols2.Metrc_Integration,
+                      "Auto_Delete_Zero-Quantity_Products":
+                        remoteCols2["Auto_Delete_Zero-Quantity_Products"],
+                    }),
+                  );
                   if (a !== b2) {
-                    return res.status(502).json({ success:false, message: "verification_mismatch", expected: payloadPrimary[0], actual: remoteCols2 });
+                    return res
+                      .status(502)
+                      .json({
+                        success: false,
+                        message: "verification_mismatch",
+                        expected: payloadPrimary[0],
+                        actual: remoteCols2,
+                      });
                   }
                 }
               }
@@ -1565,7 +1851,7 @@ app.post("/api/settings/pos", async (req, res) => {
           }
         }
       }
-    } catch(_){ }
+    } catch (_) {}
 
     // Also write to legacy id if applicable
     if (storeId === "default" || storeId === "defaultstore") {
