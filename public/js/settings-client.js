@@ -1131,6 +1131,14 @@
             JSON.stringify(compat),
           );
         } catch (_) {}
+        // If offline, enqueue to outbox and return local success
+        try {
+          if (typeof navigator !== 'undefined' && navigator && navigator.onLine === false){
+            try { localStorage.setItem(outboxKey(sid), JSON.stringify(merged)); } catch(_){ }
+            try { saveSnapshot(sid, merged); } catch(_){ }
+            return { success: true, settings: merged, offline: true };
+          }
+        } catch(_){ }
         // First, try direct Supabase upsert (authoritative). If it succeeds, update caches and return success immediately.
         let last = null;
         try {
