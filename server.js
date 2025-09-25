@@ -77,12 +77,19 @@ async function supaFetch(
     Prefer: "resolution=merge-duplicates,return=representation",
     ...extraHeaders,
   };
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : null,
-  });
-  return res;
+  const controller = new AbortController();
+  const to = setTimeout(() => controller.abort(), 10000);
+  try {
+    const res = await fetch(url, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+      signal: controller.signal,
+    });
+    return res;
+  } finally {
+    clearTimeout(to);
+  }
 }
 
 // In-memory dev auth store with disk persistence
