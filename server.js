@@ -1077,6 +1077,8 @@ app.get("/api/settings/pos", async (req, res) => {
 
 // Settings: POS update
 app.post("/api/settings/pos", async (req, res) => {
+  res.setHeader("Vary", "X-Store-ID, X-Store-Name");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   const incoming = req.body?.settings || req.body || {};
   try {
     // Determine store scope
