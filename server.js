@@ -1516,7 +1516,7 @@ app.post("/api/settings/pos", async (req, res) => {
                     "Sales_&_Transaction_Settings": pickR(vr2["Sales_&_Transaction_Settings"]||{}, ["require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","minimum_price_amount","minimum_price_categories","inventory_view_mode","expandable_cart","weight_threshold"]),
                     Printing_Preferences: pickR(vr2["Printing_Preferences"]||{}, ["receipt_autoprint","receipt_categories_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","default_receipt_printer","receipt_paper_size","exit_label_categories","receipt_template","print_labels","receipt_footer"]),
                     Metrc_Integration: pickR(vr2["Metrc_Integration"]||{}, ["metrc_enabled","metrc_user_key","metrc_vendor_key","metrc_facility","metrc_auto_push_sales"]),
-                    "Auto_Delete_Zero-Quantity_Products": pickR(vr2["Auto_Delete_Zero-Quantity_Products"]||{}, ["auto_delete_zero_quantity","auto_delete_days"]),
+                    "Auto_Delete_Zero-Quantity_Products": pickR(vr2["Auto_Delete_Zero-Quantity_Products"]||{}, ["auto_delete_zero_quantity","auto_delete_zero_days"]),
                   };
                   const b2 = JSON.stringify(norm({
                     id: targetId,
