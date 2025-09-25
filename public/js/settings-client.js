@@ -274,7 +274,13 @@
       );
     const fetchHeaders = Object.assign({}, headers);
     if (params && params.nocache) fetchHeaders["Cache-Control"] = "no-cache";
-    const res = await fetch(url.toString(), { headers: fetchHeaders });
+    const controller = new AbortController();
+    const to = setTimeout(()=>controller.abort(), 10000);
+    try {
+      const res = await fetch(url.toString(), { headers: fetchHeaders, signal: controller.signal });
+      if (!res.ok) throw new Error(`GET ${path} failed ${res.status}`);
+      return res.json();
+    } finally { clearTimeout(to); }
     if (!res.ok) throw new Error(`GET ${path} failed ${res.status}`);
     return res.json();
   }
@@ -335,13 +341,18 @@
       );
     const fetchHeaders = Object.assign({}, headers);
     if (params && params.nocache) fetchHeaders["Cache-Control"] = "no-cache";
-    const res = await fetch(url.toString(), {
-      method: "POST",
-      headers: fetchHeaders,
-      body: JSON.stringify(body || {}),
-    });
-    if (!res.ok) throw new Error(`POST ${path} failed ${res.status}`);
-    return res.json();
+    const controller = new AbortController();
+    const to = setTimeout(()=>controller.abort(), 10000);
+    try {
+      const res = await fetch(url.toString(), {
+        method: "POST",
+        headers: fetchHeaders,
+        body: JSON.stringify(body || {}),
+        signal: controller.signal,
+      });
+      if (!res.ok) throw new Error(`POST ${path} failed ${res.status}`);
+      return res.json();
+    } finally { clearTimeout(to); }
   }
 
   async function supaReq(path, init) {
@@ -1045,12 +1056,12 @@
         const sid = currentStoreId();
         try { await flushSettingsOutbox(sid); } catch(_){ }
         let base = this.loadLocal(sid) || {};
+        let serverCurrent = null;
         // Prefetch current from API to avoid overwriting other fields
         try {
           const resp = await httpGet("/api/settings/pos", { nocache: true });
-          const cur =
-            resp && (resp.settings || resp) ? resp.settings || resp : {};
-          if (cur && typeof cur === "object") base = { ...base, ...cur };
+          const cur = resp && (resp.settings || resp) ? resp.settings || resp : {};
+          if (cur && typeof cur === "object"){ serverCurrent = cur; base = { ...base, ...cur }; }
         } catch (_) {}
         // Preserve existing METRC keys if patch contains masked values
         function isMasked(v) {
@@ -1119,6 +1130,20 @@
             patched.receipt_template = "standard";
         }
         const merged = { ...DEFAULTS, ...base, ...patched };
+        // Early-out if no changes vs server to avoid redundant writes
+        try {
+          if (serverCurrent){
+            const want = deepNormalize(extractSections(merged));
+            const have = deepNormalize(extractSections(serverCurrent));
+            if (JSON.stringify(want) === JSON.stringify(have)){
+              this.saveLocal(sid, merged);
+              try { const compat0 = Object.assign({}, merged, { lastUpdated: Date.now() }); localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat0)); localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat0)); } catch(_){ }
+              try { writeUiCachesFromSettings(merged); } catch(_){ }
+              try { window.dispatchEvent(new CustomEvent("settings:updated", { detail: { settings: merged, storeId: sid } })); } catch(_){ }
+              return { success: true, settings: merged, no_op: true };
+            }
+          }
+        } catch(_){ }
         this.saveLocal(sid, merged);
         try {
           const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
@@ -1771,6 +1796,8 @@
         try { flushSettingsOutbox(currentStoreId()); } catch(_){ }
       }
     });
+    window.addEventListener('pagehide', function(){ try { flushSettingsOutbox(currentStoreId()); } catch(_){ } });
+    window.addEventListener('beforeunload', function(){ try { flushSettingsOutbox(currentStoreId()); } catch(_){ } });
   } catch(_){}
 
   // Track server updated_at to avoid stale cache overlays
