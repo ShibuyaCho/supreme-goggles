@@ -1065,43 +1065,102 @@ function settingsManager() {
         async _persistSettings(seq) {
             if (!this.hydrated) return;
             const isLatest = () => seq === this._saveSeq;
+            const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
+            const patch = this._computePatch(this.settings, prev);
+            if (Object.keys(patch).length === 0) return;
+            const before = JSON.parse(JSON.stringify(this.settings));
             try {
-                const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
-                const patch = this._computePatch(this.settings, prev);
-                if (Object.keys(patch).length === 0) return;
                 const res = await (window.SettingsClient ? SettingsClient.save(patch) : Promise.resolve({ success:false }));
                 if (res && res.success && res.settings) {
                     this.settings = Object.assign({}, this.settings, res.settings);
                     this.saveSettingsToStorage();
-                    if (isLatest()) this._lastPersistedJSON = JSON.stringify(this.settings);
                 } else if (res && res.success === false) {
-                    const msg = (res.message || res.error) || 'Autosave failed';
-                    if (isLatest()) this.showToast(msg, 'error');
+                    // Verify if server actually has the changes; suppress false error if it does
+                    try {
+                        const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                        const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                        const keys = Object.keys(patch);
+                        const persisted = keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(before[k]));
+                        if (!persisted && isLatest()) this.showToast((res.message||res.error)||'Autosave failed', 'error');
+                    } catch(_) {
+                        if (isLatest()) this.showToast((res.message||res.error)||'Autosave failed', 'error');
+                    }
                 }
-                if (isLatest()) this._lastPersistedJSON = JSON.stringify(this.settings);
             } catch (e) {
-                const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
-                if (isLatest()) this.showToast(msg, 'error');
+                // Network/soft failure: verify DB before toasting
+                try {
+                    const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                    const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                    const keys = Object.keys(patch);
+                    const persisted = keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(before[k]));
+                    if (!persisted && isLatest()) {
+                        const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
+                        this.showToast(msg, 'error');
+                    }
+                } catch(_) {
+                    if (isLatest()) {
+                        const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
+                        this.showToast(msg, 'error');
+                    }
+                }
+            } finally {
+                if (isLatest()) this._lastPersistedJSON = JSON.stringify(this.settings);
             }
         },
 
         async saveSettings() {
+            // Cancel any pending autosave and advance sequence so older requests won't toast
+            try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
+            this._saveSeq++;
+            const snapshot = JSON.parse(JSON.stringify(this.settings));
             try {
-                // Cancel any pending autosave and advance sequence so older requests won't toast
-                try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
-                this._saveSeq++;
                 const res = await (window.SettingsClient ? SettingsClient.save(this.settings) : Promise.resolve({ success:false }));
                 if (res && res.success) {
                     this._lastPersistedJSON = JSON.stringify(this.settings);
                     this.showToast('Settings saved successfully!', 'success');
                 } else {
-                    const msg = (res && (res.message || res.error)) ? (res.message || res.error) : 'Error saving settings';
-                    this.showToast(msg, 'error');
+                    // Verify server before showing failure toast
+                    try {
+                        const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                        const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                        const keys = Object.keys(snapshot||{});
+                        const persisted = keys.some(k => JSON.stringify(srv[k]) === JSON.stringify(snapshot[k]));
+                        if (persisted) {
+                            this._lastPersistedJSON = JSON.stringify(srv);
+                            this.settings = { ...this.settings, ...srv };
+                            this.saveSettingsToStorage();
+                            this.showToast('Settings saved successfully!', 'success');
+                        } else {
+                            const msg = (res && (res.message || res.error)) ? (res.message || res.error) : 'Error saving settings';
+                            this.showToast(msg, 'error');
+                        }
+                    } catch(_) {
+                        const msg = (res && (res.message || res.error)) ? (res.message || res.error) : 'Error saving settings';
+                        this.showToast(msg, 'error');
+                    }
                 }
             } catch (error) {
-                const msg = (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
-                console.error('Error saving settings:', error);
-                this.showToast(msg, 'error');
+                // Network/soft error: verify if DB has our snapshot before toasting
+                try {
+                    const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                    const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                    const keys = Object.keys(snapshot||{});
+                    const persisted = keys.some(k => JSON.stringify(srv[k]) === JSON.stringify(snapshot[k]));
+                    if (persisted) {
+                        this._lastPersistedJSON = JSON.stringify(srv);
+                        this.settings = { ...this.settings, ...srv };
+                        this.saveSettingsToStorage();
+                        this.showToast('Settings saved successfully!', 'success');
+                    } else {
+                        const msg = (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
+                        console.error('Error saving settings:', error);
+                        this.showToast(msg, 'error');
+                    }
+                } catch(_) {
+                    const msg = (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
+                    console.error('Error saving settings:', error);
+                    this.showToast(msg, 'error');
+                }
             } finally {
                 this.saveSettingsToStorage();
             }
