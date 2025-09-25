@@ -1050,7 +1050,7 @@ app.get("/api/settings/pos", async (req, res) => {
       const s = { ...defaults, ...composed };
       try {
         if (Object.prototype.hasOwnProperty.call(s, "metrc_user_key")) {
-          s.metrc_user_key = s.metrc_user_key ? "��•••••••" : "";
+          s.metrc_user_key = s.metrc_user_key ? "••••••••" : "";
         }
         if (Object.prototype.hasOwnProperty.call(s, "metrc_vendor_key")) {
           s.metrc_vendor_key = s.metrc_vendor_key ? "••••••••" : "";
