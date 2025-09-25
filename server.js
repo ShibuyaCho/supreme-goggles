@@ -1004,6 +1004,7 @@ app.get("/api/settings/pos", async (req, res) => {
     if (!settingsRow && storeId === "default") {
       const r2 = await supaFetch(`pos_settings?id=eq.defaultstore&select=*`, {
         method: "GET",
+        headers: { "Cache-Control": "no-cache" },
       });
       if (r2.ok) {
         const arr2 = await r2.json();
