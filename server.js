@@ -994,7 +994,7 @@ app.get("/api/settings/pos", async (req, res) => {
       storeName
         ? `pos_settings?or=(store_name.eq.${encodeURIComponent(storeName)},id.eq.${encodeURIComponent(storeId)})&select=*`
         : `pos_settings?id=eq.${encodeURIComponent(storeId)}&select=*`,
-      { method: "GET" },
+      { method: "GET", headers: { "Cache-Control": "no-cache" } },
     );
     if (r.ok) {
       const arr = await r.json();
