@@ -623,11 +623,29 @@
     };
   }
   function deepNormalize(value) {
-    const norm = (v) => {
+    const numericKeys = new Set([
+      "sales_tax","excise_tax","cannabis_tax","minimum_price_amount","auto_delete_zero_days","weight_threshold"
+    ]);
+    const booleanKeys = new Set([
+      "tax_inclusive","receipt_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","expandable_cart","metrc_enabled","metrc_auto_push_sales","auto_delete_zero_quantity","dark_mode","high_contrast","reduce_motion"
+    ]);
+    const norm = (v, keyCtx) => {
       if (v == null) return v;
+      // Coerce by key context when scalar
+      if (keyCtx && (typeof v === "string" || typeof v === "number" || typeof v === "boolean")) {
+        if (numericKeys.has(keyCtx)) {
+          const n = Number(v);
+          if (Number.isFinite(n)) return n;
+        }
+        if (booleanKeys.has(keyCtx)) {
+          if (typeof v === "boolean") return v;
+          const s = String(v).toLowerCase();
+          if (s === "true" || s === "1") return true;
+          if (s === "false" || s === "0") return false;
+        }
+      }
       if (Array.isArray(v)) {
-        const arr = v.map(norm);
-        // Sort arrays of primitives; for objects sort by JSON string
+        const arr = v.map((x) => norm(x));
         if (arr.every((x) => x == null || typeof x !== "object")) {
           return arr.slice().sort((a, b) => {
             const sa = typeof a === "string" ? a : String(a);
@@ -647,10 +665,10 @@
             try {
               out[k] = canonicalizeId("", v[k]);
             } catch (_) {
-              out[k] = norm(v[k]);
+              out[k] = norm(v[k], k);
             }
           } else {
-            out[k] = norm(v[k]);
+            out[k] = norm(v[k], k);
           }
         }
         return out;
