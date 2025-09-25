@@ -354,6 +354,7 @@
         Prefer: "resolution=merge-duplicates,return=representation",
         "X-Store-ID": sid,
       },
+      (function(){ try{ const sname = currentStoreName(); const cname = canonicalizeId('', sname || sid); return { "X-Store-Name": cname || (sname || '') }; }catch(_){ return {}; } })(),
       (init && init.headers) || {},
     );
     const controller = new AbortController();
