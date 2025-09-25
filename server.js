@@ -1323,10 +1323,11 @@ app.post("/api/settings/pos", async (req, res) => {
         }
       }
     } catch (_) {}
+    const snameClean = (mergedFull.store_name || "").trim();
     const payloadPrimary = [
       {
         id: targetId,
-        store_name: mergedFull.store_name || "",
+        store_name: snameClean !== "" ? snameClean : null,
         updated_at: new Date().toISOString(),
         Store_Information: sectionPick(mergedFull, [
           "store_name",
