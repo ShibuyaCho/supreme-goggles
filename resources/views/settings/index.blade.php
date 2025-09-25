@@ -1104,8 +1104,18 @@ function settingsManager() {
                 try {
                     const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
                     const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
-                    const keys = Object.keys(patch);
-                    const persisted = keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(before[k]));
+                    const persistable = new Set([
+                        'store_name','license_number','store_address','store_phone','store_email','business_hours',
+                        'sales_tax','excise_tax','cannabis_tax','tax_inclusive',
+                        'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+                        'minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold',
+                        'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+                        'default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer',
+                        'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales',
+                        'auto_delete_zero_quantity','auto_delete_zero_days'
+                    ]);
+                    const keys = Object.keys(patch).filter(k => persistable.has(k));
+                    const persisted = keys.length === 0 || keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(before[k]));
                     if (!persisted && isLatest()) {
                         const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
                         this.showToast(msg, 'error');
