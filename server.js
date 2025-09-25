@@ -57,26 +57,29 @@ const SUPABASE_URL = process.env.SUPABASE_URL || "";
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || "";
 async function supaFetch(
   path,
-  { method = "GET", body = null, query = null } = {},
+  { method = "GET", body = null, query = null, headers: extraHeaders = {} } = {},
 ) {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
     return {
       ok: false,
       status: 503,
       json: async () => ({ error: "Supabase not configured" }),
+      text: async () => "Supabase not configured",
     };
   }
   const url = new URL(`${SUPABASE_URL}/rest/v1/${path}`);
   if (query && typeof query === "object")
     Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
+  const headers = {
+    apikey: SUPABASE_ANON_KEY,
+    Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    "Content-Type": "application/json",
+    Prefer: "resolution=merge-duplicates,return=representation",
+    ...extraHeaders,
+  };
   const res = await fetch(url, {
     method,
-    headers: {
-      apikey: SUPABASE_ANON_KEY,
-      Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
-      "Content-Type": "application/json",
-      Prefer: "resolution=merge-duplicates,return=representation",
-    },
+    headers,
     body: body ? JSON.stringify(body) : null,
   });
   return res;
