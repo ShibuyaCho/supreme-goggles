@@ -1152,8 +1152,11 @@ function settingsManager() {
                 try {
                     const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
                     const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                    const numericKeys = new Set(['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold']);
+                    const booleanKeys = new Set(['tax_inclusive','receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','expandable_cart','metrc_enabled','metrc_auto_push_sales','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion']);
+                    const coerce = (k,v)=>{ if (numericKeys.has(k)) { const n=Number(v); return Number.isFinite(n)?n:v; } if (booleanKeys.has(k)) { if (typeof v==='boolean') return v; const s=String(v).toLowerCase(); if (s==='true'||s==='1') return true; if (s==='false'||s==='0') return false; } return v; };
                     const keys = changedKeys;
-                    const persisted = keys.length>0 ? keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(snapshot[k])) : false;
+                    const persisted = keys.length>0 ? keys.every(k => JSON.stringify(coerce(k,srv[k])) === JSON.stringify(coerce(k,snapshot[k]))) : false;
                     if (persisted) {
                         this._lastPersistedJSON = JSON.stringify(srv);
                         this.settings = { ...this.settings, ...srv };
