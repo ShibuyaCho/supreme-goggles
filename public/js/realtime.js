@@ -15,11 +15,14 @@
         realtime: { params: { eventsPerSecond: 5 } },
       }));
 
-    const getStoreFilter = () => {
+    const getStoreFilter = (table) => {
       try {
         const raw = localStorage.getItem("pos_store");
         const store = raw ? JSON.parse(raw) : null;
-        if (store && store.id) return `store_id=eq.${String(store.id)}`;
+        if (!store || !store.id) return null;
+        if (table === "customers" || table === "loyalty_members") return null;
+        if (table === "pos_settings") return `id=eq.${String(store.id)}`;
+        return `store_id=eq.${String(store.id)}`;
       } catch (_) {}
       return null;
     };
@@ -53,7 +56,7 @@
     };
 
     const subscribe = (table) => {
-      const filter = getStoreFilter();
+      const filter = getStoreFilter(table);
       try {
         // Clean any existing channel
         const key = `realtime:${table}`;
@@ -71,10 +74,7 @@
               event: "*",
               schema: "public",
               table,
-              filter:
-                table === "customers" || table === "loyalty_members"
-                  ? undefined
-                  : filter || undefined,
+              filter: filter || undefined,
             },
             (payload) => {
               const info = {
