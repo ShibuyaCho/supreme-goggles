@@ -817,7 +817,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'X-Store-ID' => $storeId,
             ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $targetId,
-                'store_name' => $merged['store_name'] ?? null,
+                'store_name' => (isset($merged['store_name']) && trim((string)$merged['store_name']) !== '') ? $merged['store_name'] : null,
                 'Store_Information' => $cols['Store_Information'],
                 'Tax_Configuration' => $cols['Tax_Configuration'],
                 'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
@@ -878,7 +878,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         'X-Store-ID' => $storeId,
                     ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $legacy,
-                        'store_name' => $merged['store_name'] ?? null,
+                        'store_name' => (isset($merged['store_name']) && trim((string)$merged['store_name']) !== '') ? $merged['store_name'] : null,
                         'Store_Information' => $cols['Store_Information'],
                         'Tax_Configuration' => $cols['Tax_Configuration'],
                         'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
