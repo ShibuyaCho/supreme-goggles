@@ -333,9 +333,11 @@
       Object.entries(params).forEach(([k, v]) =>
         url.searchParams.set(k, String(v)),
       );
+    const fetchHeaders = Object.assign({}, headers);
+    if (params && params.nocache) fetchHeaders["Cache-Control"] = "no-cache";
     const res = await fetch(url.toString(), {
       method: "POST",
-      headers,
+      headers: fetchHeaders,
       body: JSON.stringify(body || {}),
     });
     if (!res.ok) throw new Error(`POST ${path} failed ${res.status}`);
