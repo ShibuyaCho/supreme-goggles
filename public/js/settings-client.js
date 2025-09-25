@@ -1033,471 +1033,475 @@
     },
 
     async save(patch) {
-      const sid = currentStoreId();
-      try { await flushSettingsOutbox(sid); } catch(_){ }
-      let base = this.loadLocal(sid) || {};
-      // Prefetch current from API to avoid overwriting other fields
+      // Serialize concurrent saves to prevent race conditions
+      while (this._saving) { await new Promise(r=>setTimeout(r,50)); }
+      this._saving = true;
       try {
-        const resp = await httpGet("/api/settings/pos", { nocache: true });
-        const cur =
-          resp && (resp.settings || resp) ? resp.settings || resp : {};
-        if (cur && typeof cur === "object") base = { ...base, ...cur };
-      } catch (_) {}
-      // Preserve existing METRC keys if patch contains masked values
-      function isMasked(v) {
-        return (
-          typeof v === "string" &&
-          (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
-        );
-      }
-      // Preserve explicit clears: do not strip null/empty strings from patch
-      const _pin = { ...(patch || {}) };
-      const patched = { ..._pin };
-      if (isMasked(patched.metrc_user_key))
-        patched.metrc_user_key = base.metrc_user_key || "";
-      if (isMasked(patched.metrc_vendor_key))
-        patched.metrc_vendor_key = base.metrc_vendor_key || "";
-      // Normalize arrays possibly sent as JSON strings
-      [
-        "exit_label_categories",
-        "receipt_categories_autoprint",
-        "minimum_price_categories",
-        "business_hours",
-      ].forEach((k) => {
-        const v = patched[k];
-        if (typeof v === "string") {
-          try {
-            const p = JSON.parse(v);
-            if (Array.isArray(p)) patched[k] = p;
-          } catch (_) {}
+        const sid = currentStoreId();
+        try { await flushSettingsOutbox(sid); } catch(_){ }
+        let base = this.loadLocal(sid) || {};
+        // Prefetch current from API to avoid overwriting other fields
+        try {
+          const resp = await httpGet("/api/settings/pos", { nocache: true });
+          const cur =
+            resp && (resp.settings || resp) ? resp.settings || resp : {};
+          if (cur && typeof cur === "object") base = { ...base, ...cur };
+        } catch (_) {}
+        // Preserve existing METRC keys if patch contains masked values
+        function isMasked(v) {
+          return (
+            typeof v === "string" &&
+            (v.trim() === "••••••••" || /^[*•]+$/.test(v.trim()))
+          );
         }
-      });
-      // Clamp numerics to sane ranges
-      const clamp = (n, lo, hi) => {
-        const x = Number(n);
-        return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : n;
-      };
-      if (patched.sales_tax != null)
-        patched.sales_tax = clamp(patched.sales_tax, 0, 100);
-      if (patched.excise_tax != null)
-        patched.excise_tax = clamp(patched.excise_tax, 0, 100);
-      if (patched.cannabis_tax != null)
-        patched.cannabis_tax = clamp(patched.cannabis_tax, 0, 100);
-      if (patched.minimum_price_amount != null)
-        patched.minimum_price_amount = Math.max(
-          0,
-          Number(patched.minimum_price_amount) || 0,
-        );
-      if (patched.weight_threshold != null)
-        patched.weight_threshold = Math.max(
-          0,
-          Number(patched.weight_threshold) || 0,
-        );
-      if (patched.auto_delete_zero_days != null)
-        patched.auto_delete_zero_days = clamp(
-          patched.auto_delete_zero_days,
-          1,
-          30,
-        );
-      // Validate receipt_template if present
-      if (patched.receipt_template != null) {
-        const t = String(patched.receipt_template || "standard");
-        if (!["standard", "detailed", "minimal"].includes(t))
-          patched.receipt_template = "standard";
-      }
-      const merged = { ...DEFAULTS, ...base, ...patched };
-      this.saveLocal(sid, merged);
-      try {
-        const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
-        localStorage.setItem(
-          `cannabisPOS-storeSettings_${sid}`,
-          JSON.stringify(compat),
-        );
-        localStorage.setItem(
-          "cannabisPOS-storeSettings",
-          JSON.stringify(compat),
-        );
-      } catch (_) {}
-      // First, try direct Supabase upsert (authoritative). If it succeeds, update caches and return success immediately.
-      let last = null;
-      try {
-        const sidNow = currentStoreId();
-        const nowIso = new Date().toISOString();
-        const payload = [
-          {
-            id: sidNow,
-            store_name: merged.store_name ?? "",
-            updated_at: nowIso,
-            Store_Information: pick(merged, SEC["Store_Information"]),
-            Tax_Configuration: pick(merged, SEC["Tax_Configuration"]),
-            "Sales_&_Transaction_Settings": pick(
-              merged,
-              SEC["Sales_&_Transaction_Settings"],
-            ),
-            Printing_Preferences: pick(merged, SEC["Printing_Preferences"]),
-            Metrc_Integration: pick(merged, SEC["Metrc_Integration"]),
-            "Auto_Delete_Zero-Quantity_Products": pick(
-              merged,
-              SEC["Auto_Delete_Zero-Quantity_Products"],
-            ),
-          },
-        ];
-        let r0 = await supaReqRetry(`pos_settings?on_conflict=id`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!r0 || !r0.ok) {
-          try {
-            const txt = r0 ? await r0.text() : "";
-            last = new Error(
-              `supabase upsert failed (${r0?.status || "n/a"}): ${txt}`,
-            );
-          } catch (eTxt) {
-            last = eTxt;
+        // Preserve explicit clears: do not strip null/empty strings from patch
+        const _pin = { ...(patch || {}) };
+        const patched = { ..._pin };
+        if (isMasked(patched.metrc_user_key))
+          patched.metrc_user_key = base.metrc_user_key || "";
+        if (isMasked(patched.metrc_vendor_key))
+          patched.metrc_vendor_key = base.metrc_vendor_key || "";
+        // Normalize arrays possibly sent as JSON strings
+        [
+          "exit_label_categories",
+          "receipt_categories_autoprint",
+          "minimum_price_categories",
+          "business_hours",
+        ].forEach((k) => {
+          const v = patched[k];
+          if (typeof v === "string") {
+            try {
+              const p = JSON.parse(v);
+              if (Array.isArray(p)) patched[k] = p;
+            } catch (_) {}
           }
-          // Fallback: PATCH existing row by id (avoids on_conflict semantics)
-          try {
-            const rPatch = await supaReqRetry(
-              `pos_settings?id=eq.${encodeURIComponent(sidNow)}`,
-              {
-                method: "PATCH",
-                headers: {
-                  "Content-Type": "application/json",
-                  Prefer: "resolution=merge-duplicates,return=representation",
-                },
-                body: JSON.stringify(payload[0]),
-              },
-            );
-            if (rPatch && rPatch.ok) {
-              r0 = rPatch;
+        });
+        // Clamp numerics to sane ranges
+        const clamp = (n, lo, hi) => {
+          const x = Number(n);
+          return Number.isFinite(x) ? Math.min(hi, Math.max(lo, x)) : n;
+        };
+        if (patched.sales_tax != null)
+          patched.sales_tax = clamp(patched.sales_tax, 0, 100);
+        if (patched.excise_tax != null)
+          patched.excise_tax = clamp(patched.excise_tax, 0, 100);
+        if (patched.cannabis_tax != null)
+          patched.cannabis_tax = clamp(patched.cannabis_tax, 0, 100);
+        if (patched.minimum_price_amount != null)
+          patched.minimum_price_amount = Math.max(
+            0,
+            Number(patched.minimum_price_amount) || 0,
+          );
+        if (patched.weight_threshold != null)
+          patched.weight_threshold = Math.max(
+            0,
+            Number(patched.weight_threshold) || 0,
+          );
+        if (patched.auto_delete_zero_days != null)
+          patched.auto_delete_zero_days = clamp(
+            patched.auto_delete_zero_days,
+            1,
+            30,
+          );
+        // Validate receipt_template if present
+        if (patched.receipt_template != null) {
+          const t = String(patched.receipt_template || "standard");
+          if (!["standard", "detailed", "minimal"].includes(t))
+            patched.receipt_template = "standard";
+        }
+        const merged = { ...DEFAULTS, ...base, ...patched };
+        this.saveLocal(sid, merged);
+        try {
+          const compat = Object.assign({}, merged, { lastUpdated: Date.now() });
+          localStorage.setItem(
+            `cannabisPOS-storeSettings_${sid}`,
+            JSON.stringify(compat),
+          );
+          localStorage.setItem(
+            "cannabisPOS-storeSettings",
+            JSON.stringify(compat),
+          );
+        } catch (_) {}
+        // First, try direct Supabase upsert (authoritative). If it succeeds, update caches and return success immediately.
+        let last = null;
+        try {
+          const sidNow = currentStoreId();
+          const nowIso = new Date().toISOString();
+          const payload = [
+            {
+              id: sidNow,
+              store_name: merged.store_name ?? "",
+              updated_at: nowIso,
+              Store_Information: pick(merged, SEC["Store_Information"]),
+              Tax_Configuration: pick(merged, SEC["Tax_Configuration"]),
+              "Sales_&_Transaction_Settings": pick(
+                merged,
+                SEC["Sales_&_Transaction_Settings"],
+              ),
+              Printing_Preferences: pick(merged, SEC["Printing_Preferences"]),
+              Metrc_Integration: pick(merged, SEC["Metrc_Integration"]),
+              "Auto_Delete_Zero-Quantity_Products": pick(
+                merged,
+                SEC["Auto_Delete_Zero-Quantity_Products"],
+              ),
+            },
+          ];
+          let r0 = await supaReqRetry(`pos_settings?on_conflict=id`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          if (!r0 || !r0.ok) {
+            try {
+              const txt = r0 ? await r0.text() : "";
+              last = new Error(
+                `supabase upsert failed (${r0?.status || "n/a"}): ${txt}`,
+              );
+            } catch (eTxt) {
+              last = eTxt;
             }
-          } catch (ePatch) {
+            // Fallback: PATCH existing row by id (avoids on_conflict semantics)
+            try {
+              const rPatch = await supaReqRetry(
+                `pos_settings?id=eq.${encodeURIComponent(sidNow)}`,
+                {
+                  method: "PATCH",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Prefer: "resolution=merge-duplicates,return=representation",
+                  },
+                  body: JSON.stringify(payload[0]),
+                },
+              );
+              if (rPatch && rPatch.ok) {
+                r0 = rPatch;
+              }
+            } catch (ePatch) {
+              try {
+                await fetch("/api/activity", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    action: "settings-save-patch-failed",
+                    storeId: sidNow,
+                    message: String((ePatch && ePatch.message) || "patch failed"),
+                  }),
+                });
+              } catch (_) {}
+            }
+          }
+          if (r0 && r0.ok) {
+            try {
+              const ver0 = await supaReqRetry(
+                `pos_settings?id=eq.${encodeURIComponent(sidNow)}&select=*`,
+                { method: "GET" },
+              );
+              if (!ver0 || !ver0.ok) {
+                try {
+                  const txt = ver0 ? await ver0.text() : "";
+                  last = new Error(
+                    `supabase verify failed (${ver0?.status || "n/a"}): ${txt}`,
+                  );
+                } catch (eTxt) {
+                  last = eTxt;
+                }
+              }
+              if (ver0 && ver0.ok) {
+                const arr0 = await ver0.json();
+                const row0 = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
+                let composed0 = {};
+                try {
+                  if (row0["Store_Information"])
+                    composed0 = Object.assign(
+                      composed0,
+                      row0["Store_Information"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row0["Tax_Configuration"])
+                    composed0 = Object.assign(
+                      composed0,
+                      row0["Tax_Configuration"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row0["Sales_&_Transaction_Settings"])
+                    composed0 = Object.assign(
+                      composed0,
+                      row0["Sales_&_Transaction_Settings"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row0["Printing_Preferences"])
+                    composed0 = Object.assign(
+                      composed0,
+                      row0["Printing_Preferences"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row0["Metrc_Integration"])
+                    composed0 = Object.assign(
+                      composed0,
+                      row0["Metrc_Integration"],
+                    );
+                } catch (_) {}
+                try {
+                  if (row0["Auto_Delete_Zero-Quantity_Products"])
+                    composed0 = Object.assign(
+                      composed0,
+                      row0["Auto_Delete_Zero-Quantity_Products"],
+                    );
+                } catch (_) {}
+                if (row0.store_name) composed0.store_name = row0.store_name;
+                if (!composed0 || Object.keys(composed0).length === 0)
+                  composed0 = merged;
+                const m0 = { ...DEFAULTS, ...composed0 };
+                this.saveLocal(sidNow, m0);
+                try {
+                  const compat0 = Object.assign({}, m0, {
+                    lastUpdated: Date.now(),
+                  });
+                  localStorage.setItem(
+                    `cannabisPOS-storeSettings_${sidNow}`,
+                    JSON.stringify(compat0),
+                  );
+                  localStorage.setItem(
+                    "cannabisPOS-storeSettings",
+                    JSON.stringify(compat0),
+                  );
+                } catch (_) {}
+                try {
+                  writeCookie("cpos_store_id", sidNow);
+                } catch (_) {}
+                try {
+                  localStorage.setItem(
+                    "cannabisPOS-weightThreshold",
+                    String(m0.weight_threshold ?? 0),
+                  );
+                } catch (_) {}
+                try {
+                  writeUiCachesFromSettings(m0);
+                } catch (_) {}
+                try {
+                  window.dispatchEvent(
+                    new CustomEvent("settings:updated", {
+                      detail: { settings: m0, storeId: sidNow },
+                    }),
+                  );
+                  try {
+                    window.dispatchEvent(
+                      new CustomEvent("settings-updated", { detail: m0 }),
+                    );
+                  } catch (_) {}
+                } catch (_) {}
+                try { localStorage.removeItem(outboxKey(sidNow)); } catch(_){ }
+                return { success: true, settings: m0 };
+              }
+            } catch (e) {
+              last = e;
+            }
+          }
+          // Upsert succeeded but verification failed; treat as success with optimistic caches
+          if (r0 && r0.ok) {
+            try {
+              this.saveLocal(sidNow, merged);
+            } catch (_) {}
+            try { saveSnapshot(sidNow, merged); } catch(_){ }
+            try {
+              const compat = Object.assign({}, merged, {
+                lastUpdated: Date.now(),
+              });
+              localStorage.setItem(
+                `cannabisPOS-storeSettings_${sidNow}`,
+                JSON.stringify(compat),
+              );
+              localStorage.setItem(
+                "cannabisPOS-storeSettings",
+                JSON.stringify(compat),
+              );
+            } catch (_) {}
+            try {
+              writeCookie("cpos_store_id", sidNow);
+            } catch (_) {}
+            try {
+              localStorage.setItem(
+                "cannabisPOS-weightThreshold",
+                String(merged.weight_threshold ?? 0),
+              );
+            } catch (_) {}
+            try {
+              writeUiCachesFromSettings(merged);
+            } catch (_) {}
+            try {
+              window.dispatchEvent(
+                new CustomEvent("settings:updated", {
+                  detail: { settings: merged, storeId: sidNow },
+                }),
+              );
+              try {
+                window.dispatchEvent(
+                  new CustomEvent("settings-updated", { detail: merged }),
+                );
+              } catch (_) {}
+            } catch (_) {}
             try {
               await fetch("/api/activity", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                  action: "settings-save-patch-failed",
+                  action: "settings-save-verified-soft-fail",
                   storeId: sidNow,
-                  message: String((ePatch && ePatch.message) || "patch failed"),
                 }),
               });
             } catch (_) {}
-          }
-        }
-        if (r0 && r0.ok) {
-          try {
-            const ver0 = await supaReqRetry(
-              `pos_settings?id=eq.${encodeURIComponent(sidNow)}&select=*`,
-              { method: "GET" },
-            );
-            if (!ver0 || !ver0.ok) {
-              try {
-                const txt = ver0 ? await ver0.text() : "";
-                last = new Error(
-                  `supabase verify failed (${ver0?.status || "n/a"}): ${txt}`,
-                );
-              } catch (eTxt) {
-                last = eTxt;
-              }
-            }
-            if (ver0 && ver0.ok) {
-              const arr0 = await ver0.json();
-              const row0 = Array.isArray(arr0) && arr0[0] ? arr0[0] : null;
-              let composed0 = {};
-              try {
-                if (row0["Store_Information"])
-                  composed0 = Object.assign(
-                    composed0,
-                    row0["Store_Information"],
-                  );
-              } catch (_) {}
-              try {
-                if (row0["Tax_Configuration"])
-                  composed0 = Object.assign(
-                    composed0,
-                    row0["Tax_Configuration"],
-                  );
-              } catch (_) {}
-              try {
-                if (row0["Sales_&_Transaction_Settings"])
-                  composed0 = Object.assign(
-                    composed0,
-                    row0["Sales_&_Transaction_Settings"],
-                  );
-              } catch (_) {}
-              try {
-                if (row0["Printing_Preferences"])
-                  composed0 = Object.assign(
-                    composed0,
-                    row0["Printing_Preferences"],
-                  );
-              } catch (_) {}
-              try {
-                if (row0["Metrc_Integration"])
-                  composed0 = Object.assign(
-                    composed0,
-                    row0["Metrc_Integration"],
-                  );
-              } catch (_) {}
-              try {
-                if (row0["Auto_Delete_Zero-Quantity_Products"])
-                  composed0 = Object.assign(
-                    composed0,
-                    row0["Auto_Delete_Zero-Quantity_Products"],
-                  );
-              } catch (_) {}
-              if (row0.store_name) composed0.store_name = row0.store_name;
-              if (!composed0 || Object.keys(composed0).length === 0)
-                composed0 = merged;
-              const m0 = { ...DEFAULTS, ...composed0 };
-              this.saveLocal(sidNow, m0);
-              try {
-                const compat0 = Object.assign({}, m0, {
-                  lastUpdated: Date.now(),
-                });
-                localStorage.setItem(
-                  `cannabisPOS-storeSettings_${sidNow}`,
-                  JSON.stringify(compat0),
-                );
-                localStorage.setItem(
-                  "cannabisPOS-storeSettings",
-                  JSON.stringify(compat0),
-                );
-              } catch (_) {}
-              try {
-                writeCookie("cpos_store_id", sidNow);
-              } catch (_) {}
-              try {
-                localStorage.setItem(
-                  "cannabisPOS-weightThreshold",
-                  String(m0.weight_threshold ?? 0),
-                );
-              } catch (_) {}
-              try {
-                writeUiCachesFromSettings(m0);
-              } catch (_) {}
-              try {
-                window.dispatchEvent(
-                  new CustomEvent("settings:updated", {
-                    detail: { settings: m0, storeId: sidNow },
-                  }),
-                );
-                try {
-                  window.dispatchEvent(
-                    new CustomEvent("settings-updated", { detail: m0 }),
-                  );
-                } catch (_) {}
-              } catch (_) {}
-              try { localStorage.removeItem(outboxKey(sidNow)); } catch(_){ }
-              return { success: true, settings: m0 };
-            }
-          } catch (e) {
-            last = e;
-          }
-        }
-        // Upsert succeeded but verification failed; treat as success with optimistic caches
-        if (r0 && r0.ok) {
-          try {
-            this.saveLocal(sidNow, merged);
-          } catch (_) {}
-          try { saveSnapshot(sidNow, merged); } catch(_){ }
-          try {
-            const compat = Object.assign({}, merged, {
-              lastUpdated: Date.now(),
-            });
-            localStorage.setItem(
-              `cannabisPOS-storeSettings_${sidNow}`,
-              JSON.stringify(compat),
-            );
-            localStorage.setItem(
-              "cannabisPOS-storeSettings",
-              JSON.stringify(compat),
-            );
-          } catch (_) {}
-          try {
-            writeCookie("cpos_store_id", sidNow);
-          } catch (_) {}
-          try {
-            localStorage.setItem(
-              "cannabisPOS-weightThreshold",
-              String(merged.weight_threshold ?? 0),
-            );
-          } catch (_) {}
-          try {
-            writeUiCachesFromSettings(merged);
-          } catch (_) {}
-          try {
-            window.dispatchEvent(
-              new CustomEvent("settings:updated", {
-                detail: { settings: merged, storeId: sidNow },
-              }),
-            );
             try {
-              window.dispatchEvent(
-                new CustomEvent("settings-updated", { detail: merged }),
-              );
+              backgroundReconcile(merged, sidNow);
             } catch (_) {}
-          } catch (_) {}
-          try {
-            await fetch("/api/activity", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "settings-save-verified-soft-fail",
-                storeId: sidNow,
-              }),
-            });
-          } catch (_) {}
-          try {
-            backgroundReconcile(merged, sidNow);
-          } catch (_) {}
-          try { localStorage.removeItem(outboxKey(sidNow)); } catch(_){ }
-          return { success: true, settings: merged };
+            try { localStorage.removeItem(outboxKey(sidNow)); } catch(_){ }
+            return { success: true, settings: merged };
+          }
+        } catch (e) {
+          last = e;
         }
-      } catch (e) {
-        last = e;
-      }
-      // Fire and retry server save
-      for (let i = 0; i < 3; i++) {
-        try {
-          const data = await httpPost("/api/settings/pos", merged);
-          // Sync local store context if server resolved a different canonical id/name
-          try{
-            const sidSrv = (function(){ try{ return String((data && data.store_id) || (data && data.settings && data.settings.id) || ""); }catch(_){ return ""; } })();
-            const snameSrv = (function(){ try{ return String((data && data.store_name) || (data && data.settings && data.settings.store_name) || ""); }catch(_){ return ""; } })();
-            const cid = canonicalizeId(sidSrv || currentStoreId(), snameSrv || currentStoreName());
-            if (cid && cid !== currentStoreId()){
-              try { localStorage.setItem('pos_store', JSON.stringify({ id: cid, name: snameSrv || cid })); writeCookie('cpos_store_id', cid); window.dispatchEvent(new Event('storage')); } catch(_){ }
-            }
-          }catch(_){ }
-          const s =
-            data && (data.settings || data) ? data.settings || data : merged;
-          let m = { ...DEFAULTS, ...s };
-          // Read-after-write verification against Laravel API (bypass cache)
+        // Fire and retry server save
+        for (let i = 0; i < 3; i++) {
           try {
-            const verifyResp = await httpGet("/api/settings/pos", {
-              nocache: true,
-            });
-            const vs =
-              verifyResp && (verifyResp.settings || verifyResp)
-                ? verifyResp.settings || verifyResp
-                : {};
-            if (
-              (!Number.isFinite(Number(vs.cannabis_tax)) ||
-                Number(vs.cannabis_tax) === 0) &&
-              Number.isFinite(Number(vs.sales_tax))
-            ) {
-              vs.cannabis_tax = Number(vs.sales_tax);
-            }
-            if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
-          } catch (_) {}
-          this.saveLocal(sid, m);
-          try { saveSnapshot(sid, m); } catch(_){ }
-          try {
-            const compat = Object.assign({}, m, { lastUpdated: Date.now() });
-            localStorage.setItem(
-              `cannabisPOS-storeSettings_${sid}`,
-              JSON.stringify(compat),
-            );
-            localStorage.setItem(
-              "cannabisPOS-storeSettings",
-              JSON.stringify(compat),
-            );
-          } catch (_) {}
-          try {
-            writeCookie("cpos_store_id", sid);
-          } catch (_) {}
-          try {
-            const raw = localStorage.getItem("pos_store");
-            const cur = raw ? JSON.parse(raw) : null;
-            const displayName = m.store_name || (cur && cur.name) || sid;
-            if (!cur || cur.id !== sid || cur.name !== displayName) {
-              localStorage.setItem(
-                "pos_store",
-                JSON.stringify({ id: sid, name: displayName }),
-              );
-              try {
-                writeCookie("cpos_store_id", sid);
-              } catch (_) {}
-              try {
-                if (typeof window.updateStoreHeaderLabel === "function")
-                  window.updateStoreHeaderLabel();
-              } catch (_) {}
-            }
-          } catch (_) {}
-          try {
-            localStorage.setItem(
-              "cannabisPOS-weightThreshold",
-              String(m.weight_threshold ?? 0),
-            );
-          } catch (_) {}
-          try {
-            writeUiCachesFromSettings(m);
-          } catch (_) {}
-          try {
-            window.dispatchEvent(
-              new CustomEvent("settings:updated", {
-                detail: { settings: m, storeId: sid },
-              }),
-            );
+            const data = await httpPost("/api/settings/pos", merged);
+            // Sync local store context if server resolved a different canonical id/name
+            try{
+              const sidSrv = (function(){ try{ return String((data && data.store_id) || (data && data.settings && data.settings.id) || ""); }catch(_){ return ""; } })();
+              const snameSrv = (function(){ try{ return String((data && data.store_name) || (data && data.settings && data.settings.store_name) || ""); }catch(_){ return ""; } })();
+              const cid = canonicalizeId(sidSrv || currentStoreId(), snameSrv || currentStoreName());
+              if (cid && cid !== currentStoreId()){
+                try { localStorage.setItem('pos_store', JSON.stringify({ id: cid, name: snameSrv || cid })); writeCookie('cpos_store_id', cid); window.dispatchEvent(new Event('storage')); } catch(_){ }
+              }
+            }catch(_){ }
+            const s =
+              data && (data.settings || data) ? data.settings || data : merged;
+            let m = { ...DEFAULTS, ...s };
+            // Read-after-write verification against Laravel API (bypass cache)
             try {
-              window.dispatchEvent(
-                new CustomEvent("settings-updated", { detail: m }),
+              const verifyResp = await httpGet("/api/settings/pos", {
+                nocache: true,
+              });
+              const vs =
+                verifyResp && (verifyResp.settings || verifyResp)
+                  ? verifyResp.settings || verifyResp
+                  : {};
+              if (
+                (!Number.isFinite(Number(vs.cannabis_tax)) ||
+                  Number(vs.cannabis_tax) === 0) &&
+                Number.isFinite(Number(vs.sales_tax))
+              ) {
+                vs.cannabis_tax = Number(vs.sales_tax);
+              }
+              if (vs && Object.keys(vs).length) m = { ...DEFAULTS, ...vs };
+            } catch (_) {}
+            this.saveLocal(sid, m);
+            try { saveSnapshot(sid, m); } catch(_){ }
+            try {
+              const compat = Object.assign({}, m, { lastUpdated: Date.now() });
+              localStorage.setItem(
+                `cannabisPOS-storeSettings_${sid}`,
+                JSON.stringify(compat),
+              );
+              localStorage.setItem(
+                "cannabisPOS-storeSettings",
+                JSON.stringify(compat),
               );
             } catch (_) {}
             try {
               writeCookie("cpos_store_id", sid);
             } catch (_) {}
             try {
-              const arr = Array.isArray(m.price_tiers)
-                ? m.price_tiers
-                : Array.isArray(m.priceTiers)
-                  ? m.priceTiers
-                  : [];
-              if (arr && arr.length) {
-                try {
-                  const sid2 = currentStoreId();
-                  localStorage.setItem(
-                    `cannabisPOS-priceTiers-backup_${sid2}`,
-                    JSON.stringify(arr),
-                  );
-                } catch (_) {}
+              const raw = localStorage.getItem("pos_store");
+              const cur = raw ? JSON.parse(raw) : null;
+              const displayName = m.store_name || (cur && cur.name) || sid;
+              if (!cur || cur.id !== sid || cur.name !== displayName) {
                 localStorage.setItem(
-                  "cannabisPOS-priceTiers-backup",
-                  JSON.stringify(arr),
+                  "pos_store",
+                  JSON.stringify({ id: sid, name: displayName }),
                 );
+                try {
+                  writeCookie("cpos_store_id", sid);
+                } catch (_) {}
+                try {
+                  if (typeof window.updateStoreHeaderLabel === "function")
+                    window.updateStoreHeaderLabel();
+                } catch (_) {}
               }
             } catch (_) {}
-          } catch (_) {}
-          try {
-            backgroundReconcile(m, sid);
-          } catch (_) {}
-          return { success: true, settings: m };
-        } catch (e) {
-          try{
-            const resp = e && e.response && e.response.data ? e.response.data : null;
-            const msg = resp && resp.message ? String(resp.message) : "";
-            if (msg === 'verification_mismatch'){
-              try{ await backgroundReconcile(merged, currentStoreId()); }catch(_){ }
-            }
-            const status = e && e.response && e.response.status ? Number(e.response.status) : 0;
-            if (status === 409 && msg === 'stale_write' && resp && resp.server_settings){
+            try {
+              localStorage.setItem(
+                "cannabisPOS-weightThreshold",
+                String(m.weight_threshold ?? 0),
+              );
+            } catch (_) {}
+            try {
+              writeUiCachesFromSettings(m);
+            } catch (_) {}
+            try {
+              window.dispatchEvent(
+                new CustomEvent("settings:updated", {
+                  detail: { settings: m, storeId: sid },
+                }),
+              );
               try {
-                const srv = resp.server_settings || {};
-                if (typeof resp.server_version === 'number') merged.settings_version = resp.server_version;
-                Object.assign(merged, srv);
-                continue; // retry loop with merged
-              } catch(_){ }
-            }
-          }catch(_){ }
-          last = e;
-          await new Promise((r) => setTimeout(r, 200 * (i + 1)));
+                window.dispatchEvent(
+                  new CustomEvent("settings-updated", { detail: m }),
+                );
+              } catch (_) {}
+              try {
+                writeCookie("cpos_store_id", sid);
+              } catch (_) {}
+              try {
+                const arr = Array.isArray(m.price_tiers)
+                  ? m.price_tiers
+                  : Array.isArray(m.priceTiers)
+                    ? m.priceTiers
+                    : [];
+                if (arr && arr.length) {
+                  try {
+                    const sid2 = currentStoreId();
+                    localStorage.setItem(
+                      `cannabisPOS-priceTiers-backup_${sid2}`,
+                      JSON.stringify(arr),
+                    );
+                  } catch (_) {}
+                  localStorage.setItem(
+                    "cannabisPOS-priceTiers-backup",
+                    JSON.stringify(arr),
+                  );
+                }
+              } catch (_) {}
+            } catch (_) {}
+            try {
+              backgroundReconcile(m, sid);
+            } catch (_) {}
+            return { success: true, settings: m };
+          } catch (e) {
+            try{
+              const resp = e && e.response && e.response.data ? e.response.data : null;
+              const msg = resp && resp.message ? String(resp.message) : "";
+              if (msg === 'verification_mismatch'){
+                try{ await backgroundReconcile(merged, currentStoreId()); }catch(_){ }
+              }
+              const status = e && e.response && e.response.status ? Number(e.response.status) : 0;
+              if (status === 409 && msg === 'stale_write' && resp && resp.server_settings){
+                try {
+                  const srv = resp.server_settings || {};
+                  if (typeof resp.server_version === 'number') merged.settings_version = resp.server_version;
+                  Object.assign(merged, srv);
+                  continue; // retry loop with merged
+                } catch(_){ }
+              }
+            }catch(_){ }
+            last = e;
+            await new Promise((r) => setTimeout(r, 200 * (i + 1)));
+          }
         }
-      }
-      // Backend failed: last-resort direct Supabase upsert to avoid data loss
-      try {
+        // Backend failed: last-resort direct Supabase upsert to avoid data loss
+        try {
         const sid = currentStoreId();
         const now = new Date().toISOString();
         const r = await supaReqRetry(`pos_settings?on_conflict=id`, {
@@ -1732,7 +1736,11 @@
         message: msg,
         error: last || new Error(msg),
       };
-    },
+    } finally {
+      this._saving = false;
+    }
+  },
+  _saving: false,
   };
 
   // Hardening: flush outbox and reconcile on connectivity/visibility changes
