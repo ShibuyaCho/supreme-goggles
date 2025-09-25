@@ -579,7 +579,11 @@
         const keys = Object.keys(v).sort();
         const out = {};
         for (const k of keys) {
-          out[k] = norm(v[k]);
+          if (k === 'store_name' && typeof v[k] === 'string') {
+            try { out[k] = canonicalizeId('', v[k]); } catch(_) { out[k] = norm(v[k]); }
+          } else {
+            out[k] = norm(v[k]);
+          }
         }
         return out;
       }
@@ -635,7 +639,7 @@
       const nowIso = new Date().toISOString();
       const row = {
         id: sid,
-        store_name: payload.store_name || null,
+        store_name: (function(){ const s=String(payload.store_name||'').trim().replace(/[’‘`]/g,"'"); return s!==""?s:null; })(),
         updated_at: nowIso,
         Store_Information: pick(payload, SEC["Store_Information"]),
         Tax_Configuration: pick(payload, SEC["Tax_Configuration"]),
@@ -1147,6 +1151,7 @@
             patched.receipt_template = "standard";
         }
         const merged = { ...DEFAULTS, ...base, ...patched };
+        try { if (typeof merged.store_name === 'string'){ merged.store_name = merged.store_name.trim().replace(/[’‘`]/g, "'"); } } catch(_){ }
         // Early-out if no changes vs server to avoid redundant writes
         try {
           if (serverCurrent){
@@ -1185,11 +1190,14 @@
         let last = null;
         try {
           const sidNow = currentStoreId();
+          let targetIdNow = sidNow;
+          try { const snameQ = (typeof merged.store_name === 'string' ? merged.store_name.trim() : ''); if (snameQ){ const find = await supaReqRetry(`pos_settings?store_name=eq.${encodeURIComponent(snameQ)}&select=id,store_name&limit=1`, { method: "GET" }); if (find && find.ok){ const fa = await find.json(); const fr = Array.isArray(fa) && fa[0] ? fa[0] : null; if (fr && fr.id) targetIdNow = String(fr.id); } } } catch(_){ }
           const nowIso = new Date().toISOString();
+          const snameOut = (function(){ const v = merged.store_name; return typeof v === 'string' ? v.trim() : (v || ''); })();
           const payload = [
             {
-              id: sidNow,
-              store_name: merged.store_name ?? "",
+              id: targetIdNow,
+              store_name: (snameOut !== "" ? snameOut : null),
               updated_at: nowIso,
               Store_Information: pick(merged, SEC["Store_Information"]),
               Tax_Configuration: pick(merged, SEC["Tax_Configuration"]),
@@ -1569,7 +1577,7 @@
           body: JSON.stringify([
             {
               id: sid,
-              store_name: merged.store_name ?? "",
+              store_name: (function(){ const v = merged.store_name; const t = (typeof v === "string" ? v.trim() : (v||"")); return t !== "" ? (typeof v === "string" ? v.trim() : v) : null; })(),
               updated_at: now,
               Store_Information: pick(merged, SEC["Store_Information"]),
               Tax_Configuration: pick(merged, SEC["Tax_Configuration"]),
