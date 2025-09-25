@@ -368,7 +368,7 @@ Route::get('/settings/pos', function() {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
             $row = null;
             if ($resp->ok()) {
                 $arr = $resp->json();
@@ -382,7 +382,7 @@ Route::get('/settings/pos', function() {
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
                         'X-Store-ID' => $storeId,
-                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                    ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                         'store_name' => 'eq.' . $storeName,
                         'select' => '*',
                     ]);
@@ -400,7 +400,7 @@ Route::get('/settings/pos', function() {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.defaultstore',
                     'select' => '*',
                 ]);
@@ -423,7 +423,7 @@ Route::get('/settings/pos', function() {
                             'Authorization' => 'Bearer ' . $supabaseKey,
                             'Accept' => 'application/json',
                             'X-Store-ID' => $storeId,
-                        ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $fid,
                             'select' => '*',
                         ]);
@@ -585,7 +585,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
                 'select' => '*',
                 ]);
@@ -761,7 +761,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
                         'X-Store-ID' => $storeId,
-                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                    ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                         'store_name' => 'eq.' . $snameQ,
                         'select' => 'id,store_name',
                         'limit' => 1,
@@ -783,7 +783,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
                     'Cache-Control' => 'no-cache',
-                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $paramsChk);
+                ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $paramsChk);
                 if ($verChk->ok()){
                     $va = $verChk->json();
                     $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
@@ -815,7 +815,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Accept' => 'application/json',
                 'Prefer' => 'resolution=merge-duplicates,return=representation',
                 'X-Store-ID' => $storeId,
-            ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+            ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $targetId,
                 'store_name' => $merged['store_name'] ?? null,
                 'Store_Information' => $cols['Store_Information'],
@@ -835,7 +835,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         'Accept' => 'application/json',
                         'Prefer' => 'resolution=merge-duplicates,return=representation',
                         'X-Store-ID' => $storeId,
-                    ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($targetId), [
+                    ])->retry(3, 150)->timeout(10)->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($targetId), [
                         'Store_Information' => $cols['Store_Information'],
                         'Tax_Configuration' => $cols['Tax_Configuration'],
                         'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
@@ -854,7 +854,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                             'Accept' => 'application/json',
                             'Prefer' => 'resolution=merge-duplicates,return=representation',
                             'X-Store-ID' => $storeId,
-                        ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?store_name=eq.' . urlencode((string)$merged['store_name']), [
+                        ])->retry(3, 150)->timeout(10)->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?store_name=eq.' . urlencode((string)$merged['store_name']), [
                             'Store_Information' => $cols['Store_Information'],
                             'Tax_Configuration' => $cols['Tax_Configuration'],
                             'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
@@ -876,7 +876,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         'Accept' => 'application/json',
                         'Prefer' => 'resolution=merge-duplicates,return=representation',
                         'X-Store-ID' => $storeId,
-                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                    ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                         'id' => $legacy,
                         'store_name' => $merged['store_name'] ?? null,
                         'Store_Information' => $cols['Store_Information'],
@@ -903,7 +903,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
                     'Cache-Control' => 'no-cache',
-                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+                ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
                 if ($ver->ok()) {
                     $va = $ver->json();
                     $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
@@ -929,7 +929,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                                     'Accept' => 'application/json',
                                     'Prefer' => 'resolution=merge-duplicates,return=representation',
                                     'X-Store-ID' => $storeId,
-                                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($vr['id'] ?? $storeId), [
+                                ])->retry(3, 150)->timeout(10)->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($vr['id'] ?? $storeId), [
                                     'Store_Information' => $cols['Store_Information'],
                                     'Tax_Configuration' => $cols['Tax_Configuration'],
                                     'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
@@ -944,7 +944,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                                         'Authorization' => 'Bearer ' . $supabaseKey,
                                         'Accept' => 'application/json',
                                         'Cache-Control' => 'no-cache',
-                                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+                                    ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
                                     if ($ver2->ok()){
                                         $va2 = $ver2->json();
                                         $vr2 = (is_array($va2) && isset($va2[0])) ? $va2[0] : null;
@@ -1016,7 +1016,7 @@ Route::get('/settings/stores/open', function() {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                 'select' => '*',
                 'order' => 'updated_at.desc'
             ]);
@@ -1315,7 +1315,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                     'id' => 'eq.' . $storeId,
                 'select' => '*',
                 ]);
@@ -1357,7 +1357,7 @@ Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
             'Prefer' => 'resolution=merge-duplicates,return=representation',
             'X-Store-ID' => $storeId,
 
-        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+        ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
                 'updated_at' => now()->toIso8601String(),
@@ -1420,7 +1420,7 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                         'id' => 'eq.' . $storeId,
                 'select' => '*',
                     ]);
@@ -1460,7 +1460,7 @@ Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request
             'Prefer' => 'resolution=merge-duplicates,return=representation',
             'X-Store-ID' => $storeId,
 
-        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+        ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                 'id' => $storeId,
                 'store_name' => $cur['store_name'] ?? null,
                 'updated_at' => now()->toIso8601String(),
@@ -1987,7 +1987,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                                 'id' => 'eq.' . $storeId,
                 'select' => '*',
                             ]);
@@ -2176,7 +2176,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
                 'select' => '*',
                         ]);
@@ -2236,7 +2236,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
             'Prefer' => 'resolution=merge-duplicates,return=representation',
             'X-Store-ID' => $storeId,
 
-        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+        ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
                                     'id' => $storeId,
                                     'store_name' => $settings['store_name'] ?? null,
                                     'Store_Information' => (function($s){ $keys=['store_address','store_phone','store_email','website','store_manager','license_number','receipt_footer','business_hours']; $o=[]; foreach($keys as $k){ if(array_key_exists($k,$s)) $o[$k]=$s[$k]; } return $o; })($settings),
@@ -2270,7 +2270,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                             'id' => 'eq.' . $storeId,
                 'select' => '*',
                         ]);
@@ -2342,7 +2342,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 'Accept' => 'application/json',
                 'X-Store-ID' => $storeId,
 
-            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
                 'select' => '*',
                         'order' => 'updated_at.desc'
                     ]);
