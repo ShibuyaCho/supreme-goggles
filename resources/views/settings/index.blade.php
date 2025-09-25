@@ -1122,7 +1122,7 @@ function settingsManager() {
                     }
                 } catch(_) {
                     if (isLatest()) {
-                        const msg = (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
+                        const msg = (e?.response?.data?.supabase_error) || (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
                         this.showToast(msg, 'error');
                     }
                 }
