@@ -645,6 +645,24 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 sort($merged[$af], SORT_STRING);
             }
         }
+        // Normalize business_hours entries: canonical day order and types
+        try {
+            $dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+            if (isset($merged['business_hours']) && is_array($merged['business_hours'])){
+                $norm = array_map(function($it) use ($dayOrder){
+                    $dayRaw = isset($it['day']) ? (string)$it['day'] : '';
+                    $day = in_array($dayRaw, $dayOrder, true) ? $dayRaw : (ucfirst(strtolower($dayRaw ?: 'Monday')));
+                    return [
+                        'day' => $day,
+                        'is_open' => (bool)($it['is_open'] ?? false),
+                        'open_time' => (string)($it['open_time'] ?? '09:00'),
+                        'close_time' => (string)($it['close_time'] ?? '21:00'),
+                    ];
+                }, $merged['business_hours']);
+                usort($norm, function($a,$b) use ($dayOrder){ return array_search($a['day'],$dayOrder,true) <=> array_search($b['day'],$dayOrder,true); });
+                $merged['business_hours'] = $norm;
+            }
+        } catch (\Throwable $e) { /* ignore */ }
         // Coerce booleans for known toggle fields
         foreach ([
             'receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
