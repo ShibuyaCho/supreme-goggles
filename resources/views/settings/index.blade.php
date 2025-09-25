@@ -1082,8 +1082,18 @@ function settingsManager() {
                         const numericKeys = new Set(['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold']);
                         const booleanKeys = new Set(['tax_inclusive','receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','expandable_cart','metrc_enabled','metrc_auto_push_sales','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion']);
                         const coerce = (k,v)=>{ if (numericKeys.has(k)) { const n=Number(v); return Number.isFinite(n)?n:v; } if (booleanKeys.has(k)) { if (typeof v==='boolean') return v; const s=String(v).toLowerCase(); if (s==='true'||s==='1') return true; if (s==='false'||s==='0') return false; } return v; };
-                        const keys = Object.keys(patch);
-                        const persisted = keys.every(k => JSON.stringify(coerce(k,srv[k])) === JSON.stringify(coerce(k,before[k])));
+                        const persistable = new Set([
+                        'store_name','license_number','store_address','store_phone','store_email','business_hours',
+                        'sales_tax','excise_tax','cannabis_tax','tax_inclusive',
+                        'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+                        'minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold',
+                        'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+                        'default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer',
+                        'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales',
+                        'auto_delete_zero_quantity','auto_delete_zero_days'
+                    ]);
+                        const keys = Object.keys(patch).filter(k => persistable.has(k));
+                        const persisted = keys.length === 0 || keys.every(k => JSON.stringify(coerce(k,srv[k])) === JSON.stringify(coerce(k,before[k])));
                         if (!persisted && isLatest()) this.showToast((res.message||res.error)||'Autosave failed', 'error');
                     } catch(_) {
                         if (isLatest()) this.showToast((res.message||res.error)||'Autosave failed', 'error');
