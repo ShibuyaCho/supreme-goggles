@@ -871,7 +871,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                             'Authorization' => 'Bearer ' . $supabaseKey,
                             'Accept' => 'application/json',
                             'Prefer' => 'resolution=merge-duplicates,return=representation',
-                            'X-Store-ID' => $storeId,
+                            'X-Store-ID' => $targetId,
                         ])->retry(3, 150)->timeout(10)->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?store_name=eq.' . urlencode((string)$merged['store_name']), [
                             'Store_Information' => $cols['Store_Information'],
                             'Tax_Configuration' => $cols['Tax_Configuration'],
