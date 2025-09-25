@@ -1203,12 +1203,12 @@ function settingsManager() {
                         this.saveSettingsToStorage();
                         this.showToast('Settings saved successfully!', 'success');
                     } else {
-                        const msg = (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
+                        const msg = (error?.response?.data?.supabase_error) || (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
                         console.error('Error saving settings:', error);
                         this.showToast(msg, 'error');
                     }
                 } catch(_) {
-                    const msg = (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
+                    const msg = (error?.response?.data?.supabase_error) || (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
                     console.error('Error saving settings:', error);
                     this.showToast(msg, 'error');
                 }
