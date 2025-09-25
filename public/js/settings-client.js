@@ -1784,6 +1784,32 @@
     });
   } catch(_){}
 
+  // React to realtime changes in pos_settings for current store
+  try {
+    window.addEventListener('realtime:pos_settings', function(e){
+      try{
+        const info = e && e.detail ? e.detail : null;
+        if (!info || !info.new) return;
+        const row = info.new;
+        const curSid = currentStoreId();
+        if (!row || (row.id && String(row.id) !== String(curSid))) return;
+        let composed = {};
+        try { if (row['Store_Information']) composed = Object.assign(composed, row['Store_Information']); } catch(_){}
+        try { if (row['Tax_Configuration']) composed = Object.assign(composed, row['Tax_Configuration']); } catch(_){}
+        try { if (row['Sales_&_Transaction_Settings']) composed = Object.assign(composed, row['Sales_&_Transaction_Settings']); } catch(_){}
+        try { if (row['Printing_Preferences']) composed = Object.assign(composed, row['Printing_Preferences']); } catch(_){}
+        try { if (row['Metrc_Integration']) composed = Object.assign(composed, row['Metrc_Integration']); } catch(_){}
+        try { if (row['Auto_Delete_Zero-Quantity_Products']) composed = Object.assign(composed, row['Auto_Delete_Zero-Quantity_Products']); } catch(_){}
+        if (row.store_name) composed.store_name = row.store_name;
+        const next = { ...DEFAULTS, ...composed };
+        SettingsClient.saveLocal(curSid, next);
+        try { const compat = Object.assign({}, next, { lastUpdated: Date.now() }); localStorage.setItem(`cannabisPOS-storeSettings_${curSid}`, JSON.stringify(compat)); localStorage.setItem('cannabisPOS-storeSettings', JSON.stringify(compat)); } catch(_){}
+        try { writeUiCachesFromSettings(next); } catch(_){}
+        try { window.dispatchEvent(new CustomEvent('settings:updated', { detail: { settings: next, storeId: curSid } })); } catch(_){}
+      }catch(_){ }
+    });
+  } catch(_){ }
+
   SettingsClient.currentStoreName = currentStoreName;
   SettingsClient.canonicalizeId = canonicalizeId;
   window.SettingsClient = SettingsClient;
