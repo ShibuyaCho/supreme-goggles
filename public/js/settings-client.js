@@ -1417,7 +1417,7 @@
           ];
           let r0 = await supaReqRetry(`pos_settings?on_conflict=id`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-Store-ID": targetIdNow },
             body: JSON.stringify(payload),
           });
           if (!r0 || !r0.ok) {
@@ -1432,12 +1432,13 @@
             // Fallback: PATCH existing row by id (avoids on_conflict semantics)
             try {
               const rPatch = await supaReqRetry(
-                `pos_settings?id=eq.${encodeURIComponent(sidNow)}`,
+                `pos_settings?id=eq.${encodeURIComponent(targetIdNow)}`,
                 {
                   method: "PATCH",
                   headers: {
                     "Content-Type": "application/json",
                     Prefer: "resolution=merge-duplicates,return=representation",
+                    "X-Store-ID": targetIdNow,
                   },
                   body: JSON.stringify(payload[0]),
                 },
@@ -1464,8 +1465,8 @@
           if (r0 && r0.ok) {
             try {
               const ver0 = await supaReqRetry(
-                `pos_settings?id=eq.${encodeURIComponent(sidNow)}&select=*`,
-                { method: "GET" },
+                `pos_settings?id=eq.${encodeURIComponent(targetIdNow)}&select=*`,
+                { method: "GET", headers: { "X-Store-ID": targetIdNow } },
               );
               if (!ver0 || !ver0.ok) {
                 try {
