@@ -1275,6 +1275,11 @@ app.post("/api/settings/pos", async (req, res) => {
     };
     let merged = { ...current, ...incomingClean };
     merged = normalizeArrays(coerceNumbers(coerceBooleans(merged)));
+    ["exit_label_categories","receipt_categories_autoprint","minimum_price_categories"].forEach((k)=>{
+      if (Array.isArray(merged[k])){
+        merged[k] = Array.from(new Set(merged[k].map(String))).sort();
+      }
+    });
     try {
       const st = Number(merged.sales_tax ?? 0);
       const rec = Number(merged.cannabis_tax ?? 0);
