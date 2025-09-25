@@ -1096,6 +1096,23 @@
             patched[k] = uniq;
           }
         });
+        // Normalize business_hours: shape, day order, booleans/times
+        try {
+          const order = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+          if (Array.isArray(patched.business_hours)){
+            const normBH = patched.business_hours.map((it)=>{
+              const dayRaw = String((it && it.day) || '').trim();
+              const day = order.includes(dayRaw) ? dayRaw : (dayRaw ? (dayRaw.charAt(0).toUpperCase()+dayRaw.slice(1).toLowerCase()) : 'Monday');
+              return {
+                day,
+                is_open: !!(it && it.is_open),
+                open_time: (it && typeof it.open_time === 'string' && it.open_time) ? it.open_time : '09:00',
+                close_time: (it && typeof it.close_time === 'string' && it.close_time) ? it.close_time : '21:00',
+              };
+            }).sort((a,b)=> order.indexOf(a.day)-order.indexOf(b.day));
+            patched.business_hours = normBH;
+          }
+        } catch(_){ }
         // Clamp numerics to sane ranges
         const clamp = (n, lo, hi) => {
           const x = Number(n);
