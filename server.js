@@ -804,6 +804,8 @@ app.post(["/api/loyalty/enroll", "/api/customers"], async (req, res) => {
 
 // Settings: POS get
 app.get("/api/settings/pos", async (req, res) => {
+  res.setHeader("Vary", "X-Store-ID, X-Store-Name");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
   // Defaults (mirrors Laravel defaults)
   const defaults = {
     sales_tax: 0.0,
