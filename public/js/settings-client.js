@@ -679,7 +679,7 @@
           const row = Object.assign({ id: storeId, updated_at: nowIso }, want);
           await supaReqRetry(`pos_settings?on_conflict=id`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "X-Store-ID": storeId },
             body: JSON.stringify([row]),
           });
         } catch (_) {
