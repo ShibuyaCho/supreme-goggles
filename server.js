@@ -1071,6 +1071,8 @@ app.get("/api/settings/pos", async (req, res) => {
   return res.json({
     success: true,
     settings: defaults,
+    store_id: (req && (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"])) || "default",
+    store_name: (req && (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"])) || "",
     tax_rate: defaults.sales_tax ?? 20.0,
     currency: "USD",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
