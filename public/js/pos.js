@@ -2472,6 +2472,9 @@ function cannabisPOS() {
                 this._refreshProductsFromApi && this._refreshProductsFromApi();
               } catch (_) {}
               try {
+                this.loadDeals && this.loadDeals();
+              } catch (_) {}
+              try {
                 this.filterProducts && this.filterProducts();
               } catch (_) {}
             }
