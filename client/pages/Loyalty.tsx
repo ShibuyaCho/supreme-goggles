@@ -120,8 +120,10 @@ export default function Loyalty() {
     (async () => {
       try {
         let list: any[] = [];
+        const sid = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreId === 'function' ? (window as any).SettingsClient.currentStoreId() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.id || 'default');
+        const sname = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreName === 'function' ? (window as any).SettingsClient.currentStoreName() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.name || '');
         const res = await fetch("/api/loyalty-members", {
-          headers: { Accept: "application/json" },
+          headers: { Accept: "application/json", "X-Store-ID": String(sid||'default'), "X-Store-Name": String(sname||'') },
         });
         if (res.ok) {
           const data = await res.json();
@@ -374,7 +376,9 @@ export default function Loyalty() {
     // Refresh from server to ensure persistence
     try {
       let list2: any[] = [];
-      const res2 = await fetch("/api/loyalty-members", { headers: { Accept: "application/json" } });
+      const sid = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreId === 'function' ? (window as any).SettingsClient.currentStoreId() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.id || 'default');
+      const sname = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreName === 'function' ? (window as any).SettingsClient.currentStoreName() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.name || '');
+      const res2 = await fetch("/api/loyalty-members", { headers: { Accept: "application/json", "X-Store-ID": String(sid||'default'), "X-Store-Name": String(sname||'') } });
       if (res2.ok) {
         const data2 = await res2.json();
         list2 = Array.isArray(data2?.members) ? data2.members : [];
@@ -524,7 +528,7 @@ export default function Loyalty() {
                     <div className="font-medium">Tier-Based Rewards:</div>
                     <ul className="space-y-1 ml-2">
                       <li>• Bronze Tier (Starting): 1% back in points</li>
-                      <li>• Silver Tier ($500+ spent): 2% back in points</li>
+                      <li>��� Silver Tier ($500+ spent): 2% back in points</li>
                       <li>• Gold Tier ($1,500+ spent): 3% back in points</li>
                       <li>
                         • Platinum Tier ($3,000+ spent): 5% back in points
