@@ -1389,6 +1389,7 @@
         } catch (_) {}
         // First, try direct Supabase upsert (authoritative). If it succeeds, update caches and return success immediately.
         let last = null;
+        let supaErrText = '';
         try {
           const sidNow = currentStoreId();
           let targetIdNow = sidNow;
@@ -1440,10 +1441,20 @@
           });
           if (!r0 || !r0.ok) {
             try {
-              const txt = r0 ? await r0.text() : "";
-              last = new Error(
-                `supabase upsert failed (${r0?.status || "n/a"}): ${txt}`,
-              );
+              const txt = r0 ? await r0.text() : '';
+              try {
+                const j = txt && txt.trim().startsWith('{') ? JSON.parse(txt) : null;
+                const parts = [];
+                if (j && j.message) parts.push(String(j.message));
+                if (j && j.details) parts.push(String(j.details));
+                if (j && j.hint) parts.push(String(j.hint));
+                const composed = parts.length ? parts.join(' — ') : txt;
+                supaErrText = composed || `supabase upsert failed (${r0?.status || 'n/a'})`;
+                last = new Error(supaErrText);
+              } catch (_) {
+                supaErrText = txt || `supabase upsert failed (${r0?.status || 'n/a'})`;
+                last = new Error(supaErrText);
+              }
             } catch (eTxt) {
               last = eTxt;
             }
@@ -1488,10 +1499,20 @@
               );
               if (!ver0 || !ver0.ok) {
                 try {
-                  const txt = ver0 ? await ver0.text() : "";
-                  last = new Error(
-                    `supabase verify failed (${ver0?.status || "n/a"}): ${txt}`,
-                  );
+                  const txt = ver0 ? await ver0.text() : '';
+                  try {
+                    const j = txt && txt.trim().startsWith('{') ? JSON.parse(txt) : null;
+                    const parts = [];
+                    if (j && j.message) parts.push(String(j.message));
+                    if (j && j.details) parts.push(String(j.details));
+                    if (j && j.hint) parts.push(String(j.hint));
+                    const composed = parts.length ? parts.join(' — ') : txt;
+                    supaErrText = composed || `supabase verify failed (${ver0?.status || 'n/a'})`;
+                    last = new Error(supaErrText);
+                  } catch (_) {
+                    supaErrText = txt || `supabase verify failed (${ver0?.status || 'n/a'})`;
+                    last = new Error(supaErrText);
+                  }
                 } catch (eTxt) {
                   last = eTxt;
                 }
@@ -2068,6 +2089,7 @@
             msg = last;
           }
         } catch (_) {}
+        if (supaErrText) { msg = supaErrText; }
         try {
           await fetch("/api/activity", {
             method: "POST",
@@ -2090,6 +2112,7 @@
           settings: merged,
           message: msg,
           error: last || new Error(msg),
+          supabase_error: supaErrText || undefined,
         };
       } finally {
         this._saving = false;
