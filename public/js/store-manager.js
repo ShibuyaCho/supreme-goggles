@@ -412,6 +412,9 @@
             );
           } catch (_) {}
           try {
+            document.cookie = `cpos_store_id=${encodeURIComponent(sid)}; path=/; max-age=${60 * 60 * 24 * 365}`;
+          } catch (_) {}
+          try {
             window.dispatchEvent(new Event("storage"));
           } catch (_) {}
           if (typeof window.updateStoreHeaderLabel === "function")
