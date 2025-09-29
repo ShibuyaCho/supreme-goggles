@@ -158,13 +158,24 @@ export default function Loyalty() {
             if (base && key) {
               const url = new URL(`${base}/rest/v1/loyalty_members`);
               url.searchParams.set("select", "*");
-              const q = (document?.querySelector('#loyalty-search') as HTMLInputElement)?.value || searchQuery || "";
+              const q =
+                (document?.querySelector("#loyalty-search") as HTMLInputElement)
+                  ?.value ||
+                searchQuery ||
+                "";
               if (q && q.trim()) {
                 const s = `*${q.trim()}*`;
-                url.searchParams.set("or", `(name.ilike.${s},email.ilike.${s},phone.ilike.${s})`);
+                url.searchParams.set(
+                  "or",
+                  `(name.ilike.${s},email.ilike.${s},phone.ilike.${s})`,
+                );
               }
               const r = await fetch(url.toString(), {
-                headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
+                headers: {
+                  apikey: key,
+                  Authorization: `Bearer ${key}`,
+                  Accept: "application/json",
+                },
               });
               if (r.ok) {
                 const arr = await r.json();
