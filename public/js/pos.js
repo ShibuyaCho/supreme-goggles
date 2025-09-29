@@ -2186,6 +2186,7 @@ function cannabisPOS() {
               return;
             } catch (e) {
               const msg =
+                e?.response?.data?.supabase_error ||
                 e?.response?.data?.message ||
                 e?.response?.data?.error ||
                 e?.message ||
