@@ -123,7 +123,7 @@ export default function Loyalty() {
         const sid = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreId === 'function' ? (window as any).SettingsClient.currentStoreId() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.id || 'default');
         const sname = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreName === 'function' ? (window as any).SettingsClient.currentStoreName() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.name || '');
         const res = await fetch("/api/loyalty-members", {
-          headers: { Accept: "application/json", "X-Store-ID": String(sid||'default'), "X-Store-Name": String(sname||'') },
+          headers: { Accept: "application/json" },
         });
         if (res.ok) {
           const data = await res.json();
@@ -378,7 +378,7 @@ export default function Loyalty() {
       let list2: any[] = [];
       const sid = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreId === 'function' ? (window as any).SettingsClient.currentStoreId() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.id || 'default');
       const sname = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreName === 'function' ? (window as any).SettingsClient.currentStoreName() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.name || '');
-      const res2 = await fetch("/api/loyalty-members", { headers: { Accept: "application/json", "X-Store-ID": String(sid||'default'), "X-Store-Name": String(sname||'') } });
+      const res2 = await fetch("/api/loyalty-members", { headers: { Accept: "application/json" } });
       if (res2.ok) {
         const data2 = await res2.json();
         list2 = Array.isArray(data2?.members) ? data2.members : [];
