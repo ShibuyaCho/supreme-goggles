@@ -4087,14 +4087,15 @@ function cannabisPOS() {
         if (String(deal.id).startsWith("local-")) {
           deal.isActive = !deal.isActive;
           try {
-            const raw = localStorage.getItem("pos_deals_local_v1");
+            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+            const raw = localStorage.getItem(`pos_deals_local_v1_${sid}`);
             const arr = raw ? JSON.parse(raw) : [];
             const next = (Array.isArray(arr) ? arr : []).map((d) =>
               String(d.id) === String(deal.id)
                 ? { ...d, is_active: deal.isActive }
                 : d,
             );
-            localStorage.setItem("pos_deals_local_v1", JSON.stringify(next));
+            localStorage.setItem(`pos_deals_local_v1_${sid}`, JSON.stringify(next));
           } catch (_) {}
           this.filterDeals();
           this.showToast &&
