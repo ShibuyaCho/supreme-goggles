@@ -2221,7 +2221,9 @@ app.get("/api/customers", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const base = `customers?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const r = await supaFetch(base);
+    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
+    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const r = await supaFetch(base, { headers: { "X-Store-ID": String(sid), "X-Store-Name": String(sname) } });
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, customers: payload });
   } catch (e) {
@@ -2233,7 +2235,9 @@ app.get("/node/customers", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const base = `customers?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const r = await supaFetch(base);
+    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
+    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const r = await supaFetch(base, { headers: { "X-Store-ID": String(sid), "X-Store-Name": String(sname) } });
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, customers: payload });
   } catch (e) {
