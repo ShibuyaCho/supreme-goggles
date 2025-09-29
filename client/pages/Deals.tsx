@@ -114,13 +114,18 @@ export default function Deals() {
   const getStoreId = () => {
     try {
       const anyWin: any = window as any;
-      let sid = typeof anyWin?.SettingsClient?.currentStoreId === 'function' ? anyWin.SettingsClient.currentStoreId() : '';
+      let sid =
+        typeof anyWin?.SettingsClient?.currentStoreId === "function"
+          ? anyWin.SettingsClient.currentStoreId()
+          : "";
       if (!sid) {
-        const raw = localStorage.getItem('pos_store');
-        if (raw) sid = String(JSON.parse(raw)?.id || '');
+        const raw = localStorage.getItem("pos_store");
+        if (raw) sid = String(JSON.parse(raw)?.id || "");
       }
-      return sid || 'default';
-    } catch { return 'default'; }
+      return sid || "default";
+    } catch {
+      return "default";
+    }
   };
   const dealsUserKey = () => `cannabest-deals-${getUserId()}-${getStoreId()}`;
   const dealsGlobalKey = () => `cannabest-deals-${getStoreId()}`;
