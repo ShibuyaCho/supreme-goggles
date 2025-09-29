@@ -19,17 +19,27 @@ class DealsController extends Controller
         $supabaseKey = env('SUPABASE_ANON_KEY');
         if ($supabaseUrl && $supabaseKey) {
             try {
+                $storeId = \App\Helpers\StoreContext::id();
+                $storeName = \App\Helpers\StoreContext::name();
                 $resp = Http::withHeaders([
                     'apikey' => $supabaseKey,
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
+                    'X-Store-ID' => $storeId,
+                    'X-Store-Name' => $storeName,
                 ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [
                     'select' => '*',
-                    'order' => 'created_at.desc'
+                    'order' => 'created_at.desc',
+                    'store_id' => 'eq.' . $storeId,
                 ]);
                 if ($resp->ok()) {
                     $rows = $resp->json();
-                    $supabaseDeals = collect(is_array($rows) ? $rows : []);
+                    // Safety filter: ensure only current store's deals are included even if RLS/filters misconfigure
+                    $storeId = \App\Helpers\StoreContext::id();
+                    $supabaseDeals = collect(is_array($rows) ? $rows : [])->filter(function($d) use ($storeId){
+                        $sid = is_array($d) ? ($d['store_id'] ?? null) : (is_object($d) ? ($d->store_id ?? null) : null);
+                        return (string)$sid === (string)$storeId;
+                    });
 
                     // Always also load local deals and merge any that aren't present in Supabase
                     $localDeals = Deal::when(\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->orderBy('created_at','desc')->get();
@@ -186,7 +196,9 @@ class DealsController extends Controller
             $supabaseKey = env('SUPABASE_ANON_KEY');
             if ($supabaseUrl && $supabaseKey) {
                 try {
+                    $storeId = \App\Helpers\StoreContext::id();
                     $payload = $dealData;
+                    $payload['store_id'] = $storeId;
                     if (isset($payload['applicable_categories']) && is_string($payload['applicable_categories'])) {
                         $payload['applicable_categories'] = json_decode($payload['applicable_categories'], true);
                     }
@@ -206,7 +218,8 @@ class DealsController extends Controller
                         'apikey' => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
-                        'Prefer' => 'return=representation'
+                        'Prefer' => 'return=representation',
+                        'X-Store-ID' => $storeId,
                     ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [$payload]);
                     if ($resp->successful()) {
                         $rows = $resp->json();
@@ -336,6 +349,7 @@ class DealsController extends Controller
             $supabaseKey = env('SUPABASE_ANON_KEY');
             if ($supabaseUrl && $supabaseKey) {
                 try {
+                    $storeId = \App\Helpers\StoreContext::id();
                     $payload = $request->all();
                     foreach (['start_date','end_date'] as $dk) {
                         if (isset($payload[$dk]) && (!$payload[$dk] || $payload[$dk] === '')) {
@@ -361,8 +375,9 @@ class DealsController extends Controller
                         'apikey' => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
-                        'Prefer' => 'return=representation'
-                    ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id), $payload);
+                        'Prefer' => 'return=representation',
+                        'X-Store-ID' => $storeId,
+                    ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id) . '&store_id=eq.' . urlencode($storeId), $payload);
                     if ($resp->successful()) {
                         $rows = $resp->json();
                         $row = is_array($rows) && isset($rows[0]) ? $rows[0] : $rows;
@@ -458,11 +473,13 @@ class DealsController extends Controller
             $supabaseKey = env('SUPABASE_ANON_KEY');
             if ($supabaseUrl && $supabaseKey) {
                 try {
+                    $storeId = \App\Helpers\StoreContext::id();
                     $resp = Http::withHeaders([
                         'apikey' => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
-                        'Accept' => 'application/json'
-                    ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id));
+                        'Accept' => 'application/json',
+                        'X-Store-ID' => $storeId,
+                    ])->delete(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($id) . '&store_id=eq.' . urlencode($storeId));
                     if ($resp->successful()) {
                         Log::info('Deal deleted successfully (Supabase)', [ 'deal_id' => $id, 'user_id' => auth()->id() ]);
                         // Also delete locally if present
@@ -529,11 +546,13 @@ class DealsController extends Controller
             $supabaseUrl = env('SUPABASE_URL');
             $supabaseKey = env('SUPABASE_ANON_KEY');
             if ($supabaseUrl && $supabaseKey) {
+                $storeId = \App\Helpers\StoreContext::id();
                 $get = Http::withHeaders([
                     'apikey' => $supabaseKey,
                     'Authorization' => 'Bearer ' . $supabaseKey,
-                    'Accept' => 'application/json'
-                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [ 'select' => '*', 'id' => 'eq.' . $request->deal_id ]);
+                    'Accept' => 'application/json',
+                    'X-Store-ID' => $storeId,
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/deals', [ 'select' => '*', 'id' => 'eq.' . $request->deal_id, 'store_id' => 'eq.' . $storeId ]);
                 if (!$get->ok()) throw new \Exception('Supabase fetch error');
                 $rows = $get->json();
                 $row = is_array($rows) && isset($rows[0]) ? $rows[0] : null;
@@ -543,8 +562,9 @@ class DealsController extends Controller
                     'apikey' => $supabaseKey,
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
-                    'Prefer' => 'return=representation'
-                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($request->deal_id), [ 'current_uses' => $newUses ]);
+                    'Prefer' => 'return=representation',
+                    'X-Store-ID' => $storeId,
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/deals?id=eq.' . urlencode($request->deal_id) . '&store_id=eq.' . urlencode($storeId), [ 'current_uses' => $newUses ]);
                 if (!$upd->successful()) throw new \Exception('Supabase update error');
                 $updated = $upd->json();
                 $dealRow = is_array($updated) && isset($updated[0]) ? $updated[0] : $row;
@@ -729,6 +749,7 @@ class DealsController extends Controller
             'medical_only' => (bool)($arr['medical_only'] ?? false),
             'is_active' => (bool)($arr['is_active'] ?? true),
             'active_days' => $arr['active_days'] ?? null,
+            'store_id' => $arr['store_id'] ?? \App\Helpers\StoreContext::id(),
         ];
         // Ensure JSON fields are arrays
         foreach (['applicable_categories','specific_items','active_days','category_discounts','item_discounts'] as $k) {
