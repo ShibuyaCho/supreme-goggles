@@ -111,11 +111,23 @@ export default function Deals() {
       return "anon";
     }
   };
-  const dealsUserKey = () => `cannabest-deals-${getUserId()}`;
-  const dealsGlobalKey = () => `cannabest-deals`;
+  const getStoreId = () => {
+    try {
+      const anyWin: any = window as any;
+      let sid = typeof anyWin?.SettingsClient?.currentStoreId === 'function' ? anyWin.SettingsClient.currentStoreId() : '';
+      if (!sid) {
+        const raw = localStorage.getItem('pos_store');
+        if (raw) sid = String(JSON.parse(raw)?.id || '');
+      }
+      return sid || 'default';
+    } catch { return 'default'; }
+  };
+  const dealsUserKey = () => `cannabest-deals-${getUserId()}-${getStoreId()}`;
+  const dealsGlobalKey = () => `cannabest-deals-${getStoreId()}`;
 
   const saveDealsLocal = (list: Deal[]) => {
     try {
+      // Persist only for current store namespace to prevent cross-store bleeding
       localStorage.setItem(dealsUserKey(), JSON.stringify(list));
       localStorage.setItem(dealsGlobalKey(), JSON.stringify(list));
     } catch (_) {}
@@ -299,7 +311,7 @@ export default function Deals() {
   useEffect(() => {
     const loadDeals = async () => {
       try {
-        // Load shadow local first
+        // Load shadow local for current store only
         let localA: Deal[] = [];
         let localB: Deal[] = [];
         try {
@@ -357,12 +369,8 @@ export default function Deals() {
           } as Deal;
         });
 
-        // Include any locally-saved deals not present in API
-        const apiIds = new Set(overlayed.map((d) => String(d.id)));
-        const localsOnly = Array.from(localMergedMap.values()).filter(
-          (d) => !apiIds.has(String(d.id)),
-        );
-        const mergedAll = [...overlayed, ...localsOnly];
+        // Do NOT include local deals not present in API across stores; trust server for visibility
+        const mergedAll = [...overlayed];
         const seenAll = new Set<string>();
         setDeals(
           mergedAll.filter((d) => {
