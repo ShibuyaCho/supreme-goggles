@@ -262,7 +262,7 @@ export default function Customers() {
       const sname = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreName === 'function' ? (window as any).SettingsClient.currentStoreName() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.name || '');
       const res = await fetch(
         `/api/customers-open${search ? `?search=${encodeURIComponent(search)}` : ""}`,
-        { headers: { Accept: "application/json", "X-Store-ID": String(sid||'default'), "X-Store-Name": String(sname||'') } },
+        { headers: { Accept: "application/json" } },
       );
       if (res.ok) {
         const data = await res.json();
