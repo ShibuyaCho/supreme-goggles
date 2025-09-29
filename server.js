@@ -1596,11 +1596,11 @@ app.post("/api/settings/pos", async (req, res) => {
     } catch (_) {}
 
     let r = await supaFetch("pos_settings", {
-  method: "POST",
-  body: payloadPrimary,
-  query: { on_conflict: "id" },
-  headers: { "X-Store-ID": targetId },
-});
+      method: "POST",
+      body: payloadPrimary,
+      query: { on_conflict: "id" },
+      headers: { "X-Store-ID": targetId },
+    });
     if (!r || !r.ok) {
       // Try PATCH on resolved id excluding store_name to bypass unique constraint
       try {
@@ -1617,7 +1617,11 @@ app.post("/api/settings/pos", async (req, res) => {
         };
         const rPatch = await supaFetch(
           `pos_settings?id=eq.${encodeURIComponent(targetId)}`,
-          { method: "PATCH", body: patchBody, headers: { "X-Store-ID": targetId } },
+          {
+            method: "PATCH",
+            body: patchBody,
+            headers: { "X-Store-ID": targetId },
+          },
         );
         if (rPatch && rPatch.ok) {
           r = rPatch;
@@ -1625,7 +1629,11 @@ app.post("/api/settings/pos", async (req, res) => {
           // Last resort: patch by store_name
           const rPatchName = await supaFetch(
             `pos_settings?store_name=eq.${encodeURIComponent(mergedFull.store_name)}`,
-            { method: "PATCH", body: patchBody, headers: { "X-Store-ID": targetId } },
+            {
+              method: "PATCH",
+              body: patchBody,
+              headers: { "X-Store-ID": targetId },
+            },
           );
           if (rPatchName && rPatchName.ok) r = rPatchName;
         }
@@ -1638,7 +1646,8 @@ app.post("/api/settings/pos", async (req, res) => {
         let msg = errTxt || `Supabase upsert/patch failed (${r && r.status})`;
         let code = null;
         try {
-          const j = errTxt && errTxt.trim().startsWith('{') ? JSON.parse(errTxt) : null;
+          const j =
+            errTxt && errTxt.trim().startsWith("{") ? JSON.parse(errTxt) : null;
           if (j) {
             code = j.code || null;
             msg = j.message || j.hint || j.details || msg;
@@ -1759,7 +1768,11 @@ app.post("/api/settings/pos", async (req, res) => {
           if (a !== b) {
             const repair = await supaFetch(
               `pos_settings?id=eq.${encodeURIComponent(targetId)}`,
-              { method: "PATCH", body: payloadPrimary[0], headers: { "X-Store-ID": targetId } },
+              {
+                method: "PATCH",
+                body: payloadPrimary[0],
+                headers: { "X-Store-ID": targetId },
+              },
             );
             if (repair && repair.ok) {
               const ver2 = await supaFetch(
@@ -1849,14 +1862,12 @@ app.post("/api/settings/pos", async (req, res) => {
                     }),
                   );
                   if (a !== b2) {
-                    return res
-                      .status(502)
-                      .json({
-                        success: false,
-                        message: "verification_mismatch",
-                        expected: payloadPrimary[0],
-                        actual: remoteCols2,
-                      });
+                    return res.status(502).json({
+                      success: false,
+                      message: "verification_mismatch",
+                      expected: payloadPrimary[0],
+                      actual: remoteCols2,
+                    });
                   }
                 }
               }
@@ -1872,11 +1883,11 @@ app.post("/api/settings/pos", async (req, res) => {
       try {
         const payloadLegacy = payloadPrimary.map((p) => ({ ...p, id: legacy }));
         await supaFetch("pos_settings", {
-  method: "POST",
-  body: payloadLegacy,
-  query: { on_conflict: "id" },
-  headers: { "X-Store-ID": legacy },
-});
+          method: "POST",
+          body: payloadLegacy,
+          query: { on_conflict: "id" },
+          headers: { "X-Store-ID": legacy },
+        });
       } catch (_) {}
     }
     const payload = r.ok ? await r.json() : null;
@@ -1906,10 +1917,8 @@ app.post("/api/settings/pos", async (req, res) => {
       saved: payload,
     });
   } catch (e) {
-    const em = (e && e.message) ? e.message : "Failed to save settings";
-    return res
-      .status(500)
-      .json({ success: false, message: em, error: em });
+    const em = e && e.message ? e.message : "Failed to save settings";
+    return res.status(500).json({ success: false, message: em, error: em });
   }
 });
 
@@ -2221,8 +2230,13 @@ app.get("/api/customers", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const base = `customers?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
-    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const sid =
+      (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) ||
+      "default";
+    const sname =
+      (req.header
+        ? req.header("X-Store-Name")
+        : req.headers?.["x-store-name"]) || "";
     const r = await supaFetch(base);
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, customers: payload });
@@ -2235,8 +2249,13 @@ app.get("/node/customers", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const base = `customers?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
-    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const sid =
+      (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) ||
+      "default";
+    const sname =
+      (req.header
+        ? req.header("X-Store-Name")
+        : req.headers?.["x-store-name"]) || "";
     const r = await supaFetch(base);
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, customers: payload });
@@ -2906,8 +2925,13 @@ app.get("/api/loyalty-members", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const sel = `loyalty_members?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
-    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const sid =
+      (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) ||
+      "default";
+    const sname =
+      (req.header
+        ? req.header("X-Store-Name")
+        : req.headers?.["x-store-name"]) || "";
     const r = await supaFetch(sel);
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, members: payload });
@@ -2920,8 +2944,13 @@ app.get("/node/loyalty-members", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const sel = `loyalty_members?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
-    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const sid =
+      (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) ||
+      "default";
+    const sname =
+      (req.header
+        ? req.header("X-Store-Name")
+        : req.headers?.["x-store-name"]) || "";
     const r = await supaFetch(sel);
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, members: payload });

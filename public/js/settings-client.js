@@ -624,15 +624,45 @@
   }
   function deepNormalize(value) {
     const numericKeys = new Set([
-      "sales_tax","excise_tax","cannabis_tax","minimum_price_amount","auto_delete_zero_days","weight_threshold"
+      "sales_tax",
+      "excise_tax",
+      "cannabis_tax",
+      "minimum_price_amount",
+      "auto_delete_zero_days",
+      "weight_threshold",
     ]);
     const booleanKeys = new Set([
-      "tax_inclusive","receipt_autoprint","receipt_show_tax_breakdown","receipt_show_metrc","receipt_show_loyalty","receipt_show_qr_code","require_customer","age_verification","limit_enforcement","accept_cash","accept_debit","accept_check","round_to_nearest","minimum_price_enabled","expandable_cart","metrc_enabled","metrc_auto_push_sales","auto_delete_zero_quantity","dark_mode","high_contrast","reduce_motion"
+      "tax_inclusive",
+      "receipt_autoprint",
+      "receipt_show_tax_breakdown",
+      "receipt_show_metrc",
+      "receipt_show_loyalty",
+      "receipt_show_qr_code",
+      "require_customer",
+      "age_verification",
+      "limit_enforcement",
+      "accept_cash",
+      "accept_debit",
+      "accept_check",
+      "round_to_nearest",
+      "minimum_price_enabled",
+      "expandable_cart",
+      "metrc_enabled",
+      "metrc_auto_push_sales",
+      "auto_delete_zero_quantity",
+      "dark_mode",
+      "high_contrast",
+      "reduce_motion",
     ]);
     const norm = (v, keyCtx) => {
       if (v == null) return v;
       // Coerce by key context when scalar
-      if (keyCtx && (typeof v === "string" || typeof v === "number" || typeof v === "boolean")) {
+      if (
+        keyCtx &&
+        (typeof v === "string" ||
+          typeof v === "number" ||
+          typeof v === "boolean")
+      ) {
         if (numericKeys.has(keyCtx)) {
           const n = Number(v);
           if (Number.isFinite(n)) return n;
@@ -697,7 +727,10 @@
           const row = Object.assign({ id: storeId, updated_at: nowIso }, want);
           await supaReqRetry(`pos_settings?on_conflict=id`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-Store-ID": storeId },
+            headers: {
+              "Content-Type": "application/json",
+              "X-Store-ID": storeId,
+            },
             body: JSON.stringify([row]),
           });
         } catch (_) {
@@ -1389,7 +1422,7 @@
         } catch (_) {}
         // First, try direct Supabase upsert (authoritative). If it succeeds, update caches and return success immediately.
         let last = null;
-        let supaErrText = '';
+        let supaErrText = "";
         try {
           const sidNow = currentStoreId();
           let targetIdNow = sidNow;
@@ -1436,23 +1469,29 @@
           ];
           let r0 = await supaReqRetry(`pos_settings?on_conflict=id`, {
             method: "POST",
-            headers: { "Content-Type": "application/json", "X-Store-ID": targetIdNow },
+            headers: {
+              "Content-Type": "application/json",
+              "X-Store-ID": targetIdNow,
+            },
             body: JSON.stringify(payload),
           });
           if (!r0 || !r0.ok) {
             try {
-              const txt = r0 ? await r0.text() : '';
+              const txt = r0 ? await r0.text() : "";
               try {
-                const j = txt && txt.trim().startsWith('{') ? JSON.parse(txt) : null;
+                const j =
+                  txt && txt.trim().startsWith("{") ? JSON.parse(txt) : null;
                 const parts = [];
                 if (j && j.message) parts.push(String(j.message));
                 if (j && j.details) parts.push(String(j.details));
                 if (j && j.hint) parts.push(String(j.hint));
-                const composed = parts.length ? parts.join(' — ') : txt;
-                supaErrText = composed || `supabase upsert failed (${r0?.status || 'n/a'})`;
+                const composed = parts.length ? parts.join(" — ") : txt;
+                supaErrText =
+                  composed || `supabase upsert failed (${r0?.status || "n/a"})`;
                 last = new Error(supaErrText);
               } catch (_) {
-                supaErrText = txt || `supabase upsert failed (${r0?.status || 'n/a'})`;
+                supaErrText =
+                  txt || `supabase upsert failed (${r0?.status || "n/a"})`;
                 last = new Error(supaErrText);
               }
             } catch (eTxt) {
@@ -1499,18 +1538,25 @@
               );
               if (!ver0 || !ver0.ok) {
                 try {
-                  const txt = ver0 ? await ver0.text() : '';
+                  const txt = ver0 ? await ver0.text() : "";
                   try {
-                    const j = txt && txt.trim().startsWith('{') ? JSON.parse(txt) : null;
+                    const j =
+                      txt && txt.trim().startsWith("{")
+                        ? JSON.parse(txt)
+                        : null;
                     const parts = [];
                     if (j && j.message) parts.push(String(j.message));
                     if (j && j.details) parts.push(String(j.details));
                     if (j && j.hint) parts.push(String(j.hint));
-                    const composed = parts.length ? parts.join(' — ') : txt;
-                    supaErrText = composed || `supabase verify failed (${ver0?.status || 'n/a'})`;
+                    const composed = parts.length ? parts.join(" — ") : txt;
+                    supaErrText =
+                      composed ||
+                      `supabase verify failed (${ver0?.status || "n/a"})`;
                     last = new Error(supaErrText);
                   } catch (_) {
-                    supaErrText = txt || `supabase verify failed (${ver0?.status || 'n/a'})`;
+                    supaErrText =
+                      txt ||
+                      `supabase verify failed (${ver0?.status || "n/a"})`;
                     last = new Error(supaErrText);
                   }
                 } catch (eTxt) {
@@ -2089,7 +2135,9 @@
             msg = last;
           }
         } catch (_) {}
-        if (supaErrText) { msg = supaErrText; }
+        if (supaErrText) {
+          msg = supaErrText;
+        }
         try {
           await fetch("/api/activity", {
             method: "POST",
