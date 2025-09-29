@@ -336,6 +336,37 @@ export default function Customers() {
       }
     } catch (_) {}
 
+    // 4) Direct Supabase fallback (global customers)
+    try {
+      const base = (window as any).__SUPABASE_URL
+        ? String((window as any).__SUPABASE_URL).replace(/\/$/, "")
+        : "";
+      const key = (window as any).__SUPABASE_ANON_KEY || "";
+      if (base && key && results.length === 0) {
+        const url = new URL(`${base}/rest/v1/customers`);
+        url.searchParams.set("select", "*");
+        if (search && search.trim()) {
+          const q = `*${search.trim()}*`;
+          url.searchParams.set(
+            "or",
+            `(name.ilike.${q},email.ilike.${q},phone.ilike.${q})`,
+          );
+        }
+        const r = await fetch(url.toString(), {
+          headers: {
+            apikey: key,
+            Authorization: `Bearer ${key}`,
+            Accept: "application/json",
+          },
+        });
+        if (r.ok) {
+          const arr = await r.json();
+          const list = Array.isArray(arr) ? arr : [];
+          results.push(...list.map(mapServerToCustomer));
+        }
+      }
+    } catch (_) {}
+
     const seen = new Set<string>();
     return results.filter((c) => {
       const key = String(c.id || c.email || c.phone || "");
