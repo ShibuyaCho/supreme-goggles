@@ -4017,7 +4017,7 @@ function cannabisPOS() {
     getMostPopularDeal() {
       try {
         const list = Array.isArray(this.deals) ? this.deals : [];
-        if (!list.length) return "���";
+        if (!list.length) return "����";
         let best = list[0];
         for (const d of list) {
           const cu = Number(d?.currentUses ?? d?.current_uses ?? 0) || 0;
@@ -4250,6 +4250,8 @@ function cannabisPOS() {
               ? "/deals"
               : `/deals/${this.editingDeal.id}`;
             const webMethod = creating ? "POST" : "PATCH";
+            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+            const sname = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.name ? String(o.name) : ''; } } catch(_) {} return ''; })();
             const resp = await fetch(webUrl, {
               method: webMethod,
               headers: {
@@ -4258,9 +4260,11 @@ function cannabisPOS() {
                 "X-CSRF-TOKEN":
                   (document.querySelector('meta[name="csrf-token"]') || {})
                     .content || "",
+                "X-Store-ID": String(sid),
+                ...(sname ? { "X-Store-Name": String(sname) } : {}),
               },
               credentials: "same-origin",
-              body: JSON.stringify(payload),
+              body: JSON.stringify({ ...payload, store_id: sid }),
             });
             const j = await resp.json().catch(() => ({}));
             if (resp.ok && j?.deal && j.deal.id != null) {
