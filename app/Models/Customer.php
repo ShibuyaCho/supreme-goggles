@@ -66,18 +66,21 @@ class Customer extends Model
 
     public function getFullNameAttribute()
     {
-        if ($this->name) {
-            return $this->name;
-        }
-        return trim($this->first_name . ' ' . $this->last_name);
+        // Compute from first and last directly to avoid recursion
+        $first = (string)($this->attributes['first_name'] ?? $this->first_name ?? '');
+        $last  = (string)($this->attributes['last_name'] ?? $this->last_name ?? '');
+        return trim(trim($first) . ' ' . trim($last));
     }
 
     public function getNameAttribute($value)
     {
-        if ($value) {
+        // Prefer stored name; otherwise compute from first/last names
+        if (!empty($value)) {
             return $value;
         }
-        return $this->getFullNameAttribute();
+        $first = (string)($this->attributes['first_name'] ?? $this->first_name ?? '');
+        $last  = (string)($this->attributes['last_name'] ?? $this->last_name ?? '');
+        return trim(trim($first) . ' ' . trim($last));
     }
 
     public function getAgeAttribute()
