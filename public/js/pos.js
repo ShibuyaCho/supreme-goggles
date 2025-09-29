@@ -3939,13 +3939,20 @@ function cannabisPOS() {
           window.__SUPABASE_ANON_KEY
         ) {
           try {
-            const url = `${window.__SUPABASE_URL.replace(/\/$/, "")}/rest/v1/deals?select=*&order=created_at.desc`;
+            const sid = (function(){ try{
+              return (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : (function(){ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } return 'default'; })();
+            } catch(_) { return 'default'; } })();
+            const sname = (function(){ try{ return (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function') ? SettingsClient.currentStoreName() : ''; } catch(_) { return ''; } })();
+            const base = window.__SUPABASE_URL.replace(/\/$/, "");
+            const url = `${base}/rest/v1/deals?select=*&order=created_at.desc&store_id=eq.${encodeURIComponent(sid)}`;
             const res = await fetch(url, {
               headers: {
                 apikey: window.__SUPABASE_ANON_KEY,
                 Authorization: `Bearer ${window.__SUPABASE_ANON_KEY}`,
                 Accept: "application/json",
                 "Cache-Control": "no-cache",
+                "X-Store-ID": String(sid),
+                ...(sname ? { "X-Store-Name": String(sname) } : {}),
               },
             });
             if (res.ok) {
@@ -4017,7 +4024,7 @@ function cannabisPOS() {
     getMostPopularDeal() {
       try {
         const list = Array.isArray(this.deals) ? this.deals : [];
-        if (!list.length) return "����";
+        if (!list.length) return "���";
         let best = list[0];
         for (const d of list) {
           const cu = Number(d?.currentUses ?? d?.current_uses ?? 0) || 0;
