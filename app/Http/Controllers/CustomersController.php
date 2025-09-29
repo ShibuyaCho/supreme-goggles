@@ -278,7 +278,8 @@ class CustomersController extends Controller
             'phone' => $request->phone,
             'date_of_birth' => $request->date_of_birth,
             'customer_type' => $request->customer_type,
-            'address' => json_encode($request->address ?? []),
+            'name' => trim(($request->first_name ?? '') . ' ' . ($request->last_name ?? '')),
+            'address' => $request->address ?? [],
             'notes' => $request->notes,
             'is_veteran' => $request->is_veteran ?? false
         ];
