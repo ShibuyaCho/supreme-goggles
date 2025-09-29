@@ -258,9 +258,11 @@ export default function Customers() {
     const results: Customer[] = [];
     // 1) Primary: PHP -> Supabase
     try {
+      const sid = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreId === 'function' ? (window as any).SettingsClient.currentStoreId() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.id || 'default');
+      const sname = (window as any).SettingsClient && typeof (window as any).SettingsClient.currentStoreName === 'function' ? (window as any).SettingsClient.currentStoreName() : (JSON.parse(localStorage.getItem('pos_store')||'{}')?.name || '');
       const res = await fetch(
         `/api/customers-open${search ? `?search=${encodeURIComponent(search)}` : ""}`,
-        { headers: { Accept: "application/json" } },
+        { headers: { Accept: "application/json", "X-Store-ID": String(sid||'default'), "X-Store-Name": String(sname||'') } },
       );
       if (res.ok) {
         const data = await res.json();
