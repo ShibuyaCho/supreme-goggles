@@ -106,7 +106,12 @@ class DealsController extends Controller
             }
         }
         if ($deals === null) {
-            $deals = Deal::when(\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->orderBy('created_at', 'desc')->get();
+            if (\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id')) {
+                $deals = Deal::where('store_id', \App\Helpers\StoreContext::id())->orderBy('created_at', 'desc')->get();
+            } else {
+                // No store_id column locally: avoid cross-store bleed by not returning local deals
+                $deals = collect([]);
+            }
         }
 
         // Load METRC categories with safe fallback and ensure 'Infused' always included
