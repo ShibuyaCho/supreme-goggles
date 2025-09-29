@@ -806,7 +806,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
                     'Cache-Control' => 'no-cache',
-                ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $paramsChk);
+                ])->retry(3, 150)->timeout(10)->withHeaders(['X-Store-ID' => $targetId])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $paramsChk);
                 if ($verChk->ok()){
                     $va = $verChk->json();
                     $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
@@ -926,6 +926,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                     'Authorization' => 'Bearer ' . $supabaseKey,
                     'Accept' => 'application/json',
                     'Cache-Control' => 'no-cache',
+                    'X-Store-ID' => $targetId,
                 ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
                 if ($ver->ok()) {
                     $va = $ver->json();
