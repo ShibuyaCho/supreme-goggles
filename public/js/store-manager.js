@@ -249,7 +249,7 @@
         else localStorage.removeItem("pos_store");
       } catch (_) {}
       try {
-        var sid = (prev && prev.id) ? String(prev.id) : "";
+        var sid = prev && prev.id ? String(prev.id) : "";
         if (sid) {
           document.cookie = `cpos_store_id=${encodeURIComponent(sid)}; path=/; max-age=${60 * 60 * 24 * 365}`;
         } else {
@@ -298,7 +298,12 @@
       try {
         const res = await (window.axios || axios).get(
           "/api/settings/stores/open",
-          { headers: { Accept: "application/json", "Cache-Control": "no-cache" } },
+          {
+            headers: {
+              Accept: "application/json",
+              "Cache-Control": "no-cache",
+            },
+          },
         );
         rows =
           res && res.data && Array.isArray(res.data.stores)
@@ -323,7 +328,12 @@
         try {
           const res = await (window.axios || axios).get(
             "/api/settings/stores",
-            { headers: { Accept: "application/json", "Cache-Control": "no-cache" } },
+            {
+              headers: {
+                Accept: "application/json",
+                "Cache-Control": "no-cache",
+              },
+            },
           );
           rows =
             res && res.data && Array.isArray(res.data.stores)
@@ -344,17 +354,24 @@
                 apikey: key,
                 Authorization: `Bearer ${key}`,
                 Accept: "application/json",
-                'Cache-Control': 'no-cache'
+                "Cache-Control": "no-cache",
               },
             });
             if (r.ok) {
               const arr = await r.json();
               rows = (arr || []).map((row) => {
                 const id = String(row.id || "");
-                const si = row && row["Store_Information"] && typeof row["Store_Information"] === 'object' ? row["Store_Information"] : {};
+                const si =
+                  row &&
+                  row["Store_Information"] &&
+                  typeof row["Store_Information"] === "object"
+                    ? row["Store_Information"]
+                    : {};
                 const name = row?.store_name
                   ? String(row.store_name)
-                  : (si && si.store_name ? String(si.store_name) : id);
+                  : si && si.store_name
+                    ? String(si.store_name)
+                    : id;
                 return { id, name, updated_at: row.updated_at || null };
               });
             }

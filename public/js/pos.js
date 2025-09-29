@@ -3942,10 +3942,33 @@ function cannabisPOS() {
           window.__SUPABASE_ANON_KEY
         ) {
           try {
-            const sid = (function(){ try{
-              return (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : (function(){ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } return 'default'; })();
-            } catch(_) { return 'default'; } })();
-            const sname = (function(){ try{ return (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function') ? SettingsClient.currentStoreName() : ''; } catch(_) { return ''; } })();
+            const sid = (function () {
+              try {
+                return window.SettingsClient &&
+                  typeof SettingsClient.currentStoreId === "function"
+                  ? SettingsClient.currentStoreId()
+                  : (function () {
+                      const raw = localStorage.getItem("pos_store");
+                      if (raw) {
+                        const o = JSON.parse(raw);
+                        return o && o.id ? String(o.id) : "default";
+                      }
+                      return "default";
+                    })();
+              } catch (_) {
+                return "default";
+              }
+            })();
+            const sname = (function () {
+              try {
+                return window.SettingsClient &&
+                  typeof SettingsClient.currentStoreName === "function"
+                  ? SettingsClient.currentStoreName()
+                  : "";
+              } catch (_) {
+                return "";
+              }
+            })();
             const base = window.__SUPABASE_URL.replace(/\/$/, "");
             const url = `${base}/rest/v1/deals?select=*&order=created_at.desc&store_id=eq.${encodeURIComponent(sid)}`;
             const res = await fetch(url, {
@@ -3967,7 +3990,16 @@ function cannabisPOS() {
         }
         // Merge any locally-saved deals (persist across logins in this browser)
         try {
-          const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+          const sid = (function () {
+            try {
+              const raw = localStorage.getItem("pos_store");
+              if (raw) {
+                const o = JSON.parse(raw);
+                return o && o.id ? String(o.id) : "default";
+              }
+            } catch (_) {}
+            return "default";
+          })();
           const rawLocal = localStorage.getItem(`pos_deals_local_v1_${sid}`);
           const localArr = rawLocal ? JSON.parse(rawLocal) : [];
           const mappedLocal = (Array.isArray(localArr) ? localArr : []).map(
@@ -4090,7 +4122,16 @@ function cannabisPOS() {
         if (String(deal.id).startsWith("local-")) {
           deal.isActive = !deal.isActive;
           try {
-            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+            const sid = (function () {
+              try {
+                const raw = localStorage.getItem("pos_store");
+                if (raw) {
+                  const o = JSON.parse(raw);
+                  return o && o.id ? String(o.id) : "default";
+                }
+              } catch (_) {}
+              return "default";
+            })();
             const raw = localStorage.getItem(`pos_deals_local_v1_${sid}`);
             const arr = raw ? JSON.parse(raw) : [];
             const next = (Array.isArray(arr) ? arr : []).map((d) =>
@@ -4098,7 +4139,10 @@ function cannabisPOS() {
                 ? { ...d, is_active: deal.isActive }
                 : d,
             );
-            localStorage.setItem(`pos_deals_local_v1_${sid}`, JSON.stringify(next));
+            localStorage.setItem(
+              `pos_deals_local_v1_${sid}`,
+              JSON.stringify(next),
+            );
           } catch (_) {}
           this.filterDeals();
           this.showToast &&
@@ -4142,13 +4186,25 @@ function cannabisPOS() {
       try {
         if (String(id).startsWith("local-")) {
           try {
-            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+            const sid = (function () {
+              try {
+                const raw = localStorage.getItem("pos_store");
+                if (raw) {
+                  const o = JSON.parse(raw);
+                  return o && o.id ? String(o.id) : "default";
+                }
+              } catch (_) {}
+              return "default";
+            })();
             const raw = localStorage.getItem(`pos_deals_local_v1_${sid}`);
             const arr = raw ? JSON.parse(raw) : [];
             const next = (Array.isArray(arr) ? arr : []).filter(
               (d) => String(d.id) !== String(id),
             );
-            localStorage.setItem(`pos_deals_local_v1_${sid}`, JSON.stringify(next));
+            localStorage.setItem(
+              `pos_deals_local_v1_${sid}`,
+              JSON.stringify(next),
+            );
           } catch (_) {}
           this.deals = (this.deals || []).filter(
             (d) => String(d.id) !== String(id),
@@ -4263,8 +4319,26 @@ function cannabisPOS() {
               ? "/deals"
               : `/deals/${this.editingDeal.id}`;
             const webMethod = creating ? "POST" : "PATCH";
-            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
-            const sname = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.name ? String(o.name) : ''; } } catch(_) {} return ''; })();
+            const sid = (function () {
+              try {
+                const raw = localStorage.getItem("pos_store");
+                if (raw) {
+                  const o = JSON.parse(raw);
+                  return o && o.id ? String(o.id) : "default";
+                }
+              } catch (_) {}
+              return "default";
+            })();
+            const sname = (function () {
+              try {
+                const raw = localStorage.getItem("pos_store");
+                if (raw) {
+                  const o = JSON.parse(raw);
+                  return o && o.name ? String(o.name) : "";
+                }
+              } catch (_) {}
+              return "";
+            })();
             const resp = await fetch(webUrl, {
               method: webMethod,
               headers: {
@@ -4311,12 +4385,24 @@ function cannabisPOS() {
             const localId = `local-${Date.now()}`;
             const localDeal = this.mapDealToSpa({ ...payload, id: localId });
             // Save to localStorage cache per store
-            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+            const sid = (function () {
+              try {
+                const raw = localStorage.getItem("pos_store");
+                if (raw) {
+                  const o = JSON.parse(raw);
+                  return o && o.id ? String(o.id) : "default";
+                }
+              } catch (_) {}
+              return "default";
+            })();
             const raw = localStorage.getItem(`pos_deals_local_v1_${sid}`);
             const arr = raw ? JSON.parse(raw) : [];
             const next = Array.isArray(arr) ? arr : [];
             next.unshift({ ...localDeal });
-            localStorage.setItem(`pos_deals_local_v1_${sid}`, JSON.stringify(next));
+            localStorage.setItem(
+              `pos_deals_local_v1_${sid}`,
+              JSON.stringify(next),
+            );
             // Update UI
             this.deals = [localDeal, ...(this.deals || [])];
             this.filterDeals();
