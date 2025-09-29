@@ -4307,12 +4307,13 @@ function cannabisPOS() {
           try {
             const localId = `local-${Date.now()}`;
             const localDeal = this.mapDealToSpa({ ...payload, id: localId });
-            // Save to localStorage cache
-            const raw = localStorage.getItem("pos_deals_local_v1");
+            // Save to localStorage cache per store
+            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+            const raw = localStorage.getItem(`pos_deals_local_v1_${sid}`);
             const arr = raw ? JSON.parse(raw) : [];
             const next = Array.isArray(arr) ? arr : [];
             next.unshift({ ...localDeal });
-            localStorage.setItem("pos_deals_local_v1", JSON.stringify(next));
+            localStorage.setItem(`pos_deals_local_v1_${sid}`, JSON.stringify(next));
             // Update UI
             this.deals = [localDeal, ...(this.deals || [])];
             this.filterDeals();
