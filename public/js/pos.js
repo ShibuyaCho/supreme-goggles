@@ -3964,7 +3964,8 @@ function cannabisPOS() {
         }
         // Merge any locally-saved deals (persist across logins in this browser)
         try {
-          const rawLocal = localStorage.getItem("pos_deals_local_v1");
+          const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+          const rawLocal = localStorage.getItem(`pos_deals_local_v1_${sid}`);
           const localArr = rawLocal ? JSON.parse(rawLocal) : [];
           const mappedLocal = (Array.isArray(localArr) ? localArr : []).map(
             (d) => this.mapDealToSpa(d),
