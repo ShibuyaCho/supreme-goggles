@@ -4139,12 +4139,13 @@ function cannabisPOS() {
       try {
         if (String(id).startsWith("local-")) {
           try {
-            const raw = localStorage.getItem("pos_deals_local_v1");
+            const sid = (function(){ try{ const raw = localStorage.getItem('pos_store'); if (raw) { const o = JSON.parse(raw); return o && o.id ? String(o.id) : 'default'; } } catch(_) {} return 'default'; })();
+            const raw = localStorage.getItem(`pos_deals_local_v1_${sid}`);
             const arr = raw ? JSON.parse(raw) : [];
             const next = (Array.isArray(arr) ? arr : []).filter(
               (d) => String(d.id) !== String(id),
             );
-            localStorage.setItem("pos_deals_local_v1", JSON.stringify(next));
+            localStorage.setItem(`pos_deals_local_v1_${sid}`, JSON.stringify(next));
           } catch (_) {}
           this.deals = (this.deals || []).filter(
             (d) => String(d.id) !== String(id),
