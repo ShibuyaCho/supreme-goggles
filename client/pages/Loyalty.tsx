@@ -149,6 +149,30 @@ export default function Loyalty() {
             }
           } catch (_) {}
         }
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const base = (window as any).__SUPABASE_URL
+              ? String((window as any).__SUPABASE_URL).replace(/\/$/, "")
+              : "";
+            const key = (window as any).__SUPABASE_ANON_KEY || "";
+            if (base && key) {
+              const url = new URL(`${base}/rest/v1/loyalty_members`);
+              url.searchParams.set("select", "*");
+              const q = (document?.querySelector('#loyalty-search') as HTMLInputElement)?.value || searchQuery || "";
+              if (q && q.trim()) {
+                const s = `*${q.trim()}*`;
+                url.searchParams.set("or", `(name.ilike.${s},email.ilike.${s},phone.ilike.${s})`);
+              }
+              const r = await fetch(url.toString(), {
+                headers: { apikey: key, Authorization: `Bearer ${key}`, Accept: "application/json" },
+              });
+              if (r.ok) {
+                const arr = await r.json();
+                list = Array.isArray(arr) ? arr : [];
+              }
+            }
+          } catch (_) {}
+        }
         setCustomers(Array.isArray(list) ? list.map(mapMember) : []);
       } catch (_) {
         setCustomers([]);
