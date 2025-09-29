@@ -1635,9 +1635,21 @@ app.post("/api/settings/pos", async (req, res) => {
         try {
           errTxt = await r.text();
         } catch (_) {}
+        let msg = errTxt || `Supabase upsert/patch failed (${r && r.status})`;
+        let code = null;
+        try {
+          const j = errTxt && errTxt.trim().startsWith('{') ? JSON.parse(errTxt) : null;
+          if (j) {
+            code = j.code || null;
+            msg = j.message || j.hint || j.details || msg;
+          }
+        } catch (_) {}
         return res.status((r && r.status) || 502).json({
           success: false,
-          error: errTxt || `Supabase upsert/patch failed (${r && r.status})`,
+          message: msg,
+          supabase_error: errTxt,
+          supabase_error_code: code,
+          supabase_status: (r && r.status) || 502,
         });
       }
     }
@@ -1894,9 +1906,10 @@ app.post("/api/settings/pos", async (req, res) => {
       saved: payload,
     });
   } catch (e) {
+    const em = (e && e.message) ? e.message : "Failed to save settings";
     return res
       .status(500)
-      .json({ success: false, error: "Failed to save settings" });
+      .json({ success: false, message: em, error: em });
   }
 });
 
