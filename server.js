@@ -2906,7 +2906,9 @@ app.get("/api/loyalty-members", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const sel = `loyalty_members?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const r = await supaFetch(sel);
+    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
+    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const r = await supaFetch(sel, { headers: { "X-Store-ID": String(sid), "X-Store-Name": String(sname) } });
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, members: payload });
   } catch (e) {
@@ -2918,7 +2920,9 @@ app.get("/node/loyalty-members", async (req, res) => {
   try {
     const search = (req.query?.search || "").toString().trim();
     const sel = `loyalty_members?select=*${search ? `&or=(name.ilike.*${encodeURIComponent(search)}*,email.ilike.*${encodeURIComponent(search)}*,phone.ilike.*${encodeURIComponent(search)}*)` : ""}`;
-    const r = await supaFetch(sel);
+    const sid = (req.header ? req.header("X-Store-ID") : req.headers?.["x-store-id"]) || "default";
+    const sname = (req.header ? req.header("X-Store-Name") : req.headers?.["x-store-name"]) || "";
+    const r = await supaFetch(sel, { headers: { "X-Store-ID": String(sid), "X-Store-Name": String(sname) } });
     const payload = r.ok ? await r.json() : [];
     res.json({ success: true, members: payload });
   } catch (e) {
