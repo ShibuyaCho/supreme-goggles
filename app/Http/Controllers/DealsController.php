@@ -41,8 +41,12 @@ class DealsController extends Controller
                         return (string)$sid === (string)$storeId;
                     });
 
-                    // Always also load local deals and merge any that aren't present in Supabase
-                    $localDeals = Deal::when(\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->orderBy('created_at','desc')->get();
+                    // Always also load local deals for the current store only; if schema lacks store_id, skip local merge to avoid cross-store bleed
+                    if (\Illuminate\Support\Facades\Schema::hasColumn('deals','store_id')) {
+                        $localDeals = Deal::where('store_id', \App\Helpers\StoreContext::id())->orderBy('created_at','desc')->get();
+                    } else {
+                        $localDeals = collect([]);
+                    }
                     $merged = collect([]);
                     // Normalize keys and avoid id collisions
                     $supabaseByKey = $supabaseDeals->keyBy(function($d){
