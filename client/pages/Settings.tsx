@@ -330,8 +330,15 @@ export default function Settings() {
       inventory_view_mode: settings.inventoryViewMode,
       expandable_cart: !!settings.expandableCart,
 
-      // Hours
-      business_hours: settings.hours,
+      // Hours (normalize to server shape)
+      business_hours: Array.isArray(settings.hours)
+        ? settings.hours.map((h) => ({
+            day: h.day,
+            is_open: !!(h as any).is_open || !!h.isOpen,
+            open_time: (h as any).open_time || h.openTime || "09:00",
+            close_time: (h as any).close_time || h.closeTime || "21:00",
+          }))
+        : [],
     };
 
     // Enrich with other sections (tax breakdowns, printing prefs, METRC, sales rules)
@@ -539,7 +546,12 @@ export default function Settings() {
             expandableCart:
               data.expandable_cart ?? currentStore.settings.expandableCart,
             hours: Array.isArray(data.business_hours)
-              ? data.business_hours
+              ? data.business_hours.map((h: any) => ({
+                  day: String(h?.day || "Monday"),
+                  isOpen: !!(h?.isOpen ?? h?.is_open ?? false),
+                  openTime: String(h?.openTime ?? h?.open_time ?? "09:00"),
+                  closeTime: String(h?.closeTime ?? h?.close_time ?? "21:00"),
+                }))
               : currentStore.settings.hours,
           };
           setCurrentStore((prev) => ({
@@ -592,7 +604,12 @@ export default function Settings() {
             expandableCart:
               data.expandable_cart ?? currentStore.settings.expandableCart,
             hours: Array.isArray(data.business_hours)
-              ? data.business_hours
+              ? data.business_hours.map((h: any) => ({
+                  day: String(h?.day || "Monday"),
+                  isOpen: !!(h?.isOpen ?? h?.is_open ?? false),
+                  openTime: String(h?.openTime ?? h?.open_time ?? "09:00"),
+                  closeTime: String(h?.closeTime ?? h?.close_time ?? "21:00"),
+                }))
               : currentStore.settings.hours,
           };
           setCurrentStore((prev) => ({
