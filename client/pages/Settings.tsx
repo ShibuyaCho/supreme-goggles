@@ -655,7 +655,17 @@ export default function Settings() {
               value={currentStore.id}
               onValueChange={(storeId) => {
                 const store = stores.find((s) => s.id === storeId);
-                if (store) setCurrentStore(store);
+                if (store) {
+                  setCurrentStore(store);
+                  try {
+                    localStorage.setItem(
+                      "pos_store",
+                      JSON.stringify({ id: store.id, name: store.name })
+                    );
+                    document.cookie = `cpos_store_id=${encodeURIComponent(store.id)}; path=/; max-age=${60 * 60 * 24 * 365}`;
+                    window.dispatchEvent(new Event("storage"));
+                  } catch (_) {}
+                }
               }}
             >
               <SelectTrigger className="w-64">
