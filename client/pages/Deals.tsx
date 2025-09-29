@@ -264,19 +264,36 @@ export default function Deals() {
   const storeHeaders = () => {
     try {
       const anyWin: any = window as any;
-      let sid = typeof anyWin?.SettingsClient?.currentStoreId === 'function' ? anyWin.SettingsClient.currentStoreId() : '';
+      let sid =
+        typeof anyWin?.SettingsClient?.currentStoreId === "function"
+          ? anyWin.SettingsClient.currentStoreId()
+          : "";
       if (!sid) {
-        try { const raw = localStorage.getItem('pos_store'); if (raw) sid = String(JSON.parse(raw)?.id || ''); } catch {}
+        try {
+          const raw = localStorage.getItem("pos_store");
+          if (raw) sid = String(JSON.parse(raw)?.id || "");
+        } catch {}
       }
-      if (!sid) sid = 'default';
-      let sname = typeof anyWin?.SettingsClient?.currentStoreName === 'function' ? anyWin.SettingsClient.currentStoreName() : '';
+      if (!sid) sid = "default";
+      let sname =
+        typeof anyWin?.SettingsClient?.currentStoreName === "function"
+          ? anyWin.SettingsClient.currentStoreName()
+          : "";
       if (!sname) {
-        try { const raw = localStorage.getItem('pos_store'); if (raw) sname = String(JSON.parse(raw)?.name || ''); } catch {}
+        try {
+          const raw = localStorage.getItem("pos_store");
+          if (raw) sname = String(JSON.parse(raw)?.name || "");
+        } catch {}
       }
-      const h: Record<string,string> = { Accept: 'application/json', 'X-Store-ID': String(sid) };
-      if (sname) (h as any)['X-Store-Name'] = sname;
+      const h: Record<string, string> = {
+        Accept: "application/json",
+        "X-Store-ID": String(sid),
+      };
+      if (sname) (h as any)["X-Store-Name"] = sname;
       return h;
-    } catch { return { Accept: 'application/json', 'X-Store-ID': 'default' } as any; }
+    } catch {
+      return { Accept: "application/json", "X-Store-ID": "default" } as any;
+    }
   };
 
   useEffect(() => {
@@ -599,7 +616,10 @@ export default function Deals() {
   const deleteDeal = async (dealId: string) => {
     if (confirm("Are you sure you want to delete this deal?")) {
       try {
-        const r = await fetch(`/api/deals/${dealId}`, { method: "DELETE", headers: { ...storeHeaders() } });
+        const r = await fetch(`/api/deals/${dealId}`, {
+          method: "DELETE",
+          headers: { ...storeHeaders() },
+        });
         // proceed even if server fails to avoid UI lock; server is source of truth on next load
       } catch (_) {}
       setDeals((prev) => {
