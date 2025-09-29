@@ -228,19 +228,32 @@ export default function Settings() {
   const loadedFromServer = useRef(false);
 
   const getStoreHeaders = () => {
+    // Prefer SettingsClient's notion of current store; fall back to cookie/localStorage
     try {
-      const raw = localStorage.getItem("pos_store");
-      if (raw) {
-        const store = JSON.parse(raw);
-        if (store && store.id) {
-          return {
-            "X-Store-ID": String(store.id),
-            Accept: "application/json",
-          } as Record<string, string>;
-        }
+      const sc: any = (window as any).SettingsClient;
+      let sid = sc && typeof sc.currentStoreId === 'function' ? sc.currentStoreId() : '';
+      if (!sid) {
+        try {
+          const m = document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/);
+          if (m) sid = decodeURIComponent(m[1] || '');
+        } catch (_) {}
       }
-    } catch {}
-    return { Accept: "application/json" } as Record<string, string>;
+      if (!sid) {
+        try {
+          const raw = localStorage.getItem('pos_store');
+          if (raw) sid = String(JSON.parse(raw)?.id || '');
+        } catch (_) {}
+      }
+      if (!sid) sid = 'default';
+      const headers: Record<string, string> = { Accept: 'application/json', 'X-Store-ID': String(sid) };
+      try {
+        const sname = sc && typeof sc.currentStoreName === 'function' ? sc.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+        if (sname) headers['X-Store-Name'] = sname;
+      } catch (_) {}
+      return headers;
+    } catch (_) {
+      return { Accept: 'application/json', 'X-Store-ID': 'default' } as Record<string, string>;
+    }
   };
 
   const updateStoreSettings = (updates: Partial<StoreSettings>) => {
@@ -333,10 +346,10 @@ export default function Settings() {
       // Hours (normalize to server shape)
       business_hours: Array.isArray(settings.hours)
         ? settings.hours.map((h) => ({
-            day: h.day,
-            is_open: !!(h as any).is_open || !!h.isOpen,
-            open_time: (h as any).open_time || h.openTime || "09:00",
-            close_time: (h as any).close_time || h.closeTime || "21:00",
+            day: String((h as any).day || ''),
+            is_open: !!((h as any).is_open ?? (h as any).isOpen ?? false),
+            open_time: String((h as any).open_time ?? (h as any).openTime ?? '09:00'),
+            close_time: String((h as any).close_time ?? (h as any).closeTime ?? '21:00'),
           }))
         : [],
     };
@@ -656,15 +669,8 @@ export default function Settings() {
               onValueChange={(storeId) => {
                 const store = stores.find((s) => s.id === storeId);
                 if (store) {
+                  // Only update local UI; do not override global store context used by SettingsClient
                   setCurrentStore(store);
-                  try {
-                    localStorage.setItem(
-                      "pos_store",
-                      JSON.stringify({ id: store.id, name: store.name })
-                    );
-                    document.cookie = `cpos_store_id=${encodeURIComponent(store.id)}; path=/; max-age=${60 * 60 * 24 * 365}`;
-                    window.dispatchEvent(new Event("storage"));
-                  } catch (_) {}
                 }
               }}
             >
