@@ -231,28 +231,49 @@ export default function Settings() {
     // Prefer SettingsClient's notion of current store; fall back to cookie/localStorage
     try {
       const sc: any = (window as any).SettingsClient;
-      let sid = sc && typeof sc.currentStoreId === 'function' ? sc.currentStoreId() : '';
+      let sid =
+        sc && typeof sc.currentStoreId === "function"
+          ? sc.currentStoreId()
+          : "";
       if (!sid) {
         try {
           const m = document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/);
-          if (m) sid = decodeURIComponent(m[1] || '');
+          if (m) sid = decodeURIComponent(m[1] || "");
         } catch (_) {}
       }
       if (!sid) {
         try {
-          const raw = localStorage.getItem('pos_store');
-          if (raw) sid = String(JSON.parse(raw)?.id || '');
+          const raw = localStorage.getItem("pos_store");
+          if (raw) sid = String(JSON.parse(raw)?.id || "");
         } catch (_) {}
       }
-      if (!sid) sid = 'default';
-      const headers: Record<string, string> = { Accept: 'application/json', 'X-Store-ID': String(sid) };
+      if (!sid) sid = "default";
+      const headers: Record<string, string> = {
+        Accept: "application/json",
+        "X-Store-ID": String(sid),
+      };
       try {
-        const sname = sc && typeof sc.currentStoreName === 'function' ? sc.currentStoreName() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
-        if (sname) headers['X-Store-Name'] = sname;
+        const sname =
+          sc && typeof sc.currentStoreName === "function"
+            ? sc.currentStoreName()
+            : (function () {
+                try {
+                  const raw = localStorage.getItem("pos_store");
+                  if (raw) {
+                    const o = JSON.parse(raw) || {};
+                    return String(o.name || "");
+                  }
+                } catch (_) {}
+                return "";
+              })();
+        if (sname) headers["X-Store-Name"] = sname;
       } catch (_) {}
       return headers;
     } catch (_) {
-      return { Accept: 'application/json', 'X-Store-ID': 'default' } as Record<string, string>;
+      return { Accept: "application/json", "X-Store-ID": "default" } as Record<
+        string,
+        string
+      >;
     }
   };
 
@@ -346,10 +367,14 @@ export default function Settings() {
       // Hours (normalize to server shape)
       business_hours: Array.isArray(settings.hours)
         ? settings.hours.map((h) => ({
-            day: String((h as any).day || ''),
+            day: String((h as any).day || ""),
             is_open: !!((h as any).is_open ?? (h as any).isOpen ?? false),
-            open_time: String((h as any).open_time ?? (h as any).openTime ?? '09:00'),
-            close_time: String((h as any).close_time ?? (h as any).closeTime ?? '21:00'),
+            open_time: String(
+              (h as any).open_time ?? (h as any).openTime ?? "09:00",
+            ),
+            close_time: String(
+              (h as any).close_time ?? (h as any).closeTime ?? "21:00",
+            ),
           }))
         : [],
     };
