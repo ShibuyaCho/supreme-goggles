@@ -29,7 +29,7 @@ class SettingsController extends Controller
             $settings = $this->getCurrentSettings();
 
             // Mask sensitive fields in response
-            $responseSettings = $merged;
+            $responseSettings = $settings;
             if (is_array($responseSettings)) {
                 if (array_key_exists('metrc_user_key', $responseSettings)) {
                     $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
