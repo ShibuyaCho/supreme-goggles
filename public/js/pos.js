@@ -2179,8 +2179,8 @@ function cannabisPOS() {
                 return;
               }
               const msg =
-                res && (res.message || res.error)
-                  ? String(res.message || res.error)
+                res && (res.supabase_error || res.message || res.error)
+                  ? String(res.supabase_error || res.message || res.error)
                   : "Failed to save settings";
               this.showToast(msg, "error");
               return;
