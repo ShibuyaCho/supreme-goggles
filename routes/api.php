@@ -1021,7 +1021,9 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         // Remote failed: surface exact Supabase error
         $status = method_exists($resp,'status') ? $resp->status() : 502;
         $body = method_exists($resp,'body') ? $resp->body() : '';
-        return response()->json(['success'=>false,'message'=>'Supabase upsert failed','supabase_status'=>$status,'supabase_error'=>$body], $status ?: 502);
+        $msg = 'Supabase error'; $code = null;
+        try { $dec = json_decode($body, true); if (json_last_error() === JSON_ERROR_NONE && is_array($dec)) { $code = $dec['code'] ?? null; $msg = $dec['message'] ?? ($dec['hint'] ?? ($dec['details'] ?? $msg)); } else { $msg = $body ?: $msg; } } catch (\Throwable $e) { $msg = $body ?: $msg; }
+        return response()->json(['success'=>false,'message'=>$msg,'supabase_status'=>$status,'supabase_error'=>$body,'supabase_error_code'=>$code], $status ?: 502);
     } catch (\Throwable $e) {
         return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
     }
@@ -2279,7 +2281,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                             }
                             usleep(150000 * ($i+1));
                         }
-                        if ($success) { $saved = true; } else { return response()->json(['success'=>false,'message'=>'Supabase upsert failed','supabase_status'=>$lastStatus,'supabase_error'=>$lastBody], $lastStatus ?: 502); }
+                        if ($success) { $saved = true; } else { $msg = 'Supabase error'; $code = null; try { $dec = json_decode($lastBody, true); if (json_last_error() === JSON_ERROR_NONE && is_array($dec)) { $code = $dec['code'] ?? null; $msg = $dec['message'] ?? ($dec['hint'] ?? ($dec['details'] ?? $msg)); } else { $msg = $lastBody ?: $msg; } } catch (\Throwable $e) { $msg = $lastBody ?: $msg; } return response()->json(['success'=>false,'message'=>$msg,'supabase_status'=>$lastStatus,'supabase_error'=>$lastBody,'supabase_error_code'=>$code], $lastStatus ?: 502); }
                     } catch (\Throwable $e) { /* fall back to DB */ }
                 }
 
