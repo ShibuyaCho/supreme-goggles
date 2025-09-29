@@ -249,6 +249,14 @@
         else localStorage.removeItem("pos_store");
       } catch (_) {}
       try {
+        var sid = (prev && prev.id) ? String(prev.id) : "";
+        if (sid) {
+          document.cookie = `cpos_store_id=${encodeURIComponent(sid)}; path=/; max-age=${60 * 60 * 24 * 365}`;
+        } else {
+          document.cookie = "cpos_store_id=; path=/; max-age=0";
+        }
+      } catch (_) {}
+      try {
         window.dispatchEvent(new Event("storage"));
       } catch (_) {}
       if (typeof window.updateStoreHeaderLabel === "function")
