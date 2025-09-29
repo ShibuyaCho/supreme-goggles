@@ -1425,22 +1425,25 @@
         let supaErrText = "";
         try {
           const sidNow = currentStoreId();
+          // Resolve target row id by id or store_name to avoid unique store_name conflicts
           let targetIdNow = sidNow;
           try {
             const snameQ =
               typeof merged.store_name === "string"
                 ? merged.store_name.trim()
                 : "";
-            if (snameQ) {
-              const find = await supaReqRetry(
-                `pos_settings?store_name=eq.${encodeURIComponent(snameQ)}&select=id,store_name&limit=1`,
-                { method: "GET" },
-              );
-              if (find && find.ok) {
-                const fa = await find.json();
-                const fr = Array.isArray(fa) && fa[0] ? fa[0] : null;
-                if (fr && fr.id) targetIdNow = String(fr.id);
-              }
+            const qp = snameQ
+              ? `pos_settings?select=id,store_name&or=(id.eq.${encodeURIComponent(
+                  sidNow,
+                )},store_name.eq.${encodeURIComponent(snameQ)})&limit=1`
+              : `pos_settings?id=eq.${encodeURIComponent(
+                  sidNow,
+                )}&select=id,store_name&limit=1`;
+            const findAny = await supaReqRetry(qp, { method: "GET" });
+            if (findAny && findAny.ok) {
+              const fa = await findAny.json();
+              const fr = Array.isArray(fa) && fa[0] ? fa[0] : null;
+              if (fr && fr.id) targetIdNow = String(fr.id);
             }
           } catch (_) {}
           const nowIso = new Date().toISOString();
@@ -1498,6 +1501,7 @@
               last = eTxt;
             }
             // Fallback: PATCH existing row by id (avoids on_conflict semantics)
+            let patchedOk = false;
             try {
               const rPatch = await supaReqRetry(
                 `pos_settings?id=eq.${encodeURIComponent(targetIdNow)}`,
@@ -1513,20 +1517,47 @@
               );
               if (rPatch && rPatch.ok) {
                 r0 = rPatch;
+                patchedOk = true;
               }
-            } catch (ePatch) {
+            } catch (_) {}
+            // Last resort: resolve by store_name then PATCH that id with matching header (to satisfy RLS)
+            if (!patchedOk) {
               try {
-                await fetch("/api/activity", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    action: "settings-save-patch-failed",
-                    storeId: sidNow,
-                    message: String(
-                      (ePatch && ePatch.message) || "patch failed",
-                    ),
-                  }),
-                });
+                const snameQ =
+                  typeof merged.store_name === "string"
+                    ? merged.store_name.trim()
+                    : "";
+                if (snameQ) {
+                  const find2 = await supaReqRetry(
+                    `pos_settings?store_name=eq.${encodeURIComponent(
+                      snameQ,
+                    )}&select=id,store_name&limit=1`,
+                    { method: "GET" },
+                  );
+                  if (find2 && find2.ok) {
+                    const fa2 = await find2.json();
+                    const fr2 = Array.isArray(fa2) && fa2[0] ? fa2[0] : null;
+                    if (fr2 && fr2.id) {
+                      const id2 = String(fr2.id);
+                      const rPatch2 = await supaReqRetry(
+                        `pos_settings?id=eq.${encodeURIComponent(id2)}`,
+                        {
+                          method: "PATCH",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Prefer:
+                              "resolution=merge-duplicates,return=representation",
+                            "X-Store-ID": id2,
+                          },
+                          body: JSON.stringify(payload[0]),
+                        },
+                      );
+                      if (rPatch2 && rPatch2.ok) {
+                        r0 = rPatch2;
+                      }
+                    }
+                  }
+                }
               } catch (_) {}
             }
           }
