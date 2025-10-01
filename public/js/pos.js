@@ -3624,6 +3624,22 @@ function cannabisPOS() {
                   59,
                 ),
               ).toISOString();
+              // Include store context to satisfy RLS and isolate data
+              const sid = (function(){
+                try{
+                  if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') return SettingsClient.currentStoreId();
+                  const m = document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if (m) return decodeURIComponent(m[1]);
+                  const raw = localStorage.getItem('pos_store'); if (raw) return (JSON.parse(raw)||{}).id || 'default';
+                }catch(_){}
+                return 'default';
+              })();
+              const sname = (function(){
+                try{
+                  if (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function') return SettingsClient.currentStoreName();
+                  const raw = localStorage.getItem('pos_store'); if (raw) return (JSON.parse(raw)||{}).name || '';
+                }catch(_){}
+                return '';
+              })();
               const resp = await fetch(
                 `${url}?select=*&or=(status.eq.completed,status.eq.Completed,status.is.null)&and=(created_at.gte.${encodeURIComponent(startIso)},created_at.lte.${encodeURIComponent(endIso)})&limit=20000`,
                 {
@@ -3631,6 +3647,8 @@ function cannabisPOS() {
                     Accept: "application/json",
                     apikey: key,
                     Authorization: `Bearer ${key}`,
+                    'X-Store-ID': String(sid || 'default'),
+                    ...(sname? { 'X-Store-Name': String(sname) } : {}),
                   },
                 },
               );
