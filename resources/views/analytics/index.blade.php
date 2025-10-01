@@ -425,7 +425,16 @@ document.addEventListener('DOMContentLoaded', function() {
         try{
           const timeframe = document.getElementById('timeframe-selector').value || 'today';
           const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
-          const res = await (window.axios||axios).get('/api/analytics/overview-open', { params: { timeframe, tz } });
+          let params = { timeframe, tz };
+          if (timeframe === 'custom') {
+            try {
+              const p = new URL(window.location.href).searchParams;
+              const start = p.get('start_date') || document.getElementById('start-date')?.value;
+              const end = p.get('end_date') || document.getElementById('end-date')?.value;
+              if (start && end) { params.start_date = start; params.end_date = end; }
+            } catch(_) {}
+          }
+          const res = await (window.axios||axios).get('/api/analytics/overview-open', { params });
           const data = res?.data || {};
           // Headline metrics
           const m = data.sales || {};
