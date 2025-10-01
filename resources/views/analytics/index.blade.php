@@ -411,6 +411,12 @@ document.addEventListener('DOMContentLoaded', function() {
         const timeframe = this.value;
         if (timeframe === 'custom') {
             document.getElementById('custom-date-range').classList.remove('hidden');
+            try {
+              const p = new URL(window.location.href).searchParams;
+              const s = p.get('start_date'); const e = p.get('end_date');
+              if (s) document.getElementById('start-date').value = s;
+              if (e) document.getElementById('end-date').value = e;
+            } catch(_) {}
         } else {
             document.getElementById('custom-date-range').classList.add('hidden');
             window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
