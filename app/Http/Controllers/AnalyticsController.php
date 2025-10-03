@@ -133,10 +133,39 @@ class AnalyticsController extends Controller
     {
         $timeframe = $request->get('timeframe', 'today');
         $dateRange = $this->getDateRange($timeframe, $request);
-        $data = $this->getSalesData($dateRange);
-        
-        // Generate PDF or CSV export
-        return response()->json(['message' => 'Export functionality would be implemented here']);
+        $format = strtolower($request->get('format', 'pdf'));
+        if (!in_array($format, ['pdf','csv'])) { $format = 'pdf'; }
+
+        $sales = $this->getSalesData($dateRange);
+        $products = $this->getProductData($dateRange);
+        $employees = $this->getEmployeeData($dateRange);
+        $company = $this->getCompanyViewData($dateRange);
+
+        $payload = [
+            'range' => [ 'start' => $dateRange['start']->toDateString(), 'end' => $dateRange['end']->toDateString() ],
+            'sales' => $sales,
+            'categories' => $products['categoryData'] ?? [],
+            'employees' => $employees,
+            'company' => $company,
+        ];
+
+        $meta = [
+            'filters' => ['timeframe'=>$timeframe, 'start_date'=>$request->get('start_date'), 'end_date'=>$request->get('end_date')],
+            'date_range' => $payload['range'],
+        ];
+
+        // Use ExportService
+        $service = app(\App\Services\ExportService::class);
+        if ($format === 'csv') {
+            $rows = [];
+            $rows[] = ['Metric','Value','Period','Change','Percentage'];
+            $rows[] = ['Revenue', $sales['revenue'] ?? 0, json_encode($payload['range']), $sales['change']['revenue'] ?? 0, null];
+            $rows[] = ['Transactions', $sales['transactions'] ?? 0, json_encode($payload['range']), $sales['change']['transactions'] ?? 0, null];
+            $rows[] = ['Customers', $sales['customers'] ?? 0, json_encode($payload['range']), $sales['change']['customers'] ?? 0, null];
+            $rows[] = ['Avg Order Value', $sales['avgOrderValue'] ?? 0, json_encode($payload['range']), $sales['change']['avgOrderValue'] ?? 0, null];
+            return $service->export('analytics', $rows, 'csv', [ 'filters' => $meta['filters'], 'date_range' => $payload['range'] ]);
+        }
+        return $service->export('analytics', $payload, 'pdf', [ 'filters' => $meta['filters'], 'date_range' => $payload['range'], 'orientation'=>'portrait' ]);
     }
     
     public function printReport(Request $request)
