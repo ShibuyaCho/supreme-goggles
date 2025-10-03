@@ -1003,16 +1003,18 @@ function settingsManager() {
                 if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
                     const sid = SettingsClient.currentStoreId();
                     SettingsClient.saveLocal(sid, this.settings);
-                    // Also write namespaced globals for this store (keep legacy globals too)
+                    // Also write namespaced globals for this store (keep legacy globals too), scrubbing secrets
                     try {
-                        const json = JSON.stringify(this.settings);
+                        const s = (function(src){ try{ const o=JSON.parse(JSON.stringify(src||{})); delete o.metrc_user_key; delete o.metrc_vendor_key; return o; }catch(_){ return src; } })(this.settings);
+                        const json = JSON.stringify(s);
                         localStorage.setItem(`cannabisPOS-settings_${sid}`, json);
                         localStorage.setItem(`cannabest-pos-settings_${sid}`, json);
                     } catch (_) {}
                 }
             } catch (_) {}
             try {
-                const json = JSON.stringify(this.settings);
+                const s = (function(src){ try{ const o=JSON.parse(JSON.stringify(src||{})); delete o.metrc_user_key; delete o.metrc_vendor_key; return o; }catch(_){ return src; } })(this.settings);
+                const json = JSON.stringify(s);
                 localStorage.setItem('cannabisPOS-settings', json);
                 localStorage.setItem('cannabest-pos-settings', json);
             } catch (error) {
@@ -1070,7 +1072,8 @@ function settingsManager() {
             if (Object.keys(patch).length === 0) return;
             const before = JSON.parse(JSON.stringify(this.settings));
             try {
-                const res = await (window.SettingsClient ? SettingsClient.save(patch) : Promise.resolve({ success:false }));
+                const v = Number(this.settings && this.settings.settings_version != null ? this.settings.settings_version : 0);
+                const res = await (window.SettingsClient ? SettingsClient.save(Object.assign({}, patch, { settings_version: v })) : Promise.resolve({ success:false }));
                 if (res && res.success && res.settings) {
                     this.settings = Object.assign({}, this.settings, res.settings);
                     this.saveSettingsToStorage();
@@ -1139,7 +1142,8 @@ function settingsManager() {
             const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
             const changedKeys = (()=>{ try{ const ks=new Set([...Object.keys(snapshot),...Object.keys(prev)]); const out=[]; ks.forEach(k=>{ if (JSON.stringify(snapshot[k]) !== JSON.stringify(prev[k])) out.push(k); }); return out; }catch(_){ return Object.keys(snapshot||{}); } })();
             try {
-                const res = await (window.SettingsClient ? SettingsClient.save(this.settings) : Promise.resolve({ success:false }));
+                const v = Number(this.settings && this.settings.settings_version != null ? this.settings.settings_version : 0);
+                const res = await (window.SettingsClient ? SettingsClient.save(Object.assign({}, this.settings, { settings_version: v })) : Promise.resolve({ success:false }));
                 if (res && res.success) {
                     this._lastPersistedJSON = JSON.stringify(this.settings);
                     this.showToast('Settings saved successfully!', 'success');
