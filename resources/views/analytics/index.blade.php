@@ -80,10 +80,10 @@
                     <select id="scope-selector" class="border border-gray-300 rounded px-3 py-2 text-sm">
                         <option value="company">Company-Wide View</option>
                     </select>
-                    <label for="start-date" class="text-sm text-gray-600">From</label>
-                    <input type="date" id="start-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
-                    <label for="end-date" class="text-sm text-gray-600">To</label>
-                    <input type="date" id="end-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                    <label for="analytics-start-date" class="text-sm text-gray-600">From</label>
+                    <input type="date" id="analytics-start-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                    <label for="analytics-end-date" class="text-sm text-gray-600">To</label>
+                    <input type="date" id="analytics-end-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
                     <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">Apply</button>
                     <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Export Report</button>
                 </div>
@@ -421,8 +421,8 @@ document.addEventListener('DOMContentLoaded', function() {
     try {
       const params = new URL(window.location.href).searchParams;
       const s = params.get('start_date'); const e = params.get('end_date');
-      if (s) document.getElementById('start-date').value = s;
-      if (e) document.getElementById('end-date').value = e;
+      if (s) document.getElementById('analytics-start-date').value = s;
+      if (e) document.getElementById('analytics-end-date').value = e;
     } catch(_) {}
     // Real-time analytics polling
     (function(){
@@ -437,8 +437,8 @@ document.addEventListener('DOMContentLoaded', function() {
           if (timeframe === 'custom') {
             try {
               const p = new URL(window.location.href).searchParams;
-              const start = p.get('start_date') || document.getElementById('start-date')?.value;
-              const end = p.get('end_date') || document.getElementById('end-date')?.value;
+              const start = p.get('start_date') || document.getElementById('analytics-start-date')?.value;
+              const end = p.get('end_date') || document.getElementById('analytics-end-date')?.value;
               if (start && end) { params.start_date = start; params.end_date = end; }
             } catch(_) {}
           }
@@ -596,8 +596,8 @@ function switchTab(tabName) {
 }
 
 function applyCustomRange() {
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
+    const startDate = document.getElementById('analytics-start-date').value;
+    const endDate = document.getElementById('analytics-end-date').value;
     
     if (startDate && endDate) {
         window.location.href = `{{ route('analytics.index') }}?timeframe=custom&start_date=${startDate}&end_date=${endDate}`;
@@ -609,8 +609,8 @@ function exportOverview() {
     const url = new URL(`{{ route('analytics.export-overview') }}`, window.location.origin);
     url.searchParams.set('timeframe', timeframe);
     if (timeframe === 'custom') {
-        const s = document.getElementById('start-date')?.value;
-        const e = document.getElementById('end-date')?.value;
+        const s = document.getElementById('analytics-start-date')?.value;
+        const e = document.getElementById('analytics-end-date')?.value;
         if (s && e) {
             url.searchParams.set('start_date', s);
             url.searchParams.set('end_date', e);
