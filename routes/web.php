@@ -313,7 +313,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
 // Settings Routes
 Route::prefix('settings')->name('settings.')->group(function () {
     Route::get('/', [SettingsController::class, 'index'])->name('index');
-    Route::post('/', [SettingsController::class, 'update'])->name('update');
+    Route::post('/', [SettingsController::class, 'updateSettings'])->name('update');
     
     // Tax Settings
     Route::get('/tax', [SettingsController::class, 'tax'])->name('tax');
