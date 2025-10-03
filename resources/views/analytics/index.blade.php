@@ -419,9 +419,13 @@ document.addEventListener('DOMContentLoaded', function() {
     (function(){
       const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
       const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+      const getHttp = ()=>{ try { if (window.axios) return window.axios; } catch(_) {}
+        try { if (typeof axios !== 'undefined') return axios; } catch(_) {}
+        return null; };
       async function fetchOverview(){
         try{
-          const timeframe = (document.getElementById('timeframe-selector')?.value) || 'today';
+          const urlParams = new URL(window.location.href).searchParams;
+          const timeframe = (document.getElementById('timeframe-selector')?.value) || urlParams.get('timeframe') || 'today';
           const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
           let params = { timeframe, tz };
           if (timeframe === 'custom') {
@@ -432,7 +436,10 @@ document.addEventListener('DOMContentLoaded', function() {
               if (start && end) { params.start_date = start; params.end_date = end; }
             } catch(_) {}
           }
-          const res = await (window.axios||axios).get('/api/analytics/overview-open', { params });
+          const http = getHttp();
+          let res;
+          if (http) { res = await http.get('/api/analytics/overview-open', { params }); }
+          else { const q = new URL('/api/analytics/overview-open', window.location.origin); Object.entries(params).forEach(([k,v])=>{ if(v!=null) q.searchParams.set(k, v); }); res = await fetch(q.toString(), { headers:{'Accept':'application/json'} }); if (!res.ok) throw new Error('fetch failed'); res = { data: await res.json() }; }
           const data = res?.data || {};
           // Headline metrics
           const m = data.sales || {};
@@ -477,7 +484,11 @@ document.addEventListener('DOMContentLoaded', function() {
             body.innerHTML = '';
             company.stores.forEach(s=>{
               const tr = document.createElement('tr');
-              tr.innerHTML = `<td class="py-2 pr-4">${String(s.store_id)}</td><td class="text-right py-2 px-4">${(s.transactions||0).toLocaleString()}</td><td class="text-right py-2 px-4">${fmtMoney(s.revenue||0)}</td><td class="text-right py-2 pl-4">${fmtMoney(s.avg||0)}</td>`;
+              const tdStore = document.createElement('td'); tdStore.className = 'py-2 pr-4'; tdStore.textContent = String(s.store_id ?? '');
+              const tdTx = document.createElement('td'); tdTx.className = 'text-right py-2 px-4'; tdTx.textContent = (s.transactions||0).toLocaleString();
+              const tdRev = document.createElement('td'); tdRev.className = 'text-right py-2 px-4'; tdRev.textContent = fmtMoney(s.revenue||0);
+              const tdAvg = document.createElement('td'); tdAvg.className = 'text-right py-2 pl-4'; tdAvg.textContent = fmtMoney(s.avg||0);
+              tr.appendChild(tdStore); tr.appendChild(tdTx); tr.appendChild(tdRev); tr.appendChild(tdAvg);
               body.appendChild(tr);
             });
             if (note) note.classList.toggle('hidden', !!company.hasStoreDimension);
@@ -490,8 +501,9 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch(err) {
           // Fallback: derive minimal metrics from recent sales endpoint
           try {
-            const http = (window.axios||axios);
-            const tf = document.getElementById('timeframe-selector')?.value || 'today';
+            const http = getHttp();
+            const urlParams2 = new URL(window.location.href).searchParams;
+            const tf = document.getElementById('timeframe-selector')?.value || urlParams2.get('timeframe') || 'today';
             const now = new Date();
             const toISO = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             let start = toISO(now), end = toISO(now);
@@ -508,7 +520,8 @@ document.addEventListener('DOMContentLoaded', function() {
             setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
           } catch(_1) {
             try {
-              const tf2 = document.getElementById('timeframe-selector')?.value || 'today';
+              const urlParams3 = new URL(window.location.href).searchParams;
+              const tf2 = document.getElementById('timeframe-selector')?.value || urlParams3.get('timeframe') || 'today';
               const now2 = new Date();
               const toISO2 = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
               let start2 = toISO2(now2), end2 = toISO2(now2);
@@ -611,12 +624,15 @@ function applyCustomRange() {
 }
 
 function exportOverview() {
-    const timeframe = (document.getElementById('timeframe-selector')?.value) || (new URL(window.location.href).searchParams.get('timeframe') || 'today');
+    const paramsNow = new URL(window.location.href).searchParams;
+    const timeframe = (document.getElementById('timeframe-selector')?.value) || (paramsNow.get('timeframe') || 'today');
     const formatSel = document.getElementById('export-format');
     const format = (formatSel && formatSel.value) ? formatSel.value : 'pdf';
     const url = new URL(`{{ route('analytics.export-overview') }}`, window.location.origin);
     url.searchParams.set('timeframe', timeframe);
     url.searchParams.set('format', format);
+    const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+    if (tz) url.searchParams.set('tz', tz);
     if (timeframe === 'custom') {
         const s = document.getElementById('analytics-start-date')?.value;
         const e = document.getElementById('analytics-end-date')?.value;
