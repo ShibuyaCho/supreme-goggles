@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -237,6 +237,11 @@ const endOfDayData = {
 };
 
 export default function Analytics() {
+  useEffect(() => {
+    try { window.location.href = "/analytics"; } catch {}
+  }, []);
+  return null;
+  // The code below is intentionally retained for reference but will not render due to early return.
   const [timeframe, setTimeframe] = useState("today");
   const [selectedTab, setSelectedTab] = useState("overview");
   const [selectedLocation, setSelectedLocation] = useState("all");
