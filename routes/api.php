@@ -52,6 +52,10 @@ Route::get('/health', function () {
 Route::get('/deals', [DealsController::class, 'index']);
 
 // Supabase-backed open reads and writes (no auth) for SPA compatibility
+
+// Analytics open endpoints used by Blade dashboard
+Route::get('/analytics/overview-open', [AnalyticsController::class, 'overview']);
+Route::get('/analytics/end-of-day-open', [AnalyticsController::class, 'endOfDay']);
 // Customers (read-only open endpoint)
 Route::get('/customers-open', function(\Illuminate\Http\Request $request) {
     $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
