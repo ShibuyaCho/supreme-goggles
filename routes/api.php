@@ -967,6 +967,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         'Printing_Preferences' => $cols['Printing_Preferences'],
                         'Metrc_Integration' => $cols['Metrc_Integration'],
                         'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                        'settings' => $merged,
                         'updated_at' => now()->toIso8601String(),
                     ]]);
                 } catch (\Throwable $e) { /* ignore */ }
