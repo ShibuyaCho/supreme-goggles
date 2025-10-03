@@ -1021,12 +1021,34 @@ export default function Analytics() {
                 ))}
               </SelectContent>
             </Select>
+            <DatePickerWithRange
+              value={customDateRange}
+              onDateRangeChange={(range) => {
+                setCustomDateRange(range);
+                if (timeframe !== "custom") setTimeframe("custom");
+                try {
+                  const url = new URL(window.location.href);
+                  url.searchParams.set('timeframe','custom');
+                  url.searchParams.set('start_date', range.startDate);
+                  url.searchParams.set('end_date', range.endDate);
+                  window.history.replaceState({}, '', url.toString());
+                } catch {}
+              }}
+              className="w-56 whitespace-nowrap"
+            />
             <Select
               value={timeframe}
               onValueChange={(value) => {
                 setTimeframe(value);
                 if (value !== "custom") {
                   setCustomDateRange(null);
+                  try {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('timeframe', value);
+                    url.searchParams.delete('start_date');
+                    url.searchParams.delete('end_date');
+                    window.history.replaceState({}, '', url.toString());
+                  } catch {}
                 }
               }}
             >
@@ -1040,11 +1062,6 @@ export default function Analytics() {
                 <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
-            <DatePickerWithRange
-              value={customDateRange}
-              onDateRangeChange={(range) => { setCustomDateRange(range); if (timeframe !== "custom") setTimeframe("custom"); }}
-              className="w-48"
-            />
             <Button variant="outline" className="header-button-visible">
               <Download className="w-4 h-4 mr-2" />
               Export
