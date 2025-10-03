@@ -347,17 +347,33 @@ class SettingsController extends Controller
                 $storeId = $this->currentStoreIdFromRequest();
                 $saved = false;
                 if ($supabaseUrl && $supabaseKey) {
+                    // Build sectioned columns from defaults for clean reset
+                    $pick = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) $out[$k] = $src[$k]; } return $out; };
+                    $sec_Store_Information = ['store_name','license_number','store_address','store_phone','store_email','business_hours'];
+                    $sec_Tax_Configuration = ['sales_tax','excise_tax','cannabis_tax','tax_inclusive'];
+                    $sec_Sales_Settings = ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold'];
+                    $sec_Printing = ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer'];
+                    $sec_Metrc = ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales'];
+                    $sec_AutoDelete = ['auto_delete_zero_quantity','auto_delete_zero_days'];
+                    $payload = [[
+                        'id' => $storeId,
+                        'store_name' => $defaultSettings['store_name'] ?? null,
+                        'Store_Information' => $pick($defaultSettings, $sec_Store_Information),
+                        'Tax_Configuration' => $pick($defaultSettings, $sec_Tax_Configuration),
+                        'Sales_&_Transaction_Settings' => $pick($defaultSettings, $sec_Sales_Settings),
+                        'Printing_Preferences' => $pick($defaultSettings, $sec_Printing),
+                        'Metrc_Integration' => $pick($defaultSettings, $sec_Metrc),
+                        'Auto_Delete_Zero-Quantity_Products' => $pick($defaultSettings, $sec_AutoDelete),
+                        'settings' => $defaultSettings,
+                        'updated_at' => now()->toIso8601String(),
+                    ]];
                     $resp = \Illuminate\Support\Facades\Http::withHeaders([
                         'apikey' => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
                         'Prefer' => 'return=representation',
                         'X-Store-ID' => $storeId,
-                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
-                        'id' => $storeId,
-                        'settings' => $defaultSettings,
-                        'updated_at' => now()->toIso8601String(),
-                    ]]);
+                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', $payload);
                     if ($resp->successful()) { $saved = true; }
                 }
                 if (!$saved) {
