@@ -1028,10 +1028,10 @@ export default function Analytics() {
                 if (timeframe !== "custom") setTimeframe("custom");
                 try {
                   const url = new URL(window.location.href);
-                  url.searchParams.set('timeframe','custom');
-                  url.searchParams.set('start_date', range.startDate);
-                  url.searchParams.set('end_date', range.endDate);
-                  window.history.replaceState({}, '', url.toString());
+                  url.searchParams.set("timeframe", "custom");
+                  url.searchParams.set("start_date", range.startDate);
+                  url.searchParams.set("end_date", range.endDate);
+                  window.history.replaceState({}, "", url.toString());
                 } catch {}
               }}
               className="w-56 whitespace-nowrap"
@@ -1044,10 +1044,10 @@ export default function Analytics() {
                   setCustomDateRange(null);
                   try {
                     const url = new URL(window.location.href);
-                    url.searchParams.set('timeframe', value);
-                    url.searchParams.delete('start_date');
-                    url.searchParams.delete('end_date');
-                    window.history.replaceState({}, '', url.toString());
+                    url.searchParams.set("timeframe", value);
+                    url.searchParams.delete("start_date");
+                    url.searchParams.delete("end_date");
+                    window.history.replaceState({}, "", url.toString());
                   } catch {}
                 }
               }}
