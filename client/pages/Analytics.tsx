@@ -1040,13 +1040,11 @@ export default function Analytics() {
                 <SelectItem value="custom">Custom Range</SelectItem>
               </SelectContent>
             </Select>
-            {timeframe === "custom" && (
-              <DatePickerWithRange
-                value={customDateRange}
-                onDateRangeChange={setCustomDateRange}
-                className="w-48"
-              />
-            )}
+            <DatePickerWithRange
+              value={customDateRange}
+              onDateRangeChange={(range) => { setCustomDateRange(range); if (timeframe !== "custom") setTimeframe("custom"); }}
+              className="w-48"
+            />
             <Button variant="outline" className="header-button-visible">
               <Download className="w-4 h-4 mr-2" />
               Export
