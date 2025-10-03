@@ -1423,21 +1423,42 @@
         // Try Laravel API first (authoritative). If it succeeds, update caches and return success immediately.
         try {
           const data = await httpPost("/api/settings/pos", merged);
-          const s = data && (data.settings || data) ? data.settings || data : merged;
+          const s =
+            data && (data.settings || data) ? data.settings || data : merged;
           let m = { ...DEFAULTS, ...s };
           this.saveLocal(sid, m);
           try {
             const compat = Object.assign({}, m, { lastUpdated: Date.now() });
-            localStorage.setItem(`cannabisPOS-storeSettings_${sid}`, JSON.stringify(compat));
-            localStorage.setItem("cannabisPOS-storeSettings", JSON.stringify(compat));
+            localStorage.setItem(
+              `cannabisPOS-storeSettings_${sid}`,
+              JSON.stringify(compat),
+            );
+            localStorage.setItem(
+              "cannabisPOS-storeSettings",
+              JSON.stringify(compat),
+            );
           } catch (_) {}
-          try { writeCookie("cpos_store_id", sid); } catch (_) {}
-          try { writeUiCachesFromSettings(m); } catch (_) {}
           try {
-            window.dispatchEvent(new CustomEvent("settings:updated", { detail: { settings: m, storeId: sid }, }));
-            try { window.dispatchEvent(new CustomEvent("settings-updated", { detail: m })); } catch (_) {}
+            writeCookie("cpos_store_id", sid);
           } catch (_) {}
-          try { backgroundReconcile(m, sid); } catch (_) {}
+          try {
+            writeUiCachesFromSettings(m);
+          } catch (_) {}
+          try {
+            window.dispatchEvent(
+              new CustomEvent("settings:updated", {
+                detail: { settings: m, storeId: sid },
+              }),
+            );
+            try {
+              window.dispatchEvent(
+                new CustomEvent("settings-updated", { detail: m }),
+              );
+            } catch (_) {}
+          } catch (_) {}
+          try {
+            backgroundReconcile(m, sid);
+          } catch (_) {}
           return { success: true, settings: m };
         } catch (_) {}
 
