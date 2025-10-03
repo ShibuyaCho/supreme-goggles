@@ -462,7 +462,10 @@ document.addEventListener('DOMContentLoaded', function() {
             data.categories.forEach(cat=>{
               const row = document.createElement('div');
               row.className = 'flex items-center justify-between';
-              row.innerHTML = `<div class="flex items-center space-x-3"><div class="w-4 h-4 bg-green-500 rounded-full"></div><span class="text-sm font-medium text-gray-900">${cat.category||'Uncategorized'}</span></div><div class="text-right"><div class="text-sm font-semibold text-gray-900">${fmtMoney(cat.revenue||0)}</div><div class="text-xs text-gray-500">${Number(cat.percentage||0).toFixed(1)}%</div></div>`;
+              row.innerHTML = `<div class="flex items-center space-x-3"><div class="w-4 h-4 bg-green-500 rounded-full"></div><span class="cat-name text-sm font-medium text-gray-900"></span></div><div class="text-right"><div class="rev text-sm font-semibold text-gray-900"></div><div class="perc text-xs text-gray-500"></div></div>`;
+              row.querySelector('.cat-name').textContent = String(cat.category||'Uncategorized');
+              row.querySelector('.rev').textContent = fmtMoney(cat.revenue||0);
+              row.querySelector('.perc').textContent = `${Number(cat.percentage||0).toFixed(1)}%`;
               catWrap.appendChild(row);
             });
           }
@@ -473,7 +476,11 @@ document.addEventListener('DOMContentLoaded', function() {
             data.employees.forEach(e=>{
               const row = document.createElement('div');
               row.className='flex items-center justify-between p-4 border border-gray-200 rounded-lg';
-              row.innerHTML = `<div><div class="text-sm font-medium text-gray-900">${e.name||'Employee'}</div><div class="text-xs text-gray-600">${(e.transactions||0).toLocaleString()} transactions</div></div><div class="text-right"><div class="text-sm font-semibold text-gray-900">${fmtMoney(e.sales||0)}</div><div class="text-xs text-gray-600">Avg: ${fmtMoney(e.avgOrder||0)}</div></div>`;
+              row.innerHTML = `<div><div class="emp-name text-sm font-medium text-gray-900"></div><div class="emp-tx text-xs text-gray-600"></div></div><div class="text-right"><div class="emp-sales text-sm font-semibold text-gray-900"></div><div class="emp-avg text-xs text-gray-600"></div></div>`;
+              row.querySelector('.emp-name').textContent = String(e.name||'Employee');
+              row.querySelector('.emp-tx').textContent = `${(e.transactions||0).toLocaleString()} transactions`;
+              row.querySelector('.emp-sales').textContent = fmtMoney(e.sales||0);
+              row.querySelector('.emp-avg').textContent = `Avg: ${fmtMoney(e.avgOrder||0)}`;
               empWrap.appendChild(row);
             });
           }
@@ -539,6 +546,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
       try { if (window.__analyticsTimer) clearInterval(window.__analyticsTimer); } catch(_) {}
+      window.fetchOverview = fetchOverview;
       fetchOverview();
       window.__analyticsTimer = setInterval(fetchOverview, 10000);
       document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fetchOverview(); });
@@ -604,12 +612,14 @@ function applyCustomRange() {
     const endDate = document.getElementById('analytics-end-date')?.value;
     if (!startDate || !endDate) return;
     try {
+        const tfSel = document.getElementById('timeframe-selector');
+        if (tfSel) tfSel.value = 'custom';
         const url = new URL(window.location.href);
         url.searchParams.set('timeframe','custom');
         url.searchParams.set('start_date', startDate);
         url.searchParams.set('end_date', endDate);
         window.history.replaceState({}, '', url.toString());
-        if (typeof fetchOverview === 'function') fetchOverview();
+        if (typeof window.fetchOverview === 'function') window.fetchOverview();
     } catch {
         window.location.href = `{{ route('analytics.index') }}?timeframe=custom&start_date=${startDate}&end_date=${endDate}`;
     }
