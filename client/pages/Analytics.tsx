@@ -238,7 +238,10 @@ const endOfDayData = {
 
 export default function Analytics() {
   useEffect(() => {
-    try { if (window.location.pathname !== "/analytics") window.location.href = "/analytics"; } catch {}
+    try {
+      if (window.location.pathname !== "/analytics")
+        window.location.href = "/analytics";
+    } catch {}
   }, []);
   return null;
   // The code below is intentionally retained for reference but will not render due to early return.
