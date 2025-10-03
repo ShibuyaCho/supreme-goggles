@@ -41,20 +41,6 @@
         </div>
     </div>
 
-    <!-- Custom Date Range (always visible) -->
-    <div id="custom-date-range" class="bg-white border-b border-gray-200 px-4 py-3">
-        <div class="max-w-7xl mx-auto">
-            <div class="flex items-center space-x-4">
-                <label for="start-date" class="text-sm font-medium text-gray-700">From:</label>
-                <input type="date" id="start-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <label for="end-date" class="text-sm font-medium text-gray-700">To:</label>
-                <input type="date" id="end-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm">
-                    Apply
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Tab Navigation -->
     <div class="bg-white border-b border-gray-200">
