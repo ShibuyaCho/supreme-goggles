@@ -146,6 +146,23 @@ class SettingsController extends Controller
         try {
             $settings = $request->all();
 
+            // Optimistic concurrency: reject stale writes when client version is older than server
+            try {
+                $clientVersion = null;
+                if (isset($settings['settings_version'])) $clientVersion = (int)$settings['settings_version'];
+                elseif ($request->hasHeader('X-Settings-Version')) $clientVersion = (int)$request->header('X-Settings-Version');
+                $serverCurrent = $this->getCurrentSettings();
+                $serverVersion = isset($serverCurrent['settings_version']) ? (int)$serverCurrent['settings_version'] : 0;
+                if ($clientVersion !== null && $clientVersion < $serverVersion) {
+                    return response()->json([
+                        'success'=>false,
+                        'message'=>'stale_write',
+                        'server_version'=>$serverVersion,
+                        'server_settings'=>$serverCurrent,
+                    ], 409);
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+
             // Normalize array-like inputs possibly sent as JSON strings
             $arrayFields = [
                 'exit_label_categories',
@@ -222,11 +239,13 @@ class SettingsController extends Controller
             $existing = $this->getCurrentSettings();
             $defaults = $this->getDefaultSettings();
             $merged = array_replace_recursive($defaults, array_merge(is_array($existing)?$existing:[], is_array($settings)?$settings:[]));
+            // Bump settings_version
+            $merged['settings_version'] = (int)($existing['settings_version'] ?? 0) + 1;
 
             // Store remaining settings in cache with a long TTL
             Cache::put($this->cacheKeyForStore(), $merged, now()->addDays(30));
 
-            // Persist to Supabase (store-scoped) with DB fallback
+            // Persist to Supabase (store-scoped) with DB fallback; write sectioned columns plus legacy JSON
             try {
                 $supabaseUrl = env('SUPABASE_URL');
                 $supabaseKey = env('SUPABASE_ANON_KEY');
@@ -236,17 +255,32 @@ class SettingsController extends Controller
                 $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
                 $saved = false;
                 if ($supabaseUrl && $supabaseKey) {
+                    $pick = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) $out[$k] = $src[$k]; } return $out; };
+                    $sec_Store_Information = ['store_name','license_number','store_address','store_phone','store_email','business_hours'];
+                    $sec_Tax_Configuration = ['sales_tax','excise_tax','cannabis_tax','tax_inclusive'];
+                    $sec_Sales_Settings = ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold'];
+                    $sec_Printing = ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer'];
+                    $sec_Metrc = ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales'];
+                    $sec_AutoDelete = ['auto_delete_zero_quantity','auto_delete_zero_days'];
+                    $payload = [[
+                        'id' => $storeId,
+                        'store_name' => $merged['store_name'] ?? null,
+                        'Store_Information' => $pick($merged, $sec_Store_Information),
+                        'Tax_Configuration' => $pick($merged, $sec_Tax_Configuration),
+                        'Sales_&_Transaction_Settings' => $pick($merged, $sec_Sales_Settings),
+                        'Printing_Preferences' => $pick($merged, $sec_Printing),
+                        'Metrc_Integration' => $pick($merged, $sec_Metrc),
+                        'Auto_Delete_Zero-Quantity_Products' => $pick($merged, $sec_AutoDelete),
+                        'settings' => $merged,
+                        'updated_at' => now()->toIso8601String(),
+                    ]];
                     $resp = \Illuminate\Support\Facades\Http::withHeaders([
                         'apikey' => $supabaseKey,
                         'Authorization' => 'Bearer ' . $supabaseKey,
                         'Accept' => 'application/json',
                         'Prefer' => 'return=representation',
                         'X-Store-ID' => $storeId,
-                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
-                        'id' => $storeId,
-                        'settings' => $merged,
-                        'updated_at' => now()->toIso8601String(),
-                    ]]);
+                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', $payload);
                     if ($resp->successful()) { $saved = true; }
                 }
                 if (!$saved) {
@@ -259,13 +293,7 @@ class SettingsController extends Controller
                 // ignore persistence errors; cache still holds values
             }
 
-            // Persist org-wide METRC settings to environment if provided
-            if (!empty($settings['metrc_vendor_key'])) {
-                $this->updateEnvVariable('METRC_VENDOR_KEY', $settings['metrc_vendor_key']);
-            }
-            if (!empty($settings['metrc_facility'])) {
-                $this->updateEnvVariable('METRC_FACILITY', $settings['metrc_facility']);
-            }
+            // Do not mutate .env; METRC keys are persisted per store in settings only
 
             // Log the settings update
             Log::info('POS settings updated', [
@@ -517,6 +545,15 @@ class SettingsController extends Controller
                 ['day' => 'Friday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
                 ['day' => 'Saturday', 'is_open' => true, 'open_time' => '10:00', 'close_time' => '20:00'],
                 ['day' => 'Sunday', 'is_open' => true, 'open_time' => '11:00', 'close_time' => '19:00'],
+            ],
+
+            // Role & Permissions (align with API defaults)
+            'role_permissions' => [
+                'admin' => ['*'],
+                'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+                'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
             ],
         ];
     }
