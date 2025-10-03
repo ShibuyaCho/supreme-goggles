@@ -19,14 +19,6 @@
                         <option value="custom" {{ $timeframe === 'custom' ? 'selected' : '' }}>Custom Range</option>
                     </select>
 
-                    <div class="flex items-center space-x-2">
-                        <label for="start-date" class="text-sm text-gray-600">From</label>
-                        <input type="date" id="start-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
-                        <label for="end-date" class="text-sm text-gray-600">To</label>
-                        <input type="date" id="end-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
-                        <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">Apply</button>
-                    </div>
-
                     <!-- Export/Print Buttons -->
                     <div class="flex space-x-2">
                         <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
@@ -78,6 +70,24 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Overview Tab -->
         <div id="overview-tab" class="tab-content {{ $selectedTab !== 'overview' ? 'hidden' : '' }}">
+            <!-- Business Analytics Dashboard Toolbar -->
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 flex items-center justify-between">
+                <div>
+                    <h2 class="text-sm font-semibold text-blue-900">Business Analytics Dashboard</h2>
+                    <p class="text-xs text-blue-700">Comprehensive metrics with company-wide and individual store analysis.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="scope-selector" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                        <option value="company">Company-Wide View</option>
+                    </select>
+                    <label for="start-date" class="text-sm text-gray-600">From</label>
+                    <input type="date" id="start-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                    <label for="end-date" class="text-sm text-gray-600">To</label>
+                    <input type="date" id="end-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                    <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">Apply</button>
+                    <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Export Report</button>
+                </div>
+            </div>
             <!-- Key Metrics Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <!-- Revenue Card -->
