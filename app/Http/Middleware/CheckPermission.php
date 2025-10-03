@@ -53,7 +53,7 @@ class CheckPermission
             // Safe defaults
             $defaults = [
                 'admin' => ['*'],
-                'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
                 'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
                 'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
                 'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read']
