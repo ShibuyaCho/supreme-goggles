@@ -18,7 +18,11 @@
                         <option value="month" {{ $timeframe === 'month' ? 'selected' : '' }}>This Month</option>
                         <option value="custom" {{ $timeframe === 'custom' ? 'selected' : '' }}>Custom Range</option>
                     </select>
-                    
+
+                    <button id="show-custom-range" class="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">
+                        Date Range
+                    </button>
+
                     <!-- Export/Print Buttons -->
                     <div class="flex space-x-2">
                         <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
@@ -430,6 +434,17 @@ document.addEventListener('DOMContentLoaded', function() {
         if (s) document.getElementById('start-date').value = s;
         if (e) document.getElementById('end-date').value = e;
       }
+    } catch(_) {}
+    // Quick access button to open custom date range
+    try {
+      const btn = document.getElementById('show-custom-range');
+      if (btn) btn.addEventListener('click', function(){
+        const sel = document.getElementById('timeframe-selector');
+        if (sel) sel.value = 'custom';
+        const panel = document.getElementById('custom-date-range');
+        if (panel) panel.classList.remove('hidden');
+        try { document.getElementById('start-date')?.focus(); } catch(_) {}
+      });
     } catch(_) {}
     // Real-time analytics polling
     (function(){
