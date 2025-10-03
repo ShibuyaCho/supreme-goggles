@@ -37,6 +37,42 @@ class AnalyticsController extends Controller
         return response()->json($this->getEndOfDayData());
     }
 
+    // Minimal stubs to satisfy defined routes; redirect to main analytics or return JSON
+    public function dashboard(Request $request)
+    {
+        return redirect()->route('analytics.index');
+    }
+
+    public function salesOverview(Request $request) { return redirect()->route('analytics.index'); }
+    public function salesTrends(Request $request) { return redirect()->route('analytics.index'); }
+    public function salesByCategory(Request $request) { return redirect()->route('analytics.index'); }
+    public function salesByEmployee(Request $request) { return redirect()->route('analytics.index'); }
+    public function salesByTime(Request $request) { return redirect()->route('analytics.index'); }
+
+    public function productPerformance(Request $request) { return redirect()->route('analytics.index'); }
+    public function topSellingProducts(Request $request) { return redirect()->route('analytics.index'); }
+    public function slowMovingProducts(Request $request) { return redirect()->route('analytics.index'); }
+    public function marginAnalysis(Request $request) { return redirect()->route('analytics.index'); }
+
+    public function customerOverview(Request $request) { return redirect()->route('analytics.index'); }
+    public function customerRetention(Request $request) { return redirect()->route('analytics.index'); }
+    public function customerLifetimeValue(Request $request) { return redirect()->route('analytics.index'); }
+    public function loyaltyProgramAnalytics(Request $request) { return redirect()->route('analytics.index'); }
+
+    public function inventoryTurnover(Request $request) { return redirect()->route('analytics.index'); }
+    public function inventoryValuation(Request $request) { return redirect()->route('analytics.index'); }
+    public function inventoryForecasting(Request $request) { return redirect()->route('analytics.index'); }
+
+    public function quickStats(Request $request)
+    {
+        $timeframe = $request->get('timeframe', 'today');
+        $dateRange = $this->getDateRange($timeframe, $request);
+        $sales = $this->getSalesData($dateRange);
+        return response()->json(['success'=>true, 'sales'=>$sales, 'range'=>[
+            'start'=>$dateRange['start']->toISOString(), 'end'=>$dateRange['end']->toISOString()
+        ]]);
+    }
+
     public function companyView(Request $request)
     {
         $timeframe = $request->get('timeframe', 'today');
@@ -181,29 +217,30 @@ class AnalyticsController extends Controller
     private function getDateRange($timeframe, $request)
     {
         $tz = $request->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
+        $now = Carbon::now($tz);
         switch ($timeframe) {
             case 'today':
-                $start = Carbon::now($tz)->startOfDay();
-                $end = (clone $start)->endOfDay();
+                $start = $now->copy()->startOfDay();
+                $end = $now->copy()->endOfDay();
                 return [ 'start' => $start, 'end' => $end ];
             case 'week':
                 return [
-                    'start' => Carbon::now($tz)->startOfWeek(),
-                    'end' => Carbon::now($tz)->endOfWeek()
+                    'start' => $now->copy()->startOfWeek(),
+                    'end' => $now->copy()->endOfWeek()
                 ];
             case 'month':
                 return [
-                    'start' => Carbon::now($tz)->startOfMonth(),
-                    'end' => Carbon::now($tz)->endOfMonth()
+                    'start' => $now->copy()->startOfMonth(),
+                    'end' => $now->copy()->endOfMonth()
                 ];
             case 'custom':
-                $s = Carbon::parse($request->get('start_date', Carbon::now($tz)), $tz)->startOfDay();
-                $e = Carbon::parse($request->get('end_date', Carbon::now($tz)), $tz)->endOfDay();
+                $s = Carbon::parse($request->get('start_date', $now), $tz)->startOfDay();
+                $e = Carbon::parse($request->get('end_date', $now), $tz)->endOfDay();
                 if ($s->gt($e)) { [$s, $e] = [$e, $s]; }
                 return [ 'start' => $s, 'end' => $e ];
             default:
-                $start = Carbon::now($tz)->startOfDay();
-                $end = (clone $start)->endOfDay();
+                $start = $now->copy()->startOfDay();
+                $end = $now->copy()->endOfDay();
                 return [ 'start' => $start, 'end' => $end ];
         }
     }
@@ -575,12 +612,13 @@ class AnalyticsController extends Controller
                 $range = ['start'=>$today->copy()->startOfDay(),'end'=>$today->copy()->endOfDay()];
                 $rows = $this->supaSalesInRange($range);
                 if (!is_array($rows) || count($rows) === 0) { throw new \RuntimeException('empty'); }
-                $totalSales = 0; $totalTax = 0; $customerCount = 0; $cashSales=0; $debitSales=0; $creditSales=0;
+                $totalSales = 0; $totalTax = 0; $customerCount = 0; $cashSales=0; $debitSales=0; $creditSales=0; $totalDiscounts = 0;
                 foreach ($rows as $r) {
                     $amt = isset($r['total_amount']) ? (float)$r['total_amount'] : (float)($r['total'] ?? 0);
                     $tax = isset($r['tax_amount']) ? (float)$r['tax_amount'] : (float)($r['tax'] ?? 0);
+                    $disc = isset($r['discount_amount']) ? (float)$r['discount_amount'] : (float)($r['discount'] ?? 0);
                     $pm = strtolower((string)($r['payment_method'] ?? 'unknown'));
-                    $totalSales += $amt; $totalTax += $tax;
+                    $totalSales += $amt; $totalTax += $tax; $totalDiscounts += $disc;
                     if (!empty($r['customer_id']) || (!empty($r['customer']) && is_array($r['customer']))) $customerCount++;
                     if ($pm==='cash') $cashSales += $amt; else if ($pm==='debit') $debitSales += $amt; else if ($pm==='credit') $creditSales += $amt;
                 }
@@ -590,7 +628,7 @@ class AnalyticsController extends Controller
                     'and' => '(created_at.gte.' . $today->copy()->startOfMonth()->toISOString() . ',created_at.lte.' . $today->copy()->endOfDay()->toISOString() . ')'
                 ]);
                 $monthlySales = 0; if ($monthlyRows->ok()) { foreach ((array)$monthlyRows->json() as $r) { $monthlySales += isset($r['total_amount'])?(float)$r['total_amount']:(float)($r['total']??0); } }
-                return [ 'totalSales'=>$totalSales, 'totalTax'=>$totalTax, 'customerCount'=>$customerCount, 'cashSales'=>$cashSales, 'debitSales'=>$debitSales, 'creditSales'=>$creditSales, 'monthlySalesTotal'=>$monthlySales, 'dayOfMonth'=> $today->day, 'daysInMonth'=>$today->daysInMonth, 'storeName'=> config('app.store_name','Cannabis Dispensary'), 'generatedBy'=> auth()->user()->name ?? 'System' ];
+                return [ 'totalSales'=>$totalSales, 'totalTax'=>$totalTax, 'totalDiscounts'=>$totalDiscounts, 'customerCount'=>$customerCount, 'cashSales'=>$cashSales, 'debitSales'=>$debitSales, 'creditSales'=>$creditSales, 'monthlySalesTotal'=>$monthlySales, 'dayOfMonth'=> $today->day, 'daysInMonth'=>$today->daysInMonth, 'storeName'=> config('app.store_name','Cannabis Dispensary'), 'generatedBy'=> auth()->user()->name ?? 'System' ];
             } catch (\Throwable $e) { /* fall back */ }
         }
 
@@ -600,12 +638,13 @@ class AnalyticsController extends Controller
                           ->get();
         $totalSales = $todaysSales->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $totalTax = $todaysSales->sum(function($s){ return isset($s->tax_amount) ? (float)$s->tax_amount : (float)($s->tax ?? 0); });
+        $totalDiscounts = $todaysSales->sum(function($s){ return isset($s->discount_amount) ? (float)$s->discount_amount : (float)($s->discount ?? 0); });
         $customerCount = $todaysSales->whereNotNull('customer_id')->count();
         $cashSales = $todaysSales->where('payment_method', 'cash')->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $debitSales = $todaysSales->where('payment_method', 'debit')->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $creditSales = $todaysSales->where('payment_method', 'credit')->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $monthlySales = Sale::whereBetween('created_at', [$today->copy()->startOfMonth(), $today->copy()->endOfDay()])->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',['Completed','COMPLETED']); })->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
-        return [ 'totalSales'=>$totalSales, 'totalTax'=>$totalTax, 'customerCount'=>$customerCount, 'cashSales'=>$cashSales, 'debitSales'=>$debitSales, 'creditSales'=>$creditSales, 'monthlySalesTotal'=>$monthlySales, 'dayOfMonth'=>$today->day, 'daysInMonth'=>$today->daysInMonth, 'storeName'=> config('app.store_name','Cannabis Dispensary'), 'generatedBy'=> auth()->user()->name ?? 'System' ];
+        return [ 'totalSales'=>$totalSales, 'totalTax'=>$totalTax, 'totalDiscounts'=>$totalDiscounts, 'customerCount'=>$customerCount, 'cashSales'=>$cashSales, 'debitSales'=>$debitSales, 'creditSales'=>$creditSales, 'monthlySalesTotal'=>$monthlySales, 'dayOfMonth'=>$today->day, 'daysInMonth'=>$today->daysInMonth, 'storeName'=> config('app.store_name','Cannabis Dispensary'), 'generatedBy'=> auth()->user()->name ?? 'System' ];
     }
     
     private function getPreviousPeriodData($dateRange)
