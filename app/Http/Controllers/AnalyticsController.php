@@ -585,7 +585,7 @@ class AnalyticsController extends Controller
         $previousEnd = $dateRange['end']->copy()->subDays($periodLength);
         
         $sales = Sale::whereBetween('created_at', [$previousStart, $previousEnd])
-                    ->where('status', 'completed')
+                    ->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',['Completed','COMPLETED']); })
                     ->get();
         
         $revenue = $sales->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
