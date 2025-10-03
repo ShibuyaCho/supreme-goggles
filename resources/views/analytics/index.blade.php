@@ -403,36 +403,16 @@ document.addEventListener('DOMContentLoaded', function() {
     // Timeframe selector
     document.getElementById('timeframe-selector').addEventListener('change', function() {
         const timeframe = this.value;
-        if (timeframe === 'custom') {
-            try {
-              const p = new URL(window.location.href).searchParams;
-              const s = p.get('start_date'); const e = p.get('end_date');
-              if (s) document.getElementById('start-date').value = s;
-              if (e) document.getElementById('end-date').value = e;
-            } catch(_) {}
-        } else {
+        if (timeframe !== 'custom') {
             window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
         }
     });
     // Prefill custom date inputs from query on load
     try {
       const params = new URL(window.location.href).searchParams;
-      if ((params.get('timeframe') || '') === 'custom') {
-        const s = params.get('start_date'); const e = params.get('end_date');
-        if (s) document.getElementById('start-date').value = s;
-        if (e) document.getElementById('end-date').value = e;
-      }
-    } catch(_) {}
-    // Quick access button to open custom date range
-    try {
-      const btn = document.getElementById('show-custom-range');
-      if (btn) btn.addEventListener('click', function(){
-        const sel = document.getElementById('timeframe-selector');
-        if (sel) sel.value = 'custom';
-        const panel = document.getElementById('custom-date-range');
-        if (panel) panel.classList.remove('hidden');
-        try { document.getElementById('start-date')?.focus(); } catch(_) {}
-      });
+      const s = params.get('start_date'); const e = params.get('end_date');
+      if (s) document.getElementById('start-date').value = s;
+      if (e) document.getElementById('end-date').value = e;
     } catch(_) {}
     // Real-time analytics polling
     (function(){
