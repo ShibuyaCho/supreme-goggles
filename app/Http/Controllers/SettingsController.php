@@ -459,7 +459,38 @@ class SettingsController extends Controller
         if (is_array($cached) && !empty($cached)) {
             return $cached;
         }
-        // Try local DB fallback for SSR hydration
+        // Try Supabase first for SSR hydration
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            $sid = $this->currentStoreIdFromRequest();
+            if ($supabaseUrl && $supabaseKey) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'X-Store-ID' => $sid,
+                    ])->retry(2, 100)->timeout(5)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [ 'id' => 'eq.' . $sid, 'select' => '*' ]);
+                    if ($resp->ok()) {
+                        $arr = $resp->json();
+                        $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+                        if (is_array($row)) {
+                            $compose = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if(isset($r['store_name']) && is_string($r['store_name'])) $out['store_name'] = $r['store_name']; return $out; };
+                            $composed = $compose($row);
+                            if (isset($row['settings']) && is_array($row['settings'])) {
+                                foreach (['settings_version'] as $vk) { if (!isset($composed[$vk]) && isset($row['settings'][$vk])) $composed[$vk] = $row['settings'][$vk]; }
+                            }
+                            if (is_array($composed) && !empty($composed)) {
+                                Cache::put($key, $composed, now()->addDays(30));
+                                return $composed;
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) { /* ignore and fallback */ }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Fallback: local DB hydration
         try {
             $sid = $this->currentStoreIdFromRequest();
             $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $sid)->first();
