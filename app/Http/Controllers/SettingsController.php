@@ -309,8 +309,36 @@ class SettingsController extends Controller
     {
         try {
             $defaultSettings = $this->getDefaultSettings();
-            
-            Cache::put($this->cacheKeyForStore(), $defaultSettings, now()->addDays(30));
+            $cacheKey = $this->cacheKeyForStore();
+            Cache::put($cacheKey, $defaultSettings, now()->addDays(30));
+
+            // Persist to Supabase (if configured) or local DB to keep store state consistent
+            try {
+                $supabaseUrl = env('SUPABASE_URL');
+                $supabaseKey = env('SUPABASE_ANON_KEY');
+                $storeId = $this->currentStoreIdFromRequest();
+                $saved = false;
+                if ($supabaseUrl && $supabaseKey) {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'return=representation',
+                        'X-Store-ID' => $storeId,
+                    ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                        'id' => $storeId,
+                        'settings' => $defaultSettings,
+                        'updated_at' => now()->toIso8601String(),
+                    ]]);
+                    if ($resp->successful()) { $saved = true; }
+                }
+                if (!$saved) {
+                    \Illuminate\Support\Facades\DB::table('pos_settings')->updateOrInsert(
+                        ['id' => $storeId],
+                        ['settings' => json_encode($defaultSettings), 'updated_at' => now()]
+                    );
+                }
+            } catch (\Throwable $e) { /* ignore persistence errors */ }
 
             Log::info('POS settings reset to defaults', ['user_id' => auth()->id()]);
 
@@ -382,7 +410,27 @@ class SettingsController extends Controller
      */
     private function getCurrentSettings()
     {
-        return Cache::get($this->cacheKeyForStore(), $this->getDefaultSettings());
+        $key = $this->cacheKeyForStore();
+        $cached = Cache::get($key, null);
+        if (is_array($cached) && !empty($cached)) {
+            return $cached;
+        }
+        // Try local DB fallback for SSR hydration
+        try {
+            $sid = $this->currentStoreIdFromRequest();
+            $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $sid)->first();
+            if (!$row && $sid !== 'default') {
+                $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', 'default')->first();
+            }
+            if ($row && isset($row->settings)) {
+                $decoded = is_array($row->settings) ? $row->settings : json_decode($row->settings, true);
+                if (is_array($decoded)) {
+                    Cache::put($key, $decoded, now()->addDays(30));
+                    return $decoded;
+                }
+            }
+        } catch (\Throwable $e) { /* ignore and return defaults below */ }
+        return $this->getDefaultSettings();
     }
 
     /**
