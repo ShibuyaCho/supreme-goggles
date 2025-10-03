@@ -260,6 +260,12 @@ Route::get('/products', [ProductsController::class, 'index']);
 
 // Public POS settings endpoints for SPA/demo compatibility
 Route::get('/settings/pos', function() {
+    $isProdProtected = (app()->environment('production') && !filter_var(env('DEMO_MODE', false), FILTER_VALIDATE_BOOLEAN));
+    if ($isProdProtected) {
+        if (!auth()->check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+    }
     \Illuminate\Support\Facades\Log::info('Settings GET', ['scope' => 'public', 'store' => (string)request()->header('X-Store-ID')]);
     $noCache = false;
     try {
@@ -542,6 +548,52 @@ Route::get('/settings/pos', function() {
     ])->header('Vary','X-Store-ID, X-Store-Name');
 });
 Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
+    $isProdProtected = (app()->environment('production') && !filter_var(env('DEMO_MODE', false), FILTER_VALIDATE_BOOLEAN));
+    if ($isProdProtected) {
+        if (!auth()->check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+        $user = auth()->user();
+        $hasPermission = function(array $perms, string $required): bool {
+            if (in_array('*', $perms, true)) return true;
+            if (in_array($required, $perms, true)) return true;
+            $parts = explode(':', $required, 2);
+            if (count($parts) === 2) {
+                [$ns, $act] = $parts;
+                if (in_array($ns . ':*', $perms, true)) return true;
+            }
+            return false;
+        };
+        $required = 'settings:write';
+        $role = $user->role ?? null;
+        $userPerms = is_array($user->permissions ?? null) ? ($user->permissions ?? []) : [];
+        $allowed = ($role === 'admin') || $hasPermission($userPerms, $required);
+        if (!$allowed) {
+            try {
+                $sid = (string)($request->header('X-Store-ID') ?: 'default');
+                $sid = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $sid);
+                if ($sid === 'defaultstore') $sid = 'default';
+                $settings = \Illuminate\Support\Facades\Cache::get('pos_settings:' . $sid, \Illuminate\Support\Facades\Cache::get('pos_settings', []));
+                $rolePerms = [];
+                if ($role && isset($settings['role_permissions']) && is_array($settings['role_permissions'])) {
+                    $rolePerms = $settings['role_permissions'][$role] ?? [];
+                } else {
+                    $defaults = [
+                        'admin' => ['*'],
+                        'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                        'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+                        'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                        'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read']
+                    ];
+                    $rolePerms = $defaults[$role] ?? [];
+                }
+                $allowed = $hasPermission($rolePerms, $required);
+            } catch (\Throwable $e) { $allowed = false; }
+        }
+        if (!$allowed) {
+            return response()->json(['success'=>false,'message'=>'Insufficient permissions','required_permission'=>$required], 403);
+        }
+    }
     \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'public', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
     $incoming = $request->all();
     // If client sent a nested `settings` object, flatten it into top-level keys
