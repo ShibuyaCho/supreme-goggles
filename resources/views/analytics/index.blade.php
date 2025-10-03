@@ -11,24 +11,6 @@
                 <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
                 
                 <!-- Time Range Selector -->
-                <div class="flex items-center space-x-4">
-                    <select id="timeframe-selector" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        <option value="today" {{ $timeframe === 'today' ? 'selected' : '' }}>Today</option>
-                        <option value="week" {{ $timeframe === 'week' ? 'selected' : '' }}>This Week</option>
-                        <option value="month" {{ $timeframe === 'month' ? 'selected' : '' }}>This Month</option>
-                        <option value="custom" {{ $timeframe === 'custom' ? 'selected' : '' }}>Custom Range</option>
-                    </select>
-
-                    <!-- Export/Print Buttons -->
-                    <div class="flex space-x-2">
-                        <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                            Export
-                        </button>
-                        <button onclick="printReport()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                            Print
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -82,6 +64,10 @@
                     <label for="analytics-end-date" class="text-sm text-gray-600">To</label>
                     <input type="date" id="analytics-end-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
                     <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">Apply</button>
+                    <select id="export-format" class="border border-gray-300 rounded px-2 py-2 text-sm">
+                        <option value="pdf" selected>PDF</option>
+                        <option value="csv">CSV</option>
+                    </select>
                     <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Export Report</button>
                 </div>
             </div>
@@ -450,7 +436,6 @@ document.addEventListener('DOMContentLoaded', function() {
           const data = res?.data || {};
           // Headline metrics
           const m = data.sales || {};
-          const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
           setText('metric-revenue', fmtMoney(m.revenue));
           setText('metric-transactions', (m.transactions||0).toLocaleString());
           setText('metric-customers', (m.customers||0).toLocaleString());
@@ -506,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
           // Fallback: derive minimal metrics from recent sales endpoint
           try {
             const http = (window.axios||axios);
-            const tf = document.getElementById('timeframe-selector').value || 'today';
+            const tf = document.getElementById('timeframe-selector')?.value || 'today';
             const now = new Date();
             const toISO = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
             let start = toISO(now), end = toISO(now);
@@ -523,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
           } catch(_1) {
             try {
-              const tf2 = document.getElementById('timeframe-selector').value || 'today';
+              const tf2 = document.getElementById('timeframe-selector')?.value || 'today';
               const now2 = new Date();
               const toISO2 = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
               let start2 = toISO2(now2), end2 = toISO2(now2);
@@ -627,8 +612,11 @@ function applyCustomRange() {
 
 function exportOverview() {
     const timeframe = (document.getElementById('timeframe-selector')?.value) || (new URL(window.location.href).searchParams.get('timeframe') || 'today');
+    const formatSel = document.getElementById('export-format');
+    const format = (formatSel && formatSel.value) ? formatSel.value : 'pdf';
     const url = new URL(`{{ route('analytics.export-overview') }}`, window.location.origin);
     url.searchParams.set('timeframe', timeframe);
+    url.searchParams.set('format', format);
     if (timeframe === 'custom') {
         const s = document.getElementById('analytics-start-date')?.value;
         const e = document.getElementById('analytics-end-date')?.value;
