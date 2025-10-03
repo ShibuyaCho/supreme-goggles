@@ -422,6 +422,15 @@ document.addEventListener('DOMContentLoaded', function() {
             window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
         }
     });
+    // Prefill custom date inputs from query on load
+    try {
+      const params = new URL(window.location.href).searchParams;
+      if ((params.get('timeframe') || '') === 'custom') {
+        const s = params.get('start_date'); const e = params.get('end_date');
+        if (s) document.getElementById('start-date').value = s;
+        if (e) document.getElementById('end-date').value = e;
+      }
+    } catch(_) {}
     // Real-time analytics polling
     (function(){
       const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
@@ -604,7 +613,23 @@ function applyCustomRange() {
 
 function exportOverview() {
     const timeframe = document.getElementById('timeframe-selector').value;
-    window.location.href = `{{ route('analytics.export-overview') }}?timeframe=${timeframe}`;
+    const url = new URL(`{{ route('analytics.export-overview') }}`, window.location.origin);
+    url.searchParams.set('timeframe', timeframe);
+    if (timeframe === 'custom') {
+        const s = document.getElementById('start-date')?.value;
+        const e = document.getElementById('end-date')?.value;
+        if (s && e) {
+            url.searchParams.set('start_date', s);
+            url.searchParams.set('end_date', e);
+        } else {
+            try {
+                const p = new URL(window.location.href).searchParams;
+                const ps = p.get('start_date'); const pe = p.get('end_date');
+                if (ps && pe) { url.searchParams.set('start_date', ps); url.searchParams.set('end_date', pe); }
+            } catch(_) {}
+        }
+    }
+    window.location.href = url.toString();
 }
 
 function printReport() {
