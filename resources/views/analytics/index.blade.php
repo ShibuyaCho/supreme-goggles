@@ -37,13 +37,13 @@
         </div>
     </div>
 
-    <!-- Custom Date Range (Hidden by default) -->
-    <div id="custom-date-range" class="bg-white border-b border-gray-200 px-4 py-3 {{ $timeframe !== 'custom' ? 'hidden' : '' }}">
+    <!-- Custom Date Range (always visible) -->
+    <div id="custom-date-range" class="bg-white border-b border-gray-200 px-4 py-3">
         <div class="max-w-7xl mx-auto">
             <div class="flex items-center space-x-4">
-                <label class="text-sm font-medium text-gray-700">From:</label>
+                <label for="start-date" class="text-sm font-medium text-gray-700">From:</label>
                 <input type="date" id="start-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <label class="text-sm font-medium text-gray-700">To:</label>
+                <label for="end-date" class="text-sm font-medium text-gray-700">To:</label>
                 <input type="date" id="end-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
                 <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm">
                     Apply
@@ -414,7 +414,6 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('timeframe-selector').addEventListener('change', function() {
         const timeframe = this.value;
         if (timeframe === 'custom') {
-            document.getElementById('custom-date-range').classList.remove('hidden');
             try {
               const p = new URL(window.location.href).searchParams;
               const s = p.get('start_date'); const e = p.get('end_date');
@@ -422,7 +421,6 @@ document.addEventListener('DOMContentLoaded', function() {
               if (e) document.getElementById('end-date').value = e;
             } catch(_) {}
         } else {
-            document.getElementById('custom-date-range').classList.add('hidden');
             window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
         }
     });
