@@ -312,7 +312,7 @@ Route::get('/settings/pos', function() {
         'expandable_cart' => true,
         'role_permissions' => [
             'admin' => ['*'],
-            'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+            'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
             'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
             'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
             'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
@@ -582,7 +582,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 } else {
                     $defaults = [
                         'admin' => ['*'],
-                        'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                        'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
                         'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
                         'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
                         'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read']
@@ -785,7 +785,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
             'weight_threshold' => 0,
             'role_permissions' => [
                 'admin' => ['*'],
-                'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
                 'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
                 'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
                 'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
@@ -2163,7 +2163,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 // Role-based permissions (defaults)
                 'role_permissions' => [
                     'admin' => ['*'],
-                    'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export'],
+                    'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
                     'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
                     'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
                     'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
