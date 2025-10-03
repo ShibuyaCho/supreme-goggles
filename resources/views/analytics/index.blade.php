@@ -71,15 +71,12 @@
         <!-- Overview Tab -->
         <div id="overview-tab" class="tab-content {{ $selectedTab !== 'overview' ? 'hidden' : '' }}">
             <!-- Business Analytics Dashboard Toolbar -->
-            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 flex items-center justify-between">
-                <div>
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 flex flex-wrap items-center justify-between gap-2">
+                <div class="min-w-[200px]">
                     <h2 class="text-sm font-semibold text-blue-900">Business Analytics Dashboard</h2>
                     <p class="text-xs text-blue-700">Comprehensive metrics with company-wide and individual store analysis.</p>
                 </div>
                 <div class="flex items-center gap-2">
-                    <select id="scope-selector" class="border border-gray-300 rounded px-3 py-2 text-sm">
-                        <option value="company">Company-Wide View</option>
-                    </select>
                     <label for="analytics-start-date" class="text-sm text-gray-600">From</label>
                     <input type="date" id="analytics-start-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
                     <label for="analytics-end-date" class="text-sm text-gray-600">To</label>
@@ -410,28 +407,35 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Timeframe selector
-    document.getElementById('timeframe-selector').addEventListener('change', function() {
-        const timeframe = this.value;
-        if (timeframe !== 'custom') {
-            window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
-        }
-    });
+    // Timeframe selector (guard if missing)
+    (function(){
+        const tfSel = document.getElementById('timeframe-selector');
+        if (!tfSel) return;
+        tfSel.addEventListener('change', function() {
+            const timeframe = this.value || 'today';
+            if (timeframe !== 'custom') {
+                const url = new URL(`{{ route('analytics.index') }}`, window.location.origin);
+                url.searchParams.set('timeframe', timeframe);
+                window.location.href = url.toString();
+            }
+        });
+    })();
     // Prefill custom date inputs from query on load
     try {
       const params = new URL(window.location.href).searchParams;
       const s = params.get('start_date'); const e = params.get('end_date');
-      if (s) document.getElementById('analytics-start-date').value = s;
-      if (e) document.getElementById('analytics-end-date').value = e;
+      const sd = document.getElementById('analytics-start-date');
+      const ed = document.getElementById('analytics-end-date');
+      if (sd && s) sd.value = s;
+      if (ed && e) ed.value = e;
     } catch(_) {}
     // Real-time analytics polling
     (function(){
       const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
+      const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
       async function fetchOverview(){
-        const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
-        const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
         try{
-          const timeframe = document.getElementById('timeframe-selector').value || 'today';
+          const timeframe = (document.getElementById('timeframe-selector')?.value) || 'today';
           const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
           let params = { timeframe, tz };
           if (timeframe === 'custom') {
@@ -596,16 +600,23 @@ function switchTab(tabName) {
 }
 
 function applyCustomRange() {
-    const startDate = document.getElementById('analytics-start-date').value;
-    const endDate = document.getElementById('analytics-end-date').value;
-    
-    if (startDate && endDate) {
+    const startDate = document.getElementById('analytics-start-date')?.value;
+    const endDate = document.getElementById('analytics-end-date')?.value;
+    if (!startDate || !endDate) return;
+    try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('timeframe','custom');
+        url.searchParams.set('start_date', startDate);
+        url.searchParams.set('end_date', endDate);
+        window.history.replaceState({}, '', url.toString());
+        if (typeof fetchOverview === 'function') fetchOverview();
+    } catch {
         window.location.href = `{{ route('analytics.index') }}?timeframe=custom&start_date=${startDate}&end_date=${endDate}`;
     }
 }
 
 function exportOverview() {
-    const timeframe = document.getElementById('timeframe-selector').value;
+    const timeframe = (document.getElementById('timeframe-selector')?.value) || (new URL(window.location.href).searchParams.get('timeframe') || 'today');
     const url = new URL(`{{ route('analytics.export-overview') }}`, window.location.origin);
     url.searchParams.set('timeframe', timeframe);
     if (timeframe === 'custom') {
