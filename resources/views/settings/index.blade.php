@@ -1235,7 +1235,7 @@ function settingsManager() {
             try {
                 // Persist current settings to server and local storage before syncing
                 try {
-                    await (window.posAuth ? posAuth.apiRequest('post', '/settings', this.settings) : Promise.resolve({ success: false }));
+                    await (window.SettingsClient ? SettingsClient.save(this.settings) : (window.posAuth ? posAuth.apiRequest('post', '/api/settings/pos', this.settings) : Promise.resolve({ success: false })));
                     this.saveSettingsToStorage();
                 } catch (_) {}
                 // Trigger server-side import (excludes zero-qty)
