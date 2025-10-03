@@ -19,6 +19,14 @@
                         <option value="custom" {{ $timeframe === 'custom' ? 'selected' : '' }}>Custom Range</option>
                     </select>
 
+                    <div class="hidden md:flex items-center space-x-2">
+                        <label for="start-date" class="text-sm text-gray-600">From</label>
+                        <input type="date" id="start-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                        <label for="end-date" class="text-sm text-gray-600">To</label>
+                        <input type="date" id="end-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                        <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">Apply</button>
+                    </div>
+
                     <!-- Export/Print Buttons -->
                     <div class="flex space-x-2">
                         <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
