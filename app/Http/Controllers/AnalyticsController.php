@@ -169,6 +169,7 @@ class AnalyticsController extends Controller
             case 'custom':
                 $s = Carbon::parse($request->get('start_date', Carbon::now($tz)), $tz)->startOfDay();
                 $e = Carbon::parse($request->get('end_date', Carbon::now($tz)), $tz)->endOfDay();
+                if ($s->gt($e)) { [$s, $e] = [$e, $s]; }
                 return [ 'start' => $s, 'end' => $e ];
             default:
                 $start = Carbon::now($tz)->startOfDay();
@@ -228,7 +229,7 @@ class AnalyticsController extends Controller
 
         // Fallback to local DB when Supabase is disabled or has no rows
         $sales = Sale::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
-                    ->where('status', 'completed')
+                    ->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',['Completed','COMPLETED']); })
                     ->get();
         $revenue = $sales->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $transactions = $sales->count();
@@ -294,7 +295,7 @@ class AnalyticsController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
             ->whereBetween('sales.created_at', [$dateRange['start'], $dateRange['end']])
-            ->where('sales.status', 'completed')
+            ->where(function($q){ $q->where('sales.status','completed')->orWhereNull('sales.status')->orWhereIn('sales.status',['Completed','COMPLETED']); })
             ->select(
                 DB::raw('COALESCE(products.name, sale_items.product_name) as name'),
                 DB::raw('COALESCE(products.category, sale_items.product_category) as category'),
@@ -309,7 +310,7 @@ class AnalyticsController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
             ->whereBetween('sales.created_at', [$dateRange['start'], $dateRange['end']])
-            ->where('sales.status', 'completed')
+            ->where(function($q){ $q->where('sales.status','completed')->orWhereNull('sales.status')->orWhereIn('sales.status',['Completed','COMPLETED']); })
             ->select(
                 DB::raw('COALESCE(products.category, sale_items.product_category) as category'),
                 DB::raw('SUM(sale_items.quantity) as sales'),
@@ -329,6 +330,7 @@ class AnalyticsController extends Controller
     {
         $newCustomers = Customer::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->count();
         $returningCustomers = Sale::whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',['Completed','COMPLETED']); })
             ->whereNotNull('customer_id')
             ->distinct('customer_id')
             ->count();
@@ -396,7 +398,7 @@ class AnalyticsController extends Controller
 
         $employeeMetrics = Employee::with(['sales' => function($query) use ($dateRange) {
             $query->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
-                  ->where('status', 'completed');
+                  ->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',['Completed','COMPLETED']); });
         }])->get()->map(function($employee) {
             $sales = $employee->sales;
             $totalSales = $sales->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
@@ -497,11 +499,9 @@ class AnalyticsController extends Controller
     
     public function getASPDAnalytics(Request $request)
     {
-        // Force ASPD (pace) to always use current calendar month, independent of page timeframe/date-range
-        $tz = $request->get('tz', config('app.timezone') ?: date_default_timezone_get() ?: 'UTC');
-        $start = \Carbon\Carbon::now($tz)->startOfMonth();
-        $end = \Carbon\Carbon::now($tz)->endOfDay();
-        $dateRange = [ 'start' => $start, 'end' => $end ];
+        // Respect selected timeframe/date-range
+        $timeframe = $request->get('timeframe', 'today');
+        $dateRange = $this->getDateRange($timeframe, $request);
         $items = $this->getASPDData($dateRange);
         $daysInRange = $dateRange['start']->diffInDays($dateRange['end']) + 1;
 
