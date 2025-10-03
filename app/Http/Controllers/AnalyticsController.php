@@ -80,7 +80,8 @@ class AnalyticsController extends Controller
         }
 
         $hasStore = \Illuminate\Support\Facades\Schema::hasColumn('sales','store_id');
-        $q = Sale::query()->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])->where('status','completed');
+        $q = Sale::query()->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
+            ->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',['Completed','COMPLETED']); });
         if ($hasStore) {
             $rows = $q->select('store_id', DB::raw('COUNT(*) as transactions'), DB::raw('SUM(COALESCE(total_amount, total)) as revenue'))
                 ->groupBy('store_id')->get();
@@ -496,7 +497,7 @@ class AnalyticsController extends Controller
             ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
             ->join('products', 'sale_items.product_id', '=', 'products.id')
             ->whereBetween('sales.created_at', [$dateRange['start'], $dateRange['end']])
-            ->where('sales.status', 'completed')
+            ->where(function($q){ $q->where('sales.status','completed')->orWhereNull('sales.status')->orWhereIn('sales.status',['Completed','COMPLETED']); })
             ->select(
                 'products.id',
                 'products.name',
@@ -595,7 +596,7 @@ class AnalyticsController extends Controller
 
         $today = Carbon::today();
         $todaysSales = Sale::whereDate('created_at', $today)
-                          ->where('status', 'completed')
+                          ->where(function($q){ $q->where('status','completed')->orWhereNull('status')->orWhereIn('status',["Completed","COMPLETED"]); })
                           ->get();
         $totalSales = $todaysSales->sum(function($s){ return isset($s->total_amount) ? (float)$s->total_amount : (float)($s->total ?? 0); });
         $totalTax = $todaysSales->sum(function($s){ return isset($s->tax_amount) ? (float)$s->tax_amount : (float)($s->tax ?? 0); });
