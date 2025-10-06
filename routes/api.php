@@ -884,8 +884,8 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                         if (json_encode($norm($cols)) === json_encode($norm($remoteCols))) {
                             $respSettings = $merged;
                             if (!isset($respSettings['settings_version'])) { $respSettings['settings_version'] = (int)($current['settings_version'] ?? 0); }
-                            if (array_key_exists('metrc_user_key', $respSettings)) { $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '••••••••' : ''; }
-                            if (array_key_exists('metrc_vendor_key', $respSettings)) { $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : ''; }
+                            $respSettings['metrc_user_key'] = '';
+                            $respSettings['metrc_vendor_key'] = '';
                             return response()->json(['success'=>true,'settings'=>$respSettings])->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0');
                         }
                     }
