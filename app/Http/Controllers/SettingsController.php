@@ -231,6 +231,7 @@ class SettingsController extends Controller
             $existing = $this->getCurrentSettings();
             $defaults = $this->getDefaultSettings();
             $merged = array_replace_recursive($defaults, array_merge(is_array($existing)?$existing:[], is_array($settings)?$settings:[]));
+            unset($merged['metrc_user_key'], $merged['metrc_vendor_key']);
             // Bump settings_version
             $merged['settings_version'] = (int)($existing['settings_version'] ?? 0) + 1;
 
