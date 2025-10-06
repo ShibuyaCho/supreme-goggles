@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Services\MetrcService;
 use App\Models\Product;
+use App\Models\Sale;
+use App\Models\SaleItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use App\Services\SupabaseService;
 use Illuminate\Support\Facades\Validator;
 
 class MetrcController extends Controller
@@ -64,6 +67,65 @@ class MetrcController extends Controller
     }
 
     /**
+     * Get all packages (admin debug)
+     */
+    public function debugPackages(Request $request)
+    {
+        try {
+            $diagnose = (bool)$request->boolean('diagnose');
+            if ($diagnose) {
+                $facilities = (array)$this->metrcService->getFacilityDetails();
+                $licenses = [];
+                foreach ($facilities as $f) {
+                    if (is_array($f)) {
+                        $ln = $f['LicenseNumber'] ?? $f['licenseNumber'] ?? null;
+                        if ($ln) { $licenses[] = $ln; }
+                    }
+                }
+                $licenses = array_values(array_unique(array_filter($licenses)));
+                $diag = [];
+                $bestCount = 0; $bestLicense = null;
+                foreach ($licenses as $ln) {
+                    try {
+                        $pkgs = $this->metrcService->getActivePackagesForLicense($ln);
+                        $cnt = is_array($pkgs) ? count($pkgs) : 0;
+                        $diag[] = ['license' => $ln, 'count' => $cnt];
+                        if ($cnt > $bestCount) { $bestCount = $cnt; $bestLicense = $ln; }
+                    } catch (\Throwable $e) {
+                        $diag[] = ['license' => $ln, 'error' => $e->getMessage()];
+                    }
+                }
+                return response()->json([
+                    'success' => true,
+                    'count' => $bestCount,
+                    'best_license' => $bestLicense,
+                    'used_license' => $this->metrcService->getFacilityLicense(),
+                    'license_diagnostics' => $diag,
+                    'facilities_count' => count($licenses),
+                    'retrieved_at' => now()->toISOString(),
+                    'configured' => $this->metrcService->isConfigured(),
+                ]);
+            }
+
+            $packages = $this->metrcService->getAllPackages();
+            return response()->json([
+                'success' => true,
+                'count' => is_array($packages) ? count($packages) : 0,
+                'sample' => array_slice((array)$packages, 0, 3),
+                'retrieved_at' => now()->toISOString(),
+                'configured' => $this->metrcService->isConfigured(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'configured' => $this->metrcService->isConfigured(),
+                'base_url' => config('services.metrc.base_url'),
+            ], 500);
+        }
+    }
+
+    /**
      * Get all packages
      */
     public function getAllPackages(Request $request)
@@ -85,7 +147,7 @@ class MetrcController extends Controller
                 $request->last_modified_start,
                 $request->last_modified_end
             );
-            
+
             return response()->json([
                 'packages' => $packages,
                 'count' => count($packages),
@@ -98,6 +160,199 @@ class MetrcController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Failed to retrieve packages',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Import active METRC packages into inventory (exclude zero-quantity)
+     */
+    public function importActivePackages(Request $request)
+    {
+        try {
+            $packages = $this->metrcService->getAllPackages();
+            $imported = 0;
+            $updated = 0;
+            $skipped = 0;
+
+            // Prefetch Retail ID info for all labels to reduce calls
+            $allLabels = collect((array)$packages)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+            $retailMap = [];
+            if (!empty($allLabels)) {
+                try {
+                    $retResp = $this->metrcService->getRetailIdPackagesInfo($allLabels);
+                    $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                    foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                } catch (\Throwable $e) {}
+            }
+
+            foreach ((array)$packages as $pkg) {
+                $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                if ($qty <= 0) { $skipped++; continue; }
+
+                $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                if (!$label) { $skipped++; continue; }
+
+                // Derive fields safely
+                $item = $pkg['Item'] ?? [];
+                $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
+                $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+
+                // If item id present, fetch full item details
+                $itemId = null;
+                if (is_array($item)) { $itemId = $item['Id'] ?? $item['ID'] ?? null; }
+                elseif (is_numeric($item)) { $itemId = (int)$item; }
+                if (!$uom || !$category || !$itemName) {
+                    if (!$itemId && isset($pkg['ItemId'])) { $itemId = $pkg['ItemId']; }
+                }
+                if ($itemId) {
+                    try {
+                        $it = $this->metrcService->getItemById($itemId);
+                        $itemName = $itemName ?: ($it['Name'] ?? null);
+                        $category = $category ?: ($it['ProductCategoryName'] ?? null);
+                        $uom = $uom ?: ($it['UnitOfMeasureName'] ?? null);
+                        if (empty($strainName)) { $strainName = $it['StrainName'] ?? null; }
+                    } catch (\Throwable $e) {}
+                }
+
+                // Resolve strain if present
+                $strainName = null; $strainId = null;
+                if (is_array($item)) {
+                    $strainName = $item['StrainName'] ?? $item['Strain'] ?? null;
+                    $strainId = $item['StrainId'] ?? null;
+                }
+                if (!$strainName && ($pkg['StrainName'] ?? null)) { $strainName = $pkg['StrainName']; }
+                if (!$strainName && $strainId) {
+                    try {
+                        $sr = $this->metrcService->getStrainById($strainId);
+                        $strainName = $sr['Name'] ?? null;
+                    } catch (\Throwable $e) {}
+                }
+
+                $data = [
+                    'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                    'category' => $category ?: 'Unknown',
+                    'price' => 0,
+                    'cost' => 0,
+                    'sku' => $label,
+                    'weight' => $uom ?: 'Units',
+                    'room' => 'Inventory',
+                    'supplier' => $vendor ?: 'METRC',
+                    'vendor' => $vendor ?: 'METRC',
+                    'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                    'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                    'metrc_tag' => $label,
+                    'quantity' => $qty,
+                    'strain' => $strainName,
+                ];
+
+                // Retail ID enrich
+                if (isset($retailMap[$label])) {
+                    $ri = $retailMap[$label];
+                    if (($ri['RequiresVerification'] ?? false) === true) {
+                        $data['administrative_hold'] = true;
+                        $note = 'RetailID: Requires Verification';
+                        $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note;
+                    }
+                    $data['lab_results'] = [ 'retail_id' => $ri ];
+                }
+
+                // Pull lab results to auto-fill potency and test info
+                $pkgId = $pkg['Id'] ?? $pkg['PackageId'] ?? null;
+                if ($pkgId) {
+                    $labResp = $this->metrcService->getLabTestResults($pkgId, null, 20);
+                    if ($labResp) {
+                        $parsed = $this->metrcService->parseLabResults($labResp);
+                        $data = array_merge($data, array_filter($parsed, function($v){ return $v !== null; }));
+                    }
+                }
+
+                $existing = Product::where('metrc_tag', $label)->first();
+                if ($existing) {
+                    $existing->fill($data);
+                    $existing->save();
+                    $updated++;
+                } else {
+                    Product::create($data);
+                    $imported++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'METRC packages imported successfully',
+                'imported' => $imported,
+                'updated' => $updated,
+                'skipped' => $skipped,
+                'total_processed' => $imported + $updated + $skipped,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to import METRC packages',
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get incoming transfers
+     */
+    public function getIncomingTransfers(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'last_modified_start' => 'nullable|date',
+            'last_modified_end' => 'nullable|date|after_or_equal:last_modified_start',
+            'page_number' => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1|max:20'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $raw = $this->metrcService->getIncomingTransfers(
+                $request->last_modified_start,
+                $request->last_modified_end,
+                $request->page_number,
+                $request->page_size
+            );
+
+            $transfers = (isset($raw['Data']) && is_array($raw['Data'])) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+
+            return response()->json([
+                'success' => true,
+                'transfers' => $transfers,
+                'count' => count($transfers),
+                'retrieved_at' => now()->toISOString(),
+                'filters' => [
+                    'last_modified_start' => $request->last_modified_start,
+                    'last_modified_end' => $request->last_modified_end,
+                    'page_number' => $request->page_number,
+                    'page_size' => $request->page_size
+                ],
+                'pagination' => [
+                    'total' => $raw['Total'] ?? null,
+                    'total_records' => $raw['TotalRecords'] ?? null,
+                    'page' => $raw['Page'] ?? null,
+                    'current_page' => $raw['CurrentPage'] ?? null,
+                    'page_size' => $raw['PageSize'] ?? null,
+                    'records_on_page' => $raw['RecordsOnPage'] ?? null,
+                    'total_pages' => $raw['TotalPages'] ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Failed to retrieve incoming transfers',
                 'message' => $e->getMessage()
             ], 500);
         }
@@ -290,6 +545,25 @@ class MetrcController extends Controller
     /**
      * Create sales receipt in METRC
      */
+    private function logMetrcPush(string $type, string $status, array $payload = []): void
+    {
+        try {
+            $svc = app(SupabaseService::class);
+            if (method_exists($svc, 'enabled') && $svc->enabled()) {
+                $row = [
+                    'type' => $type,
+                    'action' => 'push',
+                    'status' => $status,
+                    'payload' => $payload,
+                    'created_at' => now()->toIso8601String(),
+                ];
+                $svc->insert('metrc_logs', [$row]);
+            }
+        } catch (\Throwable $e) {
+            // best-effort
+        }
+    }
+
     public function createSalesReceipt(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -321,18 +595,23 @@ class MetrcController extends Controller
             ];
 
             $result = $this->metrcService->createSalesReceipt($salesData);
-            
+
             Log::info('METRC sales receipt created', [
                 'sales_data' => $salesData,
                 'user_id' => $request->user()->id
             ]);
-            
+            $this->logMetrcPush('sales_receipt', 'success', [
+                'receipt_number' => $result['ReceiptNumber'] ?? null,
+                'transactions' => is_array($salesData['Transactions']) ? count($salesData['Transactions']) : 0,
+            ]);
+
             return response()->json([
                 'message' => 'Sales receipt created successfully',
                 'receipt_number' => $result['ReceiptNumber'] ?? null,
                 'result' => $result
             ], 201);
         } catch (\Exception $e) {
+            $this->logMetrcPush('sales_receipt', 'error', [ 'message' => $e->getMessage() ]);
             return response()->json([
                 'error' => 'Failed to create sales receipt',
                 'message' => $e->getMessage()
@@ -341,8 +620,158 @@ class MetrcController extends Controller
     }
 
     /**
+     * Create METRC sales receipt from internal Sale ID
+     */
+    public function createReceiptFromSale(Request $request, Sale $sale)
+    {
+        if ($sale->status !== 'completed') {
+            return response()->json([
+                'error' => 'Only completed sales can be pushed to METRC'
+            ], 400);
+        }
+
+        $transactions = [];
+        foreach ($sale->saleItems as $item) {
+            $product = $item->product;
+            $packageLabel = $product?->metrc_tag ?: ($item->metrc_tag ?: $product?->sku);
+            if (!$packageLabel) {
+                return response()->json([
+                    'error' => 'Missing METRC package tag for one or more items',
+                    'item_id' => $item->id,
+                ], 422);
+            }
+
+            $weightSold = (float)($item->weight_sold ?? 0);
+            if ($weightSold > 0) {
+                $quantity = $weightSold;
+                $uom = 'Grams';
+            } else {
+                $quantity = (float)$item->quantity;
+                $uom = 'Each';
+            }
+
+            $transactions[] = [
+                'package_label' => $packageLabel,
+                'quantity' => $quantity,
+                'unit_of_measure' => $uom,
+                'total_amount' => (float)$item->total_price,
+            ];
+        }
+
+        $customerType = strtolower($sale->customer_type) === 'medical' ? 'Patient' : 'Consumer';
+        $patientLicense = $sale->customer?->medical_card_number ?: null;
+
+        $payload = [
+            'sales_datetime' => $sale->created_at->toIso8601String(),
+            'sales_customer_type' => $customerType,
+            'patient_license_number' => $patientLicense,
+            'caregiver_license_number' => null,
+            'transactions' => $transactions,
+        ];
+
+        $request->merge($payload);
+        return $this->createSalesReceipt($request);
+    }
+
+    /**
      * Get sales receipts from METRC
      */
+    public function createSalesDeliveries(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'deliveries' => 'required|array|min:1',
+            'deliveries.*.sales_datetime' => 'required|date',
+            'deliveries.*.sales_customer_type' => 'required|string|in:Consumer,Patient,Caregiver',
+            'deliveries.*.patient_license_number' => 'nullable|string',
+            'deliveries.*.transactions' => 'required|array|min:1',
+            'deliveries.*.transactions.*.package_label' => 'required|string',
+            'deliveries.*.transactions.*.quantity' => 'required|numeric|min:0.01',
+            'deliveries.*.transactions.*.unit_of_measure' => 'required|string',
+            'deliveries.*.transactions.*.total_amount' => 'required|numeric|min:0'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        try {
+            $deliveries = [];
+            foreach ($request->deliveries as $d) {
+                $deliveries[] = [
+                    'SalesDateTime' => \Carbon\Carbon::parse($d['sales_datetime'])->format('Y-m-d\TH:i:s.000'), // local, no TZ
+                    'SalesCustomerType' => $d['sales_customer_type'],
+                    'PatientLicenseNumber' => $d['patient_license_number'] ?? null,
+                    'Transactions' => array_map(function($t){
+                        return [
+                            'PackageLabel' => $t['package_label'],
+                            'Quantity' => (float)$t['quantity'],
+                            'UnitOfMeasure' => $t['unit_of_measure'],
+                            'TotalAmount' => (float)$t['total_amount'],
+                            'QrCodes' => $t['qr_codes'] ?? null,
+                        ];
+                    }, $d['transactions'])
+                ];
+            }
+
+            $result = $this->metrcService->createSalesDeliveries($deliveries);
+
+            Log::info('METRC sales deliveries created', [ 'deliveries_count' => count($deliveries), 'user_id' => $request->user()->id ]);
+            $this->logMetrcPush('sales_deliveries', 'success', [ 'deliveries_count' => count($deliveries) ]);
+
+            return response()->json([
+                'message' => 'Sales deliveries created successfully',
+                'result' => $result
+            ], 201);
+        } catch (\Exception $e) {
+            $this->logMetrcPush('sales_deliveries', 'error', [ 'message' => $e->getMessage() ]);
+            return response()->json([
+                'error' => 'Failed to create sales deliveries',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function createDeliveriesFromSale(Request $request, Sale $sale)
+    {
+        if ($sale->status !== 'completed') {
+            return response()->json(['error' => 'Only completed sales can be pushed to METRC'], 400);
+        }
+
+        $customerType = strtolower($sale->customer_type) === 'medical' ? 'Patient' : 'Consumer';
+        $patientLicense = $sale->customer?->medical_card_number ?: null;
+
+        $transactions = [];
+        foreach ($sale->saleItems as $item) {
+            $product = $item->product;
+            $label = $product?->metrc_tag ?: ($item->metrc_tag ?: $product?->sku);
+            if (!$label) {
+                return response()->json(['error' => 'Missing METRC package tag for one or more items', 'item_id' => $item->id], 422);
+            }
+            $weightSold = (float)($item->weight_sold ?? 0);
+            $transactions[] = [
+                'package_label' => $label,
+                'quantity' => $weightSold > 0 ? $weightSold : (float)$item->quantity,
+                'unit_of_measure' => $weightSold > 0 ? 'Grams' : 'Each',
+                'total_amount' => (float)$item->total_price
+            ];
+        }
+
+        $payload = [
+            'deliveries' => [[
+                'sales_datetime' => $sale->created_at->format('Y-m-d\TH:i:s.000'),
+                'sales_customer_type' => $customerType,
+                'patient_license_number' => $patientLicense,
+                'transactions' => $transactions
+            ]]
+        ];
+
+        $request->merge($payload);
+        return $this->createSalesDeliveries($request);
+    }
+
     public function getSalesReceipts(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -383,6 +812,92 @@ class MetrcController extends Controller
     /**
      * Get facility details
      */
+    public function getAvailablePackageTags(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'page_number' => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1|max:20'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $raw = $this->metrcService->getAvailablePackageTags($request->page_number, $request->page_size);
+            $tags = (isset($raw['Data']) && is_array($raw['Data'])) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+            return response()->json([
+                'success' => true,
+                'tags' => $tags,
+                'count' => count($tags),
+                'pagination' => [
+                    'total' => $raw['Total'] ?? null,
+                    'total_records' => $raw['TotalRecords'] ?? null,
+                    'page' => $raw['Page'] ?? null,
+                    'current_page' => $raw['CurrentPage'] ?? null,
+                    'page_size' => $raw['PageSize'] ?? null,
+                    'records_on_page' => $raw['RecordsOnPage'] ?? null,
+                    'total_pages' => $raw['TotalPages'] ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch tags', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getAvailablePlantTags(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'page_number' => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1|max:20'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $raw = $this->metrcService->getAvailablePlantTags($request->page_number, $request->page_size);
+            $tags = (isset($raw['Data']) && is_array($raw['Data'])) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+            return response()->json([
+                'success' => true,
+                'tags' => $tags,
+                'count' => count($tags),
+                'pagination' => [
+                    'total' => $raw['Total'] ?? null,
+                    'total_records' => $raw['TotalRecords'] ?? null,
+                    'page' => $raw['Page'] ?? null,
+                    'current_page' => $raw['CurrentPage'] ?? null,
+                    'page_size' => $raw['PageSize'] ?? null,
+                    'records_on_page' => $raw['RecordsOnPage'] ?? null,
+                    'total_pages' => $raw['TotalPages'] ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch plant tags', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getRetailIdPackagesInfo(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'package_labels' => 'required|array|min:1',
+            'package_labels.*' => 'string|min:8'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+        try {
+            $raw = $this->metrcService->getRetailIdPackagesInfo($request->package_labels);
+            return response()->json([
+                'success' => true,
+                'data' => $raw
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to fetch Retail ID info', 'message' => $e->getMessage()], 500);
+        }
+    }
+
     public function getFacilityDetails(Request $request)
     {
         try {
@@ -397,6 +912,67 @@ class MetrcController extends Controller
                 'error' => 'Failed to retrieve facility details',
                 'message' => $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Get item by ID
+     */
+    public function getItem(Request $request, $id)
+    {
+        try {
+            $license = $request->get('licenseNumber');
+            $item = $this->metrcService->getItemById($id, $license);
+            return response()->json([
+                'success' => true,
+                'item' => $item
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to retrieve item', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function getActiveItems(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'last_modified_start' => 'nullable|date',
+            'last_modified_end' => 'nullable|date|after_or_equal:last_modified_start',
+            'page_number' => 'nullable|integer|min:1',
+            'page_size' => 'nullable|integer|min:1|max:20'
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['error' => 'Validation failed', 'errors' => $validator->errors()], 422);
+        }
+        try {
+            $raw = $this->metrcService->getActiveItems(
+                $request->last_modified_start,
+                $request->last_modified_end,
+                $request->page_number,
+                $request->page_size
+            );
+            $items = (isset($raw['Data']) && is_array($raw['Data'])) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+            return response()->json([
+                'success' => true,
+                'items' => $items,
+                'count' => count($items),
+                'filters' => [
+                    'last_modified_start' => $request->last_modified_start,
+                    'last_modified_end' => $request->last_modified_end,
+                    'page_number' => $request->page_number,
+                    'page_size' => $request->page_size
+                ],
+                'pagination' => [
+                    'total' => $raw['Total'] ?? null,
+                    'total_records' => $raw['TotalRecords'] ?? null,
+                    'page' => $raw['Page'] ?? null,
+                    'current_page' => $raw['CurrentPage'] ?? null,
+                    'page_size' => $raw['PageSize'] ?? null,
+                    'records_on_page' => $raw['RecordsOnPage'] ?? null,
+                    'total_pages' => $raw['TotalPages'] ?? null,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to retrieve active items', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -422,6 +998,25 @@ class MetrcController extends Controller
     }
 
     /**
+     * Get strain by ID
+     */
+    public function getStrain(Request $request, $id)
+    {
+        try {
+            $license = $request->get('licenseNumber');
+            $strain = $this->metrcService->getStrainById($id, $license);
+            $type = $this->metrcService->inferStrainType($strain['IndicaPercentage'] ?? null, $strain['SativaPercentage'] ?? null, $strain['Genetics'] ?? null);
+            return response()->json([
+                'success' => true,
+                'strain' => $strain,
+                'strain_type' => $type
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Failed to retrieve strain', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
      * Get package history
      */
     public function getPackageHistory(Request $request, string $packageTag)
@@ -439,6 +1034,369 @@ class MetrcController extends Controller
                 'error' => 'Failed to retrieve package history',
                 'message' => $e->getMessage(),
                 'package_tag' => $packageTag
+            ], 500);
+        }
+    }
+
+    /**
+     * Sync inventory with METRC using chronological lastModified windows and outgoing transfers
+     */
+    public function syncInventory(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'start' => 'nullable|date',
+            'end' => 'nullable|date|after_or_equal:start',
+            'window_days' => 'nullable|integer|min:1|max:31'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $start = $request->get('start') ? now()->parse($request->get('start')) : (cache('metrc_sync_cursor') ? now()->parse(cache('metrc_sync_cursor')) : now()->subDays(30));
+        $end = $request->get('end') ? now()->parse($request->get('end')) : now();
+        $windowDays = (int)($request->get('window_days', 7));
+
+        $summary = [
+            'windows_processed' => 0,
+            'active_processed' => 0,
+            'inactive_processed' => 0,
+            'outgoing_transfers' => 0,
+            'deliveries_processed' => 0,
+            'transfer_packages_processed' => 0,
+            'products_created' => 0,
+            'products_updated' => 0,
+            'products_deactivated' => 0,
+        ];
+
+        try {
+            // If no prior cursor or explicit full sync requested, do a one-time full active fetch first
+            $doFull = $request->boolean('full') || !cache('metrc_sync_cursor');
+            if ($doFull) {
+                $allActive = (array) $this->metrcService->getAllPackages();
+                $activeLabels = collect($allActive)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+                $retailMap = [];
+                if (!empty($activeLabels)) {
+                    try {
+                        $retResp = $this->metrcService->getRetailIdPackagesInfo($activeLabels);
+                        $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                        foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                    } catch (\Throwable $e) {}
+                }
+                foreach ($allActive as $pkg) {
+                    $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+
+                    $item = $pkg['Item'] ?? [];
+                    $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                    $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                    $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
+                    $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                    $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                    $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+
+                    $itemId = null;
+                    if (is_array($item)) { $itemId = $item['Id'] ?? $item['ID'] ?? null; }
+                    elseif (is_numeric($item)) { $itemId = (int)$item; }
+                    if ((!$uom || !$category || !$itemName) && isset($pkg['ItemId'])) { $itemId = $itemId ?: $pkg['ItemId']; }
+                    if ($itemId) {
+                        try {
+                            $it = $this->metrcService->getItemById($itemId);
+                            $itemName = $itemName ?: ($it['Name'] ?? null);
+                            $category = $category ?: ($it['ProductCategoryName'] ?? null);
+                            $uom = $uom ?: ($it['UnitOfMeasureName'] ?? null);
+                            if (empty($strainName)) { $strainName = $it['StrainName'] ?? null; }
+                        } catch (\Throwable $e) {}
+                    }
+
+                    $strainName = null; $strainId = null;
+                    if (is_array($item)) { $strainName = $item['StrainName'] ?? $item['Strain'] ?? null; $strainId = $item['StrainId'] ?? null; }
+                    if (!$strainName && ($pkg['StrainName'] ?? null)) { $strainName = $pkg['StrainName']; }
+                    if (!$strainName && $strainId) { try { $sr = $this->metrcService->getStrainById($strainId); $strainName = $sr['Name'] ?? null; } catch (\Throwable $e) {} }
+
+                    $data = [
+                        'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                        'category' => $category ?: 'Unknown',
+                        'price' => 0,
+                        'cost' => 0,
+                        'sku' => $label,
+                        'weight' => $uom ?: 'Units',
+                        'unit' => $uom ?: 'Each',
+                        'room' => 'Inventory',
+                        'supplier' => $vendor ?: 'METRC',
+                        'vendor' => $vendor ?: 'METRC',
+                        'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                        'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                        'metrc_tag' => $label,
+                        'quantity' => $qty,
+                        'strain' => $strainName,
+                    ];
+
+                    $pkgId = $pkg['Id'] ?? $pkg['PackageId'] ?? null;
+                    if ($pkgId) {
+                        $labResp = $this->metrcService->getLabTestResults($pkgId, null, 20);
+                        if ($labResp) { $parsed = $this->metrcService->parseLabResults($labResp); $data = array_merge($data, array_filter($parsed, fn($v) => $v !== null)); }
+                    }
+                    if (isset($retailMap[$label])) { $ri = $retailMap[$label]; if (($ri['RequiresVerification'] ?? false) === true) { $data['administrative_hold'] = true; $note = 'RetailID: Requires Verification'; $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note; } $data['lab_results'] = [ 'retail_id' => $ri ]; }
+
+                    $existing = Product::where('metrc_tag', $label)->first();
+                    if ($existing) { $existing->fill($data)->save(); $summary['products_updated']++; }
+                    else { Product::create($data); $summary['products_created']++; }
+                    $summary['active_processed']++;
+                }
+                cache(['metrc_sync_cursor' => now()->toIso8601String()], now()->addDays(7));
+            }
+
+            $cursor = $start->clone();
+            while ($cursor->lt($end)) {
+                $windowStart = $cursor->clone();
+                $windowEnd = $cursor->clone()->addDays($windowDays);
+                if ($windowEnd->gt($end)) { $windowEnd = $end->clone(); }
+
+                // 1) Active packages -> upsert (windowed)
+                $active = (array) $this->metrcService->getAllPackages($windowStart->toIso8601String(), $windowEnd->toIso8601String());
+
+                // Prefetch Retail ID info for this window
+                $activeLabels = collect($active)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+                $retailMap = [];
+                if (!empty($activeLabels)) {
+                    try {
+                        $retResp = $this->metrcService->getRetailIdPackagesInfo($activeLabels);
+                        $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                        foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                    } catch (\Throwable $e) {}
+                }
+
+                foreach ($active as $pkg) {
+                    $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+
+                    $item = $pkg['Item'] ?? [];
+                    $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                    $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                    $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
+                    $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                    $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                    $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+
+                    // If item id present, fetch full item details
+                    $itemId = null;
+                    if (is_array($item)) { $itemId = $item['Id'] ?? $item['ID'] ?? null; }
+                    elseif (is_numeric($item)) { $itemId = (int)$item; }
+                    if ((!$uom || !$category || !$itemName) && isset($pkg['ItemId'])) { $itemId = $itemId ?: $pkg['ItemId']; }
+                    if ($itemId) {
+                        try {
+                            $it = $this->metrcService->getItemById($itemId);
+                            $itemName = $itemName ?: ($it['Name'] ?? null);
+                            $category = $category ?: ($it['ProductCategoryName'] ?? null);
+                            $uom = $uom ?: ($it['UnitOfMeasureName'] ?? null);
+                            if (empty($strainName)) { $strainName = $it['StrainName'] ?? null; }
+                        } catch (\Throwable $e) {}
+                    }
+
+                    // Resolve strain if present
+                    $strainName = null; $strainId = null;
+                    if (is_array($item)) {
+                        $strainName = $item['StrainName'] ?? $item['Strain'] ?? null;
+                        $strainId = $item['StrainId'] ?? null;
+                    }
+                    if (!$strainName && ($pkg['StrainName'] ?? null)) { $strainName = $pkg['StrainName']; }
+                    if (!$strainName && $strainId) { try { $sr = $this->metrcService->getStrainById($strainId); $strainName = $sr['Name'] ?? null; } catch (\Throwable $e) {} }
+
+                    $data = [
+                        'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                        'category' => $category ?: 'Unknown',
+                        'price' => 0,
+                        'cost' => 0,
+                        'sku' => $label,
+                        'weight' => $uom ?: 'Units',
+                        'unit' => $uom ?: 'Each',
+                        'room' => 'Inventory',
+                        'supplier' => $vendor ?: 'METRC',
+                        'vendor' => $vendor ?: 'METRC',
+                        'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                        'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                        'metrc_tag' => $label,
+                        'quantity' => $qty,
+                        'strain' => $strainName,
+                    ];
+
+                    // Pull lab results for this package and merge
+                    $pkgId = $pkg['Id'] ?? $pkg['PackageId'] ?? null;
+                    if ($pkgId) {
+                        $labResp = $this->metrcService->getLabTestResults($pkgId, null, 20);
+                        if ($labResp) { $parsed = $this->metrcService->parseLabResults($labResp); $data = array_merge($data, array_filter($parsed, fn($v) => $v !== null)); }
+                    }
+
+                    // Retail ID enrich
+                    if (isset($retailMap[$label])) {
+                        $ri = $retailMap[$label];
+                        if (($ri['RequiresVerification'] ?? false) === true) { $data['administrative_hold'] = true; $note = 'RetailID: Requires Verification'; $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note; }
+                        $data['lab_results'] = [ 'retail_id' => $ri ];
+                    }
+
+                    $existing = Product::where('metrc_tag', $label)->first();
+                    if ($existing) { $existing->fill($data)->save(); $summary['products_updated']++; }
+                    else { Product::create($data); $summary['products_created']++; }
+                    $summary['active_processed']++;
+                }
+
+                // 2) Inactive packages -> set quantity to 0
+                $inactive = (array) $this->metrcService->getInactivePackages($windowStart->toIso8601String(), $windowEnd->toIso8601String());
+                foreach ($inactive as $pkg) {
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+                    $p = Product::where('metrc_tag', $label)->first();
+                    if ($p && $p->quantity > 0) { $p->update(['quantity' => 0]); $summary['products_deactivated']++; }
+                    $summary['inactive_processed']++;
+                }
+
+                // 3) Outgoing transfers -> deliveries -> packages
+                $outgoing = (array) $this->metrcService->getOutgoingTransfers($windowStart->toIso8601String(), $windowEnd->toIso8601String());
+                foreach ($outgoing as $transfer) {
+                    $summary['outgoing_transfers']++;
+                    $deliveries = (array) $this->metrcService->getTransferDeliveries($transfer['Id'] ?? $transfer['id']);
+                    foreach ($deliveries as $delivery) {
+                        $summary['deliveries_processed']++;
+                        $packages = (array) $this->metrcService->getDeliveryPackages($delivery['Id'] ?? $delivery['id']);
+                        foreach ($packages as $pkg) {
+                            $summary['transfer_packages_processed']++;
+                            $label = $pkg['PackageLabel'] ?? $pkg['Label'] ?? $pkg['packageLabel'] ?? null;
+                            if (!$label) { continue; }
+                            $p = Product::where('metrc_tag', $label)->first();
+                            if ($p && $p->quantity > 0) { $p->update(['quantity' => 0]); $summary['products_deactivated']++; }
+                        }
+                    }
+                }
+
+                $summary['windows_processed']++;
+                $cursor = $windowEnd->clone();
+                cache(['metrc_sync_cursor' => $cursor->toIso8601String()], now()->addDays(7));
+            }
+
+            // Fallback: if no active packages were processed in windows, try a full active fetch once
+            if ($summary['active_processed'] === 0 && !$request->boolean('skip_fallback')) {
+                $allActive = (array) $this->metrcService->getAllPackages();
+                $activeLabels = collect($allActive)->map(fn($p) => $p['Label'] ?? $p['label'] ?? null)->filter()->unique()->values()->all();
+                $retailMap = [];
+                if (!empty($activeLabels)) {
+                    try {
+                        $retResp = $this->metrcService->getRetailIdPackagesInfo($activeLabels);
+                        $retList = isset($retResp['Packages']) && is_array($retResp['Packages']) ? $retResp['Packages'] : [];
+                        foreach ($retList as $ri) { $retailMap[$ri['Tag'] ?? ''] = $ri; }
+                    } catch (\Throwable $e) {}
+                }
+                foreach ($allActive as $pkg) {
+                    $qty = (int)($pkg['Quantity'] ?? $pkg['quantity'] ?? 0);
+                    $label = $pkg['Label'] ?? $pkg['label'] ?? null;
+                    if (!$label) { continue; }
+                    $item = $pkg['Item'] ?? [];
+                    $itemName = is_array($item) ? ($item['Name'] ?? $item['name'] ?? null) : null;
+                    $category = is_array($item) ? ($item['Category'] ?? $item['category'] ?? null) : ($pkg['Category'] ?? $pkg['category'] ?? null);
+                    $uom = $pkg['UnitOfMeasureName'] ?? $pkg['UnitOfMeasure'] ?? $pkg['unitOfMeasure'] ?? $pkg['UnitOfMeasureAbbreviation'] ?? $pkg['unit_of_measure'] ?? '';
+                    $packagedDate = $pkg['PackagedDate'] ?? $pkg['packagedDate'] ?? null;
+                    $expDate = $pkg['ExpirationDate'] ?? $pkg['expirationDate'] ?? null;
+                    $vendor = $pkg['SourceFacilityLicenseNumber'] ?? $pkg['SourceFacility'] ?? null;
+                    $data = [
+                        'name' => $itemName ?: ($pkg['ProductName'] ?? $pkg['productName'] ?? ('METRC Package ' . $label)),
+                        'category' => $category ?: 'Unknown',
+                        'price' => 0,
+                        'cost' => 0,
+                        'sku' => $label,
+                        'weight' => $uom ?: 'Units',
+                        'unit' => $uom ?: 'Each',
+                        'room' => 'Inventory',
+                        'supplier' => $vendor ?: 'METRC',
+                        'vendor' => $vendor ?: 'METRC',
+                        'packaged_date' => $packagedDate ? date('Y-m-d', strtotime($packagedDate)) : null,
+                        'expiration_date' => $expDate ? date('Y-m-d', strtotime($expDate)) : null,
+                        'metrc_tag' => $label,
+                        'quantity' => $qty,
+                    ];
+                    if (isset($retailMap[$label])) { $ri = $retailMap[$label]; if (($ri['RequiresVerification'] ?? false) === true) { $data['administrative_hold'] = true; $note = 'RetailID: Requires Verification'; $data['batch_notes'] = isset($data['batch_notes']) ? ($data['batch_notes'] . "\n" . $note) : $note; } $data['lab_results'] = [ 'retail_id' => $ri ]; }
+                    $existing = Product::where('metrc_tag', $label)->first();
+                    if ($existing) { $existing->fill($data)->save(); $summary['products_updated']++; }
+                    else { Product::create($data); $summary['products_created']++; }
+                    $summary['active_processed']++;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'METRC inventory sync completed',
+                'summary' => $summary,
+                'synced_range' => [ 'start' => $start->toIso8601String(), 'end' => $end->toIso8601String() ],
+                'next_cursor' => cache('metrc_sync_cursor')
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Summarize METRC packages against current inventory for the active store
+     */
+    public function getProductsSummary(Request $request)
+    {
+        try {
+            $packages = (array) $this->metrcService->getAllPackages();
+            $tags = collect($packages)->map(function($p){
+                if (is_array($p)) {
+                    return $p['Label'] ?? $p['label'] ?? ($p['Tag'] ?? null);
+                }
+                return null;
+            })->filter()->unique()->values()->all();
+
+            $invQuery = \App\Models\Product::query();
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasColumn('products','store_id')) {
+                    $invQuery->where('store_id', \App\Helpers\StoreContext::id());
+                }
+            } catch (\Throwable $e) {}
+            if (!empty($tags)) { $invQuery->whereIn('metrc_tag', $tags); }
+            $invRows = $invQuery->get(['metrc_tag','quantity','unit','weight','name']);
+            $invMap = [];
+            foreach ($invRows as $r) {
+                $invMap[$r->metrc_tag] = [
+                    'inventory_qty' => (float)($r->quantity ?? 0),
+                    'unit' => $r->unit ?: ($r->weight ?: 'Each'),
+                    'name' => $r->name,
+                ];
+            }
+
+            $rows = [];
+            foreach ($packages as $p) {
+                if (!is_array($p)) { continue; }
+                $tag = $p['Label'] ?? $p['label'] ?? ($p['Tag'] ?? null);
+                if (!$tag) { continue; }
+                $unit = $p['UnitOfMeasureName'] ?? $p['UnitOfMeasure'] ?? $p['unitOfMeasure'] ?? ($invMap[$tag]['unit'] ?? 'Each');
+                $name = null;
+                $item = $p['Item'] ?? null;
+                if (is_array($item)) { $name = $item['Name'] ?? $item['name'] ?? null; }
+                if (!$name) { $name = $p['ProductName'] ?? ($invMap[$tag]['name'] ?? ('METRC Package ' . $tag)); }
+                $metrcQty = (float)($p['Quantity'] ?? $p['RemainingQuantity'] ?? 0);
+                $invQty = (float)($invMap[$tag]['inventory_qty'] ?? 0);
+                $rows[] = [
+                    'name' => $name,
+                    'tag' => $tag,
+                    'metrc_qty' => $metrcQty,
+                    'inventory_qty' => $invQty,
+                    'unit' => $unit,
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'rows' => $rows,
+                'count' => count($rows),
+                'retrieved_at' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

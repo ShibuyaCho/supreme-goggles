@@ -297,7 +297,7 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-200 bg-white">
+                    <tbody id="tiers-table-body" class="divide-y divide-gray-200 bg-white">
                         @forelse($detailed_tiers ?? [] as $tier)
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4">
@@ -370,4 +370,111 @@
         </div>
     </div>
 </div>
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    async function refreshTiers(){
+      const tb = document.getElementById('tiers-table-body');
+      if (!tb) return;
+      const esc = (s) => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      const render = (arr)=>{
+        if (!Array.isArray(arr)) return;
+        tb.innerHTML = arr.map(t => {
+          const name = esc(t.name || 'Tier');
+          const type = esc(t.type || 'retail');
+          const cust = esc(t.customer_type || 'recreational');
+          const disc = typeof t.discount === 'number' ? t.discount : (t.percentage || 0);
+          const minq = t.min_quantity != null ? t.min_quantity : '-';
+          const count = t.product_count != null ? t.product_count : (t.products?.length||0);
+          const status = (t.is_active===false||t.status==='inactive') ? 'inactive' : 'active';
+          return `<tr class="hover:bg-gray-50">
+            <td class="px-6 py-4"><div class="text-sm font-medium text-gray-900">${name}</div><div class="text-sm text-gray-500">${esc(t.description||'')}</div></td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${type==='retail'?'bg-blue-100 text-blue-800':(type==='wholesale'?'bg-purple-100 text-purple-800':'bg-green-100 text-green-800')}">${type.charAt(0).toUpperCase()+type.slice(1)}</span></td>
+            <td class="px-6 py-4 text-sm text-gray-900">${cust.charAt(0).toUpperCase()+cust.slice(1)}</td>
+            <td class="px-6 py-4"><span class="text-sm font-medium text-green-600">${disc}%</span></td>
+            <td class="px-6 py-4 text-sm text-gray-900">${minq}</td>
+            <td class="px-6 py-4 text-sm text-gray-900">${count}</td>
+            <td class="px-6 py-4"><span class="inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${status==='active'?'bg-green-100 text-green-800':'bg-red-100 text-red-800'}">${status.charAt(0).toUpperCase()+status.slice(1)}</span></td>
+            <td class="px-6 py-4"><div class="flex items-center space-x-2">
+              <button type="button" class="text-blue-600 hover:text-blue-900" title="Edit">Edit</button>
+              <button type="button" class="text-green-600 hover:text-green-900" title="Duplicate">Duplicate</button>
+              <button type="button" class="text-red-600 hover:text-red-900" title="Delete">Delete</button>
+            </div></td>
+          </tr>`;
+        }).join('');
+      };
+      try {
+        // 1) Primary: Supabase-backed API
+        const r = await (window.axios||axios).get('/price-tiers/json', { headers: { Accept: 'application/json' } });
+        let list = (r && r.data && (r.data.tiers||r.data)) || [];
+        if (Array.isArray(list) && list.length) { render(list); return; }
+      } catch (_) {}
+      // 2) Fallback: SettingsClient price_tiers
+      try {
+        if (window.SettingsClient && typeof SettingsClient.get === 'function') {
+          const g = await SettingsClient.get(true);
+          const s = g && g.settings ? g.settings : {};
+          const arr = Array.isArray(s.price_tiers) ? s.price_tiers : (Array.isArray(s.priceTiers) ? s.priceTiers : []);
+          if (Array.isArray(arr) && arr.length) {
+            const mapped = arr.map(t=>({
+              name: t.name,
+              description: t.description||'',
+              type: 'retail',
+              customer_type: 'recreational',
+              discount: 0,
+              min_quantity: '-',
+              product_count: Array.isArray(t.products)?t.products.length:0,
+              status: (t.is_active===false)?'inactive':'active'
+            }));
+            render(mapped);
+            // Persist to Supabase so future loads are reliable
+            try {
+              for (const t of arr) {
+                const payload = { name: t.name, description: t.description||'', prices: t.prices||{}, custom_weights: t.custom_weights||t.customWeights||[], is_active: t.is_active ?? t.isActive ?? true, created_at: t.created_at || new Date().toISOString(), updated_at: new Date().toISOString() };
+                await (window.axios||axios).post('/api/price-tiers', payload, { headers: { Accept: 'application/json' } });
+              }
+            } catch(_) {}
+            return;
+          }
+        }
+      } catch(_) {}
+      // 3) Fallback: localStorage backup
+      try {
+        const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } return 'default'; })();
+        const raw = (localStorage.getItem(`cannabisPOS-priceTiers-backup_${sid}`) || localStorage.getItem('cannabisPOS-priceTiers-backup') || '[]');
+        const arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) {
+          const mapped = arr.map(t=>({
+            name: t.name,
+            description: t.description||'',
+            type: 'retail',
+            customer_type: 'recreational',
+            discount: 0,
+            min_quantity: '-',
+            product_count: Array.isArray(t.products)?t.products.length:0,
+            status: (t.is_active===false)?'inactive':'active'
+          }));
+          render(mapped);
+          // Persist backup to Supabase
+          try {
+            for (const t of arr) {
+              const payload = { name: t.name, description: t.description||'', prices: t.prices||{}, custom_weights: t.custom_weights||t.customWeights||[], is_active: t.is_active ?? t.isActive ?? true, created_at: t.created_at || new Date().toISOString(), updated_at: new Date().toISOString() };
+              await (window.axios||axios).post('/api/price-tiers', payload, { headers: { Accept: 'application/json' } });
+            }
+          } catch(_) {}
+          return;
+        }
+      } catch(_) {}
+    }
+    try {
+      const onRt = (e) => {
+        const t = e && e.detail && e.detail.table;
+        if (t === 'price_tiers' || t === 'pos_settings') refreshTiers();
+      };
+      window.addEventListener('realtime:table-changed', onRt);
+    } catch(_) {}
+    try { window.addEventListener('settings:updated', () => refreshTiers()); } catch(_) {}
+    try { window.addEventListener('settings-updated', () => refreshTiers()); } catch(_) {}
+    refreshTiers();
+  });
+</script>
 @endsection

@@ -1,9 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +28,7 @@ import {
   Eye,
   History,
   Edit,
-  Trash2
+  Trash2,
 } from "lucide-react";
 
 interface LoyaltyCustomer {
@@ -36,7 +42,7 @@ interface LoyaltyCustomer {
   pointsBalance: number;
   pointsEarned: number;
   pointsRedeemed: number;
-  tier: 'Bronze' | 'Silver' | 'Gold' | 'Platinum';
+  tier: "Bronze" | "Silver" | "Gold" | "Platinum";
   dataRetentionConsent: boolean;
   salesHistory: Purchase[];
   lastVisit: string;
@@ -62,94 +68,174 @@ const defaultTierThresholds = {
   Bronze: 0,
   Silver: 500,
   Gold: 1500,
-  Platinum: 3000
+  Platinum: 3000,
 };
 
 const tierColors = {
   Bronze: "bg-amber-100 text-amber-800",
   Silver: "bg-gray-100 text-gray-800",
   Gold: "bg-yellow-100 text-yellow-800",
-  Platinum: "bg-purple-100 text-purple-800"
+  Platinum: "bg-purple-100 text-purple-800",
 };
 
-const mockCustomers: LoyaltyCustomer[] = [
-  {
-    id: "1",
-    name: "John Doe",
-    phone: "(555) 123-4567",
-    email: "john.doe@email.com",
-    joinDate: "2024-01-15",
-    totalSpent: 1250.75,
-    totalVisits: 18,
-    pointsBalance: 45,
-    pointsEarned: 125,
-    pointsRedeemed: 80,
-    tier: "Silver",
-    dataRetentionConsent: true,
-    lastVisit: "2024-01-14",
-    isVeteran: false,
-    salesHistory: [
-      { id: "p1", date: "2024-01-14", total: 85.50, pointsEarned: 8, items: ["Blue Dream", "Edible Gummies"] },
-      { id: "p2", date: "2024-01-10", total: 120.25, pointsEarned: 12, items: ["OG Kush", "Pre-Rolls"] }
-    ]
-  },
-  {
-    id: "2",
-    name: "Jane Smith",
-    phone: "(555) 987-6543",
-    email: "jane.smith@email.com",
-    joinDate: "2023-11-20",
-    totalSpent: 2850.40,
-    totalVisits: 42,
-    pointsBalance: 156,
-    pointsEarned: 285,
-    pointsRedeemed: 129,
-    tier: "Gold",
-    dataRetentionConsent: true,
-    lastVisit: "2024-01-13",
-    isVeteran: true,
-    salesHistory: [
-      { id: "p3", date: "2024-01-13", total: 95.00, pointsEarned: 9, items: ["Live Resin Cart", "Flower"] },
-      { id: "p4", date: "2024-01-08", total: 150.75, pointsEarned: 15, items: ["Premium Flower", "Concentrates"] }
-    ]
-  },
-  {
-    id: "3",
-    name: "Mike Johnson",
-    phone: "(555) 456-7890",
-    email: "mike.johnson@email.com",
-    joinDate: "2023-08-10",
-    totalSpent: 4200.90,
-    totalVisits: 68,
-    pointsBalance: 328,
-    pointsEarned: 420,
-    pointsRedeemed: 92,
-    tier: "Platinum",
-    dataRetentionConsent: true,
-    lastVisit: "2024-01-15",
-    isVeteran: true,
-    salesHistory: [
-      { id: "p5", date: "2024-01-15", total: 200.50, pointsEarned: 20, items: ["Premium Products", "Accessories"] }
-    ]
-  }
-];
-
 export default function Loyalty() {
-  const [customers, setCustomers] = useState<LoyaltyCustomer[]>(mockCustomers);
+  const [customers, setCustomers] = useState<LoyaltyCustomer[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const getUserId = () => {
+    try {
+      const u = JSON.parse(
+        localStorage.getItem("pos_user") ||
+          localStorage.getItem("user_data") ||
+          "null",
+      );
+      return u?.id || "anon";
+    } catch (_) {
+      return "anon";
+    }
+  };
+  const loyaltyKey = () => `cannabest-loyalty-${getUserId()}`;
+
+  const mapMember = (m: any): LoyaltyCustomer => ({
+    id: String(m.id),
+    name: m.name || "",
+    phone: m.phone || "",
+    email: m.email || "",
+    joinDate: (
+      m.join_date || new Date().toISOString().split("T")[0]
+    ).toString(),
+    totalSpent: Number(m.total_spent || 0) || 0,
+    totalVisits: Number(m.total_visits || 0) || 0,
+    pointsBalance: Number(m.points_balance || 0) || 0,
+    pointsEarned: Number(m.points_earned || 0) || 0,
+    pointsRedeemed: Number(m.points_redeemed || 0) || 0,
+    tier: (m.tier || "Bronze") as LoyaltyCustomer["tier"],
+    dataRetentionConsent: true,
+    salesHistory: [],
+    lastVisit: m.last_visit || "",
+    isVeteran: !!m.is_veteran,
+  });
+
+  useEffect(() => {
+    (async () => {
+      try {
+        let list: any[] = [];
+        const sid =
+          (window as any).SettingsClient &&
+          typeof (window as any).SettingsClient.currentStoreId === "function"
+            ? (window as any).SettingsClient.currentStoreId()
+            : JSON.parse(localStorage.getItem("pos_store") || "{}")?.id ||
+              "default";
+        const sname =
+          (window as any).SettingsClient &&
+          typeof (window as any).SettingsClient.currentStoreName === "function"
+            ? (window as any).SettingsClient.currentStoreName()
+            : JSON.parse(localStorage.getItem("pos_store") || "{}")?.name || "";
+        const res = await fetch("/api/loyalty-members", {
+          headers: { Accept: "application/json" },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          list = Array.isArray(data?.members) ? data.members : [];
+        }
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const res2 = await fetch("/node/loyalty-members", {
+              headers: { Accept: "application/json" },
+            });
+            if (res2.ok) {
+              const data2 = await res2.json();
+              list = Array.isArray(data2?.members) ? data2.members : [];
+            }
+          } catch (_) {}
+        }
+        if (!Array.isArray(list) || list.length === 0) {
+          try {
+            const base = (window as any).__SUPABASE_URL
+              ? String((window as any).__SUPABASE_URL).replace(/\/$/, "")
+              : "";
+            const key = (window as any).__SUPABASE_ANON_KEY || "";
+            if (base && key) {
+              const url = new URL(`${base}/rest/v1/loyalty_members`);
+              url.searchParams.set("select", "*");
+              const q =
+                (document?.querySelector("#loyalty-search") as HTMLInputElement)
+                  ?.value ||
+                searchQuery ||
+                "";
+              if (q && q.trim()) {
+                const s = `*${q.trim()}*`;
+                url.searchParams.set(
+                  "or",
+                  `(name.ilike.${s},email.ilike.${s},phone.ilike.${s})`,
+                );
+              }
+              const r = await fetch(url.toString(), {
+                headers: {
+                  apikey: key,
+                  Authorization: `Bearer ${key}`,
+                  Accept: "application/json",
+                },
+              });
+              if (r.ok) {
+                const arr = await r.json();
+                list = Array.isArray(arr) ? arr : [];
+              }
+            }
+          } catch (_) {}
+        }
+        setCustomers(Array.isArray(list) ? list.map(mapMember) : []);
+      } catch (_) {
+        setCustomers([]);
+      }
+    })();
+  }, []);
   const [showSignupDialog, setShowSignupDialog] = useState(false);
-  const [selectedCustomer, setSelectedCustomer] = useState<LoyaltyCustomer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] =
+    useState<LoyaltyCustomer | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showTierEditDialog, setShowTierEditDialog] = useState(false);
   const [tiers, setTiers] = useState<TierConfig[]>([
-    { name: "Bronze", threshold: 0, pointsMultiplier: 1, benefits: ["1% back in points", "Birthday rewards"] },
-    { name: "Silver", threshold: 500, pointsMultiplier: 2, benefits: ["2% back in points", "Birthday rewards", "Exclusive deals"] },
-    { name: "Gold", threshold: 1500, pointsMultiplier: 3, benefits: ["3% back in points", "Birthday rewards", "Exclusive deals", "Early access to sales"] },
-    { name: "Platinum", threshold: 3000, pointsMultiplier: 5, benefits: ["5% back in points", "Birthday rewards", "Exclusive deals", "Early access to sales", "VIP customer service"] }
+    {
+      name: "Bronze",
+      threshold: 0,
+      pointsMultiplier: 1,
+      benefits: ["1% back in points", "Birthday rewards"],
+    },
+    {
+      name: "Silver",
+      threshold: 500,
+      pointsMultiplier: 2,
+      benefits: ["2% back in points", "Birthday rewards", "Exclusive deals"],
+    },
+    {
+      name: "Gold",
+      threshold: 1500,
+      pointsMultiplier: 3,
+      benefits: [
+        "3% back in points",
+        "Birthday rewards",
+        "Exclusive deals",
+        "Early access to sales",
+      ],
+    },
+    {
+      name: "Platinum",
+      threshold: 3000,
+      pointsMultiplier: 5,
+      benefits: [
+        "5% back in points",
+        "Birthday rewards",
+        "Exclusive deals",
+        "Early access to sales",
+        "VIP customer service",
+      ],
+    },
   ]);
   const [editingTier, setEditingTier] = useState<TierConfig | null>(null);
   const [showPointsDialog, setShowPointsDialog] = useState(false);
-  const [selectedCustomerForPoints, setSelectedCustomerForPoints] = useState<LoyaltyCustomer | null>(null);
+  const [selectedCustomerForPoints, setSelectedCustomerForPoints] =
+    useState<LoyaltyCustomer | null>(null);
   const [pointsToAdd, setPointsToAdd] = useState("");
   const [pointsReason, setPointsReason] = useState("");
 
@@ -158,30 +244,34 @@ export default function Loyalty() {
     phone: "",
     email: "",
     dataRetentionConsent: false,
-    isVeteran: false
+    isVeteran: false,
   });
 
-  const filteredCustomers = customers.filter(customer =>
-    customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    customer.phone.includes(searchQuery) ||
-    customer.email.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredCustomers = customers.filter(
+    (customer) =>
+      customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      customer.phone.includes(searchQuery) ||
+      customer.email.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
-  const getTierFromSpending = (totalSpent: number): LoyaltyCustomer['tier'] => {
+  const getTierFromSpending = (totalSpent: number): LoyaltyCustomer["tier"] => {
     // Sort tiers by threshold descending to find the highest qualifying tier
     const sortedTiers = [...tiers].sort((a, b) => b.threshold - a.threshold);
 
     for (const tier of sortedTiers) {
       if (totalSpent >= tier.threshold) {
-        return tier.name as LoyaltyCustomer['tier'];
+        return tier.name as LoyaltyCustomer["tier"];
       }
     }
 
-    return 'Bronze'; // Default fallback
+    return "Bronze"; // Default fallback
   };
 
-  const calculatePoints = (amount: number, tierName: string = 'Bronze'): number => {
-    const tier = tiers.find(t => t.name === tierName);
+  const calculatePoints = (
+    amount: number,
+    tierName: string = "Bronze",
+  ): number => {
+    const tier = tiers.find((t) => t.name === tierName);
     const multiplier = tier ? tier.pointsMultiplier : 1;
     return Math.floor(amount * (multiplier / 100) * 100); // Points based on tier multiplier
   };
@@ -191,17 +281,19 @@ export default function Loyalty() {
       name: "New Tier",
       threshold: 0,
       pointsMultiplier: 1,
-      benefits: ["Basic benefits"]
+      benefits: ["Basic benefits"],
     };
-    setTiers(prev => [...prev, newTier]);
+    setTiers((prev) => [...prev, newTier]);
     setEditingTier(newTier);
     setShowTierEditDialog(true);
   };
 
   const updateTier = (updatedTier: TierConfig) => {
-    setTiers(prev => prev.map(tier =>
-      tier.name === editingTier?.name ? updatedTier : tier
-    ));
+    setTiers((prev) =>
+      prev.map((tier) =>
+        tier.name === editingTier?.name ? updatedTier : tier,
+      ),
+    );
     setShowTierEditDialog(false);
     setEditingTier(null);
   };
@@ -213,7 +305,7 @@ export default function Loyalty() {
     }
 
     if (confirm(`Are you sure you want to delete the ${tierName} tier?`)) {
-      setTiers(prev => prev.filter(tier => tier.name !== tierName));
+      setTiers((prev) => prev.filter((tier) => tier.name !== tierName));
     }
   };
 
@@ -222,7 +314,7 @@ export default function Loyalty() {
     setShowTierEditDialog(true);
   };
 
-  const addPointsManually = () => {
+  const addPointsManually = async () => {
     if (!selectedCustomerForPoints || !pointsToAdd || !pointsReason.trim()) {
       alert("Please fill in points amount and reason");
       return;
@@ -234,17 +326,49 @@ export default function Loyalty() {
       return;
     }
 
-    setCustomers(prev => prev.map(customer =>
-      customer.id === selectedCustomerForPoints.id
-        ? {
-            ...customer,
-            pointsBalance: customer.pointsBalance + points,
-            pointsEarned: customer.pointsEarned + points
-          }
-        : customer
-    ));
+    try {
+      try {
+        let ok = false;
+        const r1 = await fetch(
+          `/api/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ amount: points, reason: pointsReason }),
+          },
+        );
+        if (r1.ok) ok = true;
+        if (!ok) {
+          const r2 = await fetch(
+            `/node/loyalty-members/${selectedCustomerForPoints.id}/adjust-points`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+              },
+              body: JSON.stringify({ amount: points, reason: pointsReason }),
+            },
+          );
+          if (r2.ok) ok = true;
+        }
+      } catch (_) {}
+    } catch (_) {}
 
-    alert(`Successfully added ${points} points to ${selectedCustomerForPoints.name} for: ${pointsReason}`);
+    setCustomers((prev) =>
+      prev.map((customer) =>
+        customer.id === selectedCustomerForPoints.id
+          ? {
+              ...customer,
+              pointsBalance: customer.pointsBalance + points,
+              pointsEarned: customer.pointsEarned + points,
+            }
+          : customer,
+      ),
+    );
 
     setShowPointsDialog(false);
     setSelectedCustomerForPoints(null);
@@ -252,57 +376,174 @@ export default function Loyalty() {
     setPointsReason("");
   };
 
-  const signupCustomer = () => {
-    if (!newCustomer.name || !newCustomer.phone || !newCustomer.email || !newCustomer.dataRetentionConsent) {
+  const signupCustomer = async () => {
+    if (
+      !newCustomer.name ||
+      !newCustomer.phone ||
+      !newCustomer.email ||
+      !newCustomer.dataRetentionConsent
+    ) {
       alert("Please fill all fields and consent to data retention");
       return;
     }
 
-    const customer: LoyaltyCustomer = {
-      id: Date.now().toString(),
+    const joinDate = new Date().toISOString().split("T")[0];
+    const body = {
       name: newCustomer.name,
-      phone: newCustomer.phone,
       email: newCustomer.email,
-      joinDate: new Date().toISOString().split('T')[0],
-      totalSpent: 0,
-      totalVisits: 0,
-      pointsBalance: 0,
-      pointsEarned: 0,
-      pointsRedeemed: 0,
-      tier: 'Bronze',
-      dataRetentionConsent: newCustomer.dataRetentionConsent,
-      salesHistory: [],
-      lastVisit: "",
-      isVeteran: newCustomer.isVeteran
-    };
+      phone: newCustomer.phone,
+      starting_points: 0,
+      tier: "Bronze",
+      is_veteran: !!newCustomer.isVeteran,
+      join_date: joinDate,
+    } as any;
 
-    setCustomers(prev => [...prev, customer]);
+    let created: LoyaltyCustomer | null = null;
+    try {
+      let ok = false;
+      let payload: any = null;
+      const res = await fetch("/api/loyalty-members", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        ok = true;
+        payload = await res.json();
+      } else {
+        try {
+          const res2 = await fetch("/node/loyalty-members", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(body),
+          });
+          if (res2.ok) {
+            ok = true;
+            payload = await res2.json();
+          }
+        } catch (_) {}
+      }
+      if (ok) {
+        const m = payload?.member || null;
+        if (m) created = mapMember(m);
+      } else {
+        alert("Failed to enroll customer in loyalty program");
+      }
+    } catch (_) {
+      alert("Failed to enroll customer in loyalty program");
+    }
+
+    if (!created) {
+      return;
+    }
+
+    setCustomers((prev) => [...prev, created]);
+    // Refresh from server to ensure persistence
+    try {
+      let list2: any[] = [];
+      const sid =
+        (window as any).SettingsClient &&
+        typeof (window as any).SettingsClient.currentStoreId === "function"
+          ? (window as any).SettingsClient.currentStoreId()
+          : JSON.parse(localStorage.getItem("pos_store") || "{}")?.id ||
+            "default";
+      const sname =
+        (window as any).SettingsClient &&
+        typeof (window as any).SettingsClient.currentStoreName === "function"
+          ? (window as any).SettingsClient.currentStoreName()
+          : JSON.parse(localStorage.getItem("pos_store") || "{}")?.name || "";
+      const res2 = await fetch("/api/loyalty-members", {
+        headers: { Accept: "application/json" },
+      });
+      if (res2.ok) {
+        const data2 = await res2.json();
+        list2 = Array.isArray(data2?.members) ? data2.members : [];
+      }
+      if (!Array.isArray(list2) || list2.length === 0) {
+        try {
+          const r3 = await fetch("/node/loyalty-members", {
+            headers: { Accept: "application/json" },
+          });
+          if (r3.ok) {
+            const d3 = await r3.json();
+            list2 = Array.isArray(d3?.members) ? d3.members : [];
+          }
+        } catch (_) {}
+      }
+      setCustomers(Array.isArray(list2) ? list2.map(mapMember) : []);
+    } catch (_) {}
+
     setShowSignupDialog(false);
-    setNewCustomer({ name: "", phone: "", email: "", dataRetentionConsent: false, isVeteran: false });
-    alert(`Welcome ${customer.name}! You've been enrolled in our loyalty program.`);
+    setNewCustomer({
+      name: "",
+      phone: "",
+      email: "",
+      dataRetentionConsent: false,
+      isVeteran: false,
+    });
   };
 
-  const deleteCustomer = (customerId: string) => {
-    const customer = customers.find(c => c.id === customerId);
+  const deleteCustomer = async (customerId: string) => {
+    const customer = customers.find((c) => c.id === customerId);
     if (!customer) return;
 
-    if (confirm(`Are you sure you want to delete ${customer.name} from the loyalty program? This action cannot be undone and will remove all their points and history.`)) {
-      setCustomers(prev => prev.filter(c => c.id !== customerId));
-      alert(`${customer.name} has been removed from the loyalty program.`);
+    if (
+      confirm(
+        `Are you sure you want to delete ${customer.name} from the loyalty program? This action cannot be undone and will remove all their points and history.`,
+      )
+    ) {
+      try {
+        let ok = false;
+        const r1 = await fetch(`/api/loyalty-members/${customerId}`, {
+          method: "DELETE",
+          headers: { Accept: "application/json" },
+        });
+        if (r1.ok) ok = true;
+        if (!ok) {
+          const r2 = await fetch(`/node/loyalty-members/${customerId}`, {
+            method: "DELETE",
+            headers: { Accept: "application/json" },
+          });
+          if (r2.ok) ok = true;
+        }
+      } catch (_) {}
+      setCustomers((prev) => prev.filter((c) => c.id !== customerId));
     }
   };
 
   const totalCustomers = customers.length;
-  const totalPointsAwarded = customers.reduce((sum, c) => sum + c.pointsEarned, 0);
-  const totalPointsRedeemed = customers.reduce((sum, c) => sum + c.pointsRedeemed, 0);
-  const averageSpending = customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.length;
-  const veteranCount = customers.filter(c => c.isVeteran).length;
-  const activePointsBalance = customers.reduce((sum, c) => sum + c.pointsBalance, 0);
-  const redemptionRate = totalPointsAwarded > 0 ? ((totalPointsRedeemed / totalPointsAwarded) * 100) : 0;
-  const tierDistribution = tiers.reduce((acc, tier) => {
-    acc[tier.name] = customers.filter(c => c.tier === tier.name).length;
-    return acc;
-  }, {} as Record<string, number>);
+  const totalPointsAwarded = customers.reduce(
+    (sum, c) => sum + c.pointsEarned,
+    0,
+  );
+  const totalPointsRedeemed = customers.reduce(
+    (sum, c) => sum + c.pointsRedeemed,
+    0,
+  );
+  const averageSpending =
+    customers.reduce((sum, c) => sum + c.totalSpent, 0) / customers.length;
+  const veteranCount = customers.filter((c) => c.isVeteran).length;
+  const activePointsBalance = customers.reduce(
+    (sum, c) => sum + c.pointsBalance,
+    0,
+  );
+  const redemptionRate =
+    totalPointsAwarded > 0
+      ? (totalPointsRedeemed / totalPointsAwarded) * 100
+      : 0;
+  const tierDistribution = tiers.reduce(
+    (acc, tier) => {
+      acc[tier.name] = customers.filter((c) => c.tier === tier.name).length;
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -311,7 +552,9 @@ export default function Loyalty() {
         <div className="px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold">Loyalty Program</h1>
-            <p className="text-sm opacity-80">Manage customer rewards and engagement</p>
+            <p className="text-sm opacity-80">
+              Manage customer rewards and engagement
+            </p>
           </div>
           <Dialog open={showSignupDialog} onOpenChange={setShowSignupDialog}>
             <DialogTrigger asChild>
@@ -330,7 +573,12 @@ export default function Loyalty() {
                   <Input
                     id="customer-name"
                     value={newCustomer.name}
-                    onChange={(e) => setNewCustomer(prev => ({...prev, name: e.target.value}))}
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        name: e.target.value,
+                      }))
+                    }
                     placeholder="Enter full name"
                   />
                 </div>
@@ -339,7 +587,12 @@ export default function Loyalty() {
                   <Input
                     id="customer-phone"
                     value={newCustomer.phone}
-                    onChange={(e) => setNewCustomer(prev => ({...prev, phone: e.target.value}))}
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        phone: e.target.value,
+                      }))
+                    }
                     placeholder="(555) 123-4567"
                   />
                 </div>
@@ -349,20 +602,27 @@ export default function Loyalty() {
                     id="customer-email"
                     type="email"
                     value={newCustomer.email}
-                    onChange={(e) => setNewCustomer(prev => ({...prev, email: e.target.value}))}
+                    onChange={(e) =>
+                      setNewCustomer((prev) => ({
+                        ...prev,
+                        email: e.target.value,
+                      }))
+                    }
                     placeholder="customer@email.com"
                   />
                 </div>
-                
+
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <h3 className="font-medium mb-2">Loyalty Program Benefits</h3>
                   <div className="text-sm space-y-2">
                     <div className="font-medium">Tier-Based Rewards:</div>
                     <ul className="space-y-1 ml-2">
                       <li>• Bronze Tier (Starting): 1% back in points</li>
-                      <li>• Silver Tier ($500+ spent): 2% back in points</li>
+                      <li>��� Silver Tier ($500+ spent): 2% back in points</li>
                       <li>• Gold Tier ($1,500+ spent): 3% back in points</li>
-                      <li>• Platinum Tier ($3,000+ spent): 5% back in points</li>
+                      <li>
+                        • Platinum Tier ($3,000+ spent): 5% back in points
+                      </li>
                     </ul>
                     <div className="mt-2">
                       <li>• Exclusive deals and early access to sales</li>
@@ -377,15 +637,24 @@ export default function Loyalty() {
                     <Checkbox
                       id="veteran-status"
                       checked={newCustomer.isVeteran}
-                      onCheckedChange={(checked) => setNewCustomer(prev => ({...prev, isVeteran: checked as boolean}))}
+                      onCheckedChange={(checked) =>
+                        setNewCustomer((prev) => ({
+                          ...prev,
+                          isVeteran: checked as boolean,
+                        }))
+                      }
                     />
                     <div className="space-y-2">
-                      <Label htmlFor="veteran-status" className="text-sm font-medium">
+                      <Label
+                        htmlFor="veteran-status"
+                        className="text-sm font-medium"
+                      >
                         Veteran Status
                       </Label>
                       <p className="text-xs text-gray-600">
-                        I am a U.S. military veteran and would like to receive the 10% veteran discount
-                        on all purchases (including Green Leaf Special items).
+                        I am a U.S. military veteran and would like to receive
+                        the 10% veteran discount on all purchases (including
+                        Green Leaf Special items).
                       </p>
                     </div>
                   </div>
@@ -394,30 +663,49 @@ export default function Loyalty() {
                     <Checkbox
                       id="data-consent"
                       checked={newCustomer.dataRetentionConsent}
-                      onCheckedChange={(checked) => setNewCustomer(prev => ({...prev, dataRetentionConsent: checked as boolean}))}
+                      onCheckedChange={(checked) =>
+                        setNewCustomer((prev) => ({
+                          ...prev,
+                          dataRetentionConsent: checked as boolean,
+                        }))
+                      }
                     />
                     <div className="space-y-2">
-                      <Label htmlFor="data-consent" className="text-sm font-medium">
+                      <Label
+                        htmlFor="data-consent"
+                        className="text-sm font-medium"
+                      >
                         Data Retention Consent *
                       </Label>
                       <p className="text-xs text-gray-600">
-                        I consent to Cannabest storing my personal information and tracking my sales history
-                        for the purpose of providing loyalty program benefits. This data will be kept secure
-                        and used only for program administration and personalized offers.
+                        I consent to Cannabest storing my personal information
+                        and tracking my sales history for the purpose of
+                        providing loyalty program benefits. This data will be
+                        kept secure and used only for program administration and
+                        personalized offers.
                       </p>
                     </div>
                   </div>
                 </div>
 
                 <div className="flex gap-2">
-                  <Button 
-                    onClick={signupCustomer} 
+                  <Button
+                    onClick={signupCustomer}
                     className="flex-1"
-                    disabled={!newCustomer.name || !newCustomer.phone || !newCustomer.email || !newCustomer.dataRetentionConsent}
+                    disabled={
+                      !newCustomer.name ||
+                      !newCustomer.phone ||
+                      !newCustomer.email ||
+                      !newCustomer.dataRetentionConsent
+                    }
                   >
                     Enroll Customer
                   </Button>
-                  <Button variant="outline" onClick={() => setShowSignupDialog(false)} className="flex-1">
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowSignupDialog(false)}
+                    className="flex-1"
+                  >
                     Cancel
                   </Button>
                 </div>
@@ -451,20 +739,28 @@ export default function Loyalty() {
 
             {/* Customer Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-              {filteredCustomers.map(customer => (
-                <Card key={customer.id} className="hover:shadow-md transition-shadow">
+              {filteredCustomers.map((customer) => (
+                <Card
+                  key={customer.id}
+                  className="hover:shadow-md transition-shadow"
+                >
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-semibold">{customer.name}</h3>
-                        <p className="text-sm text-muted-foreground">{customer.email}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {customer.email}
+                        </p>
                       </div>
                       <div className="flex flex-col gap-1">
                         <Badge className={tierColors[customer.tier]}>
                           {customer.tier}
                         </Badge>
                         {customer.isVeteran && (
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                          >
                             Veteran
                           </Badge>
                         )}
@@ -479,7 +775,10 @@ export default function Loyalty() {
                       </div>
                       <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span>Joined {new Date(customer.joinDate).toLocaleDateString()}</span>
+                        <span>
+                          Joined{" "}
+                          {new Date(customer.joinDate).toLocaleDateString()}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <DollarSign className="w-4 h-4 text-muted-foreground" />
@@ -493,14 +792,19 @@ export default function Loyalty() {
 
                     <div className="bg-green-50 p-3 rounded-lg">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-green-800">Points Balance</span>
+                        <span className="text-sm font-medium text-green-800">
+                          Points Balance
+                        </span>
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-green-600" />
-                          <span className="font-bold text-green-800">{customer.pointsBalance}</span>
+                          <span className="font-bold text-green-800">
+                            {customer.pointsBalance}
+                          </span>
                         </div>
                       </div>
                       <div className="text-xs text-green-700 mt-1">
-                        Earned: {customer.pointsEarned} • Redeemed: {customer.pointsRedeemed}
+                        Earned: {customer.pointsEarned} • Redeemed:{" "}
+                        {customer.pointsRedeemed}
                       </div>
                     </div>
 
@@ -549,54 +853,89 @@ export default function Loyalty() {
             <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{totalCustomers}</div>
-                  <div className="text-sm text-muted-foreground">Total Members</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {totalCustomers}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Members
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-green-600">{totalPointsAwarded.toLocaleString()}</div>
-                  <div className="text-sm text-muted-foreground">Points Awarded</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    {totalPointsAwarded.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Points Awarded
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-red-600">{totalPointsRedeemed.toLocaleString()}</div>
-                  <div className="text-sm text-muted-foreground">Points Redeemed</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    {totalPointsRedeemed.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Points Redeemed
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-purple-600">${averageSpending.toFixed(2)}</div>
-                  <div className="text-sm text-muted-foreground">Avg. Customer Spend</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    ${averageSpending.toFixed(2)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Avg. Customer Spend
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {customers.filter(c => c.lastVisit &&
-                      new Date(c.lastVisit) > new Date(Date.now() - 30*24*60*60*1000)
-                    ).length}
+                    {
+                      customers.filter(
+                        (c) =>
+                          c.lastVisit &&
+                          new Date(c.lastVisit) >
+                            new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+                      ).length
+                    }
                   </div>
-                  <div className="text-sm text-muted-foreground">Active (30 days)</div>
+                  <div className="text-sm text-muted-foreground">
+                    Active (30 days)
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-blue-600">{veteranCount}</div>
-                  <div className="text-sm text-muted-foreground">Veterans (10% discount)</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    {veteranCount}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Veterans (10% discount)
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-indigo-600">{activePointsBalance.toLocaleString()}</div>
-                  <div className="text-sm text-muted-foreground">Active Points Balance</div>
+                  <div className="text-2xl font-bold text-indigo-600">
+                    {activePointsBalance.toLocaleString()}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Active Points Balance
+                  </div>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4 text-center">
-                  <div className="text-2xl font-bold text-amber-600">{redemptionRate.toFixed(1)}%</div>
-                  <div className="text-sm text-muted-foreground">Redemption Rate</div>
+                  <div className="text-2xl font-bold text-amber-600">
+                    {redemptionRate.toFixed(1)}%
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Redemption Rate
+                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -612,21 +951,36 @@ export default function Loyalty() {
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-700">Recent Redemptions</h4>
+                    <h4 className="font-medium text-gray-700">
+                      Recent Redemptions
+                    </h4>
                     <div className="space-y-3">
                       {customers
-                        .filter(c => c.pointsRedeemed > 0)
-                        .sort((a, b) => (b.lastVisit || '').localeCompare(a.lastVisit || ''))
+                        .filter((c) => c.pointsRedeemed > 0)
+                        .sort((a, b) =>
+                          (b.lastVisit || "").localeCompare(a.lastVisit || ""),
+                        )
                         .slice(0, 5)
-                        .map(customer => (
-                          <div key={customer.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        .map((customer) => (
+                          <div
+                            key={customer.id}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          >
                             <div>
-                              <div className="font-medium text-sm">{customer.name}</div>
-                              <div className="text-xs text-gray-600">{customer.tier} Member</div>
+                              <div className="font-medium text-sm">
+                                {customer.name}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {customer.tier} Member
+                              </div>
                             </div>
                             <div className="text-right">
-                              <div className="font-medium text-red-600">{customer.pointsRedeemed}</div>
-                              <div className="text-xs text-gray-600">pts redeemed</div>
+                              <div className="font-medium text-red-600">
+                                {customer.pointsRedeemed}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                pts redeemed
+                              </div>
                             </div>
                           </div>
                         ))}
@@ -634,24 +988,48 @@ export default function Loyalty() {
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-700">Redemption by Tier</h4>
+                    <h4 className="font-medium text-gray-700">
+                      Redemption by Tier
+                    </h4>
                     <div className="space-y-3">
-                      {['Platinum', 'Gold', 'Silver', 'Bronze'].map(tier => {
-                        const tierCustomers = customers.filter(c => c.tier === tier);
-                        const tierRedemptions = tierCustomers.reduce((sum, c) => sum + c.pointsRedeemed, 0);
-                        const avgRedemption = tierCustomers.length > 0 ? tierRedemptions / tierCustomers.length : 0;
+                      {["Platinum", "Gold", "Silver", "Bronze"].map((tier) => {
+                        const tierCustomers = customers.filter(
+                          (c) => c.tier === tier,
+                        );
+                        const tierRedemptions = tierCustomers.reduce(
+                          (sum, c) => sum + c.pointsRedeemed,
+                          0,
+                        );
+                        const avgRedemption =
+                          tierCustomers.length > 0
+                            ? tierRedemptions / tierCustomers.length
+                            : 0;
 
                         return (
-                          <div key={tier} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div
+                            key={tier}
+                            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                          >
                             <div className="flex items-center gap-2">
-                              <Badge className={tierColors[tier as keyof typeof tierColors]} variant="outline">
+                              <Badge
+                                className={
+                                  tierColors[tier as keyof typeof tierColors]
+                                }
+                                variant="outline"
+                              >
                                 {tier}
                               </Badge>
-                              <span className="text-sm">{tierCustomers.length} members</span>
+                              <span className="text-sm">
+                                {tierCustomers.length} members
+                              </span>
                             </div>
                             <div className="text-right">
-                              <div className="font-medium">{tierRedemptions.toLocaleString()}</div>
-                              <div className="text-xs text-gray-600">{avgRedemption.toFixed(0)} avg/member</div>
+                              <div className="font-medium">
+                                {tierRedemptions.toLocaleString()}
+                              </div>
+                              <div className="text-xs text-gray-600">
+                                {avgRedemption.toFixed(0)} avg/member
+                              </div>
                             </div>
                           </div>
                         );
@@ -660,37 +1038,65 @@ export default function Loyalty() {
                   </div>
 
                   <div className="space-y-4">
-                    <h4 className="font-medium text-gray-700">Redemption Insights</h4>
+                    <h4 className="font-medium text-gray-700">
+                      Redemption Insights
+                    </h4>
                     <div className="space-y-3">
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                        <div className="text-sm font-medium text-green-800">Top Redeemer</div>
+                        <div className="text-sm font-medium text-green-800">
+                          Top Redeemer
+                        </div>
                         <div className="text-xs text-green-700 mt-1">
-                          {customers.reduce((top, current) =>
-                            current.pointsRedeemed > top.pointsRedeemed ? current : top, customers[0]
-                          )?.name} - {customers.reduce((top, current) =>
-                            current.pointsRedeemed > top.pointsRedeemed ? current : top, customers[0]
-                          )?.pointsRedeemed} points
+                          {
+                            customers.reduce(
+                              (top, current) =>
+                                current.pointsRedeemed > top.pointsRedeemed
+                                  ? current
+                                  : top,
+                              customers[0],
+                            )?.name
+                          }{" "}
+                          -{" "}
+                          {
+                            customers.reduce(
+                              (top, current) =>
+                                current.pointsRedeemed > top.pointsRedeemed
+                                  ? current
+                                  : top,
+                              customers[0],
+                            )?.pointsRedeemed
+                          }{" "}
+                          points
                         </div>
                       </div>
 
                       <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="text-sm font-medium text-blue-800">Average Value</div>
+                        <div className="text-sm font-medium text-blue-800">
+                          Average Value
+                        </div>
                         <div className="text-xs text-blue-700 mt-1">
-                          ${(totalPointsRedeemed / 100).toFixed(2)} in discounts given
+                          ${(totalPointsRedeemed / 100).toFixed(2)} in discounts
+                          given
                         </div>
                       </div>
 
                       <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
-                        <div className="text-sm font-medium text-purple-800">Engagement</div>
+                        <div className="text-sm font-medium text-purple-800">
+                          Engagement
+                        </div>
                         <div className="text-xs text-purple-700 mt-1">
-                          {customers.filter(c => c.pointsRedeemed > 0).length} of {totalCustomers} members have redeemed
+                          {customers.filter((c) => c.pointsRedeemed > 0).length}{" "}
+                          of {totalCustomers} members have redeemed
                         </div>
                       </div>
 
                       <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                        <div className="text-sm font-medium text-amber-800">Outstanding Liability</div>
+                        <div className="text-sm font-medium text-amber-800">
+                          Outstanding Liability
+                        </div>
                         <div className="text-xs text-amber-700 mt-1">
-                          ${(activePointsBalance / 100).toFixed(2)} in unredeemed points
+                          ${(activePointsBalance / 100).toFixed(2)} in
+                          unredeemed points
                         </div>
                       </div>
                     </div>
@@ -707,9 +1113,15 @@ export default function Loyalty() {
               <CardContent>
                 <div className="grid grid-cols-4 gap-4">
                   {Object.entries(tierDistribution).map(([tier, count]) => (
-                    <div key={tier} className="text-center p-4 border rounded-lg">
+                    <div
+                      key={tier}
+                      className="text-center p-4 border rounded-lg"
+                    >
                       <div className="text-2xl font-bold">{count}</div>
-                      <Badge className={tierColors[tier as keyof typeof tierColors]} variant="outline">
+                      <Badge
+                        className={tierColors[tier as keyof typeof tierColors]}
+                        variant="outline"
+                      >
                         {tier}
                       </Badge>
                     </div>
@@ -733,15 +1145,26 @@ export default function Loyalty() {
               <CardContent>
                 <div className="space-y-4">
                   {tiers.map((tier) => (
-                    <div key={tier.name} className="flex items-center justify-between p-4 border rounded-lg">
+                    <div
+                      key={tier.name}
+                      className="flex items-center justify-between p-4 border rounded-lg"
+                    >
                       <div className="flex items-center gap-4">
-                        <Badge className={tierColors[tier.name as keyof typeof tierColors] || "bg-gray-100 text-gray-800"} variant="outline">
+                        <Badge
+                          className={
+                            tierColors[tier.name as keyof typeof tierColors] ||
+                            "bg-gray-100 text-gray-800"
+                          }
+                          variant="outline"
+                        >
                           {tier.name}
                         </Badge>
                         <div>
                           <h3 className="font-medium">{tier.name} Tier</h3>
                           <p className="text-sm text-muted-foreground">
-                            {tier.threshold === 0 ? "Starting tier" : `Spend $${tier.threshold}+ to qualify`}
+                            {tier.threshold === 0
+                              ? "Starting tier"
+                              : `Spend $${tier.threshold}+ to qualify`}
                           </p>
                           <p className="text-xs text-muted-foreground">
                             {tier.pointsMultiplier}% back in points
@@ -750,8 +1173,12 @@ export default function Loyalty() {
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="text-right">
-                          <div className="font-bold">{tierDistribution[tier.name] || 0}</div>
-                          <div className="text-sm text-muted-foreground">members</div>
+                          <div className="font-bold">
+                            {tierDistribution[tier.name] || 0}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            members
+                          </div>
                         </div>
                         <div className="flex gap-2">
                           <Button
@@ -781,10 +1208,17 @@ export default function Loyalty() {
             </Card>
 
             {/* Tier Edit Dialog */}
-            <Dialog open={showTierEditDialog} onOpenChange={setShowTierEditDialog}>
+            <Dialog
+              open={showTierEditDialog}
+              onOpenChange={setShowTierEditDialog}
+            >
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>{editingTier ? `Edit ${editingTier.name} Tier` : 'Add New Tier'}</DialogTitle>
+                  <DialogTitle>
+                    {editingTier
+                      ? `Edit ${editingTier.name} Tier`
+                      : "Add New Tier"}
+                  </DialogTitle>
                 </DialogHeader>
                 {editingTier && (
                   <div className="space-y-4">
@@ -793,18 +1227,33 @@ export default function Loyalty() {
                       <Input
                         id="tierName"
                         value={editingTier.name}
-                        onChange={(e) => setEditingTier(prev => prev ? {...prev, name: e.target.value} : null)}
+                        onChange={(e) =>
+                          setEditingTier((prev) =>
+                            prev ? { ...prev, name: e.target.value } : null,
+                          )
+                        }
                         placeholder="Enter tier name"
                       />
                     </div>
 
                     <div>
-                      <Label htmlFor="tierThreshold">Spending Threshold ($)</Label>
+                      <Label htmlFor="tierThreshold">
+                        Spending Threshold ($)
+                      </Label>
                       <Input
                         id="tierThreshold"
                         type="number"
                         value={editingTier.threshold}
-                        onChange={(e) => setEditingTier(prev => prev ? {...prev, threshold: parseInt(e.target.value) || 0} : null)}
+                        onChange={(e) =>
+                          setEditingTier((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  threshold: parseInt(e.target.value) || 0,
+                                }
+                              : null,
+                          )
+                        }
                         placeholder="0"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
@@ -819,7 +1268,17 @@ export default function Loyalty() {
                         type="number"
                         step="0.1"
                         value={editingTier.pointsMultiplier}
-                        onChange={(e) => setEditingTier(prev => prev ? {...prev, pointsMultiplier: parseFloat(e.target.value) || 1} : null)}
+                        onChange={(e) =>
+                          setEditingTier((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  pointsMultiplier:
+                                    parseFloat(e.target.value) || 1,
+                                }
+                              : null,
+                          )
+                        }
                         placeholder="1.0"
                       />
                       <p className="text-xs text-muted-foreground mt-1">
@@ -831,8 +1290,19 @@ export default function Loyalty() {
                       <Label htmlFor="benefits">Benefits (one per line)</Label>
                       <textarea
                         id="benefits"
-                        value={editingTier.benefits.join('\n')}
-                        onChange={(e) => setEditingTier(prev => prev ? {...prev, benefits: e.target.value.split('\n').filter(b => b.trim())} : null)}
+                        value={editingTier.benefits.join("\n")}
+                        onChange={(e) =>
+                          setEditingTier((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  benefits: e.target.value
+                                    .split("\n")
+                                    .filter((b) => b.trim()),
+                                }
+                              : null,
+                          )
+                        }
                         placeholder="Enter benefits, one per line"
                         className="w-full p-2 border rounded-md text-sm"
                         rows={4}
@@ -877,13 +1347,21 @@ export default function Loyalty() {
             {selectedCustomerForPoints && (
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold">{selectedCustomerForPoints.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedCustomerForPoints.email}</p>
+                  <h3 className="font-semibold">
+                    {selectedCustomerForPoints.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedCustomerForPoints.email}
+                  </p>
                   <div className="flex items-center gap-2 mt-2">
-                    <Badge className={tierColors[selectedCustomerForPoints.tier]}>
+                    <Badge
+                      className={tierColors[selectedCustomerForPoints.tier]}
+                    >
                       {selectedCustomerForPoints.tier}
                     </Badge>
-                    <span className="text-sm">Current: {selectedCustomerForPoints.pointsBalance} points</span>
+                    <span className="text-sm">
+                      Current: {selectedCustomerForPoints.pointsBalance} points
+                    </span>
                   </div>
                 </div>
 
@@ -911,12 +1389,24 @@ export default function Loyalty() {
                       <option value="">Select reason...</option>
                       <option value="Birthday Bonus">Birthday Bonus</option>
                       <option value="Referral Reward">Referral Reward</option>
-                      <option value="Social Media Follow">Social Media Follow</option>
-                      <option value="Survey Completion">Survey Completion</option>
-                      <option value="Manager Discretion">Manager Discretion</option>
-                      <option value="Customer Service Recovery">Customer Service Recovery</option>
-                      <option value="Promotional Event">Promotional Event</option>
-                      <option value="Loyalty Program Adjustment">Loyalty Program Adjustment</option>
+                      <option value="Social Media Follow">
+                        Social Media Follow
+                      </option>
+                      <option value="Survey Completion">
+                        Survey Completion
+                      </option>
+                      <option value="Manager Discretion">
+                        Manager Discretion
+                      </option>
+                      <option value="Customer Service Recovery">
+                        Customer Service Recovery
+                      </option>
+                      <option value="Promotional Event">
+                        Promotional Event
+                      </option>
+                      <option value="Loyalty Program Adjustment">
+                        Loyalty Program Adjustment
+                      </option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
@@ -937,7 +1427,9 @@ export default function Loyalty() {
                 <div className="p-3 bg-blue-50 rounded text-sm">
                   <p className="font-medium text-blue-800">Points Value</p>
                   <p className="text-blue-700 text-xs">
-                    {pointsToAdd ? `${pointsToAdd} points = $${(parseInt(pointsToAdd || "0") / 100).toFixed(2)} value` : "100 points = $1.00 value"}
+                    {pointsToAdd
+                      ? `${pointsToAdd} points = $${(parseInt(pointsToAdd || "0") / 100).toFixed(2)} value`
+                      : "100 points = $1.00 value"}
                   </p>
                 </div>
 
@@ -978,8 +1470,12 @@ export default function Loyalty() {
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-xl font-semibold">{selectedCustomer.name}</h2>
-                    <p className="text-muted-foreground">{selectedCustomer.email}</p>
+                    <h2 className="text-xl font-semibold">
+                      {selectedCustomer.name}
+                    </h2>
+                    <p className="text-muted-foreground">
+                      {selectedCustomer.email}
+                    </p>
                   </div>
                   <Badge className={tierColors[selectedCustomer.tier]}>
                     {selectedCustomer.tier} Member
@@ -1005,10 +1501,24 @@ export default function Loyalty() {
                     <div>
                       <Label>Membership Details</Label>
                       <div className="space-y-2 mt-2 text-sm">
-                        <div>Joined: {new Date(selectedCustomer.joinDate).toLocaleDateString()}</div>
+                        <div>
+                          Joined:{" "}
+                          {new Date(
+                            selectedCustomer.joinDate,
+                          ).toLocaleDateString()}
+                        </div>
                         <div>Total Visits: {selectedCustomer.totalVisits}</div>
-                        <div>Total Spent: ${selectedCustomer.totalSpent.toFixed(2)}</div>
-                        <div>Last Visit: {selectedCustomer.lastVisit ? new Date(selectedCustomer.lastVisit).toLocaleDateString() : 'Never'}</div>
+                        <div>
+                          Total Spent: ${selectedCustomer.totalSpent.toFixed(2)}
+                        </div>
+                        <div>
+                          Last Visit:{" "}
+                          {selectedCustomer.lastVisit
+                            ? new Date(
+                                selectedCustomer.lastVisit,
+                              ).toLocaleDateString()
+                            : "Never"}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1017,10 +1527,15 @@ export default function Loyalty() {
                     <div>
                       <Label>Points Summary</Label>
                       <div className="bg-green-50 p-4 rounded-lg mt-2">
-                        <div className="text-2xl font-bold text-green-800">{selectedCustomer.pointsBalance}</div>
-                        <div className="text-sm text-green-700">Available Points</div>
+                        <div className="text-2xl font-bold text-green-800">
+                          {selectedCustomer.pointsBalance}
+                        </div>
+                        <div className="text-sm text-green-700">
+                          Available Points
+                        </div>
                         <div className="text-xs text-green-600 mt-2">
-                          Earned: {selectedCustomer.pointsEarned} • Redeemed: {selectedCustomer.pointsRedeemed}
+                          Earned: {selectedCustomer.pointsEarned} • Redeemed:{" "}
+                          {selectedCustomer.pointsRedeemed}
                         </div>
                       </div>
                     </div>
@@ -1031,22 +1546,33 @@ export default function Loyalty() {
                   <Label>Recent Purchase History</Label>
                   <div className="space-y-2 mt-2 max-h-40 overflow-y-auto">
                     {selectedCustomer.salesHistory.length > 0 ? (
-                      selectedCustomer.salesHistory.map(purchase => (
-                        <div key={purchase.id} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                      selectedCustomer.salesHistory.map((purchase) => (
+                        <div
+                          key={purchase.id}
+                          className="flex items-center justify-between p-3 bg-gray-50 rounded"
+                        >
                           <div>
-                            <div className="font-medium">{new Date(purchase.date).toLocaleDateString()}</div>
+                            <div className="font-medium">
+                              {new Date(purchase.date).toLocaleDateString()}
+                            </div>
                             <div className="text-sm text-muted-foreground">
-                              {purchase.items.join(', ')}
+                              {purchase.items.join(", ")}
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="font-medium">${purchase.total.toFixed(2)}</div>
-                            <div className="text-sm text-green-600">+{purchase.pointsEarned} pts</div>
+                            <div className="font-medium">
+                              ${purchase.total.toFixed(2)}
+                            </div>
+                            <div className="text-sm text-green-600">
+                              +{purchase.pointsEarned} pts
+                            </div>
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-muted-foreground">No purchase history available</p>
+                      <p className="text-sm text-muted-foreground">
+                        No purchase history available
+                      </p>
                     )}
                   </div>
                 </div>

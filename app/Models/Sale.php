@@ -4,22 +4,25 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
 
 class Sale extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'transaction_id',
+        'sale_number',
         'customer_id',
         'employee_id',
+        'store_id',
+        'customer_type',
+        'customer_info',
         'subtotal',
-        'tax',
-        'total',
+        'tax_amount',
         'discount_amount',
+        'total_amount',
         'payment_method',
-        'cash_received',
+        'payment_reference',
+        'amount_paid',
         'change_given',
         'status',
         'void_reason',
@@ -27,25 +30,32 @@ class Sale extends Model
         'voided_at',
         'loyalty_points_earned',
         'loyalty_points_used',
+        'cart_items',
+        'applied_deals',
+        'tax_rate',
         'notes',
         'receipt_printed',
         'synced_to_metrc',
-        'metrc_sync_date'
+        'metrc_sync_date',
     ];
 
     protected $casts = [
         'subtotal' => 'decimal:2',
-        'tax' => 'decimal:2',
-        'total' => 'decimal:2',
+        'tax_amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
         'discount_amount' => 'decimal:2',
-        'cash_received' => 'decimal:2',
+        'amount_paid' => 'decimal:2',
         'change_given' => 'decimal:2',
         'voided_at' => 'datetime',
         'loyalty_points_earned' => 'integer',
         'loyalty_points_used' => 'integer',
         'receipt_printed' => 'boolean',
         'synced_to_metrc' => 'boolean',
-        'metrc_sync_date' => 'datetime'
+        'metrc_sync_date' => 'datetime',
+        'customer_info' => 'array',
+        'cart_items' => 'array',
+        'applied_deals' => 'array',
+        'tax_rate' => 'decimal:4',
     ];
 
     public function customer()
@@ -93,25 +103,25 @@ class Sale extends Model
         return $this->employee ? $this->employee->full_name : 'Unknown Employee';
     }
 
-    public function getTaxRateAttribute()
+    public function getComputedTaxRateAttribute()
     {
-        return $this->subtotal > 0 ? ($this->tax / $this->subtotal) * 100 : 0;
+        $base = max(0, (float)$this->subtotal - (float)$this->discount_amount);
+        return $base > 0 ? ((float)$this->tax_amount / $base) * 100 : 0.0;
     }
 
     public function getDiscountPercentageAttribute()
     {
-        return $this->subtotal > 0 ? ($this->discount_amount / $this->subtotal) * 100 : 0;
+        return $this->subtotal > 0 ? ((float)$this->discount_amount / (float)$this->subtotal) * 100 : 0.0;
     }
 
     public function getNetTotalAttribute()
     {
-        return $this->total - $this->change_given;
+        return (float)$this->total_amount - (float)($this->change_given ?? 0);
     }
 
     public function canBeVoided()
     {
-        return $this->status === 'completed' && 
-               $this->created_at->diffInHours(now()) <= 24; // Can only void within 24 hours
+        return $this->status === 'completed' && $this->created_at->diffInHours(now()) <= 24;
     }
 
     public function voidSale($reason, $voidedBy)
@@ -124,62 +134,18 @@ class Sale extends Model
             'status' => 'voided',
             'void_reason' => $reason,
             'voided_by' => $voidedBy,
-            'voided_at' => now()
+            'voided_at' => now(),
         ]);
 
-        // Restore inventory quantities
         foreach ($this->saleItems as $item) {
             if ($item->product) {
                 $item->product->increment('quantity', $item->quantity);
             }
         }
 
-        // Reverse loyalty points if applicable
         if ($this->customer && $this->loyalty_points_earned) {
             $this->customer->decrement('loyalty_points', $this->loyalty_points_earned);
         }
-    }
-
-    public function calculateTax($taxRate)
-    {
-        // Calculate tax based on customer type and product types
-        $taxableAmount = $this->subtotal - $this->discount_amount;
-        
-        // Medical patients may be tax-exempt
-        if ($this->customer && $this->customer->customer_type === 'medical') {
-            $this->tax = 0;
-        } else {
-            $this->tax = $taxableAmount * ($taxRate / 100);
-        }
-        
-        $this->total = $taxableAmount + $this->tax;
-    }
-
-    public function applyLoyaltyDiscount($pointsToUse)
-    {
-        if (!$this->customer || !$this->customer->canEarnLoyaltyPoints()) {
-            return false;
-        }
-
-        $maxPoints = min($pointsToUse, $this->customer->loyalty_points);
-        $discountAmount = $maxPoints / 100; // 100 points = $1
-
-        $this->loyalty_points_used = $maxPoints;
-        $this->discount_amount += $discountAmount;
-        $this->total = max(0, $this->total - $discountAmount);
-
-        return true;
-    }
-
-    public function calculateLoyaltyPoints()
-    {
-        if (!$this->customer || !$this->customer->canEarnLoyaltyPoints()) {
-            return 0;
-        }
-
-        // 1 point per dollar spent (after tax)
-        $this->loyalty_points_earned = (int) floor($this->total);
-        return $this->loyalty_points_earned;
     }
 
     public function markAsPrinted()
@@ -196,35 +162,35 @@ class Sale extends Model
     {
         $this->update([
             'synced_to_metrc' => true,
-            'metrc_sync_date' => now()
+            'metrc_sync_date' => now(),
         ]);
     }
 
     public function getReceiptData()
     {
         return [
-            'transaction_id' => $this->transaction_id,
+            'transaction_id' => $this->sale_number,
             'date' => $this->created_at->format('M j, Y'),
             'time' => $this->created_at->format('g:i A'),
             'employee' => $this->employee_name,
             'customer' => $this->customer_name,
-            'items' => $this->saleItems->map(function($item) {
+            'items' => $this->saleItems->map(function ($item) {
                 return [
-                    'name' => $item->product->name,
+                    'name' => $item->product->name ?? $item->product_name,
                     'quantity' => $item->quantity,
-                    'price' => $item->price,
-                    'total' => $item->total
+                    'price' => $item->unit_price,
+                    'total' => $item->total_price,
                 ];
             }),
             'subtotal' => $this->subtotal,
             'discount' => $this->discount_amount,
-            'tax' => $this->tax,
-            'total' => $this->total,
+            'tax' => $this->tax_amount,
+            'total' => $this->total_amount,
             'payment_method' => $this->payment_method,
-            'cash_received' => $this->cash_received,
+            'cash_received' => $this->amount_paid,
             'change_given' => $this->change_given,
             'loyalty_points_earned' => $this->loyalty_points_earned,
-            'loyalty_points_used' => $this->loyalty_points_used
+            'loyalty_points_used' => $this->loyalty_points_used,
         ];
     }
 
@@ -255,8 +221,7 @@ class Sale extends Model
 
     public function scopeNeedsMetrcSync($query)
     {
-        return $query->where('status', 'completed')
-                    ->where('synced_to_metrc', false);
+        return $query->where('status', 'completed')->where('synced_to_metrc', false);
     }
 
     public function scopeToday($query)
@@ -267,5 +232,21 @@ class Sale extends Model
     public function scopeBetweenDates($query, $startDate, $endDate)
     {
         return $query->whereBetween('created_at', [$startDate, $endDate]);
+    }
+
+    public static function generateSaleNumber(): string
+    {
+        return 'S' . now()->format('YmdHis') . '-' . random_int(100, 999);
+    }
+
+    public function complete(string $paymentMethod, ?string $paymentReference = null): void
+    {
+        $this->update([
+            'status' => 'completed',
+            'payment_method' => in_array($paymentMethod, ['cash','debit','credit','check','store_credit']) ? $paymentMethod : 'cash',
+            'payment_reference' => $paymentReference,
+            'amount_paid' => $this->amount_paid ?? $this->total_amount,
+            'change_given' => $this->change_given ?? 0,
+        ]);
     }
 }

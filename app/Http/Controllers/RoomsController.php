@@ -6,18 +6,19 @@ use Illuminate\Http\Request;
 use App\Models\Room;
 use App\Models\Product;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Http;
 
 class RoomsController extends Controller
 {
     public function index()
     {
-        $rooms = Room::withCount('products')->get();
+        $rooms = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->withCount('products')->get();
         return view('rooms.index', compact('rooms'));
     }
     
     public function show($id)
     {
-        $room = Room::with('products')->findOrFail($id);
+        $room = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->with('products')->findOrFail($id);
         return view('rooms.show', compact('room'));
     }
     
@@ -25,19 +26,52 @@ class RoomsController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:rooms,name',
-            'type' => 'required|in:storage,vault,sales_floor,processing,quarantine',
-            'capacity' => 'nullable|integer|min:0',
-            'temperature_controlled' => 'boolean',
-            'security_level' => 'required|in:low,medium,high,maximum',
-            'description' => 'nullable|string|max:500'
+            'type' => 'required|in:production,storage,processing,sales',
+            'max_capacity' => 'nullable|integer|min:0',
+            'description' => 'nullable|string|max:500',
+            'is_active' => 'nullable|boolean'
         ]);
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
-        $room = Room::create($request->all());
-        
+        $data = [
+            'name' => $request->name,
+            'type' => $request->type,
+            'max_capacity' => $request->max_capacity,
+            'current_stock' => 0,
+            'description' => $request->description,
+            'is_active' => $request->boolean('is_active', true),
+        ];
+        $data['room_id'] = 'RM-' . strtoupper(substr(preg_replace('/[^A-Za-z0-9]/', '', $request->name), 0, 4)) . '-' . strtoupper(substr(uniqid(), -4));
+        try { if (\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id')) { $data['store_id'] = \App\Helpers\StoreContext::id(); } } catch (\Throwable $e) {}
+        $room = Room::create($data);
+
+        // Mirror to Supabase (best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/rooms', [[
+                    'name' => $room->name,
+                    'room_id' => $room->room_id,
+                    'type' => $room->type,
+                    'is_active' => $room->is_active,
+                    'max_capacity' => $room->max_capacity,
+                    'current_stock' => $room->current_stock,
+                    'description' => $room->description,
+                    'created_at' => now()->toISOString(),
+                    'updated_at' => now()->toISOString(),
+                ]]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
         return response()->json([
             'message' => 'Room created successfully',
             'room' => $room
@@ -50,19 +84,45 @@ class RoomsController extends Controller
         
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:rooms,name,' . $id,
-            'type' => 'required|in:storage,vault,sales_floor,processing,quarantine',
-            'capacity' => 'nullable|integer|min:0',
-            'temperature_controlled' => 'boolean',
-            'security_level' => 'required|in:low,medium,high,maximum',
-            'description' => 'nullable|string|max:500'
+            'type' => 'required|in:production,storage,processing,sales',
+            'max_capacity' => 'nullable|integer|min:0',
+            'description' => 'nullable|string|max:500',
+            'is_active' => 'nullable|boolean'
         ]);
         
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
         
-        $room->update($request->all());
-        
+        $room->update([
+            'name' => $request->name,
+            'type' => $request->type,
+            'max_capacity' => $request->max_capacity,
+            'description' => $request->description,
+            'is_active' => $request->boolean('is_active', $room->is_active),
+        ]);
+
+        // Mirror update to Supabase (best-effort)
+        try {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'return=representation'
+                ])->patch(rtrim($supabaseUrl,'/') . '/rest/v1/rooms?room_id=eq.' . urlencode($room->room_id), [
+                    'name' => $room->name,
+                    'type' => $room->type,
+                    'is_active' => $room->is_active,
+                    'max_capacity' => $room->max_capacity,
+                    'description' => $room->description,
+                    'updated_at' => now()->toISOString(),
+                ]);
+            }
+        } catch (\Throwable $e) { /* ignore supabase mirror failures */ }
+
         return response()->json([
             'message' => 'Room updated successfully',
             'room' => $room
@@ -71,8 +131,8 @@ class RoomsController extends Controller
     
     public function inventory($id)
     {
-        $room = Room::findOrFail($id);
-        $products = Product::where('room', $room->name)->paginate(20);
+        $room = Room::when(\Illuminate\Support\Facades\Schema::hasColumn('rooms','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->findOrFail($id);
+        $products = Product::when(\Illuminate\Support\Facades\Schema::hasColumn('products','store_id'), function($q){ return $q->where('store_id', \App\Helpers\StoreContext::id()); })->where('room', $room->name)->paginate(20);
         
         return response()->json([
             'room' => $room,

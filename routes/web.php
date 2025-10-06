@@ -16,6 +16,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\OrderQueueController;
 use App\Http\Controllers\PriceTiersController;
 use App\Http\Controllers\ProductActionsController;
+use App\Http\Controllers\Auth\EmailVerificationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,6 +33,12 @@ use App\Http\Controllers\ProductActionsController;
 Route::get('/', function () {
     return view('pos-main.index');
 });
+
+// Email Verification (web callback)
+Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+Route::get('/email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
+    ->middleware(['signed','throttle:6,1'])
+    ->name('verification.verify');
 
 // Redirect legacy routes
 Route::get('/pos', function () {
@@ -50,6 +57,7 @@ Route::prefix('pos')->name('pos.')->group(function () {
     Route::post('/save-sale', [POSController::class, 'saveSale'])->name('save-sale');
     Route::get('/saved-sales', [POSController::class, 'savedSales'])->name('saved-sales');
     Route::post('/load-sale/{id}', [POSController::class, 'loadSale'])->name('load-sale');
+    Route::post('/end-sale', [POSController::class, 'endSale'])->name('end-sale');
     Route::post('/process-payment', [POSController::class, 'processPayment'])->name('process-payment');
     
     // POS Utilities
@@ -76,10 +84,10 @@ Route::prefix('products')->name('products.')->group(function () {
     Route::get('/{product}/barcode', [ProductsController::class, 'generateBarcode'])->name('barcode');
     Route::get('/{product}/label', [ProductsController::class, 'generateLabel'])->name('label');
     
-    // Bulk Actions
-    Route::post('/bulk-transfer', [ProductsController::class, 'bulkTransfer'])->name('bulk-transfer');
-    Route::post('/bulk-pricing', [ProductsController::class, 'bulkPricing'])->name('bulk-pricing');
-    Route::post('/bulk-delete', [ProductsController::class, 'bulkDelete'])->name('bulk-delete');
+    // Bulk Actions (explicit authorization)
+    Route::post('/bulk-transfer', [ProductsController::class, 'bulkTransfer'])->name('bulk-transfer')->middleware('permission:products:transfer');
+    Route::post('/bulk-pricing', [ProductsController::class, 'bulkPricing'])->name('bulk-pricing')->middleware('permission:products:write');
+    Route::post('/bulk-delete', [ProductsController::class, 'bulkDelete'])->name('bulk-delete')->middleware('permission:products:delete');
     
     // Import/Export
     Route::get('/export', [ProductsController::class, 'export'])->name('export');
@@ -110,6 +118,8 @@ Route::prefix('customers')->name('customers.')->group(function () {
     Route::post('/{customer}/redeem-points', [CustomersController::class, 'redeemPoints'])->name('redeem-points');
     Route::post('/{customer}/update-tier', [CustomersController::class, 'updateTier'])->name('update-tier');
     Route::post('/{customer}/start-sale', [CustomersController::class, 'startSale'])->name('start-sale');
+    Route::post('/{customer}/activate', [CustomersController::class, 'activate'])->name('activate');
+    Route::post('/{customer}/deactivate', [CustomersController::class, 'deactivate'])->name('deactivate');
     
     // Search and Export
     Route::get('/search/{query}', [CustomersController::class, 'search'])->name('search');
@@ -122,12 +132,18 @@ Route::prefix('customers')->name('customers.')->group(function () {
 // Sales Management Routes
 Route::prefix('sales')->name('sales.')->group(function () {
     Route::get('/', [SalesController::class, 'index'])->name('index');
+    // SPA-friendly JSON endpoints (avoid collision with routes/api.php /api/sales/{sale})
+    Route::get('/recent-json', [SalesController::class, 'recentSales'])->name('recent-json');
+    Route::get('/diag/count', [SalesController::class, 'diagCount'])->name('diag-count');
+    Route::post('/diag/create', [SalesController::class, 'diagCreate'])->name('diag-create');
+    Route::get('/json/{sale}', [SalesController::class, 'apiShow'])->name('json-show');
     Route::get('/{sale}', [SalesController::class, 'show'])->name('show');
     Route::get('/{sale}/receipt', [SalesController::class, 'receipt'])->name('receipt');
     Route::post('/{sale}/void', [SalesController::class, 'void'])->name('void');
     Route::post('/{sale}/refund', [SalesController::class, 'refund'])->name('refund');
     Route::post('/{sale}/reprint-receipt', [SalesController::class, 'reprintReceipt'])->name('reprint-receipt');
-    
+    Route::get('/{sale}/exit-labels', [SalesController::class, 'reprintExitLabels'])->name('exit-labels');
+
     // Sale Reports
     Route::get('/report/daily', [SalesController::class, 'dailyReport'])->name('daily-report');
     Route::get('/report/weekly', [SalesController::class, 'weeklyReport'])->name('weekly-report');
@@ -142,6 +158,7 @@ Route::prefix('sales')->name('sales.')->group(function () {
 // Analytics and Reporting Routes
 Route::prefix('analytics')->name('analytics.')->group(function () {
     Route::get('/', [AnalyticsController::class, 'index'])->name('index');
+    Route::get('/export-overview', [AnalyticsController::class, 'exportOverview'])->name('export-overview');
     Route::get('/dashboard', [AnalyticsController::class, 'dashboard'])->name('dashboard');
     
     // Sales Analytics
@@ -170,20 +187,32 @@ Route::prefix('analytics')->name('analytics.')->group(function () {
 });
 
 // Employee Management Routes
-Route::prefix('employees')->name('employees.')->group(function () {
+Route::prefix('employees')->name('employees.')->middleware('auth')->group(function () {
     Route::get('/', [EmployeesController::class, 'index'])->name('index');
+    Route::get('/export', [EmployeesController::class, 'export'])->name('export');
     Route::get('/create', [EmployeesController::class, 'create'])->name('create');
     Route::post('/', [EmployeesController::class, 'store'])->name('store');
     Route::get('/{employee}', [EmployeesController::class, 'show'])->name('show');
     Route::get('/{employee}/edit', [EmployeesController::class, 'edit'])->name('edit');
     Route::patch('/{employee}', [EmployeesController::class, 'update'])->name('update');
     Route::delete('/{employee}', [EmployeesController::class, 'destroy'])->name('destroy');
-    
+
+    // Reset password (email link)
+    Route::post('/{employee}/reset-password', [EmployeesController::class, 'sendPasswordReset'])->name('reset-password');
+    Route::get('/password/reset/{token}', [EmployeesController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/password/reset', [EmployeesController::class, 'resetPassword'])->name('password.update');
+
+    // Reset PIN (email new PIN)
+    Route::post('/{employee}/reset-pin', [EmployeesController::class, 'resetPin'])->name('reset-pin');
+
     // Employee Performance
     Route::get('/{employee}/performance', [EmployeesController::class, 'performance'])->name('performance');
     Route::get('/{employee}/sales-history', [EmployeesController::class, 'salesHistory'])->name('sales-history');
     Route::post('/{employee}/update-permissions', [EmployeesController::class, 'updatePermissions'])->name('update-permissions');
 });
+
+// Rooms & Drawers Page (Blade)
+Route::get('/rooms-drawers', [\App\Http\Controllers\RoomsDrawersController::class, 'index'])->name('rooms-drawers.index');
 
 // Room and Drawer Management Routes
 Route::prefix('rooms')->name('rooms.')->group(function () {
@@ -192,12 +221,27 @@ Route::prefix('rooms')->name('rooms.')->group(function () {
     Route::get('/{room}', [RoomsController::class, 'show'])->name('show');
     Route::patch('/{room}', [RoomsController::class, 'update'])->name('update');
     Route::delete('/{room}', [RoomsController::class, 'destroy'])->name('destroy');
-    
+
     // Room Actions
     Route::get('/{room}/products', [RoomsController::class, 'products'])->name('products');
     Route::post('/{room}/transfer-all', [RoomsController::class, 'transferAll'])->name('transfer-all');
     Route::get('/{room}/audit', [RoomsController::class, 'audit'])->name('audit');
 });
+
+// METRC Transfers Page (Blade)
+Route::get('/metrc/transfers', function() {
+    return view('metrc.transfers');
+})->name('metrc.transfers');
+
+// Oregon METRC Compliance Checklist
+Route::get('/compliance/oregon-metrc', function () {
+    return view('metrc.compliance');
+})->middleware(['auth','role:admin'])->name('metrc.compliance');
+
+// Roles & Permissions Page (Blade)
+Route::get('/roles-permissions', function () {
+    return view('roles-permissions.index');
+})->name('roles-permissions.index');
 
 // Deals and Promotions Routes
 Route::prefix('deals')->name('deals.')->group(function () {
@@ -223,7 +267,14 @@ Route::prefix('loyalty')->name('loyalty.')->group(function () {
     Route::get('/transactions', [LoyaltyController::class, 'transactions'])->name('transactions');
     Route::get('/tiers', [LoyaltyController::class, 'tiers'])->name('tiers');
     Route::post('/tiers', [LoyaltyController::class, 'updateTiers'])->name('update-tiers');
-    
+
+    // Auth-protected web endpoints for enrollment and management (used by Blade UI)
+    Route::middleware('auth')->group(function () {
+        Route::post('/enroll', [LoyaltyController::class, 'enroll'])->name('enroll');
+        Route::post('/{customer}/adjust-points', [LoyaltyController::class, 'adjustPoints'])->name('customer-adjust-points');
+        Route::delete('/{customer}', [LoyaltyController::class, 'destroy'])->name('destroy');
+    });
+
     // Manual Point Management
     Route::post('/add-points', [LoyaltyController::class, 'addPoints'])->name('add-points');
     Route::post('/redeem-points', [LoyaltyController::class, 'redeemPoints'])->name('redeem-points');
@@ -246,7 +297,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
     Route::get('/inventory/low-stock', [ReportsController::class, 'lowStock'])->name('low-stock');
     Route::get('/inventory/expiring-products', [ReportsController::class, 'expiringProducts'])->name('expiring-products');
     Route::get('/inventory/movement', [ReportsController::class, 'inventoryMovement'])->name('inventory-movement');
-    Route::get('/inventory/valuation', [ReportsController::class, 'inventoryValuation'])->name('inventory-valuation');
+    Route::get('/inventory/valuation', [ReportsController::class, 'inventoryEvaluation'])->name('inventory-valuation');
     
     // Compliance Reports
     Route::get('/compliance/metrc-sync', [ReportsController::class, 'metrcSync'])->name('metrc-sync');
@@ -262,7 +313,7 @@ Route::prefix('reports')->name('reports.')->group(function () {
 // Settings Routes
 Route::prefix('settings')->name('settings.')->group(function () {
     Route::get('/', [SettingsController::class, 'index'])->name('index');
-    Route::post('/', [SettingsController::class, 'update'])->name('update');
+    Route::post('/', [SettingsController::class, 'updateSettings'])->name('update');
     
     // Tax Settings
     Route::get('/tax', [SettingsController::class, 'tax'])->name('tax');
@@ -300,6 +351,7 @@ Route::prefix('payment')->name('payment.')->group(function () {
 // Order Queue Routes (for online orders, if applicable)
 Route::prefix('order-queue')->name('order-queue.')->group(function () {
     Route::get('/', [OrderQueueController::class, 'index'])->name('index');
+    Route::post('/{order}/status', [OrderQueueController::class, 'updateStatus'])->name('status');
     Route::get('/{order}', [OrderQueueController::class, 'show'])->name('show');
     Route::post('/{order}/fulfill', [OrderQueueController::class, 'fulfill'])->name('fulfill');
     Route::post('/{order}/cancel', [OrderQueueController::class, 'cancel'])->name('cancel');
@@ -313,6 +365,180 @@ Route::prefix('price-tiers')->name('price-tiers.')->group(function () {
     Route::patch('/{priceTier}', [PriceTiersController::class, 'update'])->name('update');
     Route::delete('/{priceTier}', [PriceTiersController::class, 'destroy'])->name('destroy');
     Route::post('/apply-to-products', [PriceTiersController::class, 'applyToProducts'])->name('apply-to-products');
+
+    // JSON data endpoint (web route) for client-side tier loading with Supabase+DB fallback
+    Route::get('/json', function() {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get($supabaseUrl . '/rest/v1/price_tiers', [
+                    'select' => 'id,name,description,prices,custom_weights,rules,is_active,created_at,updated_at,percentage',
+                    'order' => 'updated_at.desc'
+                ]);
+                if ($resp->ok()) {
+                    $rows = $resp->json() ?? [];
+                    $list = collect($rows)->map(function($t){
+                        $decode = function($v) {
+                            if (is_array($v)) return $v;
+                            if (is_string($v)) {
+                                $d = json_decode($v, true);
+                                if (json_last_error() === JSON_ERROR_NONE && is_array($d)) return $d;
+                            }
+                            return [];
+                        };
+                        $prices = $decode($t['prices'] ?? null);
+                        $custom = $decode($t['custom_weights'] ?? null);
+                        $rules  = $decode($t['rules'] ?? null);
+                        // Fallback: map legacy rules into prices/custom_weights
+                        if ((empty($prices) || count($prices) === 0) && is_array($rules) && array_keys($rules) !== range(0, count($rules) - 1)) {
+                            $keys = ['weight_1g','weight_3_5g','weight_7g','weight_14g','weight_28g'];
+                            $p = [];
+                            foreach ($keys as $k) { if (array_key_exists($k, $rules)) $p[$k] = $rules[$k]; }
+                            $prices = $p;
+                        }
+                        if (is_array($rules) && array_keys($rules) === range(0, count($rules) - 1)) {
+                            // rules is an array of custom weights
+                            $norm = collect($rules)->map(function($w){
+                                return [
+                                    'weight' => isset($w['grams']) ? (float)$w['grams'] : (float)($w['weight'] ?? 0),
+                                    'price' => (float)($w['price'] ?? 0),
+                                ];
+                            })->filter(function($w){ return $w['weight'] > 0 && $w['price'] > 0; })->values()->all();
+                            if (!empty($norm)) $custom = array_merge($custom, $norm);
+                        }
+                        return [
+                            'id' => $t['id'] ?? null,
+                            'name' => $t['name'] ?? 'Tier',
+                            'description' => $t['description'] ?? '',
+                            'prices' => $prices,
+                            'custom_weights' => $custom,
+                            'rules' => $rules,
+                            'is_active' => array_key_exists('is_active', $t) ? (bool)$t['is_active'] : true,
+                            'created_at' => $t['created_at'] ?? null,
+                            'updated_at' => $t['updated_at'] ?? null,
+                            'type' => 'retail',
+                            'customer_type' => 'recreational',
+                            'discount' => isset($t['percentage']) ? (float)$t['percentage'] : 0,
+                            'min_quantity' => '-',
+                            'min_amount' => null,
+                            'product_count' => 0,
+                        ];
+                    })->values()->all();
+                    return response()->json(['success'=>true,'tiers'=>$list])->header('Cache-Control','no-store, no-cache, must-revalidate');
+                }
+            } catch (\Throwable $e) { /* fall back below */ }
+        }
+        // Fallback 1: read from Supabase pos_settings.settings.price_tiers
+        try {
+            $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            if ($supabaseUrl && $supabaseKey) {
+                $tryIds = ['default','defaultstore'];
+                foreach ($tryIds as $sid) {
+                    try {
+                        $rset = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                        ])->get($supabaseUrl . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $sid,
+                            'select' => 'id,settings,updated_at',
+                        ]);
+                        if ($rset->ok()) {
+                            $arr = $rset->json() ?? [];
+                            $row = is_array($arr) && isset($arr[0]) ? $arr[0] : null;
+                            if ($row && isset($row['settings'])) {
+                                $settings = is_array($row['settings']) ? $row['settings'] : (is_string($row['settings']) ? json_decode($row['settings'], true) : []);
+                                if (json_last_error() !== JSON_ERROR_NONE) { $settings = []; }
+                                $tiers = [];
+                                if (isset($settings['price_tiers']) && is_array($settings['price_tiers'])) $tiers = $settings['price_tiers'];
+                                elseif (isset($settings['priceTiers']) && is_array($settings['priceTiers'])) $tiers = $settings['priceTiers'];
+                                if (!empty($tiers)) {
+                                    $list = collect($tiers)->map(function($t){
+                                        $decode = function($v){
+                                            if (is_array($v)) return $v;
+                                            if (is_string($v)) { $d = json_decode($v, true); if (json_last_error()===JSON_ERROR_NONE && is_array($d)) return $d; }
+                                            return [];
+                                        };
+                                        $prices = $decode($t['prices'] ?? null);
+                                        $custom = $decode($t['custom_weights'] ?? ($t['customWeights'] ?? null));
+                                        $rules  = $decode($t['rules'] ?? null);
+                                        if ((empty($prices) || count($prices)===0) && is_array($rules) && array_keys($rules)!==range(0, count($rules)-1)) {
+                                            $keys=['weight_1g','weight_3_5g','weight_7g','weight_14g','weight_28g'];
+                                            $p=[]; foreach($keys as $k){ if (array_key_exists($k,$rules)) $p[$k]=$rules[$k]; }
+                                            $prices=$p;
+                                        }
+                                        if (is_array($rules) && array_keys($rules)===range(0, count($rules)-1)) {
+                                            $norm = collect($rules)->map(function($w){
+                                                return [
+                                                    'weight' => isset($w['grams']) ? (float)$w['grams'] : (float)($w['weight'] ?? 0),
+                                                    'price' => (float)($w['price'] ?? 0),
+                                                ];
+                                            })->filter(function($w){ return $w['weight']>0 && $w['price']>0; })->values()->all();
+                                            if (!empty($norm)) $custom = array_merge($custom, $norm);
+                                        }
+                                        return [
+                                            'id' => $t['id'] ?? ($t['name'] ?? null),
+                                            'name' => $t['name'] ?? 'Tier',
+                                            'description' => $t['description'] ?? '',
+                                            'prices' => $prices,
+                                            'custom_weights' => $custom,
+                                            'rules' => $rules,
+                                            'is_active' => array_key_exists('is_active', $t) ? (bool)$t['is_active'] : (array_key_exists('isActive',$t) ? (bool)$t['isActive'] : true),
+                                            'created_at' => $t['created_at'] ?? ($t['createdAt'] ?? null),
+                                            'updated_at' => $t['updated_at'] ?? ($t['updatedAt'] ?? null),
+                                            'type' => 'retail',
+                                            'customer_type' => 'recreational',
+                                            'discount' => 0,
+                                            'min_quantity' => '-',
+                                            'min_amount' => null,
+                                            'product_count' => is_array($t['products'] ?? null) ? count($t['products']) : 0,
+                                        ];
+                                    })->values()->all();
+                                    return response()->json(['success'=>true,'tiers'=>$list])->header('Cache-Control','no-store, no-cache, must-revalidate');
+                                }
+                            }
+                        }
+                    } catch (\Throwable $e) { /* try next id */ }
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Fallback 2: local DB model
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('price_tiers')) {
+                $rows = \App\Models\PriceTier::query()->orderByDesc('updated_at')->get()->map(function($r){
+                    $discount = 0.0;
+                    if ($r->type === 'percentage') { $discount = (float)$r->adjustment_value; }
+                    elseif ($r->type === 'fixed_amount') { $discount = (float)$r->adjustment_value; }
+                    elseif ($r->type === 'fixed_price') { $discount = 0.0; }
+                    $cust = 'recreational';
+                    $ct = $r->customer_types;
+                    if (is_array($ct) && !empty($ct)) { $cust = (string)($ct[0] ?? 'recreational'); }
+                    return [
+                        'id' => $r->id,
+                        'name' => $r->name,
+                        'description' => $r->description,
+                        'status' => $r->is_active ? 'active' : 'inactive',
+                        'type' => (string)$r->type,
+                        'customer_type' => $cust,
+                        'discount' => $discount,
+                        'min_quantity' => $r->minimum_quantity,
+                        'min_amount' => null,
+                        'product_count' => 0,
+                        'schedule' => [ 'start_date' => $r->valid_from, 'end_date' => $r->valid_until ],
+                        'updated_at' => optional($r->updated_at)->toISOString(),
+                    ];
+                })->values()->all();
+                return response()->json(['success' => true, 'tiers' => $rows]);
+            }
+        } catch (\Throwable $e) {}
+        return response()->json(['success'=>true,'tiers'=>[]]);
+    })->name('json');
 });
 
 // API Routes for AJAX requests
@@ -320,7 +546,12 @@ Route::prefix('api')->name('api.')->group(function () {
     Route::get('/products/search', [ProductsController::class, 'apiSearch'])->name('products.search');
     Route::get('/customers/search', [CustomersController::class, 'apiSearch'])->name('customers.search');
     Route::get('/sales/recent', [SalesController::class, 'recentSales'])->name('sales.recent');
+    Route::get('/sales/{sale}', [SalesController::class, 'apiShow'])->name('sales.show.json');
+    // Temporary public alias for POS payment to enable end-to-end testing without auth
+    Route::post('/pos/process-payment', [POSController::class, 'processPayment'])->name('pos.process-payment.public');
     Route::get('/analytics/quick-stats', [AnalyticsController::class, 'quickStats'])->name('analytics.quick-stats');
+    // Temporary public alias for ASPD analytics (no auth) for live dashboard
+    Route::get('/analytics/aspd-open', [AnalyticsController::class, 'getASPDAnalyticsOpen'])->name('analytics.aspd-open');
     Route::post('/cart/validate', [POSController::class, 'validateCart'])->name('cart.validate');
     Route::get('/metrc/product/{tag}', [POSController::class, 'getMetrcProduct'])->name('metrc.product');
 });

@@ -21,6 +21,9 @@ class Deal extends Model
         'start_date',
         'end_date',
         'applicable_categories',
+        'category_discounts',
+        'item_discounts',
+        'specific_items',
         'minimum_purchase',
         'minimum_purchase_type',
         'max_uses',
@@ -28,13 +31,18 @@ class Deal extends Model
         'email_customers',
         'loyalty_only',
         'medical_only',
-        'is_active'
+        'is_active',
+        'active_days',
+        'store_id'
     ];
 
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
         'applicable_categories' => 'array',
+        'specific_items' => 'array',
+        'category_discounts' => 'array',
+        'item_discounts' => 'array',
         'is_active' => 'boolean',
         'email_customers' => 'boolean',
         'loyalty_only' => 'boolean',
@@ -43,7 +51,8 @@ class Deal extends Model
         'minimum_purchase' => 'decimal:2',
         'current_uses' => 'integer',
         'max_uses' => 'integer',
-        'day_of_month' => 'integer'
+        'day_of_month' => 'integer',
+        'active_days' => 'array'
     ];
 
     public function isActive()
@@ -76,6 +85,12 @@ class Deal extends Model
     {
         if (!$date) {
             $date = Carbon::now();
+        }
+
+        // If explicit active_days configured (custom schedule), honor it
+        if (is_array($this->active_days) && count($this->active_days) > 0) {
+            $idx = (int)$date->dayOfWeek; // 0=Sunday
+            return in_array($idx, $this->active_days);
         }
 
         switch ($this->frequency) {
@@ -117,14 +132,19 @@ class Deal extends Model
             return false;
         }
 
-        if ($this->medical_only && (!$customer || !$customer->is_medical_patient)) {
-            return false;
+        if ($this->medical_only) {
+            if (!$customer) return false;
+            $isCaregiver = ($customer->customer_type ?? null) === 'caregiver';
+            $isMedical = ($customer->is_medical_patient ?? false) || ($customer->customer_type ?? null) === 'medical';
+            if (!($isMedical || $isCaregiver)) {
+                return false;
+            }
         }
 
         return true;
     }
 
-    public function calculateDiscount($amount, $category = null, $customer = null, $quantity = null)
+    public function calculateDiscount($amount, $category = null, $customer = null, $quantity = null, $productId = null)
     {
         if (!$this->isActive()) {
             return 0;
@@ -142,16 +162,30 @@ class Deal extends Model
             return 0;
         }
 
+        // Resolve per-item or per-category override values (percentage or fixed depending on deal type)
+        $overrideValue = null;
+        if ($productId !== null && is_array($this->item_discounts)) {
+            $pidKey = (string)$productId;
+            if (array_key_exists($pidKey, $this->item_discounts)) {
+                $overrideValue = (float)$this->item_discounts[$pidKey];
+            }
+        }
+        if ($overrideValue === null && $category && is_array($this->category_discounts)) {
+            if (array_key_exists($category, $this->category_discounts)) {
+                $overrideValue = (float)$this->category_discounts[$category];
+            }
+        }
+        $effectiveValue = $overrideValue !== null ? $overrideValue : (float)$this->value;
+
         switch ($this->type) {
             case 'percentage':
-                return $amount * ($this->value / 100);
+                return $amount * ($effectiveValue / 100);
             case 'fixed_amount':
-                return min($this->value, $amount);
+                return min($effectiveValue, $amount);
             case 'bogo':
-                // Buy one get one - apply percentage discount
-                return $amount * ($this->value / 200); // Half the percentage for BOGO
+                return $amount * ($effectiveValue / 200); // Half the percentage for BOGO
             case 'bulk':
-                return $amount * ($this->value / 100);
+                return $amount * ($effectiveValue / 100);
             default:
                 return 0;
         }
@@ -191,6 +225,11 @@ class Deal extends Model
 
     public function getFrequencyDisplayAttribute()
     {
+        if (is_array($this->active_days) && count($this->active_days) > 0) {
+            $days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+            $labels = array_map(fn($i) => $days[$i] ?? '', $this->active_days);
+            return 'Custom (' . implode(', ', array_filter($labels)) . ')';
+        }
         switch ($this->frequency) {
             case 'daily':
                 return 'Daily';

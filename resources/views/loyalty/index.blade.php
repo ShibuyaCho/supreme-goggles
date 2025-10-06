@@ -252,7 +252,7 @@
 
         <!-- Customer Enrollment Modal -->
         <div x-show="showEnrollmentModal" @open-enrollment-modal.window="showEnrollmentModal = true" x-cloak class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto" @click.away="closeEnrollmentModal()">
+            <div class="bg-white rounded-lg max-w-md w-full max-h-[90vh] overflow-y-auto" @click.outside="closeEnrollmentModal()">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold">Loyalty Program Signup</h2>
@@ -263,66 +263,35 @@
                         </button>
                     </div>
 
-                    <form @submit.prevent="enrollCustomer()" class="space-y-4">
+                    <form action="{{ route('loyalty.enroll') }}" method="POST" @submit.prevent="enrollCustomer()" class="space-y-4">
+                        @csrf
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
-                            <input type="text" x-model="enrollmentForm.name" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
+                            <input id="loyalty-enroll-name" name="name" type="text" x-model="enrollmentForm.name" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Enter full name">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
-                            <input type="tel" x-model="enrollmentForm.phone" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
+                            <input id="loyalty-enroll-phone" name="phone" type="tel" x-model="enrollmentForm.phone" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="(555) 123-4567">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email Address *</label>
-                            <input type="email" x-model="enrollmentForm.email" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
+                            <input id="loyalty-enroll-email" name="email" type="email" x-model="enrollmentForm.email" @keydown.enter.prevent="enrollCustomer()" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="customer@email.com">
                         </div>
-
-                        <!-- Program Benefits Info -->
-                        <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                            <h3 class="font-medium mb-2">Loyalty Program Benefits</h3>
-                            <div class="text-sm space-y-2">
-                                <div class="font-medium">Tier-Based Rewards:</div>
-                                <ul class="space-y-1 ml-2 text-xs">
-                                    <li>• Bronze Tier (Starting): 1% back in points</li>
-                                    <li>• Silver Tier ($500+ spent): 2% back in points</li>
-                                    <li>• Gold Tier ($1,500+ spent): 3% back in points</li>
-                                    <li>• Platinum Tier ($3,000+ spent): 5% back in points</li>
-                                </ul>
-                                <div class="mt-2 text-xs">
-                                    <li>• Exclusive deals and early access to sales</li>
-                                    <li>• Birthday rewards and special offers</li>
-                                    <li>• Track your purchase history</li>
-                                </div>
-                            </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Starting Loyalty Tier</label>
+                            <select id="loyalty-enroll-tier" name="tier" x-model="enrollmentForm.tier" @keydown.enter.prevent="enrollCustomer()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <template x-for="tier in tiers" :key="tier.name">
+                                    <option :value="tier.name" x-text="tier.name"></option>
+                                </template>
+                            </select>
                         </div>
-
-                        <div class="space-y-4">
-                            <label class="flex items-start space-x-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                                <input type="checkbox" x-model="enrollmentForm.is_veteran" class="mt-1 rounded text-cannabis-green focus:ring-cannabis-green">
-                                <div class="space-y-2">
-                                    <div class="text-sm font-medium">Veteran Status</div>
-                                    <p class="text-xs text-gray-600">
-                                        I am a U.S. military veteran and would like to receive the 10% veteran discount
-                                        on all purchases (including Green Leaf Special items).
-                                    </p>
-                                </div>
-                            </label>
-
-                            <label class="flex items-start space-x-3 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <input type="checkbox" x-model="enrollmentForm.data_retention_consent" required class="mt-1 rounded text-cannabis-green focus:ring-cannabis-green">
-                                <div class="space-y-2">
-                                    <div class="text-sm font-medium">Data Retention Consent *</div>
-                                    <p class="text-xs text-gray-600">
-                                        I consent to Cannabis POS storing my personal information and tracking my sales history
-                                        for the purpose of providing loyalty program benefits. This data will be kept secure
-                                        and used only for program administration and personalized offers.
-                                    </p>
-                                </div>
-                            </label>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Starting Points</label>
+                            <input id="loyalty-enroll-points" name="starting_points" type="number" x-model.number="enrollmentForm.starting_points" @keydown.enter.prevent="enrollCustomer()" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="0">
                         </div>
 
                         <div class="flex gap-3">
-                            <button type="submit" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email || !enrollmentForm.data_retention_consent" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                            <button id="loyalty-enroll-btn" type="submit" @click.prevent="enrollCustomer()" onclick="window.__loyaltyEnrollFallback && window.__loyaltyEnrollFallback(event)" :disabled="!enrollmentForm.name || !enrollmentForm.phone || !enrollmentForm.email" class="flex-1 bg-cannabis-green text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                                 Enroll Customer
                             </button>
                             <button type="button" @click="closeEnrollmentModal()" class="flex-1 border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
@@ -336,7 +305,7 @@
 
         <!-- Add Points Modal -->
         <div x-show="showPointsModal" x-cloak class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg max-w-md w-full" @click.away="closePointsModal()">
+            <div class="bg-white rounded-lg max-w-md w-full" @click.outside="closePointsModal()">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold flex items-center gap-2">
@@ -414,6 +383,11 @@
 </div>
 
 <script>
+const LOYALTY_ENDPOINTS = {
+    base: "{{ url('/loyalty') }}",
+    enroll: "{{ route('loyalty.enroll') }}",
+    apiEnroll: "/api/loyalty/enroll"
+};
 function loyaltyManager() {
     return {
         activeTab: 'customers',
@@ -433,8 +407,8 @@ function loyaltyManager() {
             name: '',
             phone: '',
             email: '',
-            is_veteran: false,
-            data_retention_consent: false
+            tier: 'Bronze',
+            starting_points: 0
         },
         pointsForm: {
             points: '',
@@ -500,31 +474,61 @@ function loyaltyManager() {
                 name: '',
                 phone: '',
                 email: '',
-                is_veteran: false,
-                data_retention_consent: false
+                tier: 'Bronze',
+                starting_points: 0
             };
         },
 
         async enrollCustomer() {
             try {
-                const response = await fetch('/api/loyalty/enroll', {
+                // Prefer API route with token auth if available
+                if (window.posAuth && typeof posAuth.apiRequest === 'function') {
+                    const res = await posAuth.apiRequest('post', '/loyalty/enroll', this.enrollmentForm);
+                    if (res.success && res.data && (res.data.success !== false)) {
+                        const customer = res.data.customer || res.data;
+                        this.customers = [customer, ...(Array.isArray(this.customers) ? this.customers : [])];
+                        this.searchQuery = '';
+                        this.calculateStats();
+                        this.closeEnrollmentModal();
+                        this.showToast(`Welcome ${customer.name}! You've been enrolled in our loyalty program.`, 'success');
+                        return;
+                    } else {
+                        const msg = res.message || res.data?.message || 'Unknown error';
+                        this.showToast('Error enrolling customer: ' + msg, 'error');
+                        return;
+                    }
+                }
+
+                // Fallback to web route with CSRF/session
+                const response = await fetch(LOYALTY_ENDPOINTS.enroll, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify(this.enrollmentForm)
+                    body: JSON.stringify(this.enrollmentForm),
+                    credentials: 'same-origin'
                 });
 
-                const result = await response.json();
+                if (response.redirected) {
+                    this.showToast('Session expired. Please log in again.', 'error');
+                    return;
+                }
 
-                if (response.ok) {
-                    this.customers.push(result.customer);
+                let result = {};
+                try { result = await response.json(); } catch (e) { result = {}; }
+
+                if (response.ok && result && result.success !== false) {
+                    this.customers = [result.customer, ...(Array.isArray(this.customers) ? this.customers : [])];
+                    this.searchQuery = '';
                     this.calculateStats();
                     this.closeEnrollmentModal();
                     this.showToast(`Welcome ${result.customer.name}! You've been enrolled in our loyalty program.`, 'success');
                 } else {
-                    this.showToast('Error enrolling customer: ' + result.message, 'error');
+                    const msg = result && result.message ? result.message : `Request failed (${response.status})`;
+                    this.showToast('Error enrolling customer: ' + msg, 'error');
                 }
             } catch (error) {
                 console.error('Error enrolling customer:', error);
@@ -549,7 +553,7 @@ function loyaltyManager() {
 
         async submitPointsAdjustment() {
             try {
-                const response = await fetch(`/api/loyalty/${this.selectedCustomerForPoints.id}/adjust-points`, {
+                const response = await fetch(`${LOYALTY_ENDPOINTS.base}/${this.selectedCustomerForPoints.id}/adjust-points`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -589,7 +593,7 @@ function loyaltyManager() {
             }
 
             try {
-                const response = await fetch(`/api/loyalty/${customer.id}`, {
+                const response = await fetch(`${LOYALTY_ENDPOINTS.base}/${customer.id}`, {
                     method: 'DELETE',
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -636,5 +640,43 @@ function loyaltyManager() {
         }
     };
 }
+
+// Hard fallback: attach click handler independent of Alpine
+window.__loyaltyEnrollFallback = async function(e){
+  try {
+    if (e) e.preventDefault();
+    const name = (document.getElementById('loyalty-enroll-name')||{}).value || '';
+    const phone = (document.getElementById('loyalty-enroll-phone')||{}).value || '';
+    const email = (document.getElementById('loyalty-enroll-email')||{}).value || '';
+    const tier = (document.getElementById('loyalty-enroll-tier')||{}).value || 'Bronze';
+    const starting_points = parseInt((document.getElementById('loyalty-enroll-points')||{}).value || '0', 10) || 0;
+    if (!name || !phone || !email) return; // respect minimal validation silently
+
+    const payload = { name, phone, email, tier, starting_points };
+    const tryApi = async () => {
+      if (window.posAuth && typeof posAuth.apiRequest === 'function') {
+        return await posAuth.apiRequest('post', '/loyalty/enroll', payload);
+      }
+      return { success: false };
+    };
+    let res = await tryApi();
+    if (!res?.success) {
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const web = await fetch("{{ route('loyalty.enroll') }}", { method: 'POST', headers: { 'Content-Type':'application/json','Accept':'application/json','X-Requested-With':'XMLHttpRequest','X-CSRF-TOKEN': csrf }, body: JSON.stringify(payload), credentials: 'same-origin' });
+      let data = {}; try { data = await web.json(); } catch(_) {}
+      res = { success: web.ok && (data?.success !== false), data, message: data?.message };
+    }
+    const customer = res?.data?.customer || null;
+    const msg = res?.success ? (`Welcome ${customer?.name || name}! You've been enrolled.`) : (`Error enrolling: ${res?.message || res?.data?.message || 'Unknown error'}`);
+    if (window.POS && typeof window.POS.showToast === 'function') window.POS.showToast(msg, res?.success ? 'success':'error'); else alert(msg);
+    if (res?.success) {
+      try { document.querySelector('[x-data]')?.dispatchEvent(new CustomEvent('close-enrollment-modal')); } catch(_) {}
+      try { location.reload(); } catch(_) {}
+    }
+  } catch (err) {
+    const msg = err?.message || 'Enrollment error';
+    if (window.POS && typeof window.POS.showToast === 'function') window.POS.showToast(msg, 'error'); else alert(msg);
+  }
+};
 </script>
 @endsection

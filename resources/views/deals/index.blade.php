@@ -11,7 +11,7 @@
                 <h1 class="text-xl font-semibold">Deals & Specials</h1>
                 <p class="text-sm opacity-80">Manage sales, discounts, and promotions</p>
             </div>
-            <button x-data @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+            <button x-data="{}" @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                 </svg>
@@ -46,7 +46,8 @@
         </div>
 
         <!-- Deals Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" x-show="deals.length > 0">
+        <div class="max-h-[70vh] overflow-y-auto pr-2">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4" x-show="deals.length > 0">
             <template x-for="deal in deals" :key="deal.id">
                 <div class="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
                     <!-- Deal Header -->
@@ -93,15 +94,15 @@
                                 </svg>
                                 <span x-text="getFrequencyDisplay(deal)"></span>
                             </div>
-                            <div x-show="deal.categories && deal.categories.length > 0" class="flex items-center gap-2">
+                            <div x-show="deal.applicable_categories && deal.applicable_categories.length > 0" class="flex items-center gap-2">
                                 <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
                                 </svg>
                                 <div class="flex flex-wrap gap-1">
-                                    <template x-for="(category, index) in deal.categories ? deal.categories.slice(0, 2) : []" :key="index">
+                                    <template x-for="(category, index) in deal.applicable_categories ? deal.applicable_categories.slice(0, 2) : []" :key="index">
                                         <span class="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded" x-text="category"></span>
                                     </template>
-                                    <span x-show="deal.categories && deal.categories.length > 2" class="text-xs text-gray-500" x-text="'+' + (deal.categories.length - 2) + ' more'"></span>
+                                    <span x-show="deal.applicable_categories && deal.applicable_categories.length > 2" class="text-xs text-gray-500" x-text="'+' + (deal.applicable_categories.length - 2) + ' more'"></span>
                                 </div>
                             </div>
                             <div x-show="deal.minimum_purchase" class="flex items-center gap-2">
@@ -137,8 +138,9 @@
                 </div>
             </template>
         </div>
+        </div>
 
-        <!-- Empty State -->
+         <!-- Empty State -->
         <div x-show="deals.length === 0" class="text-center py-12">
             <div class="mx-auto w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
                 <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -147,14 +149,14 @@
             </div>
             <h3 class="text-lg font-medium text-gray-900 mb-2">No deals created yet</h3>
             <p class="text-gray-600 mb-4">Create your first deal to start offering discounts and promotions to customers.</p>
-            <button @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors">
+            <button x-data="{}" @click="$dispatch('open-deal-modal', { type: 'create' })" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors">
                 Create Your First Deal
             </button>
         </div>
 
         <!-- Deal Modal -->
         <div x-show="showModal" @open-deal-modal.window="openModal($event.detail)" x-cloak class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto" @click.away="closeModal()">
+            <div class="bg-white rounded-lg max-w-[1000px] w-full max-h-[90vh] overflow-y-auto" @click.outside="closeModal()">
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-xl font-semibold" x-text="modalType === 'create' ? 'Create New Deal' : 'Edit Deal'"></h2>
@@ -207,25 +209,143 @@
                         <!-- Date Range -->
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date *</label>
-                                <input type="date" x-model="form.start_date" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Start Date (optional)</label>
+                                <input type="date" x-model="form.start_date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">End Date (optional)</label>
                                 <input type="date" x-model="form.end_date" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                             </div>
                         </div>
 
-                        <!-- Categories -->
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Categories</label>
-                            <div class="grid grid-cols-3 gap-2">
-                                <template x-for="category in categories" :key="category">
-                                    <label class="flex items-center space-x-2">
-                                        <input type="checkbox" :value="category" x-model="form.applicable_categories" class="rounded text-cannabis-green focus:ring-cannabis-green">
-                                        <span class="text-sm" x-text="category"></span>
-                                    </label>
-                                </template>
+                        <div class="grid grid-cols-2 gap-4" x-show="form.frequency === 'weekly'">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Day of Week</label>
+                                <select x-model="form.day_of_week" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                    <option value="Monday">Monday</option>
+                                    <option value="Tuesday">Tuesday</option>
+                                    <option value="Wednesday">Wednesday</option>
+                                    <option value="Thursday">Thursday</option>
+                                    <option value="Friday">Friday</option>
+                                    <option value="Saturday">Saturday</option>
+                                    <option value="Sunday">Sunday</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4" x-show="form.frequency === 'monthly'">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Day of Month</label>
+                                <input type="number" x-model.number="form.day_of_month" min="1" max="31" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="1-31">
+                            </div>
+                        </div>
+
+                        <!-- Categories + Applicable Items side-by-side -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Categories (from Oregon METRC)</label>
+                                <select multiple x-model="form.applicable_categories" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green h-32">
+                                    <template x-for="category in categories" :key="category">
+                                        <option :value="category" x-text="category"></option>
+                                    </template>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">Select one or more categories. Leave empty to apply to all.</p>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Applicable Items (active in POS)</label>
+                                <input type="text" x-model.debounce.300ms="productSearch" @input="searchProducts()" placeholder="Search products by name or SKU" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green mb-2">
+                                <div class="border border-gray-200 rounded-lg h-40 overflow-y-auto">
+                                    <template x-if="productsLoading">
+                                        <div class="p-3 text-sm text-gray-500">Loading...</div>
+                                    </template>
+                                    <template x-if="!productsLoading && productResults.length === 0">
+                                        <div class="p-3 text-sm text-gray-500">No products found</div>
+                                    </template>
+                                    <template x-for="p in productResults" :key="p.id">
+                                        <label class="flex items-center justify-between px-3 py-2 border-b last:border-b-0 cursor-pointer hover:bg-gray-50">
+                                            <div class="flex items-center gap-3">
+                                                <input type="checkbox" :checked="isProductSelected(p.id)" @change="toggleProduct(p.id)" class="h-4 w-4">
+                                                <div>
+                                                    <div class="text-sm font-medium" x-text="p.name"></div>
+                                                    <div class="text-xs text-gray-500" x-text="(p.sku ? ('SKU: ' + p.sku + ' • ') : '') + (p.category || '')"></div>
+                                                </div>
+                                            </div>
+                                            <span class="text-xs text-gray-400" x-text="'#' + p.id"></span>
+                                        </label>
+                                    </template>
+                                </div>
+                                <div class="mt-2 text-xs text-gray-600">
+                                    <span x-text="form.specific_items ? form.specific_items.length : 0"></span> selected
+                                    <button type="button" class="ml-2 underline" @click="form.specific_items = []">Clear</button>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Only products currently in stock are shown and eligible.</p>
+                            </div>
+                        </div>
+
+                        <!-- Category and Item Discounts side-by-side -->
+                        <div class="space-y-6">
+                            <!-- Per-Category Discounts (optional) -->
+                            <div class="w-full">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Per-Category Discounts (optional)</label>
+                                <div class="space-y-2">
+                                    <template x-for="cat in categories" :key="cat">
+                                        <div class="grid grid-cols-2 gap-2 items-center">
+                                            <div class="text-sm" x-text="cat"></div>
+                                            <div class="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
+                                                    :value="(form.category_discounts && form.category_discounts[cat] !== undefined) ? form.category_discounts[cat] : ''"
+                                                    @input="form.category_discounts = { ...(form.category_discounts || {}), [cat]: parseFloat($event.target.value) || 0 }"
+                                                    placeholder="Discount value"
+                                                >
+                                                <select x-model="form.type" class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0">
+                                                    <option value="percentage">Percentage Off</option>
+                                                    <option value="fixed_amount">Fixed Amount Off</option>
+                                                    <option value="bogo">Buy One Get One</option>
+                                                    <option value="bulk">Bulk Discount</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <p class="text-xs text-gray-500">If set, these override the main discount for the selected category.</p>
+                                </div>
+                            </div>
+
+                            <!-- Per-Item Discounts (optional) -->
+                            <div class="w-full">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Per-Item Discounts (optional)</label>
+                                <div class="space-y-2 w-full">
+                                    <template x-for="pid in form.specific_items" :key="pid">
+                                        <div class="grid grid-cols-2 gap-2 items-center">
+                                            <div class="text-sm">
+                                                <span x-text="getProductById(pid).name"></span>
+                                                <span class="text-xs text-gray-500" x-text="getProductById(pid).category ? ' • ' + getProductById(pid).category : ''"></span>
+                                            </div>
+                                            <div class="flex items-center gap-2 min-w-0">
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green"
+                                                    :value="(form.item_discounts && form.item_discounts[String(pid)] !== undefined) ? form.item_discounts[String(pid)] : ''"
+                                                    @input="form.item_discounts = { ...(form.item_discounts || {}), [String(pid)]: parseFloat($event.target.value) || 0 }"
+                                                    placeholder="Discount value"
+                                                >
+                                                <select x-model="form.type" class="px-2 py-2 border border-gray-300 rounded-lg w-40 shrink-0">
+                                                    <option value="percentage">Percentage Off</option>
+                                                    <option value="fixed_amount">Fixed Amount Off</option>
+                                                    <option value="bogo">Buy One Get One</option>
+                                                    <option value="bulk">Bulk Discount</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </template>
+                                    <template x-if="(form.specific_items || []).length === 0">
+                                        <div class="p-2 text-xs text-gray-500 border rounded">Select items above to set per-item discount overrides.</div>
+                                    </template>
+                                    <p class="text-xs text-gray-500">If set, these override both category and main discount for the item.</p>
+                                </div>
                             </div>
                         </div>
 
@@ -238,7 +358,7 @@
                                     <option value="grams">Grams (g)</option>
                                 </select>
                                 <div class="col-span-2">
-                                    <input type="number" x-model="form.minimum_purchase" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" :placeholder="'Minimum ' + (form.minimum_purchase_type === 'grams' ? 'grams' : 'dollars')">
+                                    <input type="number" x-model.number="form.minimum_purchase" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" :placeholder="'Minimum ' + (form.minimum_purchase_type === 'grams' ? 'grams' : 'dollars')">
                                 </div>
                             </div>
                         </div>
@@ -246,6 +366,16 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Uses</label>
                             <input type="number" x-model="form.max_uses" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" placeholder="Unlimited">
+                        </div>
+
+                        <!-- Audience -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Audience</label>
+                            <select x-model="form.audience" @change="applyAudience()" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <option value="everyone">Everyone</option>
+                                <option value="loyalty">Loyalty Members Only</option>
+                                <option value="medical_caregiver">Medical/Caregiver Only</option>
+                            </select>
                         </div>
 
                         <!-- Settings -->
@@ -315,32 +445,41 @@ function dealsManager() {
             medicalDeals: 0,
             emailCampaigns: 0
         },
-        categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Tinctures', 'Vapes', 'Inhalable Cannabinoids', 'Clones', 'Hemp', 'Paraphernalia', 'Accessories'],
+        categories: @json($categories ?? ['Flower','Pre-Rolls','Infused','Concentrates','Extracts','Edibles','Topicals','Tinctures','Vape Cartridges','Vape Pens','Inhalable Cannabinoids','Clones','Immature Plants','Seeds','Shake/Trim','Kief','Accessories']),
         showModal: false,
         modalType: 'create',
         form: this.getDefaultForm(),
+        productsLoading: false,
+        productSearch: '',
+        productResults: [],
 
         init() {
             this.calculateStats();
+            this.loadProducts();
         },
 
         getDefaultForm() {
+            const today = new Date().toISOString().slice(0, 10);
             return {
                 name: '',
                 description: '',
                 type: 'percentage',
                 value: 0,
                 frequency: 'always',
-                start_date: new Date().toISOString().split('T')[0],
+                start_date: today,
                 end_date: '',
                 applicable_categories: [],
+                specific_items: [],
+                category_discounts: {},
+                item_discounts: {},
                 minimum_purchase: null,
                 minimum_purchase_type: 'dollars',
                 max_uses: null,
                 email_customers: false,
                 loyalty_only: false,
                 medical_only: false,
-                is_active: true
+                is_active: true,
+                audience: 'everyone'
             };
         },
 
@@ -356,9 +495,15 @@ function dealsManager() {
             this.modalType = detail.type;
             if (detail.type === 'edit' && detail.deal) {
                 this.form = { ...detail.deal };
+                if (!this.form.category_discounts) this.form.category_discounts = {};
+                if (!this.form.item_discounts) this.form.item_discounts = {};
+                // Normalize audience from booleans
+                this.form.audience = (this.form.medical_only ? 'medical_caregiver' : (this.form.loyalty_only ? 'loyalty' : 'everyone'));
                 this.form.applicable_categories = detail.deal.applicable_categories || [];
+                this.form.specific_items = detail.deal.specific_items || [];
             } else {
                 this.form = this.getDefaultForm();
+                this.applyAudience();
             }
             this.showModal = true;
         },
@@ -368,15 +513,77 @@ function dealsManager() {
             this.form = this.getDefaultForm();
         },
 
+        applyAudience() {
+            if (this.form.audience === 'loyalty') {
+                this.form.loyalty_only = true;
+                this.form.medical_only = false;
+            } else if (this.form.audience === 'medical_caregiver') {
+                this.form.loyalty_only = false;
+                this.form.medical_only = true;
+            } else {
+                this.form.loyalty_only = false;
+                this.form.medical_only = false;
+            }
+        },
+
+        isProductSelected(id) {
+            const list = this.form.specific_items || [];
+            return Array.isArray(list) && list.includes(id);
+        },
+        toggleProduct(id) {
+            if (!Array.isArray(this.form.specific_items)) {
+                this.form.specific_items = [];
+            }
+            const idx = this.form.specific_items.indexOf(id);
+            if (idx >= 0) {
+                this.form.specific_items.splice(idx, 1);
+            } else {
+                this.form.specific_items.push(id);
+            }
+        },
+        async loadProducts() {
+            try {
+                this.productsLoading = true;
+                const params = new URLSearchParams();
+                params.set('status', 'in_stock');
+                if (this.productSearch && this.productSearch.trim() !== '') {
+                    params.set('search', this.productSearch.trim());
+                }
+                const url = '/products' + (params.toString() ? ('?' + params.toString()) : '');
+                const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const items = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []);
+                    this.productResults = items;
+                } else {
+                    this.productResults = [];
+                }
+            } catch (e) {
+                this.productResults = [];
+            } finally {
+                this.productsLoading = false;
+            }
+        },
+        searchProducts() {
+            this.loadProducts();
+        },
+
+        getProductById(id) {
+            const list = Array.isArray(this.productResults) ? this.productResults : [];
+            const found = list.find(p => String(p.id) === String(id));
+            return found || { id, name: `#${id}`, category: '' };
+        },
+
         async submitDeal() {
             try {
-                const url = this.modalType === 'create' ? '/api/deals' : `/api/deals/${this.form.id}`;
-                const method = this.modalType === 'create' ? 'POST' : 'PUT';
+                const url = this.modalType === 'create' ? '/deals' : `/deals/${this.form.id}`;
+                const method = this.modalType === 'create' ? 'POST' : 'PATCH';
 
                 const response = await fetch(url, {
                     method: method,
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify(this.form)
@@ -408,10 +615,11 @@ function dealsManager() {
 
         async toggleDealStatus(deal) {
             try {
-                const response = await fetch(`/api/deals/${deal.id}`, {
-                    method: 'PUT',
+                const response = await fetch(`/deals/${deal.id}`, {
+                    method: 'PATCH',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({ ...deal, is_active: !deal.is_active })
@@ -432,9 +640,10 @@ function dealsManager() {
             if (!confirm('Are you sure you want to delete this deal?')) return;
 
             try {
-                const response = await fetch(`/api/deals/${deal.id}`, {
+                const response = await fetch(`/deals/${deal.id}`, {
                     method: 'DELETE',
                     headers: {
+                        'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
                 });
@@ -454,8 +663,26 @@ function dealsManager() {
             this.openModal({ type: 'edit', deal: deal });
         },
 
-        sendDealEmail(deal) {
-            this.showToast(`Email campaign for "${deal.name}" has been sent to loyalty program members!`, 'success');
+        async sendDealEmail(deal) {
+            try {
+                const res = await fetch(`/api/deals/${deal.id}/email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({})
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    this.showToast(data.message || `Email campaign for "${deal.name}" sent`, 'success');
+                } else {
+                    this.showToast(data.message || 'Failed to send deal emails', 'error');
+                }
+            } catch (e) {
+                console.error('Email send failed', e);
+                this.showToast('Failed to send deal emails', 'error');
+            }
         },
 
         formatDiscount(deal) {
@@ -474,6 +701,12 @@ function dealsManager() {
         },
 
         getFrequencyDisplay(deal) {
+            // Prefer explicit active_days list when present
+            if (Array.isArray(deal.active_days) && deal.active_days.length > 0) {
+                const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+                const labels = deal.active_days.map(i => days[i] || '').filter(Boolean);
+                if (labels.length) return 'Custom (' + labels.join(', ') + ')';
+            }
             switch (deal.frequency) {
                 case 'daily':
                     return 'Daily';

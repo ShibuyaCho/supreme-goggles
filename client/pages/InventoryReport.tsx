@@ -13,7 +13,7 @@ import {
   ArrowLeft,
   Filter,
   RefreshCw,
-  Printer
+  Printer,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -24,212 +24,307 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Sample inventory data (in real app, this would come from API)
-const allInventoryItems = [
+type InvItem = {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  cost: number;
+  stock: number;
+  room: string;
+  supplier?: string;
+};
+
+// Fallback sample inventory data (used only if API returns empty)
+const fallbackInventoryItems: InvItem[] = [
   // Sales Floor Items
   {
     id: "sf1",
     name: "Blue Dream",
     category: "Flower",
-    price: 7.00,
-    cost: 3.50,
+    price: 7.0,
+    cost: 3.5,
     stock: 150,
     room: "Sales Floor",
-    supplier: "Green Valley Supply"
+    supplier: "Green Valley Supply",
   },
   {
     id: "sf2",
     name: "OG Kush",
-    category: "Flower", 
-    price: 12.00,
-    cost: 6.00,
+    category: "Flower",
+    price: 12.0,
+    cost: 6.0,
     stock: 100,
     room: "Sales Floor",
-    supplier: "Pacific Coast Cannabis"
+    supplier: "Pacific Coast Cannabis",
   },
   {
     id: "sf3",
     name: "Gummy Bears",
     category: "Edibles",
-    price: 25.00,
-    cost: 12.50,
+    price: 25.0,
+    cost: 12.5,
     stock: 100,
     room: "Sales Floor",
-    supplier: "Edible Creations Co"
+    supplier: "Edible Creations Co",
   },
   {
     id: "sf4",
     name: "Vape Cartridge",
     category: "Vapes",
-    price: 55.00,
-    cost: 27.50,
+    price: 55.0,
+    cost: 27.5,
     stock: 40,
     room: "Sales Floor",
-    supplier: "Vapor Tech Solutions"
+    supplier: "Vapor Tech Solutions",
   },
   {
     id: "sf5",
     name: "Pre-Roll Pack",
     category: "Pre-Rolls",
-    price: 35.00,
-    cost: 17.50,
+    price: 35.0,
+    cost: 17.5,
     stock: 60,
     room: "Sales Floor",
-    supplier: "Roll Masters"
+    supplier: "Roll Masters",
   },
   {
     id: "sf6",
     name: "CBD Topical Balm",
     category: "Topicals",
-    price: 45.00,
-    cost: 22.50,
+    price: 45.0,
+    cost: 22.5,
     stock: 40,
     room: "Sales Floor",
-    supplier: "Wellness Products Inc"
+    supplier: "Wellness Products Inc",
   },
   {
     id: "sf7",
     name: "Infused Blunt",
     category: "Infused Pre-Rolls",
-    price: 42.00,
-    cost: 21.00,
+    price: 42.0,
+    cost: 21.0,
     stock: 35,
     room: "Sales Floor",
-    supplier: "Blunt Masters Inc"
+    supplier: "Blunt Masters Inc",
   },
   // Storage Items
   {
     id: "inv1",
     name: "OG Kush Reserve",
     category: "Flower",
-    price: 12.00,
-    cost: 6.00,
+    price: 12.0,
+    cost: 6.0,
     stock: 89,
     room: "Secure Vault",
-    supplier: "Premium Cannabis Co"
+    supplier: "Premium Cannabis Co",
   },
   {
     id: "inv2",
     name: "Bulk Shake Mix",
     category: "Flower",
-    price: 2.50,
+    price: 2.5,
     cost: 1.25,
     stock: 2500,
     room: "Main Storage Vault",
-    supplier: "Wholesale Cannabis Supply"
+    supplier: "Wholesale Cannabis Supply",
   },
   {
     id: "inv3",
     name: "Premium Live Resin Cart",
     category: "Vapes",
-    price: 85.00,
-    cost: 42.50,
+    price: 85.0,
+    cost: 42.5,
     stock: 45,
     room: "Secure Vault",
-    supplier: "Extract Artisans"
+    supplier: "Extract Artisans",
   },
   {
     id: "inv4",
     name: "Edible Bulk Gummies",
     category: "Edibles",
-    price: 18.00,
-    cost: 9.00,
+    price: 18.0,
+    cost: 9.0,
     stock: 350,
     room: "Edibles Storage",
-    supplier: "Edible Creations Co"
+    supplier: "Edible Creations Co",
   },
   {
     id: "inv5",
     name: "Hash - Premium Bubble",
     category: "Concentrates",
-    price: 95.00,
-    cost: 47.50,
+    price: 95.0,
+    cost: 47.5,
     stock: 12,
     room: "Secure Vault",
-    supplier: "Artisan Hash Collective"
+    supplier: "Artisan Hash Collective",
   },
   {
     id: "inv6",
     name: "CBD Topical Balm Bulk",
     category: "Topicals",
-    price: 35.00,
-    cost: 17.50,
+    price: 35.0,
+    cost: 17.5,
     stock: 78,
     room: "Back Room",
-    supplier: "Wellness Products Inc"
+    supplier: "Wellness Products Inc",
   },
   {
     id: "inv7",
     name: "Chocolate Bar Bulk",
     category: "Edibles",
-    price: 30.00,
-    cost: 15.00,
+    price: 30.0,
+    cost: 15.0,
     stock: 80,
     room: "Edibles Storage",
-    supplier: "Sweet Relief Co"
+    supplier: "Sweet Relief Co",
   },
   {
     id: "inv8",
     name: "Rosin",
     category: "Concentrates",
-    price: 95.00,
-    cost: 47.50,
+    price: 95.0,
+    cost: 47.5,
     stock: 12,
     room: "Secure Vault",
-    supplier: "Pure Extracts LLC"
+    supplier: "Pure Extracts LLC",
   },
   {
     id: "inv9",
     name: "Infused Blunt Bulk",
     category: "Infused Pre-Rolls",
-    price: 42.00,
-    cost: 21.00,
+    price: 42.0,
+    cost: 21.0,
     stock: 85,
     room: "Back Room",
-    supplier: "Blunt Masters Inc"
-  }
+    supplier: "Blunt Masters Inc",
+  },
 ];
 
 export default function InventoryReport() {
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
-  const [reportType, setReportType] = useState<"summary" | "detailed">("summary");
+  const [reportType, setReportType] = useState<"summary" | "detailed">(
+    "summary",
+  );
+
+  const [items, setItems] = useState<InvItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        let rows: any[] = [];
+        // 1) Node alias -> Supabase
+        try {
+          const r = await fetch("/node/products", {
+            headers: { Accept: "application/json" },
+          });
+          if (r.ok) {
+            const data = await r.json();
+            rows = Array.isArray(data?.products) ? data.products : [];
+          }
+        } catch (_) {}
+        // 2) Laravel API fallback
+        if (!Array.isArray(rows) || rows.length === 0) {
+          try {
+            const r2 = await fetch("/api/products", {
+              headers: { Accept: "application/json" },
+            });
+            if (r2.ok) {
+              const d2 = await r2.json();
+              rows = Array.isArray(d2?.data)
+                ? d2.data
+                : Array.isArray(d2)
+                  ? d2
+                  : [];
+            }
+          } catch (_) {}
+        }
+        // 3) Web route JSON fallback
+        if (!Array.isArray(rows) || rows.length === 0) {
+          try {
+            const r3 = await fetch("/products", {
+              headers: { Accept: "application/json" },
+            });
+            if (r3.ok) {
+              const d3 = await r3.json();
+              rows = Array.isArray(d3?.data)
+                ? d3.data
+                : Array.isArray(d3)
+                  ? d3
+                  : [];
+            }
+          } catch (_) {}
+        }
+        const mapped: InvItem[] = (Array.isArray(rows) ? rows : []).map(
+          (p: any) => ({
+            id: String(p.id ?? p.sku ?? Math.random().toString(36).slice(2)),
+            name: p.name || "",
+            category: p.category || "Uncategorized",
+            price: Number(p.price || 0) || 0,
+            cost: Number(p.cost || 0) || 0,
+            stock: Number(p.quantity || p.stock || 0) || 0,
+            room: p.room || "",
+            supplier: p.supplier || p.vendor || "",
+          }),
+        );
+        setItems(mapped.length > 0 ? mapped : fallbackInventoryItems);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
 
   // Get unique categories
   const allCategories = useMemo(() => {
-    const categories = [...new Set(allInventoryItems.map(item => item.category))];
+    const categories = [...new Set(items.map((item) => item.category))];
     return categories.sort();
-  }, []);
+  }, [items]);
 
   // Filter items based on selected category
   const filteredItems = useMemo(() => {
     if (selectedCategory === "all") {
-      return allInventoryItems;
+      return items;
     }
-    return allInventoryItems.filter(item => item.category === selectedCategory);
-  }, [selectedCategory]);
-  
+    return items.filter((item) => item.category === selectedCategory);
+  }, [selectedCategory, items]);
+
   // Calculate category totals
   const categoryTotals = useMemo(() => {
-    const totals: Record<string, { totalCost: number; totalValue: number; itemCount: number; stockCount: number }> = {};
-
-    filteredItems.forEach(item => {
-      if (!totals[item.category]) {
-        totals[item.category] = { totalCost: 0, totalValue: 0, itemCount: 0, stockCount: 0 };
+    const totals: Record<
+      string,
+      {
+        totalCost: number;
+        totalValue: number;
+        itemCount: number;
+        stockCount: number;
       }
-      
+    > = {};
+
+    filteredItems.forEach((item) => {
+      if (!totals[item.category]) {
+        totals[item.category] = {
+          totalCost: 0,
+          totalValue: 0,
+          itemCount: 0,
+          stockCount: 0,
+        };
+      }
+
       const itemTotalCost = item.cost * item.stock;
       const itemTotalValue = item.price * item.stock;
-      
+
       totals[item.category].totalCost += itemTotalCost;
       totals[item.category].totalValue += itemTotalValue;
       totals[item.category].itemCount += 1;
       totals[item.category].stockCount += item.stock;
     });
-    
+
     return totals;
-  }, []);
-  
+  }, [filteredItems]);
+
   // Calculate grand totals
   const grandTotals = useMemo(() => {
     return Object.values(categoryTotals).reduce(
@@ -237,15 +332,16 @@ export default function InventoryReport() {
         totalCost: acc.totalCost + category.totalCost,
         totalValue: acc.totalValue + category.totalValue,
         itemCount: acc.itemCount + category.itemCount,
-        stockCount: acc.stockCount + category.stockCount
+        stockCount: acc.stockCount + category.stockCount,
       }),
-      { totalCost: 0, totalValue: 0, itemCount: 0, stockCount: 0 }
+      { totalCost: 0, totalValue: 0, itemCount: 0, stockCount: 0 },
     );
   }, [categoryTotals]);
-  
+
   const generateReport = () => {
     const reportDate = new Date().toLocaleDateString();
-    const categoryFilter = selectedCategory === "all" ? "All Categories" : selectedCategory;
+    const categoryFilter =
+      selectedCategory === "all" ? "All Categories" : selectedCategory;
     const reportContent = `
 INVENTORY EVALUATION REPORT
 Generated: ${reportDate}
@@ -254,15 +350,17 @@ Report Type: ${reportType}
 
 === CATEGORY BREAKDOWN ===
 ${Object.entries(categoryTotals)
-  .sort(([,a], [,b]) => b.totalCost - a.totalCost)
-  .map(([category, data]) =>
-    `${category}:
+  .sort(([, a], [, b]) => b.totalCost - a.totalCost)
+  .map(
+    ([category, data]) =>
+      `${category}:
     Total Cost: $${data.totalCost.toFixed(2)}
     Total Value: $${data.totalValue.toFixed(2)}
     Items: ${data.itemCount} (${data.stockCount} units)
     Margin: $${(data.totalValue - data.totalCost).toFixed(2)} (${(((data.totalValue - data.totalCost) / data.totalCost) * 100).toFixed(1)}%)
-    `
-  ).join('\n')}
+    `,
+  )
+  .join("\n")}
 
 === GRAND TOTALS ===
 Total Inventory Cost: $${grandTotals.totalCost.toFixed(2)}
@@ -272,11 +370,11 @@ Total Potential Margin: $${(grandTotals.totalValue - grandTotals.totalCost).toFi
 Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTotals.totalCost) * 100).toFixed(1)}%
     `;
 
-    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const blob = new Blob([reportContent], { type: "text/plain" });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
-    a.download = `inventory-evaluation-report-${reportDate.replace(/\//g, '-')}.txt`;
+    a.download = `inventory-evaluation-report-${reportDate.replace(/\//g, "-")}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -285,10 +383,12 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
 
   const printReport = () => {
     const reportDate = new Date().toLocaleDateString();
-    const categoryFilter = selectedCategory === "all" ? "All Categories" : selectedCategory;
+    const categoryFilter =
+      selectedCategory === "all" ? "All Categories" : selectedCategory;
 
-    const detailedItemsHTML = reportType === "detailed" && selectedCategory !== "all"
-      ? `
+    const detailedItemsHTML =
+      reportType === "detailed" && selectedCategory !== "all"
+        ? `
         <div style="margin-bottom: 30px;">
           <h3 style="margin: 20px 0 10px 0; color: #2563eb;">Individual Items in ${selectedCategory}</h3>
           <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
@@ -304,12 +404,12 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
             </thead>
             <tbody>
               ${filteredItems
-                .filter(item => item.category === selectedCategory)
-                .sort((a, b) => (b.price * b.stock) - (a.price * a.stock))
-                .map(item => {
+                .filter((item) => item.category === selectedCategory)
+                .sort((a, b) => b.price * b.stock - a.price * a.stock)
+                .map((item) => {
                   const itemValue = item.price * item.stock;
                   const itemCost = item.cost * item.stock;
-                  const itemMargin = ((itemValue - itemCost) / itemCost * 100);
+                  const itemMargin = ((itemValue - itemCost) / itemCost) * 100;
                   return `
                     <tr>
                       <td style="border: 1px solid #d1d5db; padding: 8px;">${item.name}</td>
@@ -320,11 +420,13 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
                       <td style="border: 1px solid #d1d5db; padding: 8px; text-align: right;">${itemMargin.toFixed(1)}%</td>
                     </tr>
                   `;
-                }).join('')}
+                })
+                .join("")}
             </tbody>
           </table>
         </div>
-      ` : '';
+      `
+        : "";
 
     const printContent = `
       <html>
@@ -480,10 +582,10 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
 
           <h2 style="margin: 25px 0 15px 0;">Category Breakdown</h2>
           ${Object.entries(categoryTotals)
-            .sort(([,a], [,b]) => b.totalCost - a.totalCost)
+            .sort(([, a], [, b]) => b.totalCost - a.totalCost)
             .map(([category, data]) => {
               const margin = data.totalValue - data.totalCost;
-              const marginPercentage = ((margin / data.totalCost) * 100);
+              const marginPercentage = (margin / data.totalCost) * 100;
               return `
                 <div class="category-section">
                   <div class="category-header">
@@ -513,7 +615,8 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
                   </div>
                 </div>
               `;
-            }).join('')}
+            })
+            .join("")}
 
           <div class="total-section">
             <h3 style="text-align: center; margin: 0 0 15px 0;">Total Inventory Summary</h3>
@@ -548,7 +651,7 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
       </html>
     `;
 
-    const printWindow = window.open('', '_blank');
+    const printWindow = window.open("", "_blank");
     if (printWindow) {
       printWindow.document.write(printContent);
       printWindow.document.close();
@@ -556,7 +659,7 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
       printWindow.print();
     }
   };
-  
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -573,7 +676,9 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
               Back
             </Button>
             <div>
-              <h1 className="text-xl font-semibold">Inventory Evaluation Report</h1>
+              <h1 className="text-xl font-semibold">
+                Inventory Evaluation Report
+              </h1>
               <p className="text-sm opacity-80">
                 {selectedCategory === "all"
                   ? "Complete inventory cost analysis by category"
@@ -582,19 +687,29 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
             </div>
           </div>
           <div className="flex gap-2">
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select
+              value={selectedCategory}
+              onValueChange={setSelectedCategory}
+            >
               <SelectTrigger className="w-48 bg-white/70 border-white/90 text-gray-900 font-medium">
                 <Filter className="w-4 h-4 mr-2" />
                 <SelectValue placeholder="Select category" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Categories</SelectItem>
-                {allCategories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                {allCategories.map((category) => (
+                  <SelectItem key={category} value={category}>
+                    {category}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select value={reportType} onValueChange={(value: "summary" | "detailed") => setReportType(value)}>
+            <Select
+              value={reportType}
+              onValueChange={(value: "summary" | "detailed") =>
+                setReportType(value)
+              }
+            >
               <SelectTrigger className="w-32 bg-white/70 border-white/90 text-gray-900 font-medium">
                 <SelectValue />
               </SelectTrigger>
@@ -627,40 +742,60 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
 
       <div className="container mx-auto p-6">
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-red-600">
-                ${grandTotals.totalCost.toLocaleString()}
-              </div>
-              <div className="text-sm text-muted-foreground">Total Inventory Cost</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">
-                ${grandTotals.totalValue.toLocaleString()}
-              </div>
-              <div className="text-sm text-muted-foreground">Total Inventory Value</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                ${(grandTotals.totalValue - grandTotals.totalCost).toLocaleString()}
-              </div>
-              <div className="text-sm text-muted-foreground">Potential Margin</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {(((grandTotals.totalValue - grandTotals.totalCost) / grandTotals.totalCost) * 100).toFixed(1)}%
-              </div>
-              <div className="text-sm text-muted-foreground">Average Margin</div>
-            </CardContent>
-          </Card>
-        </div>
+        {loading ? (
+          <div className="p-6 text-sm text-gray-600">Loading inventory...</div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-red-600">
+                  ${grandTotals.totalCost.toLocaleString()}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Total Inventory Cost
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-green-600">
+                  ${grandTotals.totalValue.toLocaleString()}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Total Inventory Value
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-blue-600">
+                  $
+                  {(
+                    grandTotals.totalValue - grandTotals.totalCost
+                  ).toLocaleString()}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Potential Margin
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4 text-center">
+                <div className="text-2xl font-bold text-purple-600">
+                  {(
+                    ((grandTotals.totalValue - grandTotals.totalCost) /
+                      grandTotals.totalCost) *
+                    100
+                  ).toFixed(1)}
+                  %
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  Average Margin
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Category Filter Info */}
         {selectedCategory !== "all" && (
@@ -670,8 +805,12 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
                 <div className="flex items-center gap-3">
                   <Filter className="w-5 h-5 text-blue-600" />
                   <div>
-                    <div className="font-semibold text-blue-900">Filtered Report: {selectedCategory}</div>
-                    <div className="text-sm text-blue-700">Showing data for {selectedCategory} category only</div>
+                    <div className="font-semibold text-blue-900">
+                      Filtered Report: {selectedCategory}
+                    </div>
+                    <div className="text-sm text-blue-700">
+                      Showing data for {selectedCategory} category only
+                    </div>
                   </div>
                 </div>
                 <Button
@@ -693,7 +832,10 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <BarChart3 className="w-5 h-5" />
-              Cost Analysis {selectedCategory === "all" ? "by Category" : `- ${selectedCategory}`}
+              Cost Analysis{" "}
+              {selectedCategory === "all"
+                ? "by Category"
+                : `- ${selectedCategory}`}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -705,24 +847,33 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
                 </h4>
                 <div className="space-y-2 max-h-96 overflow-y-auto">
                   {filteredItems
-                    .filter(item => item.category === selectedCategory)
-                    .sort((a, b) => (b.price * b.stock) - (a.price * a.stock))
-                    .map(item => {
+                    .filter((item) => item.category === selectedCategory)
+                    .sort((a, b) => b.price * b.stock - a.price * a.stock)
+                    .map((item) => {
                       const itemValue = item.price * item.stock;
                       const itemCost = item.cost * item.stock;
-                      const itemMargin = ((itemValue - itemCost) / itemCost * 100);
+                      const itemMargin =
+                        ((itemValue - itemCost) / itemCost) * 100;
 
                       return (
-                        <div key={item.id} className="flex items-center justify-between p-3 border rounded bg-gray-50">
+                        <div
+                          key={item.id}
+                          className="flex items-center justify-between p-3 border rounded bg-gray-50"
+                        >
                           <div className="flex-1">
                             <div className="font-medium">{item.name}</div>
                             <div className="text-sm text-gray-600">
-                              {item.room} • {item.stock} units • ${item.price}/unit
+                              {item.room} • {item.stock} units • ${item.price}
+                              /unit
                             </div>
                           </div>
                           <div className="text-right">
-                            <div className="font-bold text-green-600">${itemValue.toLocaleString()}</div>
-                            <div className="text-sm text-gray-600">{itemMargin.toFixed(1)}% margin</div>
+                            <div className="font-bold text-green-600">
+                              ${itemValue.toLocaleString()}
+                            </div>
+                            <div className="text-sm text-gray-600">
+                              {itemMargin.toFixed(1)}% margin
+                            </div>
                           </div>
                         </div>
                       );
@@ -733,11 +884,11 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
             )}
             <div className="space-y-4">
               {Object.entries(categoryTotals)
-                .sort(([,a], [,b]) => b.totalCost - a.totalCost)
+                .sort(([, a], [, b]) => b.totalCost - a.totalCost)
                 .map(([category, data]) => {
                   const margin = data.totalValue - data.totalCost;
-                  const marginPercentage = ((margin / data.totalCost) * 100);
-                  
+                  const marginPercentage = (margin / data.totalCost) * 100;
+
                   return (
                     <div key={category} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -746,41 +897,66 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
                             <Package className="w-6 h-6 text-blue-600" />
                           </div>
                           <div>
-                            <h3 className="font-semibold text-lg">{category}</h3>
+                            <h3 className="font-semibold text-lg">
+                              {category}
+                            </h3>
                             <div className="text-sm text-gray-600">
-                              {data.itemCount} items • {data.stockCount.toLocaleString()} units
+                              {data.itemCount} items •{" "}
+                              {data.stockCount.toLocaleString()} units
                             </div>
                           </div>
                         </div>
                         <div className="text-right">
-                          <Badge 
-                            variant={marginPercentage > 50 ? "default" : marginPercentage > 25 ? "secondary" : "outline"}
+                          <Badge
+                            variant={
+                              marginPercentage > 50
+                                ? "default"
+                                : marginPercentage > 25
+                                  ? "secondary"
+                                  : "outline"
+                            }
                             className="mb-1"
                           >
                             {marginPercentage.toFixed(1)}% margin
                           </Badge>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                         <div>
-                          <span className="text-gray-600 font-semibold">Total Cost:</span>
-                          <div className="font-bold text-red-600 text-lg">${data.totalCost.toLocaleString()}</div>
+                          <span className="text-gray-600 font-semibold">
+                            Total Cost:
+                          </span>
+                          <div className="font-bold text-red-600 text-lg">
+                            ${data.totalCost.toLocaleString()}
+                          </div>
                         </div>
                         <div>
-                          <span className="text-gray-600 font-semibold">Total Value:</span>
-                          <div className="font-bold text-green-600 text-lg">${data.totalValue.toLocaleString()}</div>
+                          <span className="text-gray-600 font-semibold">
+                            Total Value:
+                          </span>
+                          <div className="font-bold text-green-600 text-lg">
+                            ${data.totalValue.toLocaleString()}
+                          </div>
                         </div>
                         <div>
-                          <span className="text-gray-600 font-semibold">Potential Margin:</span>
-                          <div className="font-bold text-blue-600 text-lg">${margin.toLocaleString()}</div>
+                          <span className="text-gray-600 font-semibold">
+                            Potential Margin:
+                          </span>
+                          <div className="font-bold text-blue-600 text-lg">
+                            ${margin.toLocaleString()}
+                          </div>
                         </div>
                         <div>
-                          <span className="text-gray-600 font-semibold">Avg Unit Cost:</span>
-                          <div className="font-bold text-gray-900">${(data.totalCost / data.stockCount).toFixed(2)}</div>
+                          <span className="text-gray-600 font-semibold">
+                            Avg Unit Cost:
+                          </span>
+                          <div className="font-bold text-gray-900">
+                            ${(data.totalCost / data.stockCount).toFixed(2)}
+                          </div>
                         </div>
                       </div>
-                      
+
                       {/* Visual margin bar */}
                       <div className="mt-3">
                         <div className="flex justify-between text-xs text-gray-500 mb-1">
@@ -788,9 +964,11 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
                           <span>{marginPercentage.toFixed(1)}% margin</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
+                          <div
                             className="bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 h-2 rounded-full"
-                            style={{ width: `${Math.min(marginPercentage, 100)}%` }}
+                            style={{
+                              width: `${Math.min(marginPercentage, 100)}%`,
+                            }}
                           ></div>
                         </div>
                       </div>
@@ -813,31 +991,49 @@ Average Margin: ${(((grandTotals.totalValue - grandTotals.totalCost) / grandTota
             <div className="bg-gray-50 rounded-lg p-6">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-red-600">${grandTotals.totalCost.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    ${grandTotals.totalCost.toLocaleString()}
+                  </div>
                   <div className="text-sm text-gray-600">Total Investment</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-green-600">${grandTotals.totalValue.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    ${grandTotals.totalValue.toLocaleString()}
+                  </div>
                   <div className="text-sm text-gray-600">Potential Revenue</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-blue-600">${(grandTotals.totalValue - grandTotals.totalCost).toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-blue-600">
+                    $
+                    {(
+                      grandTotals.totalValue - grandTotals.totalCost
+                    ).toLocaleString()}
+                  </div>
                   <div className="text-sm text-gray-600">Potential Profit</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-purple-600">{grandTotals.stockCount.toLocaleString()}</div>
+                  <div className="text-2xl font-bold text-purple-600">
+                    {grandTotals.stockCount.toLocaleString()}
+                  </div>
                   <div className="text-sm text-gray-600">Total Units</div>
                 </div>
               </div>
-              
+
               <Separator className="my-4" />
-              
+
               <div className="text-center">
                 <div className="text-lg font-medium text-gray-700 mb-2">
-                  Average Margin: {(((grandTotals.totalValue - grandTotals.totalCost) / grandTotals.totalCost) * 100).toFixed(1)}%
+                  Average Margin:{" "}
+                  {(
+                    ((grandTotals.totalValue - grandTotals.totalCost) /
+                      grandTotals.totalCost) *
+                    100
+                  ).toFixed(1)}
+                  %
                 </div>
                 <div className="text-sm text-gray-500">
-                  Report generated on {new Date().toLocaleDateString()} at {new Date().toLocaleTimeString()}
+                  Report generated on {new Date().toLocaleDateString()} at{" "}
+                  {new Date().toLocaleTimeString()}
                 </div>
               </div>
             </div>

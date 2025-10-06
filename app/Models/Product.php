@@ -17,6 +17,7 @@ class Product extends Model
         'cost',
         'sku',
         'weight',
+        'unit',
         'room',
         'strain',
         'thc',
@@ -50,7 +51,8 @@ class Product extends Model
         'reorder_point',
         'administrative_hold',
         'test_status',
-        'lab_results'
+        'lab_results',
+        'store_id'
     ];
 
     protected $casts = [

@@ -21,12 +21,17 @@ class Employee extends Authenticatable
         'password',
         'department',
         'position',
+        'role',
         'hire_date',
         'hourly_rate',
+        'is_active',
         'status',
         'permissions',
         'last_login',
-        'notes'
+        'notes',
+        'worker_permit',
+        'metrc_api_key',
+        'store_id'
     ];
 
     protected $hidden = [
@@ -48,7 +53,10 @@ class Employee extends Authenticatable
 
     public function isActive()
     {
-        return $this->status === 'active';
+        if (array_key_exists('is_active', $this->attributes)) {
+            return (bool) ($this->attributes['is_active'] ?? false);
+        }
+        return ($this->attributes['status'] ?? 'active') === 'active';
     }
 
     public function hasPermission($permission)
@@ -64,6 +72,22 @@ class Employee extends Authenticatable
     public function clockEntries()
     {
         return $this->hasMany(TimeClockEntry::class);
+    }
+
+    public function getRoleAttribute()
+    {
+        // Prefer stored role column when present
+        if (array_key_exists('role', $this->attributes) && !empty($this->attributes['role'])) {
+            return strtolower((string) $this->attributes['role']);
+        }
+        // Fallback: infer from position when role is not stored
+        $p = strtolower(trim($this->position ?? ''));
+        if ($p === 'admin' || $p === 'administrator') return 'admin';
+        if ($p === 'manager' || $p === 'general manager' || $p === 'assistant manager') return 'manager';
+        if ($p === 'inventory' || $p === 'inventory manager' || $p === 'inventory specialist') return 'inventory';
+        if ($p === 'budtender') return 'budtender';
+        if ($p === 'cashier' || $p === 'sales' || $p === 'sales associate') return 'cashier';
+        return 'cashier';
     }
 
     public function getTotalSalesAttribute()
@@ -105,6 +129,20 @@ class Employee extends Authenticatable
     public function canManageEmployees()
     {
         return $this->hasPermission('manage_employees') || $this->hasPermission('admin');
+    }
+
+    public function getStatusAttribute()
+    {
+        // Normalize status consumers to work with is_active boolean
+        if (array_key_exists('is_active', $this->attributes)) {
+            return ((bool) ($this->attributes['is_active'] ?? false)) ? 'active' : 'inactive';
+        }
+        return $this->attributes['status'] ?? 'active';
+    }
+
+    public function setRoleAttribute($value)
+    {
+        $this->attributes['role'] = strtolower(trim((string) $value));
     }
 
     public function getWeeklyHours($startDate = null, $endDate = null)

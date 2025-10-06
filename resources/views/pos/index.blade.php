@@ -10,7 +10,23 @@
         <div class="bg-white border-b border-gray-200 p-4">
             <div class="flex items-center justify-between mb-4">
                 <h1 class="text-2xl font-bold text-gray-900">Point of Sale</h1>
-                
+
+                <!-- Quick Actions -->
+                <div class="flex items-center gap-2">
+                    <button id="refresh-metrc" class="inline-flex items-center rounded-lg bg-cannabis-green px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/></svg>
+                        Refresh METRC
+                    </button>
+                    <a href="{{ route('rooms-drawers.index') }}" class="inline-flex items-center rounded-lg bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700">
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                        Create Room
+                    </a>
+                    <a href="{{ route('rooms-drawers.index') }}" class="inline-flex items-center rounded-lg bg-gray-700 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800">
+                        <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2M4 7h16M6 11h12M9 15h6M9 19h3"/></svg>
+                        Create Drawer
+                    </a>
+                </div>
+
                 <!-- Search and Filters -->
                 <div class="flex items-center gap-4">
                     <div class="relative">
@@ -49,16 +65,16 @@
                     <div class="flex items-center gap-2">
                         <span class="text-sm font-medium text-gray-600">View:</span>
                         <div class="flex border rounded-lg p-1">
-                            <button 
-                                id="view-cards" 
+                            <button
+                                id="view-cards"
                                 class="view-toggle px-3 py-1 rounded text-sm font-medium transition-colors bg-blue-500 text-white"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                                 </svg>
                             </button>
-                            <button 
-                                id="view-list" 
+                            <button
+                                id="view-list"
                                 class="view-toggle px-3 py-1 rounded text-sm font-medium transition-colors text-gray-600 hover:bg-gray-100"
                             >
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -66,6 +82,26 @@
                                 </svg>
                             </button>
                         </div>
+                    </div>
+
+                    <!-- POS Actions in Header -->
+                    <div class="ml-auto flex items-center gap-2">
+                        <button id="start-sale-top" class="inline-flex items-center rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-green-700">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                            New Sale
+                        </button>
+                        <button id="hold-sale-top" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium shadow-sm border text-yellow-800 border-yellow-300 hover:bg-yellow-50 {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v10M16 7v10M3 7h18"/></svg>
+                            Hold
+                        </button>
+                        <button id="end-sale-top" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium shadow-sm border text-gray-800 border-gray-300 hover:bg-gray-50">
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            End Sale
+                        </button>
+                        <button id="clear-cart-top" class="inline-flex items-center rounded-lg px-3 py-2 text-sm font-medium text-white shadow-sm bg-red-600 hover:bg-red-700 {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>
+                            <svg class="mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            Clear Cart
+                        </button>
                     </div>
                 </div>
             </div>
@@ -107,13 +143,17 @@
         <div class="p-4 border-b border-gray-200">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-semibold text-gray-900">Cart</h2>
-                <button 
-                    id="clear-cart" 
-                    class="text-red-600 hover:text-red-800 text-sm font-medium"
-                    {{ empty($cart) ? 'disabled' : '' }}
-                >
-                    Clear Cart
-                </button>
+                <div class="flex items-center gap-2">
+                    <button
+                        id="clear-cart"
+                        class="text-red-600 hover:text-red-800 text-sm font-medium"
+                        {{ empty($cart) ? 'disabled' : '' }}
+                    >
+                        Clear Cart
+                    </button>
+                    <button id="hold-sale" class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-3 py-2 rounded {{ empty($cart) ? 'opacity-50 cursor-not-allowed' : '' }}" {{ empty($cart) ? 'disabled' : '' }}>Hold</button>
+                    <button id="end-sale" class="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium px-3 py-2 rounded">End Sale</button>
+                </div>
             </div>
 
             <!-- Customer Info -->
@@ -226,6 +266,279 @@
 
 @push('scripts')
 <script src="{{ asset('js/pos.js') }}"></script>
+@endpush
+
+@push('scripts')
+<script>
+    // POS extra actions: Hold and End Sale
+    document.addEventListener('DOMContentLoaded', function(){
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      const holdBtn = document.getElementById('hold-sale');
+      const endBtn = document.getElementById('end-sale');
+      const holdTopBtn = document.getElementById('hold-sale-top');
+      const endTopBtn = document.getElementById('end-sale-top');
+      const clearTopBtn = document.getElementById('clear-cart-top');
+      const startTopBtn = document.getElementById('start-sale-top');
+
+      if (startTopBtn) startTopBtn.addEventListener('click', function(){
+        const modal = document.getElementById('new-sale-modal');
+        if (modal) { modal.classList.remove('hidden'); modal.classList.add('flex'); }
+        else { document.getElementById('start-sale-btn')?.click(); }
+      });
+
+      async function doHold() {
+        try {
+          const name = `Held Sale - ${new Date().toLocaleString()}`;
+          const res = await fetch('{{ route('pos.save-sale') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ name, notes: 'Held from POS' })
+          });
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to hold sale');
+          if (window.POS?.showToast) POS.showToast('Sale held and added to Saved Sales', 'success');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          window.location.reload();
+        } catch (e) {
+          alert(e.message || 'Failed to hold sale');
+        }
+      }
+
+      if (holdBtn) holdBtn.addEventListener('click', doHold);
+      if (holdTopBtn) holdTopBtn.addEventListener('click', doHold);
+
+      async function doEnd() {
+        try {
+          if (!confirm('End current sale? You will need to start a new sale to add items.')) return;
+          const res = await fetch('{{ route('pos.end-sale') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }});
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to end sale');
+          if (window.POS?.showToast) POS.showToast('Sale ended. Start a new sale to continue.', 'info');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          window.location.reload();
+        } catch (e) { alert(e.message || 'Failed to end sale'); }
+      }
+
+      if (endBtn) endBtn.addEventListener('click', doEnd);
+      if (endTopBtn) endTopBtn.addEventListener('click', doEnd);
+
+      if (clearTopBtn) clearTopBtn.addEventListener('click', async function(){
+        try {
+          const res = await fetch('{{ route('pos.clear-cart') }}', { method: 'DELETE', headers: { 'X-CSRF-TOKEN': csrf } });
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to clear cart');
+          window.location.reload();
+        } catch (e) { alert(e.message || 'Failed to clear cart'); }
+      });
+
+      if (holdBtn) holdBtn.addEventListener('click', async function(){
+        try {
+          const name = `Held Sale - ${new Date().toLocaleString()}`;
+          const res = await fetch('{{ route('pos.save-sale') }}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf },
+            body: JSON.stringify({ name, notes: 'Held from POS' })
+          });
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to hold sale');
+          if (window.POS?.showToast) POS.showToast('Sale held and added to Saved Sales', 'success');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          // Optionally navigate to Order Queue
+          // window.location.href = '{{ route('order-queue.index') }}';
+          window.location.reload();
+        } catch (e) {
+          alert(e.message || 'Failed to hold sale');
+        }
+      });
+      if (endBtn) endBtn.addEventListener('click', async function(){
+        try {
+          if (!confirm('End current sale? You will need to start a new sale to add items.')) return;
+          const res = await fetch('{{ route('pos.end-sale') }}', { method: 'POST', headers: { 'X-CSRF-TOKEN': csrf }});
+          const data = await res.json();
+          if (!res.ok || data.success === false) throw new Error(data.message || 'Failed to end sale');
+          if (window.POS?.showToast) POS.showToast('Sale ended. Start a new sale to continue.', 'info');
+          try { window.dispatchEvent(new Event('pos-cart-updated')); } catch(_) {}
+          window.location.reload();
+        } catch (e) {
+          alert(e.message || 'Failed to end sale');
+        }
+      });
+    });
+
+    document.addEventListener('click', function(e) {
+        const btn = e.target.closest('.delete-product');
+        if (!btn) return;
+        e.preventDefault();
+        const id = btn.getAttribute('data-product-id');
+        const name = btn.getAttribute('data-product-name') || 'this product';
+        if (!id) return;
+        if (!confirm(`Are you sure you want to delete ${name}? This cannot be undone.`)) return;
+        if (window.POS && typeof POS.showLoading === 'function') POS.showLoading();
+        (window.axios || axios).delete(`/api/products/${id}/delete`)
+            .then(function(res) {
+                if (res.data && res.data.success) {
+                    if (window.POS && typeof POS.showToast === 'function') POS.showToast('Product deleted successfully', 'success');
+                    const card = btn.closest('.product-card');
+                    if (card) card.remove();
+                    setTimeout(function(){ location.reload(); }, 300);
+                } else {
+                    const msg = (res.data && res.data.message) || 'Failed to delete product';
+                    if (window.POS && typeof POS.showToast === 'function') POS.showToast(msg, 'error');
+                }
+            })
+            .catch(function(err){
+                const msg = err?.response?.data?.message || 'Failed to delete product';
+                if (window.POS && typeof POS.showToast === 'function') POS.showToast(msg, 'error');
+            })
+            .finally(function(){
+                if (window.POS && typeof POS.hideLoading === 'function') POS.hideLoading();
+            });
+    });
+</script>
+@endpush
+
+@push('scripts')
+<script>
+  document.addEventListener('DOMContentLoaded', function(){
+    const btn = document.getElementById('refresh-metrc');
+    if (btn) {
+      btn.addEventListener('click', async function(){
+        try {
+          if (window.POS && typeof POS.showLoading === 'function') POS.showLoading();
+          const res = await (window.axios || axios).get('/api/metrc/transfers/incoming');
+          const transfers = Array.isArray(res?.data?.transfers) ? res.data.transfers : [];
+          const count = transfers.length || (res?.data?.count || 0);
+          if (!res || res.status < 200 || res.status >= 300) throw new Error('Refresh failed');
+          try {
+            if (transfers.length) {
+              await fetch('/node/metrc/transfers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ transfers })
+              });
+            }
+          } catch (_) {}
+          if (window.POS && typeof POS.showToast === 'function') POS.showToast(`Incoming transfers refreshed${count ? ` (${count})` : ''}`, 'success');
+        } catch (e) {
+          if (window.POS && typeof POS.showToast === 'function') POS.showToast('Failed to refresh METRC data', 'error');
+        } finally {
+          if (window.POS && typeof POS.hideLoading === 'function') POS.hideLoading();
+        }
+      });
+    }
+
+    // Enforce scanner-only mode (block card click) when enabled for current role
+    (async function(){
+      try {
+        let settings = {};
+        try {
+          if (window.SettingsClient && typeof SettingsClient.get === 'function') {
+            const r = await SettingsClient.get(true);
+            settings = (r && r.settings) || r || {};
+          } else {
+            const sid = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.id||'default'); } }catch(_){ } try{ const m=document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/); if(m) return decodeURIComponent(m[1]); }catch(_){ } return 'default'; })();
+            const sname = (function(){ try{ const raw=localStorage.getItem('pos_store'); if(raw){ const o=JSON.parse(raw)||{}; return String(o.name||''); } }catch(_){ } return ''; })();
+            const rsp = await (window.axios||axios).get('/api/settings/pos', { headers: { Accept: 'application/json', 'X-Store-ID': sid, ...(sname?{ 'X-Store-Name': sname }: {}) }, params: { nocache: true } });
+            settings = rsp?.data?.settings || {};
+          }
+        } catch(_) { settings = {}; }
+        let role = '';
+        try { role = (window.posAuth?.getUser()?.role || '').toLowerCase(); } catch(e) { role = ''; }
+        const rolePerms = (settings.role_permissions && settings.role_permissions[role]) || [];
+        const scannerOnly = Array.isArray(rolePerms) && rolePerms.includes('pos:scanner_only');
+        if (!scannerOnly) return;
+        document.addEventListener('click', function(e){
+          const card = e.target.closest('.product-card');
+          if (!card) return;
+          const onAddButton = !!e.target.closest('.add-to-cart');
+          if (onAddButton) return;
+          e.preventDefault();
+          e.stopPropagation();
+          if (window.POS?.showToast) POS.showToast('Scanner required: use a barcode scanner or the Add button.', 'info');
+        }, true);
+      } catch (_) {}
+    })();
+  });
+</script>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function(){
+  const container = document.getElementById('cart-items');
+  const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  if (!container) return;
+
+  function roundStep(val, step) {
+    const s = Number(step || 1);
+    if (!isFinite(s) || s <= 0) return val;
+    const decimals = (s.toString().split('.')[1] || '').length;
+    return Number((Math.round(val / s) * s).toFixed(decimals));
+  }
+
+  function normalize(val, isFlower, min, max, step){
+    let v = Number(val || 0);
+    if (!isFinite(v)) v = isFlower ? 0.01 : 1;
+    v = roundStep(v, step);
+    if (isFlower) v = Number(v.toFixed(2));
+    if (min != null && isFinite(min)) v = Math.max(v, Number(min));
+    if (max != null && isFinite(max)) v = Math.min(v, Number(max));
+    return v;
+  }
+
+  async function patchQuantity(id, qty){
+    try{
+      const res = await fetch(`/pos/cart/${encodeURIComponent(id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrf, 'Accept':'application/json' },
+        body: JSON.stringify({ product_id: String(id), quantity: Number(qty) })
+      });
+      const data = await res.json().catch(()=>({}));
+      if (!res.ok || data.success === false) throw new Error(data.message || 'Update failed');
+      if (window.POS && typeof POS.showToast === 'function') POS.showToast('Quantity updated', 'success');
+      setTimeout(()=> window.location.reload(), 100);
+    } catch(e){
+      if (window.POS && typeof POS.showToast === 'function') POS.showToast(e.message || 'Update failed', 'error');
+    }
+  }
+
+  container.addEventListener('click', function(e){
+    const dec = e.target.closest('.decrease-quantity');
+    const inc = e.target.closest('.increase-quantity');
+    if (!dec && !inc) return;
+    const btn = dec || inc;
+    const id = btn.getAttribute('data-item-id');
+    if (!id) return;
+    const selector = `.quantity-input[data-item-id="${id}"]`;
+    const input = container.querySelector(selector);
+    if (!input) return;
+    const isFlower = input.getAttribute('data-is-flower') === '1' || (parseFloat(input.step) < 1);
+    const step = parseFloat(input.step || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const min = parseFloat(input.min || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const max = parseFloat(input.max || '999') || 999;
+    const current = parseFloat(input.value || (isFlower ? '0.01' : '1')) || (isFlower ? 0.01 : 1);
+    const delta = isFlower ? 1.0 : step;
+    const next = normalize(current + (inc ? delta : -delta), isFlower, min, max, step);
+    input.value = isFlower ? next.toFixed(2) : String(Math.round(next));
+    patchQuantity(id, next);
+  });
+
+  container.addEventListener('change', function(e){
+    const input = e.target.closest('.quantity-input');
+    if (!input) return;
+    const id = input.getAttribute('data-item-id');
+    if (!id) return;
+    const isFlower = input.getAttribute('data-is-flower') === '1' || (parseFloat(input.step) < 1);
+    const step = parseFloat(input.step || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const min = parseFloat(input.min || (isFlower ? 0.01 : 1)) || (isFlower ? 0.01 : 1);
+    const max = parseFloat(input.max || '999') || 999;
+    const val = parseFloat(input.value);
+    const next = normalize(val, isFlower, min, max, step);
+    input.value = isFlower ? next.toFixed(2) : String(Math.round(next));
+    patchQuantity(id, next);
+  });
+});
+</script>
 @endpush
 
 @push('styles')

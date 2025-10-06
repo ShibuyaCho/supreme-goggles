@@ -7,10 +7,10 @@
     <div class="mb-4">
         <x-ui.label for="customer-search">Search Customers</x-ui.label>
         <div class="relative mt-1">
-            <x-ui.input 
-                id="customer-search" 
-                type="text" 
-                placeholder="Search by name, email, or phone..."
+            <x-ui.input
+                id="customer-search"
+                type="text"
+                placeholder="Search by name, phone, medical card, or email..."
                 class="pl-10"
             />
             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -38,6 +38,13 @@
     </div>
 
     <!-- Customer List -->
+    <div class="flex items-center justify-between mb-3">
+        <label class="flex items-center gap-2 text-sm">
+            <input id="retain-consent" type="checkbox" class="h-4 w-4 text-cannabis-green rounded">
+            <span>Consent to retain customer data (loyalty/medical)</span>
+        </label>
+        <button id="retain-save" type="button" class="px-3 py-1.5 bg-cannabis-green text-white rounded disabled:opacity-50" disabled>Save to Supabase</button>
+    </div>
     <div class="border rounded-lg max-h-96 overflow-y-auto">
         <div id="customer-list" class="divide-y divide-gray-200">
             <!-- Customer items will be populated here -->
@@ -88,15 +95,39 @@ document.addEventListener('DOMContentLoaded', function() {
         searchInput.addEventListener('input', function() {
             clearTimeout(searchTimeout);
             const query = this.value.trim();
-            
+
             if (query.length < 2) {
                 customerList.innerHTML = '<div class="p-4 text-center text-gray-500">Enter at least 2 characters to search</div>';
                 return;
             }
-            
+
             searchTimeout = setTimeout(() => {
                 searchCustomers(query);
             }, 300);
+        });
+    }
+
+    const consent = document.getElementById('retain-consent');
+    const saveBtn = document.getElementById('retain-save');
+    if (consent && saveBtn) {
+        consent.addEventListener('change', () => { saveBtn.disabled = !consent.checked; });
+        saveBtn.addEventListener('click', async () => {
+            try {
+                const active = document.querySelector('.customer-item[data-selected="true"]');
+                if (!active) { alert('Select a customer from results first'); return; }
+                const data = JSON.parse(active.dataset.payload || '{}');
+                const payload = {
+                    name: data.name,
+                    email: data.email || null,
+                    phone: data.phone || null,
+                    customer_type: (data.type || 'recreational'),
+                    medical_card_number: data.medical_card || null,
+                    data_retention_consent: true,
+                };
+                const r = await fetch('/api/customers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                if (r.ok) { saveBtn.disabled = true; alert('Customer saved'); }
+                else { const e = await r.json().catch(()=>({})); alert('Failed to save: ' + (e.error||e.message||r.status)); }
+            } catch (e) { console.error(e); alert('Failed to save'); }
         });
     }
 });
@@ -116,8 +147,9 @@ async function searchCustomers(query) {
         }
         
         const customerHTML = customers.map(customer => `
-            <div class="customer-item p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0" 
-                 onclick="selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
+            <div class="customer-item p-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0"
+                 data-payload='${JSON.stringify(customer).replace(/'/g, '&apos;')}'
+                 onclick="Array.from(document.querySelectorAll('.customer-item')).forEach(el=>el.removeAttribute('data-selected')); this.setAttribute('data-selected','true'); selectCustomer(${JSON.stringify(customer).replace(/"/g, '&quot;')})">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
@@ -128,6 +160,7 @@ async function searchCustomers(query) {
                         <div class="ml-3">
                             <p class="text-sm font-medium text-gray-900">${customer.name}</p>
                             <p class="text-sm text-gray-500">${customer.email || customer.phone || ''}</p>
+                            ${customer.medical_card ? `<p class='text-xs text-gray-500'>Card: ${customer.medical_card}</p>`: ''}
                         </div>
                     </div>
                     <div class="text-right">

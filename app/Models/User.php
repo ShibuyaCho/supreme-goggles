@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -125,9 +125,18 @@ class User extends Authenticatable
     /**
      * Generate API token for user
      */
-    public function generateApiToken(string $name = 'API Token', array $abilities = ['*'])
+    public function generateApiToken(string $name = 'API Token', array $abilities = ['*'], ?\Carbon\CarbonInterface $expiresAt = null)
     {
-        return $this->createToken($name, $abilities);
+        $new = $this->createToken($name, $abilities);
+        try {
+            $ttlDays = (int) (config('auth.token_ttl_days', 30));
+            $expiry = $expiresAt ?: now()->addDays(max(1, $ttlDays));
+            $tokenModel = $new->accessToken; // \Laravel\Sanctum\PersonalAccessToken
+            if ($tokenModel && !$tokenModel->expires_at) {
+                $tokenModel->forceFill(['expires_at' => $expiry])->save();
+            }
+        } catch (\Throwable $e) {}
+        return $new;
     }
 
     /**

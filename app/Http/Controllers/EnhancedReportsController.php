@@ -71,6 +71,13 @@ class EnhancedReportsController extends Controller
                 ])
             ];
 
+            \Log::info('Report export', [
+                'user_id' => optional($request->user())->id,
+                'report_type' => $reportType,
+                'format' => $format,
+                'total_records' => count($data),
+                'filters' => array_keys($filters)
+            ]);
             return $this->exportService->export($reportType, $data, $format, $options);
             
         } catch (\Exception $e) {

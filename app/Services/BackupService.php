@@ -320,6 +320,11 @@ class BackupService
             foreach ($files as $file) {
                 $filePath = $file->getRealPath();
                 $relativePath = substr($filePath, strlen($backupDir) + 1);
+                $base = basename($filePath);
+                // Never include .env or other sensitive root files
+                if ($base === '.env' || str_ends_with($base, '.env') || preg_match('/(^|\/)\.env(\.|$)/', $relativePath)) {
+                    continue;
+                }
                 $zip->addFile($filePath, $relativePath);
             }
 

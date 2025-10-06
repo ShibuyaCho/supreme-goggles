@@ -45,14 +45,93 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         
         if (!Auth::attempt($credentials)) {
+
+            // Fallback: allow employees to login with email + PIN (4 digits) or employee password if present
+            $employee = Employee::where('email', $request->email)->first();
+            if ($employee && $employee->isActive()) {
+                $pwd = (string) $request->password;
+                $isPin = strlen($pwd) === 4 && ctype_digit($pwd);
+                $pinOk = $isPin && $employee->pin && Hash::check($pwd, $employee->pin);
+                $pwOk = !$isPin && isset($employee->password) && $employee->password && Hash::check($pwd, $employee->password);
+                if ($pinOk || $pwOk) {
+                    // Ensure a corresponding user exists
+                    $user = User::where('employee_id', $employee->id)->first();
+                    if (!$user) {
+                        $user = User::create([
+                            'name' => $employee->full_name,
+                            'email' => $employee->email,
+                            'employee_id' => $employee->id,
+                            'role' => $employee->role,
+                            'permissions' => $employee->permissions,
+                            'is_active' => $employee->isActive(),
+                            'password' => Hash::make(Str::random(32)),
+                        ]);
+                    }
+                    // Update last login
+                    $employee->update(['last_login' => now()]);
+                    $user->updateLastLogin();
+                    // Issue token and return (mirror success payload below)
+                    $abilities = $this->getTokenAbilities($user);
+                    $token = $user->generateApiToken('POS Session', $abilities);
+                    return response()->json([
+                        'message' => 'Login successful',
+                        'user' => [
+                            'id' => $user->id,
+                            'name' => $user->name,
+                            'email' => $user->email,
+                            'role' => $user->role,
+                            'permissions' => $user->permissions,
+                            'employee' => [
+                                'id' => $employee->id,
+                                'employee_id' => $employee->employee_id,
+                                'first_name' => $employee->first_name,
+                                'last_name' => $employee->last_name,
+                                'role' => $employee->role,
+                            ]
+                        ],
+                        'token' => $token->plainTextToken,
+                        'expires_at' => $token->accessToken->expires_at,
+                    ]);
+                }
+            }
+
             RateLimiter::hit($key, 300); // 5 minute lockout
-            
             return response()->json([
                 'error' => 'Invalid credentials'
             ], 401);
         }
 
         $user = Auth::user();
+
+
+        // Resolve role/permission conflicts by promoting to the highest role
+        if ($user && $user->employee) {
+            $emp = $user->employee;
+            $rank = ['cashier' => 1, 'budtender' => 2, 'inventory' => 3, 'manager' => 4, 'admin' => 5];
+            $uRole = strtolower((string)$user->role);
+            $eRole = strtolower((string)$emp->role);
+            $desiredRole = ($rank[$uRole] ?? 0) >= ($rank[$eRole] ?? 0) ? $uRole : $eRole;
+            if (!in_array($desiredRole, array_keys($rank), true)) {
+                $desiredRole = $uRole ?: ($eRole ?: 'cashier');
+            }
+            $unionPerms = [];
+            $uPerms = is_array($user->permissions) ? $user->permissions : [];
+            $ePerms = is_array($emp->permissions) ? $emp->permissions : [];
+            $hasAll = ($desiredRole === 'admin') || in_array('*', $uPerms, true) || in_array('*', $ePerms, true);
+            if ($hasAll) {
+                $unionPerms = ['*'];
+            } else {
+                $unionPerms = array_values(array_unique(array_merge($uPerms, $ePerms)));
+            }
+            $uUpdates = [];
+            $eUpdates = [];
+            if ($user->role !== $desiredRole) $uUpdates['role'] = $desiredRole;
+            if ($emp->role !== $desiredRole) $eUpdates['role'] = $desiredRole;
+            if ($user->permissions !== $unionPerms) $uUpdates['permissions'] = $unionPerms;
+            if ($emp->permissions !== $unionPerms) $eUpdates['permissions'] = $unionPerms;
+            if (!empty($uUpdates)) $user->update($uUpdates);
+            if (!empty($eUpdates)) $emp->update($eUpdates);
+        }
 
         if (!$user->is_active) {
             Auth::logout();
@@ -109,19 +188,18 @@ class AuthController extends Controller
             ], 422);
         }
 
-        $employee = Employee::where('employee_id', $request->employee_id)
-            ->where('is_active', true)
-            ->first();
+        $employee = Employee::where('employee_id', $request->employee_id)->first();
 
-        if (!$employee || !Hash::check($request->pin, $employee->pin)) {
+        if (!$employee || !$employee->isActive() || !Hash::check($request->pin, (string)$employee->pin)) {
             return response()->json([
                 'error' => 'Invalid employee ID or PIN'
             ], 401);
         }
 
+
         // Find or create user for this employee
         $user = User::where('employee_id', $employee->id)->first();
-        
+
         if (!$user) {
             $user = User::create([
                 'name' => $employee->full_name,
@@ -132,6 +210,13 @@ class AuthController extends Controller
                 'is_active' => $employee->is_active,
                 'password' => Hash::make(Str::random(32)), // Random password since PIN is used
             ]);
+        } else {
+            // Keep user role/permissions in sync with employee (and owner override)
+            $updates = [];
+            if ($employee->role && $user->role !== $employee->role) $updates['role'] = $employee->role;
+            if (is_array($employee->permissions) && $employee->permissions !== $user->permissions) $updates['permissions'] = $employee->permissions;
+            if ($user->is_active !== $employee->is_active) $updates['is_active'] = $employee->is_active;
+            if (!empty($updates)) $user->update($updates);
         }
 
         // Update last login
@@ -140,7 +225,7 @@ class AuthController extends Controller
 
         // Generate limited token for POS operations
         $abilities = ['pos:*', 'products:read', 'customers:read', 'sales:create'];
-        $token = $user->generateApiToken('POS Terminal', $abilities);
+        $token = $user->generateApiToken('POS Terminal', $abilities, now()->addHours(8));
 
         return response()->json([
             'message' => 'PIN login successful',
@@ -154,6 +239,60 @@ class AuthController extends Controller
             'token' => $token->plainTextToken,
             'expires_at' => now()->addHours(8), // 8-hour POS session
         ]);
+    }
+
+    /**
+     * Verify a 4-digit PIN for the current user or a specified employee.
+     */
+    public function verifyPin(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'pin' => 'required|digits:4',
+            'employee_id' => 'nullable|string'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Resolve employee: explicit employee_id or linked to current user
+        $employee = null;
+        if ($request->filled('employee_id')) {
+            $employee = Employee::where('employee_id', $request->employee_id)->first();
+        }
+        if (!$employee && $user->employee) {
+            $employee = $user->employee;
+        }
+        if (!$employee) {
+            return response()->json(['error' => 'Employee not found'], 404);
+        }
+
+        if (!$employee->isActive()) {
+            return response()->json(['error' => 'Employee inactive'], 403);
+        }
+
+        // Admin/manager bypass allowed if caller has role
+        if (method_exists($user, 'isAdmin') && $user->isAdmin()) {
+            return response()->json(['success' => true]);
+        }
+        if (method_exists($user, 'isManager') && $user->isManager()) {
+            return response()->json(['success' => true]);
+        }
+
+        $ok = $employee->pin && Hash::check($request->pin, (string)$employee->pin);
+        if (!$ok) {
+            return response()->json(['error' => 'Invalid PIN'], 401);
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -206,12 +345,121 @@ class AuthController extends Controller
     }
 
     /**
+     * Self-register a new cashier user with PIN (public endpoint)
+     */
+    public function selfRegister(Request $request)
+    {
+        // Optionally disable public self-register for tighter authorization
+        if (!config('auth.allow_self_register', false)) {
+            return response()->json(['error' => 'Self-registration is disabled'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email|unique:employees,email',
+            'password' => 'required|string|min:8|confirmed',
+            'pin' => 'required|digits:4'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Generate a sequential employee identifier like Emp01, Emp02, ...
+        $generatedId = \App\Helpers\EmployeeIdHelper::generateNextId();
+
+        // Split name into first and last
+        $parts = preg_split('/\s+/', trim($request->name), 2);
+        $firstName = $parts[0] ?? '';
+        $lastName = $parts[1] ?? '';
+
+        // Create employee record
+        $employee = Employee::create([
+            'employee_id' => $generatedId,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $request->email,
+            'phone' => $request->get('phone', ''),
+            'pin' => Hash::make($request->pin),
+            'password' => Hash::make($request->password),
+            'department' => 'Sales',
+            'position' => 'Cashier',
+            'hire_date' => now(),
+            'hourly_rate' => 0,
+            'status' => 'active',
+            'permissions' => ['pos:*', 'products:read', 'customers:read', 'sales:create'],
+        ]);
+
+        // Create user linked to employee
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'employee_id' => $employee->id,
+            'role' => 'cashier',
+            'permissions' => ['pos:*', 'products:read', 'customers:read', 'sales:create'],
+            'is_active' => true,
+        ]);
+
+        // Generate token using role-based abilities
+        $abilities = $this->getTokenAbilities($user);
+        $token = $user->generateApiToken('POS Self-Register', $abilities);
+
+        return response()->json([
+            'message' => 'Account created successfully',
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+                'permissions' => $user->permissions,
+                'employee' => [
+                    'id' => $employee->id,
+                    'employee_id' => $employee->employee_id,
+                    'first_name' => $employee->first_name,
+                    'last_name' => $employee->last_name,
+                ]
+            ],
+            'token' => $token->plainTextToken,
+            'expires_at' => $token->accessToken->expires_at,
+        ], 201);
+    }
+
+    /**
      * Get current authenticated user
      */
     public function me(Request $request)
     {
         $user = $request->user();
-        
+
+
+        // Promote both User and Employee to the highest role on fetch as well
+        if ($user && $user->employee) {
+            $emp = $user->employee;
+            $rank = ['cashier' => 1, 'budtender' => 2, 'inventory' => 3, 'manager' => 4, 'admin' => 5];
+            $uRole = strtolower((string)$user->role);
+            $eRole = strtolower((string)$emp->role);
+            $desiredRole = ($rank[$uRole] ?? 0) >= ($rank[$eRole] ?? 0) ? $uRole : $eRole;
+            if (!in_array($desiredRole, array_keys($rank), true)) {
+                $desiredRole = $uRole ?: ($eRole ?: 'cashier');
+            }
+            $uPerms = is_array($user->permissions) ? $user->permissions : [];
+            $ePerms = is_array($emp->permissions) ? $emp->permissions : [];
+            $hasAll = ($desiredRole === 'admin') || in_array('*', $uPerms, true) || in_array('*', $ePerms, true);
+            $unionPerms = $hasAll ? ['*'] : array_values(array_unique(array_merge($uPerms, $ePerms)));
+            $uUpdates = [];
+            $eUpdates = [];
+            if ($user->role !== $desiredRole) $uUpdates['role'] = $desiredRole;
+            if ($emp->role !== $desiredRole) $eUpdates['role'] = $desiredRole;
+            if ($user->permissions !== $unionPerms) $uUpdates['permissions'] = $unionPerms;
+            if ($emp->permissions !== $unionPerms) $eUpdates['permissions'] = $unionPerms;
+            if (!empty($uUpdates)) $user->update($uUpdates);
+            if (!empty($eUpdates)) $emp->update($eUpdates);
+        }
+
         return response()->json([
             'user' => [
                 'id' => $user->id,

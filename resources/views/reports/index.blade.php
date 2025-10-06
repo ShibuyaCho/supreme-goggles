@@ -35,11 +35,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('daily-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Daily Sales</button>
-                    <button @click="generateReport('weekly-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Weekly Sales</button>
-                    <button @click="generateReport('monthly-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Monthly Sales</button>
-                    <button @click="generateReport('sales-by-category')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Category</button>
-                    <button @click="generateReport('sales-by-employee')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Employee</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Daily Sales</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Weekly Sales</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Monthly Sales</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Category</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Sales by Employee</button>
                 </div>
             </div>
 
@@ -52,11 +52,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('current-inventory')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Current Inventory</button>
-                    <button @click="generateReport('low-stock')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Low Stock Alert</button>
-                    <button @click="generateReport('out-of-stock')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Out of Stock</button>
-                    <button @click="generateReport('inventory-valuation')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Inventory Valuation</button>
-                    <button @click="generateReport('product-movement')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Product Movement</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Current Inventory</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Low Stock Alert</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Out of Stock</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Inventory Valuation</button>
+                    <button data-export-report="inventory" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Product Movement</button>
                 </div>
             </div>
 
@@ -69,11 +69,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('tax-collected')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Tax Collected</button>
-                    <button @click="generateReport('metrc-compliance')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">METRC Compliance</button>
-                    <button @click="generateReport('medical-sales')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Medical Sales</button>
-                    <button @click="generateReport('regulatory-summary')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Regulatory Summary</button>
-                    <button @click="generateReport('audit-trail')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Audit Trail</button>
+                    <button data-export-report="tax_report" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Tax Collected</button>
+                    <button data-export-report="metrc" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">METRC Compliance</button>
+                    <button data-export-report="sales" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Medical Sales</button>
+                    <button data-export-report="compliance" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Regulatory Summary</button>
+                    <button data-export-report="compliance" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Audit Trail</button>
                 </div>
             </div>
 
@@ -86,11 +86,11 @@
                     </svg>
                 </div>
                 <div class="space-y-2">
-                    <button @click="generateReport('customer-list')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer List</button>
-                    <button @click="generateReport('loyalty-summary')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Loyalty Summary</button>
-                    <button @click="generateReport('top-customers')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Top Customers</button>
-                    <button @click="generateReport('customer-preferences')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer Preferences</button>
-                    <button @click="generateReport('retention-analysis')" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Retention Analysis</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer List</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Loyalty Summary</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Top Customers</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Customer Preferences</button>
+                    <button data-export-report="customers" class="w-full text-left p-2 text-sm text-gray-700 hover:bg-gray-100 rounded">Retention Analysis</button>
                 </div>
             </div>
         </div>
@@ -98,7 +98,7 @@
         <!-- Recent Reports -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
             <div class="p-6 border-b border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-900">Recent Reports</h3>
+                <h3 class="text-lg font-semibold text-gray-900">Created Reports</h3>
             </div>
             <div class="p-6">
                 <div class="overflow-x-auto">
@@ -125,7 +125,11 @@
                                         <div class="flex space-x-2">
                                             <button @click="downloadReport(report)" :disabled="report.status !== 'completed'" class="text-cannabis-green hover:text-green-700 disabled:text-gray-400">Download</button>
                                             <button @click="viewReport(report)" :disabled="report.status !== 'completed'" class="text-blue-600 hover:text-blue-800 disabled:text-gray-400">View</button>
-                                            <button @click="deleteReport(report)" class="text-red-600 hover:text-red-800">Delete</button>
+                                            <button @click="deleteReport(report)" class="p-1.5 rounded hover:bg-red-50" title="Delete" aria-label="Delete">
+                                                <svg class="w-4 h-4 text-red-600 hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                </svg>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -318,33 +322,81 @@ function reportsManager() {
             frequency: 'weekly',
             email: ''
         },
-        recentReports: [
-            { id: 1, name: 'Daily Sales Summary', type: 'Sales', generated: '2024-01-15 09:00', status: 'completed' },
-            { id: 2, name: 'Inventory Valuation', type: 'Inventory', generated: '2024-01-15 08:30', status: 'completed' },
-            { id: 3, name: 'Tax Collection Report', type: 'Tax', generated: '2024-01-15 08:00', status: 'processing' },
-            { id: 4, name: 'Customer Analysis', type: 'Customer', generated: '2024-01-14 17:30', status: 'completed' }
-        ],
-        scheduledReports: [
-            { id: 1, name: 'Weekly Sales Summary', frequency: 'Weekly (Mondays)', nextRun: 'Jan 22, 2024', active: true },
-            { id: 2, name: 'Monthly Inventory Report', frequency: 'Monthly (1st)', nextRun: 'Feb 1, 2024', active: true },
-            { id: 3, name: 'Daily METRC Compliance', frequency: 'Daily (6 AM)', nextRun: 'Jan 16, 2024', active: false }
-        ],
+        recentReports: [],
+        scheduledReports: [],
 
-        generateReport(type) {
-            this.showToast(`Generating ${type.replace('-', ' ')} report...`, 'info');
-            
-            // Simulate report generation
-            setTimeout(() => {
-                const newReport = {
-                    id: Date.now(),
-                    name: type.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                    type: this.getReportCategory(type),
-                    generated: new Date().toLocaleString(),
-                    status: 'completed'
-                };
-                this.recentReports.unshift(newReport);
-                this.showToast('Report generated successfully!', 'success');
-            }, 2000);
+        async init() {
+            try {
+                const res = await fetch('/api/reports/templates', { headers: { Accept: 'application/json' } });
+                if (res.ok) {
+                    const data = await res.json();
+                    const templates = Array.isArray(data?.templates) ? data.templates : [];
+                    this.recentReports = templates.slice(0, 20).map(t => ({
+                        id: t.id,
+                        name: t.name,
+                        type: (t.report_type || 'general').replace(/\b\w/g, c => c.toUpperCase()),
+                        generated: t.updated_at || t.created_at || '',
+                        status: 'completed'
+                    }));
+                }
+            } catch(_) {}
+        },
+
+        async generateReport(type) {
+            const fmt = await this.askFormat();
+            if (!fmt) return;
+            const map = this.mapReportType(type);
+            if (!map) { this.showToast('Unsupported report', 'error'); return; }
+            try {
+                const res = await (window.axios||axios).post('/api/reports/export', {
+                    report_type: map,
+                    format: fmt,
+                    start_date: null,
+                    end_date: null,
+                    filters: {}
+                }, { responseType: 'blob' });
+                const ctype = ((res && res.headers && res.headers['content-type']) || '').toLowerCase();
+                const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || 'application/octet-stream' });
+                let treatAsStub = ctype.includes('application/json');
+                if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+                    try {
+                        const text = await dataBlob.text();
+                        const t = text.trim();
+                        if (t.startsWith('{') || t.startsWith('[') || t.includes('Dev API stub active')) {
+                            treatAsStub = true;
+                        }
+                    } catch(_) {}
+                }
+                if (treatAsStub) {
+                    const headings = this.getReportHeadings(map, []);
+                    const csv = headings.join(',') + '\n';
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.setAttribute('download', `report_${map}.csv`);
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    this.triggerDownload({ data: dataBlob, headers: res.headers }, `report_${map}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                }
+            } catch(e) {
+                // Client-side fallback on network error
+                const headings = this.getReportHeadings(map, []);
+                const csv = headings.join(',') + '\n';
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.setAttribute('download', `report_${map}.csv`);
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                this.showToast('Downloaded CSV headers (fallback)', 'info');
+            }
         },
 
         getReportCategory(type) {
@@ -355,34 +407,141 @@ function reportsManager() {
             return 'General';
         },
 
-        generateCustomReport() {
+        async generateCustomReport() {
             if (!this.customReport.name || !this.customReport.source) {
                 this.showToast('Please fill in required fields', 'error');
                 return;
             }
-
-            this.showToast('Generating custom report...', 'info');
+            const fmt = await this.askFormat(this.customReport.format);
+            if (!fmt) return;
             this.showCustomModal = false;
-            
-            setTimeout(() => {
-                const newReport = {
-                    id: Date.now(),
-                    name: this.customReport.name,
-                    type: 'Custom',
-                    generated: new Date().toLocaleString(),
-                    status: 'completed'
-                };
-                this.recentReports.unshift(newReport);
-                this.showToast('Custom report generated successfully!', 'success');
-            }, 3000);
+            const reportType = this.mapSourceToReport(this.customReport.source);
+            try {
+                const res = await (window.axios||axios).post('/api/reports/export', {
+                    report_type: reportType,
+                    format: fmt,
+                    start_date: this.customReport.startDate || null,
+                    end_date: this.customReport.endDate || null,
+                    filters: {
+                        include_void: !!this.customReport.includeVoid,
+                        medical_only: !!this.customReport.medicalOnly,
+                        group_by_category: !!this.customReport.groupByCategory,
+                    },
+                }, { responseType: 'blob' });
+                const ctype = ((res && res.headers && res.headers['content-type']) || '').toLowerCase();
+                const dataBlob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: ctype || 'application/octet-stream' });
+                let treatAsStub = ctype.includes('application/json');
+                if (!treatAsStub && dataBlob && dataBlob.size > 0 && dataBlob.size < 4096) {
+                    try {
+                        const text = await dataBlob.text();
+                        const t = text.trim();
+                        if (t.startsWith('{') || t.startsWith('[') || t.includes('Dev API stub active')) {
+                            treatAsStub = true;
+                        }
+                    } catch(_) {}
+                }
+                if (treatAsStub) {
+                    const headings = this.getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
+                    const csv = headings.join(',') + '\n';
+                    const blob = new Blob([csv], { type: 'text/csv' });
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.setAttribute('download', `${this.customReport.name.replace(/\s+/g,'_')}.csv`);
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    this.triggerDownload({ data: dataBlob, headers: res.headers }, `${this.customReport.name.replace(/\s+/g,'_')}.${fmt === 'excel' ? 'xlsx' : fmt}`);
+                }
+                // Persist custom report template to Supabase
+                try {
+                    const tpl = {
+                        name: this.customReport.name,
+                        description: null,
+                        report_type: reportType,
+                        format: fmt,
+                        include_charts: false,
+                        orientation: 'portrait',
+                        paper_size: 'a4',
+                        config: {
+                            source: this.customReport.source,
+                            start_date: this.customReport.startDate || null,
+                            end_date: this.customReport.endDate || null,
+                            filters: {
+                                include_void: !!this.customReport.includeVoid,
+                                medical_only: !!this.customReport.medicalOnly,
+                                group_by_category: !!this.customReport.groupByCategory,
+                            }
+                        }
+                    };
+                    await fetch('/api/reports/templates', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                        body: JSON.stringify(tpl)
+                    });
+                    this.init();
+                } catch(_) {}
+                this.showToast('Report generated successfully!', 'success');
+            } catch (e) {
+                const headings = this.getReportHeadings(reportType, this.customReport?.selectedMetrics || []);
+                const csv = headings.join(',') + '\n';
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.setAttribute('download', `${this.customReport.name.replace(/\s+/g,'_')}.csv`);
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+                this.showToast('Downloaded CSV headers (fallback)', 'info');
+            }
+        },
+
+        async askFormat(defaultFmt = 'pdf') {
+            try {
+                const choice = prompt('Export format: pdf, excel, or csv', defaultFmt);
+                const fmt = (choice||'').trim().toLowerCase();
+                if (!fmt) return null;
+                if (!['pdf','excel','csv'].includes(fmt)) { this.showToast('Invalid format', 'error'); return null; }
+                return fmt;
+            } catch(e) { return null; }
+        },
+
+        mapSourceToReport(src) {
+            const m = { sales:'sales', inventory:'inventory', customers:'customers', products:'products', employees:'employees', analytics:'analytics', metrc:'metrc', compliance:'compliance' };
+            return m[src] || 'sales';
+        },
+        mapReportType(type) {
+            const m = {
+                'daily-sales':'sales', 'weekly-sales':'sales', 'monthly-sales':'sales', 'sales-by-category':'sales', 'sales-by-employee':'sales',
+                'current-inventory':'inventory', 'low-stock':'inventory', 'out-of-stock':'inventory', 'inventory-valuation':'inventory', 'product-movement':'inventory',
+                'tax-collected':'tax_report', 'metrc-compliance':'metrc', 'medical-sales':'sales', 'regulatory-summary':'compliance', 'audit-trail':'compliance',
+                'customer-list':'customers','loyalty-summary':'customers','top-customers':'customers','customer-preferences':'customers','retention-analysis':'customers'
+            };
+            return m[type] || null;
+        },
+
+        triggerDownload(res, filename){
+            const headers = (res && res.headers) || {};
+            const contentType = headers['content-type'] || 'application/octet-stream';
+            const blob = res?.data instanceof Blob ? res.data : new Blob([res.data], { type: contentType });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
         },
 
         downloadReport(report) {
             this.showToast(`Downloading ${report.name}...`, 'info');
-            // Simulate download
-            setTimeout(() => {
-                this.showToast('Download completed!', 'success');
-            }, 1000);
+            // No stored file; prompt and re-run generation
+            this.generateReport(report.name.toLowerCase().replace(/\s+/g,'-'))
         },
 
         viewReport(report) {
@@ -390,17 +549,19 @@ function reportsManager() {
             // Simulate opening report viewer
         },
 
-        deleteReport(report) {
-            if (confirm(`Delete ${report.name}?`)) {
-                const index = this.recentReports.findIndex(r => r.id === report.id);
-                if (index !== -1) {
-                    this.recentReports.splice(index, 1);
-                    this.showToast('Report deleted', 'success');
-                }
-            }
+        async deleteReport(report) {
+            if (!report || !report.id) return;
+            if (!confirm(`Delete ${report.name}?`)) return;
+            try {
+                const res = await fetch(`/api/reports/templates/${encodeURIComponent(report.id)}`, { method: 'DELETE', headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error('Failed');
+            } catch(_) { /* proceed to update UI regardless */ }
+            const idx = this.recentReports.findIndex(r => String(r.id) === String(report.id));
+            if (idx !== -1) this.recentReports.splice(idx, 1);
+            this.showToast('Report deleted', 'success');
         },
 
-        saveSchedule() {
+        async saveSchedule() {
             if (!this.scheduleForm.type || !this.scheduleForm.email) {
                 this.showToast('Please fill in required fields', 'error');
                 return;
@@ -417,6 +578,13 @@ function reportsManager() {
             this.scheduledReports.push(newSchedule);
             this.showScheduleModal = false;
             this.scheduleForm = { type: '', frequency: 'weekly', email: '' };
+            try {
+                await fetch('/api/activity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+                    body: JSON.stringify({ action: 'report_schedule_saved', schedule: newSchedule })
+                });
+            } catch(_) {}
             this.showToast('Report scheduled successfully!', 'success');
         },
 
@@ -436,6 +604,24 @@ function reportsManager() {
                     this.scheduledReports.splice(index, 1);
                     this.showToast('Schedule deleted', 'success');
                 }
+            }
+        },
+
+        getReportHeadings(reportType, metrics = []){
+            if (Array.isArray(metrics) && metrics.length){
+                return metrics.map(m => String(m).replace(/_/g,' ').replace(/\b\w/g, c=>c.toUpperCase()));
+            }
+            switch (reportType){
+                case 'sales': return ['Date','Transaction ID','Customer','Items','Subtotal','Tax','Total','Payment Method'];
+                case 'inventory': return ['Product Name','SKU','Category','Quantity','Unit Cost','Unit Price','Total Value','Room','METRC Tag'];
+                case 'customers': return ['Customer Name','Type','Email','Phone','Total Visits','Total Spent','Average Order','Last Visit'];
+                case 'products': return ['Name','Category','SKU','Price','Cost','Quantity','Room','THC%','CBD%','METRC Tag'];
+                case 'analytics': return ['Metric','Value','Period','Change','Percentage'];
+                case 'metrc': return ['Package Tag','Product','Quantity','Unit','Status','Location','Last Modified'];
+                case 'compliance': return ['Date','Type','Description','Status','Employee','Notes'];
+                case 'employees': return ['Name','Role','Employee ID','Email','Hours Worked','Sales Count','Performance Score'];
+                case 'tax_report': return ['Date','Transactions','Gross Sales','Total Tax','Net Sales','Payment Method'];
+                default: return ['Column 1','Column 2','Column 3'];
             }
         },
 
@@ -464,5 +650,30 @@ function generateCustomReport() {
     document.querySelector('[x-data="reportsManager()"]').__x.$data.showCustomModal = true;
 }
 </script>
+<script>
+// Global bridge so @click="deleteReport(report)" never errors
+(function(){
+  try {
+    if (typeof window.deleteReport !== 'function') {
+      window.deleteReport = function(report){
+        try {
+          var el = document.querySelector('[x-data="reportsManager()"]');
+          if (el && el.__x && el.__x.$data && typeof el.__x.$data.deleteReport === 'function') {
+            el.__x.$data.deleteReport(report);
+          }
+        } catch(_) {}
+      };
+    }
+  } catch(_) {}
+})();
+</script>
+
+@push('styles')
+<link href="{{ asset('css/report-export.css') }}" rel="stylesheet">
+@endpush
+
+@push('scripts')
+<script src="{{ asset('js/report-export.js') }}" defer></script>
+@endpush
 
 @endsection

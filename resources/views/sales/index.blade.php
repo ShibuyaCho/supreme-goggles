@@ -11,24 +11,38 @@
                 <h1 class="text-2xl font-bold text-gray-900">Sales Management</h1>
                 
                 <div class="flex items-center space-x-4">
+                    <!-- METRC Actions -->
+                    <div class="hidden sm:flex items-center space-x-2">
+                        <button id="push-metrc" aria-label="Push Sales Data to METRC" title="Push Sales Data to METRC" class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 000-8h-1M8 11l4-4m0 0l4 4m-4-4v12"/></svg>
+                            Push to METRC
+                        </button>
+                        <button id="push-metrc-byid" class="inline-flex items-center bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors" title="Push specific sale by ID">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                            Push by ID
+                        </button>
+                    </div>
+
                     <!-- Quick Reports -->
                     <div class="relative">
                         <button id="reports-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                             Reports
                         </button>
                         <div id="reports-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-                            <a href="{{ route('sales.daily-report') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Daily Report</a>
-                            <a href="{{ route('sales.weekly-report') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Weekly Report</a>
-                            <a href="{{ route('sales.monthly-report') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Monthly Report</a>
+                            <a href="{{ route('reports.index') }}?section=sales&range=daily" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Daily Report</a>
+                            <a href="{{ route('reports.index') }}?section=sales&range=weekly" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Weekly Report</a>
+                            <a href="{{ route('reports.index') }}?section=sales&range=monthly" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Monthly Report</a>
                             <hr class="border-gray-100">
                             <button onclick="customReport()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">Custom Report</button>
                         </div>
                     </div>
-                    
-                    <!-- Export Button -->
-                    <button onclick="exportSales()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                        Export
+
+                    <!-- Push Sales Data to METRC -->
+                    <button id="push-metrc" aria-label="Push Sales Data to METRC" title="Push Sales Data to METRC" class="inline-flex items-center bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 004 4h10a4 4 0 000-8h-1M8 11l4-4m0 0l4 4m-4-4v12"/></svg>
+                        <span class="whitespace-nowrap">Push Sales Data to METRC</span>
                     </button>
+
                 </div>
             </div>
         </div>
@@ -128,6 +142,7 @@
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sale</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Till</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
@@ -137,7 +152,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($sales as $sale)
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50" data-sale-id="{{ $sale->id }}">
                             <!-- Sale Info -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div>
@@ -175,11 +190,25 @@
                                 @endif
                             </td>
 
+                            <!-- Till / Register -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                @php
+                                    $till = $sale->till_number ?? null;
+                                @endphp
+                                <div class="text-sm text-gray-900">{{ $till ? $till : '—' }}</div>
+                            </td>
+
                             <!-- Items -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="text-sm text-gray-900">{{ $sale->item_count }} items</div>
                                 @if($sale->saleItems->count() > 0)
                                     <div class="text-xs text-gray-500">{{ $sale->saleItems->first()->product->name ?? 'Product' }}{{ $sale->saleItems->count() > 1 ? ' +' . ($sale->saleItems->count() - 1) . ' more' : '' }}</div>
+                                    @php
+                                        $metrcTags = $sale->saleItems->pluck('metrc_tag')->filter()->map(function($t){ return substr($t, -5); })->unique()->values();
+                                    @endphp
+                                    @if($metrcTags->count() > 0)
+                                        <div class="text-[11px] text-gray-500 mt-1">METRC: ****{{ $metrcTags->join(', ****') }}</div>
+                                    @endif
                                 @endif
                             </td>
 
@@ -258,6 +287,9 @@
                                             <div class="py-1">
                                                 <button onclick="reprintReceipt({{ $sale->id }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
                                                     Reprint Receipt
+                                                </button>
+                                                <button onclick="reprintExitLabels({{ $sale->id }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
+                                                    Reprint Exit Labels
                                                 </button>
                                                 <button onclick="emailReceipt({{ $sale->id }})" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left">
                                                     Email Receipt
@@ -434,6 +466,95 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('reports-menu').classList.add('hidden');
         }
     });
+    // Live updates: reload on new sale and poll for changes
+    (function(){
+      function topRowId(){ const r = document.querySelector('tbody tr[data-sale-id]'); return r ? r.getAttribute('data-sale-id') : null; }
+      function startPoll(){
+        try { if (window.__salesPollTimer) clearInterval(window.__salesPollTimer); } catch(_) {}
+        window.__salesPollTimer = setInterval(async () => {
+          try {
+            const res = await (window.axios || axios).get('/sales/recent-json', { params: { limit: 1 } });
+            const list = Array.isArray(res.data) ? res.data : (Array.isArray(res.data?.data) ? res.data.data : []);
+            const newestId = list.length ? String(list[0].id) : null;
+            const currentTop = topRowId();
+            if (newestId && currentTop && newestId !== currentTop) window.location.reload();
+          } catch(_) {}
+        }, 8000);
+      }
+      try { document.addEventListener('pos-sale-completed', () => window.location.reload()); } catch(_) {}
+      try { window.addEventListener('storage', (e) => { if (e && e.key === 'pos_last_sale_id') window.location.reload(); }); } catch(_) {}
+      startPoll();
+    })();
+
+    // Push Sales to METRC
+    const pushBtn = document.getElementById('push-metrc');
+    async function checkMetrcReady(){
+        try {
+            const res = await (window.axios || axios).get('/api/settings/metrc');
+            const enabled = !!res?.data?.enabled;
+            const hasKey = !!res?.data?.user_api_key;
+            if (!enabled || !hasKey) {
+                pushBtn?.classList.add('opacity-50','cursor-not-allowed');
+                if (pushBtn) { pushBtn.disabled = true; pushBtn.title = 'Enter a valid METRC API key in Settings to enable'; }
+            } else {
+                pushBtn?.classList.remove('opacity-50','cursor-not-allowed');
+                if (pushBtn) { pushBtn.disabled = false; pushBtn.title = 'Push Sales to METRC'; }
+            }
+        } catch (e) {
+            pushBtn?.classList.add('opacity-50','cursor-not-allowed');
+            if (pushBtn) { pushBtn.disabled = true; pushBtn.title = 'METRC not configured'; }
+        }
+    }
+    const pushByIdBtn = document.getElementById('push-metrc-byid');
+    if (pushByIdBtn) {
+        pushByIdBtn.addEventListener('click', async function(){
+            const input = prompt('Enter sale IDs to push (comma-separated)');
+            if (input === null) return;
+            const ids = String(input).split(',').map(s => s.trim()).filter(Boolean);
+            if (ids.length === 0) { window.POS?.showToast?.('No sale IDs provided','warning'); return; }
+            let ok = 0;
+            for (const id of ids) {
+                try {
+                    await (window.axios || axios).post(`/api/pos/sales/receipts/from-sale/${encodeURIComponent(id)}`, {}, { headers: { 'Accept':'application/json' } });
+                    ok++;
+                } catch (e) { console.warn('Push failed', id, e?.response?.data || e); }
+            }
+            window.POS?.showToast?.(`Pushed ${ok} sale(s)`, ok>0?'success':'warning');
+        });
+    }
+
+    if (pushBtn) {
+        checkMetrcReady();
+        pushBtn.addEventListener('click', async function() {
+            if (this.disabled) return;
+            this.disabled = true;
+            const originalText = this.innerHTML;
+            this.innerHTML = '<svg class="w-4 h-4 mr-2 animate-spin inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582M20 20v-5h-.581M5.418 9A7.5 7.5 0 1114.5 4.582"/></svg> Syncing...';
+            try {
+                // Build payloads from visible completed sales rows
+                const rows = Array.from(document.querySelectorAll('tbody tr')).filter(r => r.querySelector('td:nth-child(8) .bg-green-100'));
+                if (rows.length === 0) {
+                    window.POS?.showToast?.('No completed sales to push for current filters', 'info');
+                    return;
+                }
+                let pushed = 0;
+                for (const row of rows) {
+                    const saleId = row.getAttribute('data-sale-id');
+                    if (!saleId) continue;
+                    try {
+                        const res = await (window.axios || axios).post(`/api/pos/sales/receipts/from-sale/${saleId}`, {}, { headers: { 'Accept': 'application/json' } });
+                        if (res.status >= 200 && res.status < 300) pushed++;
+                    } catch (e) {
+                        console.warn('Failed to push sale to METRC', e?.response?.data || e);
+                    }
+                }
+                window.POS?.showToast?.(`Pushed ${pushed} sale(s) to METRC`, pushed > 0 ? 'success' : 'info');
+            } finally {
+                this.disabled = false;
+                this.innerHTML = originalText;
+            }
+        });
+    }
 });
 
 function switchTab(tabName) {
@@ -488,16 +609,24 @@ function applyFilters() {
 }
 
 function viewSale(saleId) {
-    window.location.href = `/sales/${saleId}`;
+    // Use client-side fallback view to ensure it works in demo/live
+    window.open(`/sale.html?id=${encodeURIComponent(saleId)}`, '_blank');
 }
 
 function printReceipt(saleId) {
-    window.open(`/sales/${saleId}/receipt`, '_blank');
+    // Client-side receipt renderer to avoid authorization issues
+    window.open(`/receipt.html?id=${encodeURIComponent(saleId)}` , '_blank');
 }
 
 function reprintReceipt(saleId) {
     if (confirm('Are you sure you want to reprint this receipt?')) {
-        window.open(`/sales/${saleId}/receipt?reprint=1`, '_blank');
+        window.open(`/receipt.html?id=${encodeURIComponent(saleId)}&reprint=1`, '_blank');
+    }
+}
+
+function reprintExitLabels(saleId) {
+    if (confirm('Reprint exit labels for this sale?')) {
+        window.open(`/exit-labels.html?id=${encodeURIComponent(saleId)}&reprint=1`, '_blank');
     }
 }
 

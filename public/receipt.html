@@ -1,0 +1,213 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Receipt</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+          "Liberation Mono", "Courier New", monospace;
+        margin: 0;
+        padding: 12px;
+      }
+      .rcpt {
+        max-width: 320px;
+        margin: 0 auto;
+        color: #111;
+      }
+      .c {
+        text-align: center;
+      }
+      .r {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .muted {
+        color: #4b5563;
+      }
+      .sm {
+        font-size: 12px;
+      }
+      .xs {
+        font-size: 11px;
+      }
+      h1 {
+        font-size: 16px;
+        margin: 0 0 4px 0;
+      }
+      hr {
+        border: none;
+        border-top: 1px dashed #999;
+        margin: 8px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root" class="rcpt">
+      <div class="c">
+        <h1>Receipt</h1>
+        <div class="xs muted">Loading…</div>
+      </div>
+    </div>
+    <script>
+      (async function () {
+        const esc = (s) =>
+          String(s == null ? "" : s).replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
+        const params = new URLSearchParams(location.search);
+        const id = params.get("id");
+        const wantPrint = params.get("reprint");
+        const root = document.getElementById("root");
+        if (!id) {
+          root.innerHTML = '<div class="c">Missing sale id</div>';
+          return;
+        }
+        function money(n) {
+          try {
+            return "$" + Number(n || 0).toFixed(2);
+          } catch (e) {
+            return "$0.00";
+          }
+        }
+        try {
+          const res = await fetch(`/api/sales/${encodeURIComponent(id)}`, {
+            headers: { Accept: "application/json" },
+          });
+          if (!res.ok) throw new Error("Failed to load sale");
+          const s = await res.json();
+          const saleNumber = s.sale_number || s.id || id;
+          const createdAt =
+            s.created_at || s.createdAt || new Date().toISOString();
+          const items = Array.isArray(s.saleItems)
+            ? s.saleItems
+            : Array.isArray(s.sale_items)
+              ? s.sale_items
+              : Array.isArray(s.cart)
+                ? s.cart.map((i) => ({
+                    product_name: i.name,
+                    quantity: i.quantity,
+                    unit_price: i.price,
+                    total_price: (i.price || 0) * (i.quantity || 1),
+                    product_category: i.category,
+                  }))
+                : [];
+          const subtotal = s.subtotal ?? s.sub_total ?? 0;
+          const tax = s.tax_amount ?? s.tax ?? 0;
+          const discount = s.discount_amount ?? 0;
+          const total = s.total_amount ?? s.total ?? subtotal - discount + tax;
+          const customerType =
+            (
+              s.customer_type ||
+              (s.customer && (s.customer.type || s.customer.customerType)) ||
+              ""
+            )
+              .toString()
+              .toLowerCase() === "medical"
+              ? "Medical"
+              : "Recreational";
+          const lines = items.map((i) => {
+            const name = i.product_name || i.name || "Item";
+            const qty = Number(i.quantity || 1);
+            const price = Number(
+              i.unit_price != null ? i.unit_price : i.price || 0,
+            );
+            const cat = (i.product_category || i.category || "")
+              .toString()
+              .toLowerCase();
+            const isFlower = cat === "flower";
+            const unitDisplay = isFlower ? qty.toFixed(2) + " g" : qty + " x";
+            const lineBase = price * qty;
+            const lineTotal = Number(
+              i.total_price != null ? i.total_price : lineBase,
+            );
+            return { name, unitDisplay, lineTotal };
+          });
+          const sid = (function () {
+            try {
+              const raw = localStorage.getItem("pos_store");
+              if (raw) {
+                const o = JSON.parse(raw) || {};
+                return String(o.id || "default");
+              }
+            } catch (_) {}
+            try {
+              const m = document.cookie.match(/(?:^|; )cpos_store_id=([^;]*)/);
+              if (m) return decodeURIComponent(m[1]);
+            } catch (_) {}
+            return "default";
+          })();
+          const sname = (function () {
+            try {
+              const raw = localStorage.getItem("pos_store");
+              if (raw) {
+                const o = JSON.parse(raw) || {};
+                return String(o.name || "");
+              }
+            } catch (_) {}
+            return "";
+          })();
+          const storeRes = await fetch(`/api/settings/pos?nocache=true`, {
+            headers: Object.assign(
+              { Accept: "application/json", "X-Store-ID": sid },
+              sname ? { "X-Store-Name": sname } : {},
+            ),
+          }).catch(() => null);
+          let storeName = "Cannabest POS",
+            storePhone = "",
+            website = "",
+            receiptFooter = "";
+          try {
+            if (storeRes && storeRes.ok) {
+              const js = await storeRes.json();
+              const st = js.settings || js;
+              storeName = st.store_name || storeName;
+              storePhone = st.store_phone || "";
+              website = st.website || "";
+              receiptFooter = st.receipt_footer || "";
+            }
+          } catch (e) {}
+          const ts = new Date(createdAt).toLocaleString();
+          const inner = `
+          <div class="c">
+            <h1>${esc(storeName)}</h1>
+            ${storePhone ? `<div class="xs muted">${esc(storePhone)}</div>` : ""}
+            ${website ? `<div class="xs muted">${esc(website)}</div>` : ""}
+          </div>
+          <hr/>
+          <div class="xs muted">Receipt #: ${esc(saleNumber)}</div>
+          <div class="xs muted">Timestamp: ${esc(ts)}</div>
+          <div class="xs muted">Customer Type: ${esc(customerType)}</div>
+          <hr/>
+          ${lines.map((x) => `<div class="r xs"><span>${esc(x.unitDisplay)} ${esc(x.name)}</span><span>${money(x.lineTotal)}</span></div>`).join("")}
+          <hr/>
+          ${discount > 0 ? `<div class="r xs"><span>Discount</span><span>-${money(discount)}</span></div>` : ""}
+          <div class="r xs"><span>Subtotal</span><span>${money(subtotal)}</span></div>
+          <div class="r xs"><span>Tax</span><span>${money(tax)}</span></div>
+          <div class="r xs" style="font-weight:bold"><span>Total</span><span>${money(total)}</span></div>
+          ${receiptFooter ? `<hr/><div class="c xs">${esc(receiptFooter).replace(/\n/g, "<br/>")}</div>` : ""}
+        `;
+          root.innerHTML = inner;
+          if (wantPrint) setTimeout(() => window.print(), 50);
+        } catch (e) {
+          root.innerHTML = `<div class="c"><div class="xs muted">Failed to load receipt</div></div>`;
+        }
+      })();
+    </script>
+  </body>
+</html>

@@ -5,10 +5,12 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
 
 class MetrcService
 {
     protected $baseUrl;
+    // $vendorKey: Integrator (software) API key; $userKey: User API key
     protected $userKey;
     protected $vendorKey;
     protected $facilityLicense;
@@ -16,9 +18,21 @@ class MetrcService
     public function __construct()
     {
         $this->baseUrl = config('services.metrc.base_url', 'https://api-or.metrc.com');
-        $this->userKey = env('METRC_USER_KEY');
-        $this->vendorKey = env('METRC_VENDOR_KEY');
+        // Do not load METRC API keys from env or cache; require ephemeral input per request
+        $this->userKey = null;
+        $this->vendorKey = null;
         $this->facilityLicense = env('METRC_FACILITY');
+
+        // Allow ephemeral keys via headers or request payload
+        try {
+            $req = request();
+            $uk = $req->header('X-Metrc-User-Key') ?: ($req->input('metrc_user_key') ?? null);
+            $vk = $req->header('X-Metrc-Vendor-Key') ?: ($req->input('metrc_vendor_key') ?? null);
+            $fl = $req->header('X-Metrc-Facility') ?: ($req->input('metrc_facility') ?? null);
+            if (!empty($uk)) { $this->userKey = $uk; }
+            if (!empty($vk)) { $this->vendorKey = $vk; }
+            if (!empty($fl)) { $this->facilityLicense = $fl; }
+        } catch (\Throwable $e) { /* ignore */ }
     }
 
     /**
@@ -27,6 +41,11 @@ class MetrcService
     public function isConfigured(): bool
     {
         return !empty($this->userKey) && !empty($this->vendorKey) && !empty($this->facilityLicense);
+    }
+
+    public function getFacilityLicense(): ?string
+    {
+        return $this->facilityLicense;
     }
 
     /**
@@ -38,42 +57,111 @@ class MetrcService
             throw new \Exception('METRC is not properly configured');
         }
 
-        $url = $this->baseUrl . $endpoint;
-        
-        $response = Http::withBasicAuth($this->userKey, $this->vendorKey)
-            ->withHeaders([
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json'
-            ]);
+        $url = rtrim($this->baseUrl, '/') . $endpoint;
 
-        switch (strtoupper($method)) {
-            case 'GET':
-                $response = $response->get($url, $data);
+        // Basic throttling (approx per-facility 55 req/min) to avoid 429s
+        try {
+            $key = 'metrc_rate_' . md5(($this->facilityLicense ?: 'default') . '|' . date('YmdHi'));
+            $count = Cache::increment($key, 1);
+            Cache::put($key, $count, now()->addMinutes(1));
+            if ($count > 55) { usleep(250000); } // 250ms backoff when hot
+        } catch (\Throwable $e) { /* best-effort */ }
+
+        // Per METRC docs: Basic base64("user_api_key:integrator_api_key")
+        $buildClient = function ($username, $password) {
+            return Http::withBasicAuth($username, $password)
+                ->acceptJson()
+                ->timeout(45)
+                ->withHeaders(['Content-Type' => 'application/json']);
+        };
+
+        $attemptHttp = function ($client) use ($method, $url, $data) {
+            $m = strtoupper($method);
+            switch ($m) {
+                case 'GET':
+                    $u = $url;
+                    if (!empty($data)) {
+                        $query = http_build_query($data, '', '&', PHP_QUERY_RFC3986);
+                        $u = strpos($u, '?') === false ? ($u . '?' . $query) : ($u . '&' . $query);
+                    }
+                    return $client->get($u);
+                case 'POST':
+                    return $client->post($url, $data);
+                case 'PUT':
+                    return $client->put($url, $data);
+                case 'DELETE':
+                    return $client->delete($url, $data);
+                default:
+                    throw new \Exception("Unsupported HTTP method: $m");
+            }
+        };
+
+        // Build ordered auth attempts
+        $pairs = [
+            [$this->userKey, $this->vendorKey], // user:vendor
+            [$this->vendorKey, $this->userKey], // vendor:user
+        ];
+        $confUser = config('services.metrc.username');
+        $confPass = config('services.metrc.password');
+        if (!empty($confUser) && !empty($confPass)) { $pairs[] = [$confUser, $confPass]; }
+
+        $response = null; $lastResp = null;
+        $maxAttempts = 6; $delay = 250; // ms
+        $attemptNo = 0;
+        foreach ($pairs as [$u, $p]) {
+            if (empty($u) || empty($p)) { continue; }
+            $client = $buildClient($u, $p);
+            $attemptNo = 0; $resp = null;
+            do {
+                $attemptNo++;
+                $resp = $attemptHttp($client);
+                $lastResp = $resp;
+                if ($resp->successful()) { $response = $resp; break; }
+                $status = $resp->status();
+                if ($status === 429) {
+                    // Rate limited: honor Retry-After or exponential backoff
+                    $retryAfter = (int)($resp->header('Retry-After') ?? 0);
+                    $sleepMs = $retryAfter > 0 ? ($retryAfter * 1000) : $delay;
+                    usleep($sleepMs * 1000);
+                    $delay = min($delay * 2, 8000);
+                    continue;
+                }
+                if (in_array($status, [500, 502, 503, 504])) {
+                    usleep($delay * 1000);
+                    $delay = min($delay * 2, 8000);
+                    continue;
+                }
+                // For 401/403 or other statuses, break to try next creds or fail
                 break;
-            case 'POST':
-                $response = $response->post($url, $data);
-                break;
-            case 'PUT':
-                $response = $response->put($url, $data);
-                break;
-            case 'DELETE':
-                $response = $response->delete($url, $data);
-                break;
-            default:
-                throw new \Exception("Unsupported HTTP method: $method");
+            } while ($attemptNo < $maxAttempts);
+            if ($response) { break; }
+            if (!in_array($lastResp?->status(), [401, 403]) && $lastResp) { $response = $lastResp; break; }
         }
+        if (!$response) { $response = $lastResp; }
 
-        if (!$response->successful()) {
-            $error = $response->json('message') ?? 'METRC API request failed';
+        if (!$response || !$response->successful()) {
+            $status = $response?->status() ?? 0;
+            $json = $response?->json();
+            $error = is_array($json) ? ($json['message'] ?? ($json[0]['message'] ?? 'METRC API request failed')) : 'METRC API request failed';
+            // Metadata-only logging, no secrets
             Log::error('METRC API Error', [
-                'url' => $url,
-                'method' => $method,
-                'status' => $response->status(),
+                'endpoint' => $endpoint,
+                'method' => strtoupper($method),
+                'status' => $status,
+                'facility' => $this->facilityLicense ? substr($this->facilityLicense, 0, 6) . '***' : null,
                 'error' => $error,
-                'response' => $response->body()
             ]);
-            throw new \Exception("METRC API Error: $error");
+            throw new \Exception("METRC API Error ({$status}): {$error}");
         }
+
+        // Audit log (metadata only)
+        try {
+            Log::info('METRC API Request', [
+                'endpoint' => $endpoint,
+                'method' => strtoupper($method),
+                'status' => $response->status(),
+            ]);
+        } catch (\Throwable $e) {}
 
         return $response->json();
     }
@@ -85,9 +173,19 @@ class MetrcService
     {
         try {
             $cacheKey = "metrc_package_{$packageTag}";
-            
+
             return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($packageTag) {
-                return $this->makeRequest('GET', "/packages/v1/{$packageTag}");
+                $params = [];
+                if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+                // Try v2 direct by label first (Oregon docs recommend)
+                try {
+                    $v2 = $this->makeRequest('GET', "/packages/v2/{$packageTag}", $params);
+                    if (!empty($v2)) { return $v2; }
+                } catch (\Throwable $e) {
+                    Log::warning('METRC v2 package lookup failed, falling back to v1', [ 'tag' => $packageTag, 'error' => $e->getMessage() ]);
+                }
+                // Fallback to v1
+                return $this->makeRequest('GET', "/packages/v1/{$packageTag}", $params);
             });
 
         } catch (\Exception $e) {
@@ -111,7 +209,9 @@ class MetrcService
                 'ActualDate' => now()->toISOString()
             ];
 
-            $result = $this->makeRequest('POST', '/packages/v1/change/package/status', [$data]);
+            $endpoint = '/packages/v1/change/package/status';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            $result = $this->makeRequest('POST', $endpoint, [$data]);
             
             // Clear cache for this package
             Cache::forget("metrc_package_{$packageTag}");
@@ -141,7 +241,9 @@ class MetrcService
                 'Notes' => $notes
             ];
 
-            $result = $this->makeRequest('POST', '/packages/v1/change/locations', [$data]);
+            $endpoint = '/packages/v1/change/locations';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            $result = $this->makeRequest('POST', $endpoint, [$data]);
             
             // Clear cache for this package
             Cache::forget("metrc_package_{$packageTag}");
@@ -170,7 +272,9 @@ class MetrcService
                 'ReasonNote' => $reason
             ];
 
-            $result = $this->makeRequest('POST', '/packages/v1/finish', [$data]);
+            $endpoint = '/packages/v1/finish';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            $result = $this->makeRequest('POST', $endpoint, [$data]);
             
             // Clear cache for this package
             Cache::forget("metrc_package_{$packageTag}");
@@ -212,7 +316,9 @@ class MetrcService
                 'IsDonation' => false
             ], $packageData);
 
-            return $this->makeRequest('POST', '/packages/v1/create', [$data]);
+            $endpoint = '/packages/v1/create';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            return $this->makeRequest('POST', $endpoint, [$data]);
 
         } catch (\Exception $e) {
             Log::error('Error creating METRC package', [
@@ -228,24 +334,294 @@ class MetrcService
      */
     public function getAllPackages(string $lastModifiedStart = null, string $lastModifiedEnd = null)
     {
+        $buildParams = function($includeLicense = true, $altKey = null) use ($lastModifiedStart, $lastModifiedEnd) {
+            $p = [];
+            if ($includeLicense && !empty($this->facilityLicense)) {
+                $key = $altKey ?: 'licenseNumber';
+                $p[$key] = $this->facilityLicense;
+            }
+            if ($lastModifiedStart) { $p['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $p['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $p;
+        };
+
+        $paginateV2 = function($endpoint, $params) {
+            $page = 1; $pageSize = 20; $all = [];
+            do {
+                $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
+                $raw = $this->makeRequest('GET', $endpoint, $pageParams);
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                if (!empty($data)) {
+                    foreach ($data as $row) { $all[] = $row; }
+                }
+                $totalPages = $raw['TotalPages'] ?? null;
+                if ($totalPages && $page < $totalPages) { $page++; } else { break; }
+            } while (true);
+            return $all;
+        };
+
+        try {
+            // Try v2 with licenseNumber
+            $all = $paginateV2('/packages/v2/active', $buildParams(true));
+            if (count($all) > 0) return $all;
+
+            // Try v2 without license filter (some tenants scope by API key)
+            $all = $paginateV2('/packages/v2/active', $buildParams(false));
+            if (count($all) > 0) return $all;
+
+            // Try v2 with alternate param name
+            $all = $paginateV2('/packages/v2/active', $buildParams(true, 'license'));
+            if (count($all) > 0) return $all;
+        } catch (\Exception $e) {
+            Log::warning('v2 active packages failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+        }
+
+        // v1 fallbacks
+        foreach ([[true,null],[false,null],[true,'license']] as [$withLicense, $altKey]) {
+            try {
+                $raw = $this->makeRequest('GET', '/packages/v1/active', $buildParams($withLicense, $altKey));
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                if (is_array($data) && count($data) > 0) return $data;
+            } catch (\Exception $e) {
+                Log::warning('v1 active packages variant failed', ['withLicense' => $withLicense, 'altKey' => $altKey, 'error' => $e->getMessage()]);
+            }
+        }
+
+        // As a last resort return empty array
+        return [];
+    }
+
+    /**
+     * Get active packages for a specific license (diagnostics/helper)
+     */
+    public function getActivePackagesForLicense(string $license, string $lastModifiedStart = null, string $lastModifiedEnd = null): array
+    {
+        $buildParams = function($includeLicense = true, $altKey = null) use ($license, $lastModifiedStart, $lastModifiedEnd) {
+            $p = [];
+            if ($includeLicense && !empty($license)) {
+                $key = $altKey ?: 'licenseNumber';
+                $p[$key] = $license;
+            }
+            if ($lastModifiedStart) { $p['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $p['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $p;
+        };
+
+        $paginateV2 = function($endpoint, $params) {
+            $page = 1; $pageSize = 20; $all = [];
+            do {
+                $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
+                $raw = $this->makeRequest('GET', $endpoint, $pageParams);
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                if (!empty($data)) { foreach ($data as $row) { $all[] = $row; } }
+                $totalPages = $raw['TotalPages'] ?? null;
+                if ($totalPages && $page < $totalPages) { $page++; } else { break; }
+            } while (true);
+            return $all;
+        };
+
+        try {
+            $all = $paginateV2('/packages/v2/active', $buildParams(true));
+            if (count($all) > 0) return $all;
+            $all = $paginateV2('/packages/v2/active', $buildParams(false));
+            if (count($all) > 0) return $all;
+            $all = $paginateV2('/packages/v2/active', $buildParams(true, 'license'));
+            if (count($all) > 0) return $all;
+        } catch (\Exception $e) {
+            Log::warning('v2 active packages failed (license scan), attempting v1 fallback', ['error' => $e->getMessage(), 'license' => $license]);
+        }
+
+        foreach ([[true,null],[false,null],[true,'license']] as [$withLicense, $altKey]) {
+            try {
+                $raw = $this->makeRequest('GET', '/packages/v1/active', $buildParams($withLicense, $altKey));
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                if (is_array($data) && count($data) > 0) return $data;
+            } catch (\Exception $e) {
+                Log::warning('v1 active packages variant failed (license scan)', ['withLicense' => $withLicense, 'altKey' => $altKey, 'license' => $license, 'error' => $e->getMessage()]);
+            }
+        }
+        return [];
+    }
+
+    public function getInactivePackages(string $lastModifiedStart = null, string $lastModifiedEnd = null)
+    {
         try {
             $params = [];
-            
-            if ($lastModifiedStart) {
-                $params['lastModifiedStart'] = $lastModifiedStart;
-            }
-            
-            if ($lastModifiedEnd) {
-                $params['lastModifiedEnd'] = $lastModifiedEnd;
-            }
-
-            return $this->makeRequest('GET', '/packages/v1/active', $params);
-
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            $page = 1; $pageSize = 20; $all = [];
+            do {
+                $pageParams = $params + ['pageNumber' => $page, 'pageSize' => $pageSize];
+                $raw = $this->makeRequest('GET', '/packages/v2/inactive', $pageParams);
+                $data = isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+                foreach ($data as $row) { $all[] = $row; }
+                $totalPages = $raw['TotalPages'] ?? null;
+                if ($totalPages && $page < $totalPages) { $page++; } else { break; }
+            } while (true);
+            return $all;
         } catch (\Exception $e) {
-            Log::error('Error fetching all METRC packages', [
-                'error' => $e->getMessage()
-            ]);
+            Log::warning('v2 inactive packages failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            $raw = $this->makeRequest('GET', '/packages/v1/inactive', $params);
+            return isset($raw['Data']) && is_array($raw['Data']) ? $raw['Data'] : (is_array($raw) ? $raw : []);
+        }
+    }
+
+    public function getOutgoingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null, ?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/transfers/v2/outgoing', $params);
+        } catch (\Exception $e) {
+            Log::warning('v2 outgoing transfers failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $this->makeRequest('GET', '/transfers/v1/outgoing', $params);
+        }
+    }
+
+    public function getTransferDeliveries(int|string $transferId)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            return $this->makeRequest('GET', "/transfers/v1/{$transferId}/deliveries", $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC transfer deliveries', [ 'transfer_id' => $transferId, 'error' => $e->getMessage() ]);
             throw $e;
+        }
+    }
+
+    public function getDeliveryPackages(int|string $deliveryId)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            return $this->makeRequest('GET', "/transfers/v1/deliveries/{$deliveryId}/packages", $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC delivery packages', [ 'delivery_id' => $deliveryId, 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get lab test results for a package (paginated optional)
+     */
+    public function getLabTestResults(int|string $packageId, ?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [
+                'packageId' => $packageId,
+                'licenseNumber' => $this->facilityLicense,
+            ];
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/labtests/v2/results', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC lab test results', [ 'package_id' => $packageId, 'error' => $e->getMessage() ]);
+            return null; // don't block inventory sync if lab fetch fails
+        }
+    }
+
+    /**
+     * Parse lab results into product fields
+     */
+    public function parseLabResults($labResponse): array
+    {
+        $data = [
+            'is_tested' => false,
+            'test_status' => null,
+            'test_date' => null,
+            'lab_name' => null,
+            'contaminants_passed' => null,
+            'lab_results' => null,
+            'thc' => null,
+            'cbd' => null,
+            'cbn' => null,
+            'cbg' => null,
+            'cbc' => null,
+        ];
+
+        if (empty($labResponse)) {
+            return $data;
+        }
+
+        $records = $labResponse['Data'] ?? (is_array($labResponse) ? $labResponse : []);
+        if (!is_array($records)) { return $data; }
+
+        $overallPass = null; $anyReleased = false; $labName = null; $testDate = null;
+        $nonCannabinoidAllPassed = true; $hasNonCannabinoid = false;
+
+        foreach ($records as $rec) {
+            if (!is_array($rec)) { continue; }
+            $overallPass = $rec['OverallPassed'] ?? $overallPass;
+            $labName = $rec['LabFacilityName'] ?? $labName;
+            $testDate = $rec['TestPerformedDate'] ?? $testDate;
+            $released = $rec['ResultReleased'] ?? false; $anyReleased = $anyReleased || $released;
+
+            $type = strtolower((string)($rec['TestTypeName'] ?? ''));
+            $level = $rec['TestResultLevel'] ?? null;
+
+            // Map cannabinoids
+            if ($level !== null) {
+                if (str_contains($type, 'total thc') || $type === 'thc') { $data['thc'] = (float)$level; }
+                if (str_contains($type, 'total cbd') || $type === 'cbd') { $data['cbd'] = (float)$level; }
+                if ($type === 'cbn' || str_contains($type, 'total cbn')) { $data['cbn'] = (float)$level; }
+                if ($type === 'cbg' || str_contains($type, 'total cbg')) { $data['cbg'] = (float)$level; }
+                if ($type === 'cbc' || str_contains($type, 'total cbc')) { $data['cbc'] = (float)$level; }
+            }
+
+            // Track contaminants pass (microbiologicals, pesticides, etc.)
+            if (!in_array($type, ['thc','cbd','cbn','cbg','cbc']) && !str_contains($type, 'cannabinoid')) {
+                $hasNonCannabinoid = true;
+                $testPassed = $rec['TestPassed'] ?? null;
+                if ($testPassed === false) { $nonCannabinoidAllPassed = false; }
+            }
+        }
+
+        $data['is_tested'] = count($records) > 0 && $anyReleased;
+        if ($overallPass === true) { $data['test_status'] = 'passed'; }
+        elseif ($overallPass === false) { $data['test_status'] = 'failed'; }
+        else { $data['test_status'] = $anyReleased ? 'passed' : null; }
+        $data['test_date'] = $testDate ? date('Y-m-d', strtotime($testDate)) : null;
+        $data['lab_name'] = $labName;
+        $data['contaminants_passed'] = $hasNonCannabinoid ? $nonCannabinoidAllPassed : null;
+        $data['lab_results'] = $records;
+
+        return $data;
+    }
+
+    /**
+     * Get incoming transfers for facility
+     */
+    public function getIncomingTransfers(string $lastModifiedStart = null, string $lastModifiedEnd = null, ?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/transfers/v2/incoming', $params);
+        } catch (\Exception $e) {
+            Log::warning('v2 incoming transfers failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $this->makeRequest('GET', '/transfers/v1/incoming', $params);
         }
     }
 
@@ -255,7 +631,9 @@ class MetrcService
     public function getPackageHistory(string $packageTag)
     {
         try {
-            return $this->makeRequest('GET', "/packages/v1/{$packageTag}/history");
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            return $this->makeRequest('GET', "/packages/v1/{$packageTag}/history", $params);
 
         } catch (\Exception $e) {
             Log::error('Error fetching METRC package history', [
@@ -273,18 +651,50 @@ class MetrcService
     {
         try {
             $requiredFields = ['SalesDateTime', 'SalesCustomerType', 'Transactions'];
-            
+
             foreach ($requiredFields as $field) {
                 if (!isset($salesData[$field])) {
                     throw new \Exception("Missing required field: $field");
                 }
             }
 
-            return $this->makeRequest('POST', '/sales/v1/receipts', [$salesData]);
+            $endpoint = '/sales/v1/receipts';
+            if (!empty($this->facilityLicense)) { $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense); }
+            return $this->makeRequest('POST', $endpoint, [$salesData]);
 
         } catch (\Exception $e) {
             Log::error('Error creating METRC sales receipt', [
                 'sales_data' => $salesData,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Create sales deliveries (v2). SalesDateTime must be local facility time without timezone.
+     */
+    public function createSalesDeliveries(array $deliveries)
+    {
+        try {
+            // Ensure correctly formatted local timestamps
+            foreach ($deliveries as &$d) {
+                if (isset($d['SalesDateTime'])) {
+                    $dt = \Carbon\Carbon::parse($d['SalesDateTime']);
+                    $d['SalesDateTime'] = $dt->format('Y-m-d\TH:i:s.000'); // no TZ suffix
+                }
+            }
+            unset($d);
+
+            $endpoint = '/sales/v2/deliveries';
+            if (!empty($this->facilityLicense)) {
+                $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense);
+            }
+
+            return $this->makeRequest('POST', $endpoint, $deliveries);
+        } catch (\Exception $e) {
+            Log::error('Error creating METRC sales deliveries', [
+                'deliveries' => $deliveries,
                 'error' => $e->getMessage()
             ]);
             throw $e;
@@ -302,6 +712,7 @@ class MetrcService
                 'salesDateEnd' => $salesDateEnd
             ];
 
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
             return $this->makeRequest('GET', '/sales/v1/receipts', $params);
 
         } catch (\Exception $e) {
@@ -313,13 +724,70 @@ class MetrcService
     }
 
     /**
+     * Retail ID: get packages info for a list of labels
+     */
+    public function getRetailIdPackagesInfo(array $packageLabels)
+    {
+        try {
+            $endpoint = '/retailid/v2/packages/info';
+            if (!empty($this->facilityLicense)) {
+                $endpoint .= '?licenseNumber=' . rawurlencode($this->facilityLicense);
+            }
+            $payload = [ 'packageLabels' => array_values(array_unique(array_filter($packageLabels))) ];
+            if (empty($payload['packageLabels'])) { return ['Packages' => []]; }
+            return $this->makeRequest('POST', $endpoint, $payload);
+        } catch (\Exception $e) {
+            Log::error('Error fetching Retail ID packages info', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get available package tags (premium)
+     */
+    public function getAvailablePackageTags(?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/tags/v2/package/available', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching available METRC package tags', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get available plant tags (premium)
+     */
+    public function getAvailablePlantTags(?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) {
+                $params['licenseNumber'] = $this->facilityLicense;
+            }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/tags/v2/plant/available', $params);
+        } catch (\Exception $e) {
+            Log::error('Error fetching available METRC plant tags', [ 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Get facility details
      */
     public function getFacilityDetails()
     {
         try {
             $cacheKey = "metrc_facility_{$this->facilityLicense}";
-            
+
             return Cache::remember($cacheKey, now()->addHours(1), function () {
                 return $this->makeRequest('GET', '/facilities/v1');
             });
@@ -329,6 +797,69 @@ class MetrcService
                 'error' => $e->getMessage()
             ]);
             throw $e;
+        }
+    }
+
+    /**
+     * Get strain by ID (v2) optionally scoped by facility license
+     */
+    public function getStrainById(int|string $id, ?string $licenseNumber = null)
+    {
+        try {
+            $cacheKey = "metrc_strain_{$id}_" . ($licenseNumber ?: $this->facilityLicense ?: 'all');
+            return Cache::remember($cacheKey, now()->addHours(6), function () use ($id, $licenseNumber) {
+                $endpoint = "/strains/v2/{$id}";
+                $params = [];
+                $license = $licenseNumber ?: $this->facilityLicense;
+                if (!empty($license)) { $params['licenseNumber'] = $license; }
+                return $this->makeRequest('GET', $endpoint, $params);
+            });
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC strain', [ 'strain_id' => $id, 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get item by ID (v2) optionally scoped by facility license
+     */
+    public function getItemById(int|string $id, ?string $licenseNumber = null)
+    {
+        try {
+            $cacheKey = "metrc_item_{$id}_" . ($licenseNumber ?: $this->facilityLicense ?: 'all');
+            return Cache::remember($cacheKey, now()->addHours(6), function () use ($id, $licenseNumber) {
+                $endpoint = "/items/v2/{$id}";
+                $params = [];
+                $license = $licenseNumber ?: $this->facilityLicense;
+                if (!empty($license)) { $params['licenseNumber'] = $license; }
+                return $this->makeRequest('GET', $endpoint, $params);
+            });
+        } catch (\Exception $e) {
+            Log::error('Error fetching METRC item', [ 'item_id' => $id, 'error' => $e->getMessage() ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Get active items list (v2) with optional pagination and lastModified filters
+     */
+    public function getActiveItems(?string $lastModifiedStart = null, ?string $lastModifiedEnd = null, ?int $pageNumber = null, ?int $pageSize = null)
+    {
+        try {
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            if ($pageNumber !== null) { $params['pageNumber'] = $pageNumber; }
+            if ($pageSize !== null) { $params['pageSize'] = min(20, max(1, $pageSize)); }
+            return $this->makeRequest('GET', '/items/v2/active', $params);
+        } catch (\Exception $e) {
+            Log::warning('v2 active items failed, attempting v1 fallback', ['error' => $e->getMessage()]);
+            $params = [];
+            if (!empty($this->facilityLicense)) { $params['licenseNumber'] = $this->facilityLicense; }
+            if ($lastModifiedStart) { $params['lastModifiedStart'] = $this->toUtcZulu($lastModifiedStart); }
+            if ($lastModifiedEnd) { $params['lastModifiedEnd'] = $this->toUtcZulu($lastModifiedEnd); }
+            return $this->makeRequest('GET', '/items/v1/active', $params);
         }
     }
 
@@ -370,7 +901,25 @@ class MetrcService
             Log::error('Error fetching METRC item categories', [
                 'error' => $e->getMessage()
             ]);
-            throw $e;
+            // Fallback to common Oregon categories
+            return [
+                ['Name' => 'Flower'],
+                ['Name' => 'Pre-Rolls'],
+                ['Name' => 'Concentrates'],
+                ['Name' => 'Extracts'],
+                ['Name' => 'Edibles'],
+                ['Name' => 'Topicals'],
+                ['Name' => 'Tinctures'],
+                ['Name' => 'Vape Cartridges'],
+                ['Name' => 'Vape Pens'],
+                ['Name' => 'Inhalable Cannabinoids'],
+                ['Name' => 'Clones'],
+                ['Name' => 'Immature Plants'],
+                ['Name' => 'Seeds'],
+                ['Name' => 'Shake/Trim'],
+                ['Name' => 'Kief'],
+                ['Name' => 'Accessories'],
+            ];
         }
     }
 
@@ -381,13 +930,27 @@ class MetrcService
     {
         try {
             if (!$product->metrc_tag) {
+                // Prefer real available METRC tags; fallback to generated
+                $selectedTag = null;
+                try {
+                    $tags = $this->getAvailablePackageTags();
+                    $list = (isset($tags['Data']) && is_array($tags['Data'])) ? $tags['Data'] : (is_array($tags) ? $tags : []);
+                    if (!empty($list)) {
+                        $first = $list[0];
+                        $selectedTag = $first['Label'] ?? $first['label'] ?? null;
+                    }
+                } catch (\Throwable $e) {
+                    // ignore; may be premium or unavailable
+                }
+                $selectedTag = $selectedTag ?: $this->generatePackageTag();
+
                 // Create new METRC package for product
                 $packageData = [
-                    'Tag' => $this->generatePackageTag(),
+                    'Tag' => $selectedTag,
                     'PackagedDate' => now()->toISOString(),
-                    'Item' => $product->category,
+                    'Item' => $this->mapCategoryToMetrc($product->category),
                     'Quantity' => $product->quantity,
-                    'UnitOfMeasure' => $product->unit ?: 'Grams',
+                    'UnitOfMeasure' => $this->mapUnitToMetrc($product->unit ?? null),
                     'PatientLicenseNumber' => null,
                     'Note' => "Product: {$product->name}",
                     'IsProductionBatch' => false,
@@ -423,7 +986,82 @@ class MetrcService
     {
         $prefix = config('services.metrc.tag_prefix', '1A4');
         $suffix = strtoupper(substr(uniqid(), -8));
-        
+
         return $prefix . $suffix;
+    }
+
+    /**
+     * Normalize local category names into METRC item categories
+     */
+    private function mapCategoryToMetrc(?string $category): string
+    {
+        $c = strtolower(trim((string)$category));
+        $map = [
+            'plants (clones)' => 'Immature Plants',
+            'clones' => 'Immature Plants',
+            'immature plants' => 'Immature Plants',
+            'seeds' => 'Seeds',
+            'inhalable cannabinoid' => 'Inhalable Cannabinoids',
+            'patches' => 'Topicals',
+            'apparel' => 'Accessories',
+            'paraphernalia' => 'Accessories',
+            'vapes' => 'Vape Cartridges',
+            'extracts' => 'Concentrates',
+        ];
+        if (isset($map[$c])) {
+            return $map[$c];
+        }
+        return $category ? ucwords($category) : 'Accessories';
+    }
+
+    private function mapUnitToMetrc(?string $unit): string
+    {
+        $u = strtolower(trim((string)$unit));
+        $map = [
+            'each' => 'Each',
+            'unit' => 'Each',
+            'units' => 'Each',
+            'gram' => 'Grams',
+            'grams' => 'Grams',
+            'g' => 'Grams',
+            'fluid oz.' => 'Fluid Ounces',
+            'fluid oz' => 'Fluid Ounces',
+            'fl oz' => 'Fluid Ounces',
+            'ounce' => 'Fluid Ounces',
+            'ounces' => 'Fluid Ounces',
+            'milliliter' => 'Milliliters',
+            'milliliters' => 'Milliliters',
+            'ml' => 'Milliliters',
+        ];
+        return $map[$u] ?? 'Each';
+    }
+
+    /**
+     * Infer strain type from percentages or genetics string
+     */
+    public function inferStrainType($indicaPercentage = null, $sativaPercentage = null, $genetics = null): ?string
+    {
+        $i = is_numeric($indicaPercentage) ? (float)$indicaPercentage : null;
+        $s = is_numeric($sativaPercentage) ? (float)$sativaPercentage : null;
+        if ($i !== null && $s !== null) {
+            if ($i >= 60 && $s < 40) return 'Indica-dominant';
+            if ($s >= 60 && $i < 40) return 'Sativa-dominant';
+            return 'Hybrid';
+        }
+        $g = strtolower((string)$genetics);
+        if (str_contains($g, 'indica') && !str_contains($g, 'sativa')) return 'Indica';
+        if (str_contains($g, 'sativa') && !str_contains($g, 'indica')) return 'Sativa';
+        if ($g) return 'Hybrid';
+        return null;
+    }
+
+    private function toUtcZulu(string $dt): string
+    {
+        try {
+            $c = \Carbon\Carbon::parse($dt)->utc();
+            return $c->format('Y-m-d\TH:i:s\Z');
+        } catch (\Throwable $e) {
+            return $dt;
+        }
     }
 }

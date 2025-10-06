@@ -29,8 +29,8 @@ return [
         'csp' => [
             'enabled' => env('CSP_ENABLED', true),
             'default_src' => "'self'",
-            'script_src' => "'self' 'unsafe-inline' 'unsafe-eval'",
-            'style_src' => "'self' 'unsafe-inline'",
+            'script_src' => "'self'",
+            'style_src' => "'self'",
             'img_src' => "'self' data: https:",
             'font_src' => "'self'",
             'connect_src' => "'self'",

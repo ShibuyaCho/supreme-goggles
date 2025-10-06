@@ -117,7 +117,7 @@
                                 <input type="password" id="metrc-vendor-key" name="metrc_vendor_key" value="{{ config('pos.metrc_vendor_key', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                             <div>
-                                <label for="metrc-facility" class="block text-sm font-medium text-gray-700 mb-1">Facility License</label>
+                                <label for="metrc-facility" class="block text-sm font-medium text-gray-700 mb-1">Facility License Number</label>
                                 <input type="text" id="metrc-facility" name="metrc_facility" value="{{ config('pos.metrc_facility', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             </div>
                         </div>
@@ -127,19 +127,76 @@
                     <div>
                         <h4 class="text-lg font-medium text-gray-900 mb-4">Receipt Settings</h4>
                         <div class="space-y-4">
-                            <div>
-                                <label for="receipt-footer" class="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Text</label>
-                                <textarea id="receipt-footer" name="receipt_footer" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ config('pos.receipt_footer', 'Thank you for your business!\nKeep receipt for returns and warranty.') }}</textarea>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="store-name" class="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
+                                    <input type="text" id="store-name" name="store_name" value="{{ config('pos.store_name', 'Cannabis POS') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="license-number" class="block text-sm font-medium text-gray-700 mb-1">Business License Number</label>
+                                    <input type="text" id="license-number" name="license_number" value="{{ config('pos.license_number', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
                             </div>
-                            <div>
-                                <label for="store-name" class="block text-sm font-medium text-gray-700 mb-1">Store Name</label>
-                                <input type="text" id="store-name" name="store_name" value="{{ config('pos.store_name', 'Cannabis POS') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="store-email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                                    <input type="email" id="store-email" name="store_email" value="{{ config('pos.store_email', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label for="website" class="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                                    <input type="url" id="website" name="website" value="{{ config('pos.website', '') }}" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
                             </div>
                             <div>
                                 <label for="store-address" class="block text-sm font-medium text-gray-700 mb-1">Store Address</label>
                                 <textarea id="store-address" name="store_address" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ config('pos.store_address', '') }}</textarea>
                             </div>
+                            <div>
+                                <label for="receipt-footer" class="block text-sm font-medium text-gray-700 mb-1">Receipt Footer Text</label>
+                                <textarea id="receipt-footer" name="receipt_footer" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">{{ config('pos.receipt_footer', 'Thank you for your business!\nKeep receipt for returns and warranty.') }}</textarea>
+                            </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Auto Delete Zero-Quantity Products -->
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="flex items-center">
+                            <input id="auto-delete-zero-quantity" name="auto_delete_zero_quantity" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
+                            <span class="ml-2 text-sm text-gray-700">Enable auto-delete when products reach 0 quantity</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Days to wait before deleting</label>
+                        <input id="auto-delete-zero-days" name="auto_delete_zero_days" type="number" min="1" max="30" step="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                        <p class="text-xs text-gray-500 mt-1">Range: 1-30 days</p>
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label class="flex items-center">
+                            <input id="minimum-price-enabled" name="minimum_price_enabled" type="checkbox" class="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded" />
+                            <span class="ml-2 text-sm text-gray-700">Enforce minimum sale price</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Minimum sale amount</label>
+                        <input id="minimum-price-amount" name="minimum_price_amount" type="number" min="0" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500" />
+                    </div>
+                </div>
+
+                <div class="mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Receipt auto-print categories</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        @php($rcats = ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'])
+                        @foreach($rcats as $cat)
+                        <label class="flex items-center text-sm">
+                            <input type="checkbox" name="receipt_categories_autoprint" value="{{ $cat }}" class="mr-2 rounded text-cannabis-green focus:ring-cannabis-green">
+                            <span>{{ $cat }}</span>
+                        </label>
+                        @endforeach
                     </div>
                 </div>
 
@@ -163,23 +220,40 @@ function handleSettingsUpdate(event) {
     const formData = new FormData(event.target);
     const settingsData = {};
     
-    // Convert FormData to regular object
+    // Convert FormData to regular object (aggregate arrays)
+    const arrayFields = new Set(['receipt_categories_autoprint','minimum_price_categories','exit_label_categories']);
     for (let [key, value] of formData.entries()) {
-        settingsData[key] = value;
+        if (arrayFields.has(key)) {
+            if (!Array.isArray(settingsData[key])) settingsData[key] = [];
+            settingsData[key].push(value);
+        } else {
+            settingsData[key] = value;
+        }
     }
-    
+
     // Handle checkboxes (they won't appear in FormData if unchecked)
     const checkboxes = [
-        'tax_inclusive', 'auto_print_receipt', 'require_customer', 
-        'age_verification', 'limit_enforcement', 'accept_cash', 
-        'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled'
+        'tax_inclusive', 'auto_print_receipt', 'require_customer',
+        'age_verification', 'limit_enforcement', 'accept_cash',
+        'accept_debit', 'accept_check', 'round_to_nearest', 'metrc_enabled',
+        'auto_delete_zero_quantity', 'minimum_price_enabled'
     ];
-    
-    checkboxes.forEach(checkbox => {
-        if (!settingsData.hasOwnProperty(checkbox)) {
-            settingsData[checkbox] = false;
-        } else {
-            settingsData[checkbox] = true;
+
+    checkboxes.forEach((checkbox) => {
+        settingsData[checkbox] = Object.prototype.hasOwnProperty.call(settingsData, checkbox);
+    });
+
+    // Keep legacy/new keys in sync so backend always has both
+    if (Object.prototype.hasOwnProperty.call(settingsData, 'auto_print_receipt')) {
+        settingsData.receipt_autoprint = !!settingsData.auto_print_receipt;
+    }
+
+    // Coerce numerics
+    const numericFields = ['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days'];
+    numericFields.forEach((k) => {
+        if (Object.prototype.hasOwnProperty.call(settingsData, k)) {
+            const n = k === 'auto_delete_zero_days' ? parseInt(settingsData[k], 10) : parseFloat(settingsData[k]);
+            settingsData[k] = Number.isFinite(n) ? n : settingsData[k];
         }
     });
 
@@ -189,34 +263,108 @@ function handleSettingsUpdate(event) {
     submitButton.textContent = 'Saving...';
     submitButton.disabled = true;
 
-    CannabisPOS.api.post('/api/settings/update', settingsData)
-        .then(response => {
-            if (response.success) {
-                CannabisPOS.closeModal('settings-modal');
-                
-                // Update the tax display in the header
-                const taxDisplay = document.getElementById('tax-display');
-                if (taxDisplay) {
-                    taxDisplay.textContent = `Tax: ${settingsData.sales_tax}%`;
-                }
-                
-                // Show success message
-                alert('Settings updated successfully!');
-            } else {
-                throw new Error(response.message || 'Settings update failed');
+    (async () => {
+        try {
+            // Use centralized client (adds X-Store-ID, Authorization, retries)
+            let res = null;
+            try {
+                res = await (window.SettingsClient ? SettingsClient.save(settingsData) : Promise.resolve({ success:false }));
+            } catch(_) { res = null; }
+            if (!res || res.success !== true) {
+                // Last-resort: direct Supabase REST upsert to guarantee persistence
+                try {
+                    const raw = localStorage.getItem('pos_store');
+                    let sid = 'default';
+                    let sname = '';
+                    if (raw) { try { const ps = JSON.parse(raw) || {}; sid = ps?.id || 'default'; sname = ps?.name || ''; } catch(_) {} }
+                    sid = String(sid||'default').trim().toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9_.-]/g,'');
+                    if (sid === 'defaultstore') sid = 'default';
+                    try { if (!sname && window.SettingsClient && typeof SettingsClient.currentStoreName==='function') sname = String(SettingsClient.currentStoreName()||''); } catch(_) {}
+                    // Merge with current from server to avoid overwriting
+                    let merged = { ...settingsData };
+                    try {
+                        const g = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+                        const cur = (g && g.settings) || {};
+                        merged = { ...cur, ...settingsData };
+                    } catch(_) {}
+                    // Route fallback through Laravel with merged complete payload
+                    await (window.axios||axios).post('/api/settings/pos', merged, { headers: { 'X-Store-ID': sid, 'X-Store-Name': sname, Accept: 'application/json', 'Content-Type':'application/json' } });
+                    try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({})); } catch(_) {}
+                    CannabisPOS.closeModal('settings-modal');
+                    const taxDisplay = document.getElementById('tax-display');
+                    if (taxDisplay) taxDisplay.textContent = `Tax: ${merged.sales_tax ?? settingsData.sales_tax}%`;
+                    if (window.POS?.showToast) POS.showToast('Settings updated successfully!', 'success'); else alert('Settings updated successfully!');
+                    return;
+                } catch(_) { /* fallthrough to error toast below */ }
+                throw new Error('Settings update failed');
             }
-        })
-        .catch(error => {
-            console.error('Settings update error:', error);
-            alert('Failed to update settings: ' + (error.message || 'Unknown error'));
-        })
-        .finally(() => {
+            try { await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({})); } catch(_) {}
+            CannabisPOS.closeModal('settings-modal');
+            const taxDisplay = document.getElementById('tax-display');
+            if (taxDisplay) taxDisplay.textContent = `Tax: ${settingsData.sales_tax}%`;
+            if (window.POS?.showToast) POS.showToast('Settings updated successfully!', 'success'); else alert('Settings updated successfully!');
+        } catch (error) {
+            const msg = (error && error.response && (error.response.data?.message || error.response.data?.error)) || error.message || 'Unknown error';
+            if (window.POS?.showToast) POS.showToast(`Failed to update settings: ${msg}`, 'error'); else alert('Failed to update settings: ' + msg);
+        } finally {
             submitButton.textContent = originalText;
             submitButton.disabled = false;
-        });
+        }
+    })();
 }
 
-function openSettingsModal() {
+async function openSettingsModal() {
     CannabisPOS.openModal('settings-modal');
+    try {
+        const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false, settings:{} }));
+        const s = (resp && resp.settings) || {};
+        const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+        const setChk = (id, v) => { const el = document.getElementById(id); if (el) el.checked = !!v; };
+        setVal('sales-tax', s.sales_tax);
+        setVal('excise-tax', s.excise_tax);
+        (function(){
+            const rec = (s.cannabis_tax != null && s.cannabis_tax !== 0) ? s.cannabis_tax : s.sales_tax;
+            if (rec != null && Number.isFinite(Number(rec)) && Number(rec) >= 0) {
+                setVal('cannabis-tax', rec);
+            } else {
+                try {
+                    const el = document.getElementById('tax-display');
+                    const txt = String(el && el.textContent || '');
+                    const m = txt.match(/([0-9]+(?:\.[0-9]+)?)/);
+                    if (m) {
+                        const v = Number(m[1]);
+                        if (Number.isFinite(v)) setVal('cannabis-tax', v);
+                    }
+                } catch(_) {}
+            }
+        })();
+        setChk('tax-inclusive', s.tax_inclusive);
+        setChk('auto-print-receipt', s.receipt_autoprint ?? s.auto_print_receipt);
+        setChk('require-customer', s.require_customer);
+        setChk('age-verification', s.age_verification);
+        setChk('limit-enforcement', s.limit_enforcement);
+        setChk('accept-cash', s.accept_cash);
+        setChk('accept-debit', s.accept_debit);
+        setChk('accept-check', s.accept_check);
+        setChk('round-to-nearest', s.round_to_nearest);
+        setChk('metrc-enabled', s.metrc_enabled);
+        setVal('metrc-user-key', s.metrc_user_key);
+        setVal('metrc-vendor-key', s.metrc_vendor_key);
+        setVal('metrc-facility', s.metrc_facility);
+        setVal('receipt-footer', s.receipt_footer);
+        setVal('store-name', s.store_name);
+        setVal('store-address', s.store_address);
+        setVal('store-email', s.store_email);
+        setVal('website', s.website);
+        setVal('license-number', s.license_number);
+        setChk('auto-delete-zero-quantity', s.auto_delete_zero_quantity);
+        setVal('auto-delete-zero-days', s.auto_delete_zero_days);
+        setChk('minimum-price-enabled', s.minimum_price_enabled);
+        setVal('minimum-price-amount', s.minimum_price_amount);
+        (function(){
+            const cats = Array.isArray(s.receipt_categories_autoprint) ? s.receipt_categories_autoprint : [];
+            cats.forEach((v)=>{ try{ const el=[...document.querySelectorAll('input[name="receipt_categories_autoprint"][value="'+String(v).replace(/"/g,'\\"')+'"]')][0]; if(el) el.checked=true; }catch(_){ } });
+        })();
+    } catch (_) { /* ignore prefill errors */ }
 }
 </script>

@@ -15,6 +15,7 @@ use App\Http\Controllers\EmployeesController;
 use App\Http\Controllers\LoyaltyController;
 use App\Http\Controllers\ProductActionsController;
 use App\Http\Controllers\SettingsController;
+use Illuminate\Support\Facades\Log;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,12 +48,1543 @@ Route::get('/health', function () {
     ]);
 });
 
+// Public deals API for SPA compatibility
+Route::get('/deals', [DealsController::class, 'index']);
+
+// Supabase-backed open reads and writes (no auth) for SPA compatibility
+
+// Analytics open endpoints used by Blade dashboard
+Route::get('/analytics/overview-open', [AnalyticsController::class, 'overview']);
+Route::get('/analytics/end-of-day-open', [AnalyticsController::class, 'endOfDay']);
+// Customers (read-only open endpoint)
+Route::get('/customers-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $search = trim((string)$request->query('search', ''));
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($search !== '') {
+                $q = '*' . $search . '*';
+                $params['or'] = '(name.ilike.' . $q . ',email.ilike.' . $q . ',phone.ilike.' . $q . ')';
+            }
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get($supabaseUrl . '/rest/v1/customers', $params);
+            if ($resp->ok()) {
+                $rows = $resp->json() ?? [];
+                return response()->json(['customers' => is_array($rows) ? $rows : []]);
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['customers' => []]);
+});
+
+// Products (read-only open endpoint)
+Route::get('/products-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $search = trim((string)$request->query('search', ''));
+    $category = trim((string)$request->query('category', ''));
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($search !== '') {
+                $q = '*' . $search . '*';
+                $params['or'] = '(name.ilike.' . $q . ',sku.ilike.' . $q . ',metrc_tag.ilike.' . $q . ')';
+            }
+            if ($category !== '') { $params['category'] = 'eq.' . $category; }
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get($supabaseUrl . '/rest/v1/products', $params);
+            if ($resp->ok()) {
+                $rows = $resp->json() ?? [];
+                return response()->json(['products' => is_array($rows) ? $rows : []]);
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['products' => []]);
+});
+
+// Rooms (open read and create for SPA management)
+Route::get('/rooms-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($storeId) $params['store_id'] = 'eq.' . $storeId;
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get($supabaseUrl . '/rest/v1/rooms', $params);
+            if ($resp->ok()) return response()->json(['rooms' => $resp->json() ?? []]);
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['rooms' => []]);
+});
+Route::post('/rooms-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) return response()->json(['success'=>false,'message'=>'Supabase not configured'],503);
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeName = (string)($request->header('X-Store-Name') ?: '');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    $b = $request->all();
+    $row = [
+        'store_id' => $storeId,
+        'store_name' => $storeName ?: null,
+        'name' => $b['name'] ?? ($b['room_name'] ?? 'Room'),
+        'type' => $b['type'] ?? ($b['category'] ?? 'storage'),
+        'max_capacity' => isset($b['max_capacity']) ? (int)$b['max_capacity'] : null,
+        'description' => $b['description'] ?? null,
+        'is_active' => array_key_exists('is_active', $b) ? (bool)$b['is_active'] : true,
+        'updated_at' => now()->toIso8601String(),
+    ];
+    try {
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+        ])->post($supabaseUrl . '/rest/v1/rooms?on_conflict=store_id,name', [ $row ]);
+        if ($resp->successful()) {
+            $arr = $resp->json(); $created = is_array($arr)&&isset($arr[0])?$arr[0]:$arr; return response()->json(['success'=>true,'room'=>$created],201);
+        }
+        return response()->json(['success'=>false,'message'=>$resp->body()],400);
+    } catch (\Throwable $e) {
+        return response()->json(['success'=>false,'message'=>$e->getMessage()],500);
+    }
+});
+
+// Drawers (open read and create)
+Route::get('/drawers-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    $roomId = $request->query('room_id');
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($storeId) $params['store_id'] = 'eq.' . $storeId;
+            if ($roomId) $params['room_id'] = 'eq.' . $roomId;
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+            ])->get($supabaseUrl . '/rest/v1/drawers', $params);
+            if ($resp->ok()) return response()->json(['drawers' => $resp->json() ?? []]);
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['drawers' => []]);
+});
+Route::post('/drawers-open', function(\Illuminate\Http\Request $request) {
+    $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) return response()->json(['success'=>false,'message'=>'Supabase not configured'],503);
+    $storeId = (string)($request->header('X-Store-ID') ?: 'default');
+    $storeName = (string)($request->header('X-Store-Name') ?: '');
+    $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+    $b = $request->all();
+    $row = [
+        'store_id' => $storeId,
+        'store_name' => $storeName ?: null,
+        'room_id' => $b['room_id'] ?? null,
+        'name' => $b['name'] ?? 'Drawer',
+        'status' => $b['status'] ?? 'open',
+        'starting_amount' => isset($b['starting_amount']) ? (float)$b['starting_amount'] : 0,
+        'current_amount' => isset($b['current_amount']) ? (float)$b['current_amount'] : 0,
+        'opened_at' => $b['opened_at'] ?? now()->toIso8601String(),
+        'updated_at' => now()->toIso8601String(),
+    ];
+    try {
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'return=representation',
+            'X-Store-ID' => $storeId,
+        ])->post($supabaseUrl . '/rest/v1/drawers', [ $row ]);
+        if ($resp->successful()) {
+            $arr = $resp->json(); $created = is_array($arr)&&isset($arr[0])?$arr[0]:$arr; return response()->json(['success'=>true,'drawer'=>$created],201);
+        }
+        return response()->json(['success'=>false,'message'=>$resp->body()],400);
+    } catch (\Throwable $e) {
+        return response()->json(['success'=>false,'message'=>$e->getMessage()],500);
+    }
+});
+
+// Activity logging (best-effort; may be a no-op)
+Route::post('/activity', function(\Illuminate\Http\Request $request){
+    try { \Illuminate\Support\Facades\Log::info('Activity', ['payload'=>$request->all()]); } catch (\Throwable $e) {}
+    // Also persist to Supabase activity_logs (best-effort)
+    try {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        if ($supabaseUrl && $supabaseKey) {
+            $payload = $request->all();
+            \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'Prefer' => 'return=representation'
+            ])->post($supabaseUrl . '/rest/v1/activity_logs', [[
+                'actor_user_id' => $request->user()->id ?? null,
+                'action' => (string)($payload['action'] ?? 'activity'),
+                'payload' => $payload,
+                'created_at' => now()->toIso8601String(),
+            ]]);
+        }
+    } catch (\Throwable $e) { /* ignore */ }
+    return response()->json(['success'=>true]);
+});
+Route::post('/deals', [DealsController::class, 'store']);
+Route::put('/deals/{id}', [DealsController::class, 'update']);
+Route::patch('/deals/{id}', [DealsController::class, 'update']);
+Route::delete('/deals/{id}', [DealsController::class, 'destroy']);
+// Email campaign trigger (rate-limited)
+Route::post('/deals/{id}/email', [DealsController::class, 'sendEmailCampaign'])->middleware('throttle:6,1');
+// Products list for pickers (returns JSON, supports search/status params)
+Route::get('/products', [ProductsController::class, 'index']);
+
+// Public POS settings endpoints for SPA/demo compatibility
+Route::get('/settings/pos', function() {
+    $isProdProtected = (app()->environment('production') && !filter_var(env('DEMO_MODE', false), FILTER_VALIDATE_BOOLEAN));
+    if ($isProdProtected) {
+        if (!auth()->check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+    }
+    \Illuminate\Support\Facades\Log::info('Settings GET', ['scope' => 'public', 'store' => (string)request()->header('X-Store-ID')]);
+    $noCache = false;
+    try {
+        $noCache = (bool)request()->boolean('nocache');
+        if (!$noCache) {
+            $cc = (string)request()->header('Cache-Control', '');
+            $noCache = stripos($cc, 'no-cache') !== false || stripos($cc, 'max-age=0') !== false;
+        }
+    } catch (\Throwable $e) { $noCache = false; }
+    $defaults = [
+        'sales_tax' => 0.0,
+        'excise_tax' => 10.0,
+        'cannabis_tax' => 17.0,
+        'tax_inclusive' => false,
+        'store_name' => 'Cannabest POS',
+        'store_address' => '',
+        'store_phone' => '',
+        'store_email' => '',
+        'website' => '',
+        'store_manager' => '',
+        'license_number' => '',
+        'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
+        'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
+        'auto_print_receipt' => false,
+        'receipt_autoprint' => false,
+        'receipt_categories_autoprint' => [],
+        'receipt_show_tax_breakdown' => true,
+        'receipt_show_metrc' => true,
+        'receipt_show_loyalty' => true,
+        'receipt_show_qr_code' => false,
+        'default_receipt_printer' => '',
+        'receipt_paper_size' => '80mm',
+        'require_customer' => true,
+        'age_verification' => true,
+        'limit_enforcement' => true,
+        'accept_cash' => true,
+        'accept_debit' => true,
+        'accept_check' => false,
+        'round_to_nearest' => false,
+        'minimum_price_enabled' => false,
+        'minimum_price_amount' => 0.01,
+        'minimum_price_categories' => [],
+        'inventory_view_mode' => 'cards',
+        'expandable_cart' => true,
+        'role_permissions' => [
+            'admin' => ['*'],
+            'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
+            'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+            'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+            'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+        ],
+        'auto_delete_zero_quantity' => false,
+        'auto_delete_zero_days' => 1,
+        'weight_threshold' => 0,
+        'metrc_enabled' => true,
+        'metrc_user_key' => '',
+        'metrc_vendor_key' => '',
+        'metrc_facility' => env('METRC_FACILITY', ''),
+        'metrc_auto_push_sales' => false,
+        'dark_mode' => false,
+        'theme_color' => 'green',
+        'font_size' => 'medium',
+        'high_contrast' => false,
+        'reduce_motion' => false,
+        'business_hours' => [
+            ['day' => 'Monday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+            ['day' => 'Tuesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+            ['day' => 'Wednesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+            ['day' => 'Thursday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+            ['day' => 'Friday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+            ['day' => 'Saturday', 'is_open' => true, 'open_time' => '10:00', 'close_time' => '20:00'],
+            ['day' => 'Sunday', 'is_open' => true, 'open_time' => '11:00', 'close_time' => '19:00'],
+        ],
+    ];
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $settingsRemote = [];
+    $settingsLocal = [];
+    $settingsCache = [];
+    // Multi-store: scope by headers when present (normalize smart quotes and aliases)
+    $norm = function($s){ return trim(strtr((string)($s??''), ["’"=>"'","‘"=>"'","`"=>"'"])); };
+    $alias = [
+        'THC Barbur' => "Today's Herbal Choice Barbur",
+        'THC Stayton' => "Today's Herbal Choice Stayton",
+        'THC Molalla' => "Today's Herbal Choice Molalla",
+        'THC Milwaukie' => "Today's Herbal Choice Milwaukie",
+        'THC Forest Grove' => "Today's Herbal Choice Forest Grove",
+        'THC Tillamook' => "Today's Herbal Choice Tillamook",
+        'THC Rainier' => "Today's Herbal Choice Rainier",
+    ];
+    $storeId = $norm(request()->header('X-Store-ID'));
+    if ($storeId === '' || $storeId === null) $storeId = 'default';
+    $storeName = $norm(request()->header('X-Store-Name'));
+    if (isset($alias[$storeName])) $storeName = $alias[$storeName];
+    if (stripos($storeId, "Today's Herbal Choice") !== false) { $storeName = $storeId; }
+    elseif (stripos($storeName, "Today's Herbal Choice") !== false) { /* keep storeName */ }
+    elseif (isset($alias[$storeName])) { $storeName = $alias[$storeName]; }
+    $updatedAtRemote = null; $updatedAtLocal = null;
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = [ 'select' => '*' ];
+            if ($storeName !== '') {
+                $params['or'] = '(store_name.eq.' . $storeName . ',id.eq.' . $storeId . ')';
+            } else {
+                $params['id'] = 'eq.' . $storeId;
+            }
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+            $row = null;
+            if ($resp->ok()) {
+                $arr = $resp->json();
+                $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+            }
+            // Secondary attempt: if no row and storeName provided, try by name only (handles non-unique or sanitized ids)
+            if (!$row && $storeName !== '') {
+                try {
+                    $respByName = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'X-Store-ID' => $storeId,
+                    ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'store_name' => 'eq.' . $storeName,
+                        'select' => '*',
+                    ]);
+                    if ($respByName->ok()) {
+                        $arrByName = $respByName->json();
+                        $row = (is_array($arrByName) && isset($arrByName[0])) ? $arrByName[0] : null;
+                    }
+                } catch (\Throwable $e) { /* ignore */ }
+            }
+            // Legacy fallback: defaultstore
+            if (!$row && $storeId === 'default') {
+                $resp2 = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                    'id' => 'eq.defaultstore',
+                    'select' => '*',
+                ]);
+                if ($resp2->ok()) {
+                    $arr2 = $resp2->json();
+                    $row = (is_array($arr2) && isset($arr2[0])) ? $arr2[0] : null;
+                }
+            }
+            if (is_array($row)) {
+                $compose = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if(isset($r['store_name']) && is_string($r['store_name'])) $out['store_name'] = $r['store_name']; return $out; };
+                $settingsRemote = $compose($row);
+                if (isset($row['settings']) && is_array($row['settings']) && isset($row['settings']['settings_version']) && !isset($settingsRemote['settings_version'])) { $settingsRemote['settings_version'] = (int)$row['settings']['settings_version']; }
+                $updatedAtRemote = $row['updated_at'] ?? null;
+            } else {
+                // Fallback: try default, then legacy defaultstore
+                foreach (['default','defaultstore'] as $fid) {
+                    if ($fid === $storeId) continue;
+                    try {
+                        $respF = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                            'X-Store-ID' => $storeId,
+                        ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $fid,
+                            'select' => '*',
+                        ]);
+                        if ($respF->ok()) {
+                            $arrF = $respF->json();
+                            $rowF = (is_array($arrF) && isset($arrF[0])) ? $arrF[0] : null;
+                            if (is_array($rowF)) {
+                                $composeF = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if(isset($r['store_name']) && is_string($r['store_name'])) $out['store_name'] = $r['store_name']; return $out; };
+                                $settingsRemote = $composeF($rowF);
+                                if (isset($rowF['settings']) && is_array($rowF['settings']) && isset($rowF['settings']['settings_version']) && !isset($settingsRemote['settings_version'])) { $settingsRemote['settings_version'] = (int)$rowF['settings']['settings_version']; }
+                                $updatedAtRemote = $rowF['updated_at'] ?? null;
+                                break;
+                            }
+                        }
+                    } catch (\Throwable $e) { /* ignore */ }
+                }
+            }
+        } catch (\Throwable $e) {}
+    }
+    // Local DB overlay disabled to prevent stale data overriding Supabase edits
+    $settingsLocal = [];
+    $updatedAtLocal = null;
+
+    // Read from Cache unless bypass requested
+    try {
+        if (!$noCache) {
+            $settingsCache = \Illuminate\Support\Facades\Cache::get('pos_settings:' . $storeId, []);
+        } else {
+            $settingsCache = [];
+        }
+    } catch (\Throwable $e) { $settingsCache = []; }
+    // Compose final settings preferring values from the freshest source.
+    // Order: defaults -> cache -> PRIMARY (newest of remote/local) -> SECONDARY fills only missing keys.
+    $mergeNonNull = function(array $base, array $overlay) {
+        foreach ($overlay as $k => $v) {
+            // Allow null and empty string to overwrite to preserve explicit clears
+            $base[$k] = $v;
+        }
+        return $base;
+    };
+    header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+    $fillMissing = function(array $base, array $overlay) {
+        foreach ($overlay as $k => $v) {
+            if (!array_key_exists($k, $base)) {
+                $base[$k] = $v;
+            }
+        }
+        return $base;
+    };
+
+    $settings = $defaults;
+    // Apply cache first; it will be overwritten by fresher sources below
+    if (is_array($settingsCache))  $settings = $mergeNonNull($settings, $settingsCache);
+
+    $hasRemote = is_array($settingsRemote) && !empty($settingsRemote);
+    // Prefer Supabase when present; do not fallback to local unless remote is empty
+    if ($hasRemote) {
+        $settings = $mergeNonNull($settings, $settingsRemote);
+    }
+
+    // Coerce known numeric and boolean fields to correct types
+    foreach (['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'] as $n) {
+        if (array_key_exists($n, $settings)) {
+            $settings[$n] = is_numeric($settings[$n]) ? 0 + $settings[$n] : ($settings[$n] ?? 0);
+        }
+    }
+    foreach ([
+        'receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+        'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+        'minimum_price_enabled','expandable_cart','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion','metrc_enabled','metrc_auto_push_sales'
+    ] as $b) {
+        if (array_key_exists($b, $settings)) {
+            $settings[$b] = (bool)$settings[$b];
+        }
+    }
+    // Mirror cannabis_tax and sales_tax for consistency if one is missing/zero
+    try {
+        $st = isset($settings['sales_tax']) ? (float)$settings['sales_tax'] : 0.0;
+        $rec = isset($settings['cannabis_tax']) ? (float)$settings['cannabis_tax'] : 0.0;
+        if (($rec === 0.0 || !is_finite($rec)) && is_finite($st) && $st > 0) {
+            $settings['cannabis_tax'] = $st;
+        }
+        if (($st === 0.0 || !is_finite($st)) && is_finite($rec) && $rec > 0) {
+            $settings['sales_tax'] = $rec;
+        }
+    } catch (\Throwable $e) { /* ignore */ }
+
+    $settingsUpdatedAt = $updatedAtRemote ?? $updatedAtLocal;
+    try {
+        if ($updatedAtRemote && $updatedAtLocal) {
+            $settingsUpdatedAt = strcmp((string)$updatedAtRemote, (string)$updatedAtLocal) >= 0 ? $updatedAtRemote : $updatedAtLocal;
+        }
+    } catch (\Throwable $e) {}
+
+    // Do not return or store METRC secrets
+    $settings['metrc_user_key'] = '';
+    $settings['metrc_vendor_key'] = '';
+    // Ensure a version field exists for optimistic coordination
+    if (!isset($settings['settings_version'])) { $settings['settings_version'] = 0; }
+    return response()->json([
+        'success' => true,
+        'settings' => $settings,
+        'settings_updated_at' => $settingsUpdatedAt,
+        'store_id' => $storeId,
+        'store_name' => isset($settings['store_name']) ? (string)$settings['store_name'] : '',
+        'tax_rate' => $settings['sales_tax'] ?? 0.0,
+        'currency' => 'USD',
+        'timezone' => config('app.timezone'),
+    ])->header('Vary','X-Store-ID, X-Store-Name');
+});
+Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
+    $isProdProtected = (app()->environment('production') && !filter_var(env('DEMO_MODE', false), FILTER_VALIDATE_BOOLEAN));
+    if ($isProdProtected) {
+        if (!auth()->check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthenticated'], 401);
+        }
+        $user = auth()->user();
+        $hasPermission = function(array $perms, string $required): bool {
+            if (in_array('*', $perms, true)) return true;
+            if (in_array($required, $perms, true)) return true;
+            $parts = explode(':', $required, 2);
+            if (count($parts) === 2) {
+                [$ns, $act] = $parts;
+                if (in_array($ns . ':*', $perms, true)) return true;
+            }
+            return false;
+        };
+        $required = 'settings:write';
+        $role = $user->role ?? null;
+        $userPerms = is_array($user->permissions ?? null) ? ($user->permissions ?? []) : [];
+        $allowed = ($role === 'admin') || $hasPermission($userPerms, $required);
+        if (!$allowed) {
+            try {
+                $sid = (string)($request->header('X-Store-ID') ?: 'default');
+                $sid = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $sid);
+                if ($sid === 'defaultstore') $sid = 'default';
+                $settings = \Illuminate\Support\Facades\Cache::get('pos_settings:' . $sid, \Illuminate\Support\Facades\Cache::get('pos_settings', []));
+                $rolePerms = [];
+                if ($role && isset($settings['role_permissions']) && is_array($settings['role_permissions'])) {
+                    $rolePerms = $settings['role_permissions'][$role] ?? [];
+                } else {
+                    $defaults = [
+                        'admin' => ['*'],
+                        'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
+                        'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+                        'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                        'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read']
+                    ];
+                    $rolePerms = $defaults[$role] ?? [];
+                }
+                $allowed = $hasPermission($rolePerms, $required);
+            } catch (\Throwable $e) { $allowed = false; }
+        }
+        if (!$allowed) {
+            return response()->json(['success'=>false,'message'=>'Insufficient permissions','required_permission'=>$required], 403);
+        }
+    }
+    \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'public', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
+    $incoming = $request->all();
+    // If client sent a nested `settings` object, flatten it into top-level keys
+    if (isset($incoming['settings']) && is_array($incoming['settings'])) {
+        $nested = $incoming['settings'];
+        unset($incoming['settings']);
+        $incoming = array_merge($nested, $incoming);
+    }
+    // Basic validation for critical fields
+    $validator = \Illuminate\Support\Facades\Validator::make($incoming, [
+        'print_labels' => 'sometimes|boolean',
+        'receipt_template' => 'sometimes|in:standard,detailed,minimal',
+    ]);
+    if ($validator->fails()) {
+        return response()->json(['success'=>false,'message'=>'Validation failed','errors'=>$validator->errors()], 400);
+    }
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    // Multi-store: scope by X-Store-ID/Name with normalization and aliases
+    $norm = function($s){ return trim(strtr((string)($s??''), ["’"=>"'","‘"=>"'","`"=>"'"])); };
+    $alias = [
+        'THC Barbur' => "Today's Herbal Choice Barbur",
+        'THC Stayton' => "Today's Herbal Choice Stayton",
+        'THC Molalla' => "Today's Herbal Choice Molalla",
+        'THC Milwaukie' => "Today's Herbal Choice Milwaukie",
+        'THC Forest Grove' => "Today's Herbal Choice Forest Grove",
+        'THC Tillamook' => "Today's Herbal Choice Tillamook",
+        'THC Rainier' => "Today's Herbal Choice Rainier",
+    ];
+    $storeId = $norm($request->header('X-Store-ID'));
+    if ($storeId === '' || $storeId === null) $storeId = 'default';
+    $storeNameHeader = $norm($request->header('X-Store-Name'));
+    if (isset($alias[$storeNameHeader])) $storeNameHeader = $alias[$storeNameHeader];
+    if (stripos($storeId, "Today's Herbal Choice") !== false) { $incoming['store_name'] = $storeId; }
+    elseif (!empty($incoming['store_name'])) { $incoming['store_name'] = $norm($incoming['store_name']); if (isset($alias[$incoming['store_name']])) $incoming['store_name'] = $alias[$incoming['store_name']]; }
+    elseif ($storeNameHeader !== '') { $incoming['store_name'] = $storeNameHeader; }
+    try {
+        // Merge with current
+        $current = [];
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $resp0 = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                    'id' => 'eq.' . $storeId,
+                'select' => '*',
+                ]);
+                if ($resp0->ok()) {
+                    $arr = $resp0->json();
+                    $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+                    if (is_array($row)) {
+                        $cur = [];
+                        foreach (['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col) {
+                            if (isset($row[$col]) && is_array($row[$col])) { $cur = array_merge($cur, $row[$col]); }
+                        }
+                        if (isset($row['store_name']) && is_string($row['store_name'])) { $cur['store_name'] = $row['store_name']; }
+                        $current = $cur;
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+        // Reject stale writes when client provides a version older than server
+        try {
+            $clientVersion = null;
+            if (isset($incoming['settings_version'])) $clientVersion = (int)$incoming['settings_version'];
+            elseif ($request->hasHeader('X-Settings-Version')) $clientVersion = (int)$request->header('X-Settings-Version');
+            if ($clientVersion !== null && isset($current['settings_version'])) {
+                $serverVersion = (int)$current['settings_version'];
+                if ($clientVersion < $serverVersion) {
+                    return response()->json([
+                        'success'=>false,
+                        'message'=>'stale_write',
+                        'server_version'=>$serverVersion,
+                        'server_settings'=>$current,
+                    ], 409);
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Preserve existing METRC keys if incoming is masked
+        $maskPattern = '/^(?:[•*]+)$/u';
+        foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
+            if (isset($incoming[$k]) && is_string($incoming[$k]) && preg_match($maskPattern, trim($incoming[$k]))) {
+                if (isset($current[$k])) { $incoming[$k] = $current[$k]; }
+            }
+        }
+        // Preserve explicit clears: do not drop null/empty string values; allow client to intentionally clear fields
+        $merged = array_merge(is_array($current)?$current:[], is_array($incoming)?$incoming:[]);
+        // Bump a simple settings_version to coordinate multi-tab saves
+        $merged['settings_version'] = (int)($current['settings_version'] ?? 0) + 1;
+        // Strip METRC secrets from persisted settings
+        unset($merged['metrc_user_key'], $merged['metrc_vendor_key']);
+        // Normalize array fields sent as JSON strings and ensure correct types
+        foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours','role_permissions'] as $field) {
+            if (isset($merged[$field]) && is_string($merged[$field])) {
+                $decoded = json_decode($merged[$field], true);
+                if (json_last_error() === JSON_ERROR_NONE) $merged[$field] = $decoded;
+            }
+        }
+        // Deduplicate and sort arrays for idempotency
+        foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories'] as $af) {
+            if (isset($merged[$af]) && is_array($merged[$af])) {
+                $merged[$af] = array_values(array_unique(array_map('strval', $merged[$af])));
+                sort($merged[$af], SORT_STRING);
+            }
+        }
+        // Normalize business_hours entries: canonical day order and types
+        try {
+            $dayOrder = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+            if (isset($merged['business_hours']) && is_array($merged['business_hours'])){
+                $norm = array_map(function($it) use ($dayOrder){
+                    $dayRaw = isset($it['day']) ? (string)$it['day'] : '';
+                    $day = in_array($dayRaw, $dayOrder, true) ? $dayRaw : (ucfirst(strtolower($dayRaw ?: 'Monday')));
+                    return [
+                        'day' => $day,
+                        'is_open' => (bool)($it['is_open'] ?? false),
+                        'open_time' => (string)($it['open_time'] ?? '09:00'),
+                        'close_time' => (string)($it['close_time'] ?? '21:00'),
+                    ];
+                }, $merged['business_hours']);
+                usort($norm, function($a,$b) use ($dayOrder){ return array_search($a['day'],$dayOrder,true) <=> array_search($b['day'],$dayOrder,true); });
+                $merged['business_hours'] = $norm;
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Coerce booleans for known toggle fields
+        foreach ([
+            'receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+            'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+            'minimum_price_enabled','expandable_cart','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion','metrc_enabled','metrc_auto_push_sales'
+        ] as $b) {
+            if (array_key_exists($b, $merged)) $merged[$b] = (bool)filter_var($merged[$b], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? (bool)$merged[$b];
+        }
+        // Coerce numeric fields
+        foreach ([
+            'sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'
+        ] as $n) {
+            if (isset($merged[$n])) $merged[$n] = is_numeric($merged[$n]) ? 0 + $merged[$n] : $merged[$n];
+        }
+        // Mirror cannabis_tax and sales_tax for consistency when one is zero/missing
+        try {
+            $st = isset($merged['sales_tax']) ? (float)$merged['sales_tax'] : 0.0;
+            $rec = isset($merged['cannabis_tax']) ? (float)$merged['cannabis_tax'] : 0.0;
+            if (($rec === 0.0 || !is_finite($rec)) && is_finite($st) && $st > 0) {
+                $merged['cannabis_tax'] = $st;
+            }
+            if (($st === 0.0 || !is_finite($st)) && is_finite($rec) && $rec > 0) {
+                $merged['sales_tax'] = $rec;
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Merge with full defaults to ensure the stored JSON contains every known key
+        $defaultsAll = [
+            'sales_tax' => 0.0,
+            'excise_tax' => 10.0,
+            'cannabis_tax' => 17.0,
+            'tax_inclusive' => false,
+            'store_name' => 'Cannabest POS',
+            'store_address' => '',
+            'store_phone' => '',
+            'store_email' => '',
+            'website' => '',
+            'store_manager' => '',
+            'license_number' => '',
+            'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
+            'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
+            'auto_print_receipt' => false,
+            'receipt_autoprint' => false,
+            'receipt_categories_autoprint' => [],
+            'receipt_show_tax_breakdown' => true,
+            'receipt_show_metrc' => true,
+            'receipt_show_loyalty' => true,
+            'receipt_show_qr_code' => false,
+            'default_receipt_printer' => '',
+            'receipt_paper_size' => '80mm',
+            'require_customer' => true,
+            'age_verification' => true,
+            'limit_enforcement' => true,
+            'accept_cash' => true,
+            'accept_debit' => true,
+            'accept_check' => false,
+            'round_to_nearest' => false,
+            'minimum_price_enabled' => false,
+            'minimum_price_amount' => 0.01,
+            'minimum_price_categories' => [],
+            'inventory_view_mode' => 'cards',
+            'expandable_cart' => true,
+            'weight_threshold' => 0,
+            'role_permissions' => [
+                'admin' => ['*'],
+                'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
+                'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+                'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+            ],
+            'auto_delete_zero_quantity' => false,
+            'auto_delete_zero_days' => 1,
+            'metrc_enabled' => true,
+            'metrc_user_key' => '',
+        'metrc_vendor_key' => '',
+            'metrc_facility' => env('METRC_FACILITY', ''),
+            'metrc_auto_push_sales' => false,
+            'dark_mode' => false,
+            'theme_color' => 'green',
+            'font_size' => 'medium',
+            'high_contrast' => false,
+            'reduce_motion' => false,
+            'business_hours' => [
+                ['day' => 'Monday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Tuesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Wednesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Thursday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Friday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                ['day' => 'Saturday', 'is_open' => true, 'open_time' => '10:00', 'close_time' => '20:00'],
+                ['day' => 'Sunday', 'is_open' => true, 'open_time' => '11:00', 'close_time' => '19:00'],
+            ],
+        ];
+        $merged = array_replace_recursive($defaultsAll, $merged);
+        $savedRemote = false;
+        if ($supabaseUrl && $supabaseKey) {
+            // Build sectioned column payloads from merged settings
+            $pick = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) { $out[$k] = $src[$k]; } } return $out; };
+            $cols = [
+                'Store_Information' => $pick($merged, ['store_name','license_number','store_address','store_phone','store_email','business_hours']),
+                'Tax_Configuration' => $pick($merged, ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']),
+                'Sales_&_Transaction_Settings' => $pick($merged, ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']),
+                'Printing_Preferences' => $pick($merged, ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']),
+                'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_facility','metrc_auto_push_sales']),
+                'Auto_Delete_Zero-Quantity_Products' => $pick($merged, ['auto_delete_zero_quantity','auto_delete_zero_days']),
+            ];
+            // Coerce numeric/boolean types for stable equality
+            $numKeys = ['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold'];
+            $boolKeys = ['tax_inclusive','receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','expandable_cart','metrc_enabled','metrc_auto_push_sales','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion'];
+            $coerce = function($arr) use ($numKeys,$boolKeys){ foreach ($arr as $k=>&$v){ if (is_array($v)) { $v = $coerce($v); } else { if (in_array($k,$numKeys,true)) { if (is_string($v) || is_numeric($v)) $v = 0 + $v; } if (in_array($k,$boolKeys,true)) { if (is_string($v)) { $s = strtolower($v); if ($s==='true'||$s==='1') $v=true; elseif ($s==='false'||$s==='0') $v=false; } } } } return $arr; };
+            $cols = $coerce($cols);
+            // Enforce consistency: mirror top-level store_name into Store_Information
+            try { if (!isset($cols['Store_Information']['store_name']) || $cols['Store_Information']['store_name'] !== ($merged['store_name'] ?? null)) { $cols['Store_Information']['store_name'] = $merged['store_name'] ?? null; } } catch (\Throwable $e) { /* ignore */ }
+            // Resolve target row: if a row exists for this store_name, update that row to avoid unique store_name collisions
+            $targetId = $storeId;
+            try {
+                $snameQ = trim((string)($merged['store_name'] ?? ''));
+                if ($snameQ !== '') {
+                    $findByName = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'X-Store-ID' => $storeId,
+                    ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'store_name' => 'eq.' . $snameQ,
+                        'select' => 'id,store_name',
+                        'limit' => 1,
+                    ]);
+                    if ($findByName->ok()) {
+                        $fa = $findByName->json();
+                        $fr = (is_array($fa) && isset($fa[0])) ? $fa[0] : null;
+                        if ($fr && isset($fr['id'])) { $targetId = (string)$fr['id']; }
+                    }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+            // Early-out: if remote already matches desired columns, skip write
+            try {
+                $paramsChk = [ 'select' => '*' ];
+                $snameH = is_string($merged['store_name'] ?? '') ? trim($merged['store_name']) : '';
+                if ($snameH !== '') { $paramsChk['or'] = '(store_name.eq.' . $snameH . ',id.eq.' . $targetId . ')'; } else { $paramsChk['id'] = 'eq.' . $targetId; }
+                $verChk = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Cache-Control' => 'no-cache',
+                ])->retry(3, 150)->timeout(10)->withHeaders(['X-Store-ID' => $targetId])->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $paramsChk);
+                if ($verChk->ok()){
+                    $va = $verChk->json();
+                    $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                    if ($vr) {
+                        $pickR = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) { $out[$k] = $src[$k]; } } return $out; };
+                        $remoteCols = [
+                            'Store_Information' => isset($vr['Store_Information']) && is_array($vr['Store_Information']) ? $pickR($vr['Store_Information'], ['store_name','license_number','store_address','store_phone','store_email','business_hours']) : [],
+                            'Tax_Configuration' => isset($vr['Tax_Configuration']) && is_array($vr['Tax_Configuration']) ? $pickR($vr['Tax_Configuration'], ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']) : [],
+                            'Sales_&_Transaction_Settings' => isset($vr['Sales_&_Transaction_Settings']) && is_array($vr['Sales_&_Transaction_Settings']) ? $pickR($vr['Sales_&_Transaction_Settings'], ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']) : [],
+                            'Printing_Preferences' => isset($vr['Printing_Preferences']) && is_array($vr['Printing_Preferences']) ? $pickR($vr['Printing_Preferences'], ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']) : [],
+                            'Metrc_Integration' => isset($vr['Metrc_Integration']) && is_array($vr['Metrc_Integration']) ? $pickR($vr['Metrc_Integration'], ['metrc_enabled','metrc_facility','metrc_auto_push_sales']) : [],
+                            'Auto_Delete_Zero-Quantity_Products' => isset($vr['Auto_Delete_Zero-Quantity_Products']) && is_array($vr['Auto_Delete_Zero-Quantity_Products']) ? $pickR($vr['Auto_Delete_Zero-Quantity_Products'], ['auto_delete_zero_quantity','auto_delete_zero_days']) : [],
+                        ];
+                        $norm = function($v) use (&$norm){ if (is_array($v)) { ksort($v); foreach ($v as $kk=>$vv){ $v[$kk] = $norm($vv); } } return $v; };
+                        if (json_encode($norm($cols)) === json_encode($norm($remoteCols))) {
+                            $respSettings = $merged;
+                            if (!isset($respSettings['settings_version'])) { $respSettings['settings_version'] = (int)($current['settings_version'] ?? 0); }
+                            $respSettings['metrc_user_key'] = '';
+                            $respSettings['metrc_vendor_key'] = '';
+                            return response()->json(['success'=>true,'settings'=>$respSettings])->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0');
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { /* continue to write */ }
+
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'Prefer' => 'resolution=merge-duplicates,return=representation',
+                'X-Store-ID' => $targetId,
+            ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                'id' => $targetId,
+                'store_name' => (isset($merged['store_name']) && trim((string)$merged['store_name']) !== '') ? $merged['store_name'] : null,
+                'Store_Information' => $cols['Store_Information'],
+                'Tax_Configuration' => $cols['Tax_Configuration'],
+                'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                'Printing_Preferences' => $cols['Printing_Preferences'],
+                'Metrc_Integration' => $cols['Metrc_Integration'],
+                'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                'settings' => $merged,
+                'updated_at' => now()->toIso8601String(),
+            ]]);
+            // Fallback: if upsert fails, try PATCH update targeting the resolved row id, excluding store_name to avoid unique collisions
+            if (!$resp->successful()) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'resolution=merge-duplicates,return=representation',
+                        'X-Store-ID' => $targetId,
+                    ])->retry(3, 150)->timeout(10)->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($targetId), [
+                        'Store_Information' => $cols['Store_Information'],
+                        'Tax_Configuration' => $cols['Tax_Configuration'],
+                        'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                        'Printing_Preferences' => $cols['Printing_Preferences'],
+                        'Metrc_Integration' => $cols['Metrc_Integration'],
+                        'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                        'settings' => $merged,
+                        'updated_at' => now()->toIso8601String(),
+                    ]);
+                } catch (\Throwable $e) { /* ignore */ }
+                // Last resort: patch by store_name if present
+                if (!$resp->successful() && !empty($merged['store_name'])) {
+                    try {
+                        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                            'apikey' => $supabaseKey,
+                            'Authorization' => 'Bearer ' . $supabaseKey,
+                            'Accept' => 'application/json',
+                            'Prefer' => 'resolution=merge-duplicates,return=representation',
+                            'X-Store-ID' => $targetId,
+                        ])->retry(3, 150)->timeout(10)->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?store_name=eq.' . urlencode((string)$merged['store_name']), [
+                            'Store_Information' => $cols['Store_Information'],
+                            'Tax_Configuration' => $cols['Tax_Configuration'],
+                            'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                            'Printing_Preferences' => $cols['Printing_Preferences'],
+                            'Metrc_Integration' => $cols['Metrc_Integration'],
+                            'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                            'settings' => $merged,
+                            'updated_at' => now()->toIso8601String(),
+                        ]);
+                    } catch (\Throwable $e) { /* ignore */ }
+                }
+            }
+            // Also write to legacy id for backward-compatibility
+            if ($storeId === 'default' || $storeId === 'defaultstore') {
+                try {
+                    $legacy = $storeId === 'default' ? 'defaultstore' : 'default';
+                    \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                        'Prefer' => 'resolution=merge-duplicates,return=representation',
+                        'X-Store-ID' => $legacy,
+                    ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                        'id' => $legacy,
+                        'store_name' => (isset($merged['store_name']) && trim((string)$merged['store_name']) !== '') ? $merged['store_name'] : null,
+                        'Store_Information' => $cols['Store_Information'],
+                        'Tax_Configuration' => $cols['Tax_Configuration'],
+                        'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                        'Printing_Preferences' => $cols['Printing_Preferences'],
+                        'Metrc_Integration' => $cols['Metrc_Integration'],
+                        'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                        'settings' => $merged,
+                        'updated_at' => now()->toIso8601String(),
+                    ]]);
+                } catch (\Throwable $e) { /* ignore */ }
+            }
+            if ($resp->successful()) { $savedRemote = true; }
+        }
+        // Strict read-after-write verification
+        if ($savedRemote) {
+            try {
+                $params = [ 'select' => '*' ];
+                $snameH = is_string($merged['store_name'] ?? '') ? trim($merged['store_name']) : '';
+                if ($snameH !== '') { $params['or'] = '(store_name.eq.' . $snameH . ',id.eq.' . $targetId . ')'; }
+                else { $params['id'] = 'eq.' . $targetId; }
+                $ver = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Cache-Control' => 'no-cache',
+                    'X-Store-ID' => $targetId,
+                ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+                if ($ver->ok()) {
+                    $va = $ver->json();
+                    $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                    if ($vr) {
+                        $pickR = function(array $src, array $keys){ $out=[]; foreach ($keys as $k) { if (array_key_exists($k, $src)) { $out[$k] = $src[$k]; } } return $out; };
+                        $remoteCols = [
+                            'Store_Information' => isset($vr['Store_Information']) && is_array($vr['Store_Information']) ? $pickR($vr['Store_Information'], ['store_name','license_number','store_address','store_phone','store_email','business_hours']) : [],
+                            'Tax_Configuration' => isset($vr['Tax_Configuration']) && is_array($vr['Tax_Configuration']) ? $pickR($vr['Tax_Configuration'], ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']) : [],
+                            'Sales_&_Transaction_Settings' => isset($vr['Sales_&_Transaction_Settings']) && is_array($vr['Sales_&_Transaction_Settings']) ? $pickR($vr['Sales_&_Transaction_Settings'], ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']) : [],
+                            'Printing_Preferences' => isset($vr['Printing_Preferences']) && is_array($vr['Printing_Preferences']) ? $pickR($vr['Printing_Preferences'], ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']) : [],
+                            'Metrc_Integration' => isset($vr['Metrc_Integration']) && is_array($vr['Metrc_Integration']) ? $pickR($vr['Metrc_Integration'], ['metrc_enabled','metrc_facility','metrc_auto_push_sales']) : [],
+                            'Auto_Delete_Zero-Quantity_Products' => isset($vr['Auto_Delete_Zero-Quantity_Products']) && is_array($vr['Auto_Delete_Zero-Quantity_Products']) ? $pickR($vr['Auto_Delete_Zero-Quantity_Products'], ['auto_delete_zero_quantity','auto_delete_zero_days']) : [],
+                        ];
+                        $norm = function($v) use (&$norm){ if (is_array($v)) { ksort($v); foreach ($v as $kk=>$vv){ $v[$kk] = $norm($vv); } } return $v; };
+                        $a = json_encode($norm($cols));
+                        $b = json_encode($norm($remoteCols));
+                        if ($a !== $b) {
+                            // Attempt auto-repair: force PATCH of computed columns, then re-verify once
+                            try {
+                                $repair = \Illuminate\Support\Facades\Http::withHeaders([
+                                    'apikey' => $supabaseKey,
+                                    'Authorization' => 'Bearer ' . $supabaseKey,
+                                    'Accept' => 'application/json',
+                                    'Prefer' => 'resolution=merge-duplicates,return=representation',
+                                    'X-Store-ID' => (isset($vr['id']) ? (string)$vr['id'] : $storeId),
+                                ])->retry(3, 150)->timeout(10)->patch(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?id=eq.' . urlencode($vr['id'] ?? $storeId), [
+                                    'Store_Information' => $cols['Store_Information'],
+                                    'Tax_Configuration' => $cols['Tax_Configuration'],
+                                    'Sales_&_Transaction_Settings' => $cols['Sales_&_Transaction_Settings'],
+                                    'Printing_Preferences' => $cols['Printing_Preferences'],
+                                    'Metrc_Integration' => $cols['Metrc_Integration'],
+                                    'Auto_Delete_Zero-Quantity_Products' => $cols['Auto_Delete_Zero-Quantity_Products'],
+                                    'settings' => $merged,
+                                    'updated_at' => now()->toIso8601String(),
+                                ]);
+                                if ($repair->successful()){
+                                    $ver2 = \Illuminate\Support\Facades\Http::withHeaders([
+                                        'apikey' => $supabaseKey,
+                                        'Authorization' => 'Bearer ' . $supabaseKey,
+                                        'Accept' => 'application/json',
+                                        'Cache-Control' => 'no-cache',
+                                    ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', $params);
+                                    if ($ver2->ok()){
+                                        $va2 = $ver2->json();
+                                        $vr2 = (is_array($va2) && isset($va2[0])) ? $va2[0] : null;
+                                        if ($vr2) {
+                                            $remoteCols2 = [
+                                                'Store_Information' => isset($vr2['Store_Information']) && is_array($vr2['Store_Information']) ? $pickR($vr2['Store_Information'], ['store_name','license_number','store_address','store_phone','store_email','business_hours']) : [],
+                                                'Tax_Configuration' => isset($vr2['Tax_Configuration']) && is_array($vr2['Tax_Configuration']) ? $pickR($vr2['Tax_Configuration'], ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']) : [],
+                                                'Sales_&_Transaction_Settings' => isset($vr2['Sales_&_Transaction_Settings']) && is_array($vr2['Sales_&_Transaction_Settings']) ? $pickR($vr2['Sales_&_Transaction_Settings'], ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']) : [],
+                                                'Printing_Preferences' => isset($vr2['Printing_Preferences']) && is_array($vr2['Printing_Preferences']) ? $pickR($vr2['Printing_Preferences'], ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']) : [],
+                                                'Metrc_Integration' => isset($vr2['Metrc_Integration']) && is_array($vr2['Metrc_Integration']) ? $pickR($vr2['Metrc_Integration'], ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']) : [],
+                                                'Auto_Delete_Zero-Quantity_Products' => isset($vr2['Auto_Delete_Zero-Quantity_Products']) && is_array($vr2['Auto_Delete_Zero-Quantity_Products']) ? $pickR($vr2['Auto_Delete_Zero-Quantity_Products'], ['auto_delete_zero_quantity','auto_delete_zero_days']) : [],
+                                            ];
+                                            $b2 = json_encode($norm($remoteCols2));
+                                            if ($a === $b2) {
+                                                $settings = $mergeNonNull($settings, $settingsRemote);
+                                                return response()->json(['success'=>true,'settings'=>$settings]);
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (\Throwable $e) { /* fall through */ }
+                            return response()->json([
+                                'success'=>false,
+                                'message'=>'verification_mismatch',
+                                'expected'=>$cols,
+                                'actual'=>$remoteCols,
+                            ], 502)->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0')->header('Vary','X-Store-ID, X-Store-Name');
+                        }
+                    }
+                }
+            } catch (\Throwable $e) { /* fallthrough */ }
+        }
+        // Cache for UI hydration only (no legacy DB writes)
+        try {
+            \Illuminate\Support\Facades\Cache::forget('pos_settings:' . $storeId);
+            \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $merged, now()->addYears(5));
+        } catch (\Throwable $e) { /* ignore cache errors */ }
+        if ($savedRemote) {
+            $respSettings = $merged;
+            if (!isset($respSettings['settings_version'])) { $respSettings['settings_version'] = (int)($current['settings_version'] ?? 0) + 1; }
+            // Always return blanks for METRC secrets
+            $respSettings['metrc_user_key'] = '';
+            $respSettings['metrc_vendor_key'] = '';
+            return response()->json(['success' => true, 'settings' => $respSettings, 'store_id' => $storeId, 'store_name' => (string)($respSettings['store_name'] ?? '')])
+                ->header('Vary','X-Store-ID, X-Store-Name')
+                ->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0');
+        }
+        // Remote failed: surface exact Supabase error
+        $status = method_exists($resp,'status') ? $resp->status() : 502;
+        $body = method_exists($resp,'body') ? $resp->body() : '';
+        $msg = 'Supabase error'; $code = null;
+        try { $dec = json_decode($body, true); if (json_last_error() === JSON_ERROR_NONE && is_array($dec)) { $code = $dec['code'] ?? null; $msg = $dec['message'] ?? ($dec['hint'] ?? ($dec['details'] ?? $msg)); } else { $msg = $body ?: $msg; } } catch (\Throwable $e) { $msg = $body ?: $msg; }
+        return response()->json(['success'=>false,'message'=>$msg,'supabase_status'=>$status,'supabase_error'=>$body,'supabase_error_code'=>$code], $status ?: 502);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+
+// Public store list for SPA/demo compatibility (no auth)
+Route::get('/settings/stores/open', function() {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    $storeId = 'default';
+    $stores = [];
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'select' => '*',
+                'order' => 'updated_at.desc'
+            ]);
+            if ($resp->ok()) {
+                $arr = $resp->json();
+                foreach ((array)$arr as $row) {
+                    $id = (string)($row['id'] ?? '');
+                    $name = $id;
+                    if (isset($row['store_name']) && is_string($row['store_name'])) {
+                        $name = (string)$row['store_name'];
+                    }
+                    $stores[] = [
+                        'id' => $id,
+                        'name' => $name,
+                        'updated_at' => $row['updated_at'] ?? null,
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Public store list via Supabase failed', ['error'=>$e->getMessage()]);
+        }
+    }
+    if (empty($stores)) {
+        try {
+            $rows = \Illuminate\Support\Facades\DB::table('pos_settings')->select('id','settings','updated_at')->orderByDesc('updated_at')->limit(200)->get();
+            foreach ($rows as $r) {
+                $id = (string)$r->id;
+                $name = $id;
+                $settings = json_decode($r->settings ?? '{}', true);
+                if (json_last_error() === JSON_ERROR_NONE && isset($settings['store_name'])) {
+                    $name = (string)$settings['store_name'];
+                }
+                $stores[] = [ 'id'=>$id, 'name'=>$name, 'updated_at'=>$r->updated_at ];
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+    }
+    return response()->json(['success' => true, 'stores' => $stores]);
+});
+
+// Loyalty members API (public for SPA compatibility)
+Route::get('/loyalty-members', function () {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $params = ['select' => '*'];
+            if (request()->has('search')) {
+                $q = trim((string)request()->get('search'));
+                if ($q !== '') {
+                    $params['or'] = sprintf(
+                        '(name.ilike.*%1$s*,email.ilike.*%1$s*,phone.ilike.*%1$s*)',
+                        $q
+                    );
+                }
+            }
+            $resp = null; $ok = false;
+            for ($i=0; $i<3; $i++) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                        'apikey' => $supabaseKey,
+                        'Authorization' => 'Bearer ' . $supabaseKey,
+                        'Accept' => 'application/json',
+                    ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', $params);
+                    if ($resp->ok()) { $ok = true; break; }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Supabase loyalty fetch failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+                }
+                usleep(100000 * ($i+1));
+            }
+            if ($ok) {
+                return response()->json([
+                    'success' => true,
+                    'members' => $resp->json() ?? [],
+                ]);
+            }
+        } catch (\Throwable $e) { /* fall through */ }
+    }
+    return response()->json(['success' => true, 'members' => []]);
+});
+Route::post('/loyalty-members', function (\Illuminate\Http\Request $request) {
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) {
+        return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
+    }
+    try {
+        $b = $request->all();
+        $name = trim((string)($b['name'] ?? ''));
+        $fallback = (($b['email'] ?? null) ?: ($b['phone'] ?? null) ?: 'Member');
+        $join = substr((string)($b['join_date'] ?? now()->toDateString()), 0, 10);
+        $pts = (int)($b['starting_points'] ?? $b['points_balance'] ?? 0);
+        $row = [
+            'customer_id' => isset($b['customer_id']) ? (int)$b['customer_id'] : null,
+            'name' => $name !== '' ? $name : $fallback,
+            'email' => $b['email'] ?? null,
+            'phone' => $b['phone'] ?? null,
+            'join_date' => $join,
+            'points_balance' => $pts,
+            'points_earned' => $pts,
+            'points_redeemed' => 0,
+            'tier' => $b['tier'] ?? ($b['loyalty_tier'] ?? 'Bronze'),
+            'is_veteran' => (bool)($b['is_veteran'] ?? false),
+            'total_spent' => (float)($b['total_spent'] ?? 0),
+            'total_visits' => (int)($b['total_visits'] ?? 0),
+            'last_visit' => $b['last_visit'] ?? null,
+            'created_at' => now()->toIso8601String(),
+            'updated_at' => now()->toIso8601String(),
+        ];
+        $resp = null; $success = false;
+        for ($i=0; $i<3; $i++) {
+            try {
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                    'Prefer' => 'resolution=merge-duplicates,return=representation',
+                ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/loyalty_members', [ $row ]);
+                if ($resp->successful()) { $success = true; break; }
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Supabase loyalty save failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+            }
+            usleep(150000 * ($i+1));
+        }
+        if ($success) {
+            $arr = $resp->json();
+            $created = is_array($arr) && isset($arr[0]) ? $arr[0] : $arr;
+            return response()->json(['success' => true, 'member' => $created], 201);
+        }
+        return response()->json(['success' => false, 'error' => $resp->body()], 400);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+
+// Price tiers API (public for POS compatibility)
+Route::get('/price-tiers', function () {
+    \Illuminate\Support\Facades\Log::info('Price Tiers GET', ['scope' => 'public']);
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
+                'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
+                'order' => 'updated_at.desc',
+            ]);
+            if ($resp->ok()) {
+                return response()->json([
+                    'success' => true,
+                    'tiers' => $resp->json() ?? [],
+                ]);
+            }
+        } catch (\Throwable $e) { /* fall back below */ }
+    }
+    // Fallback to local DB if Supabase unavailable
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('price_tiers')) {
+            $rows = \App\Models\PriceTier::query()->orderByDesc('updated_at')->get()->map(function($r){
+                $discount = 0.0;
+                if ($r->type === 'percentage') { $discount = (float)$r->adjustment_value; }
+                elseif ($r->type === 'fixed_amount') { $discount = (float)$r->adjustment_value; }
+                elseif ($r->type === 'fixed_price') { $discount = 0.0; }
+                $cust = 'recreational';
+                $ct = $r->customer_types;
+                if (is_string($ct) && $ct !== '') { $cust = 'recreational'; }
+                elseif (is_array($ct) && !empty($ct)) { $cust = (string)($ct[0] ?? 'recreational'); }
+                return [
+                    'id' => $r->id,
+                    'name' => $r->name,
+                    'description' => $r->description,
+                    'status' => $r->is_active ? 'active' : 'inactive',
+                    'type' => (string)$r->type,
+                    'customer_type' => $cust,
+                    'discount' => $discount,
+                    'min_quantity' => $r->minimum_quantity,
+                    'min_amount' => null,
+                    'product_count' => 0,
+                    'schedule' => [ 'start_date' => $r->valid_from, 'end_date' => $r->valid_until ],
+                    'updated_at' => optional($r->updated_at)->toISOString(),
+                ];
+            })->values()->all();
+            return response()->json(['success' => true, 'tiers' => $rows]);
+        }
+    } catch (\Throwable $e) { /* ignore and return empty */ }
+    return response()->json(['success' => true, 'tiers' => []]);
+});
+
+// Explicit open alias to avoid Node route collision
+Route::get('/price-tiers-open', function () {
+    \Illuminate\Support\Facades\Log::info('Price Tiers OPEN GET', ['scope' => 'public']);
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if ($supabaseUrl && $supabaseKey) {
+        try {
+            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+            ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
+                'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
+                'order' => 'updated_at.desc',
+            ]);
+            if ($resp->ok()) {
+                return response()->json([
+                    'success' => true,
+                    'tiers' => $resp->json() ?? [],
+                ]);
+            }
+        } catch (\Throwable $e) { /* fall back below */ }
+    }
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('price_tiers')) {
+            $rows = \App\Models\PriceTier::query()->orderByDesc('updated_at')->get()->map(function($r){
+                $discount = 0.0;
+                if ($r->type === 'percentage') { $discount = (float)$r->adjustment_value; }
+                elseif ($r->type === 'fixed_amount') { $discount = (float)$r->adjustment_value; }
+                elseif ($r->type === 'fixed_price') { $discount = 0.0; }
+                $cust = 'recreational';
+                $ct = $r->customer_types;
+                if (is_array($ct) && !empty($ct)) { $cust = (string)($ct[0] ?? 'recreational'); }
+                return [
+                    'id' => $r->id,
+                    'name' => $r->name,
+                    'description' => $r->description,
+                    'status' => $r->is_active ? 'active' : 'inactive',
+                    'type' => (string)$r->type,
+                    'customer_type' => $cust,
+                    'discount' => $discount,
+                    'min_quantity' => $r->minimum_quantity,
+                    'min_amount' => null,
+                    'product_count' => 0,
+                    'schedule' => [ 'start_date' => $r->valid_from, 'end_date' => $r->valid_until ],
+                    'updated_at' => optional($r->updated_at)->toISOString(),
+                ];
+            })->values()->all();
+            return response()->json(['success' => true, 'tiers' => $rows]);
+        }
+    } catch (\Throwable $e) {}
+    return response()->json(['success' => true, 'tiers' => []]);
+});
+Route::post('/price-tiers', function (\Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('Price Tiers POST', ['scope' => 'public', 'fields' => array_keys($request->all() ?? [])]);
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) {
+        return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
+    }
+    try {
+        $incoming = $request->all();
+        $payload = [$incoming];
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+        ])->post(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', $payload);
+        $created = null;
+        if ($resp->successful()) {
+            $arr = $resp->json();
+            $created = is_array($arr) && isset($arr[0]) ? $arr[0] : $arr;
+        } else {
+            return response()->json(['success' => false, 'message' => $resp->body()], 500);
+        }
+        // Read-after-write verification (best-effort)
+        try {
+            if (isset($created['id'])) {
+                $verify = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
+                    'id' => 'eq.' . $created['id'],
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
+                ]);
+                if ($verify->ok()) {
+                    $va = $verify->json();
+                    $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                    if ($vr) { $created = $vr; }
+                }
+            }
+        } catch (\Throwable $e) { /* ignore */ }
+        // Mirror into pos_settings.settings.price_tiers for resilience
+        try {
+            $storeId = $request->header('X-Store-ID');
+            $storeId = is_string($storeId) ? trim($storeId) : '';
+            if ($storeId === '' || $storeId === null) $storeId = 'default';
+            $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+            $cur = [];
+            try {
+                $get = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                    'id' => 'eq.' . $storeId,
+                'select' => '*',
+                ]);
+                if ($get->ok()) {
+                    $ga = $get->json();
+                    $gr = (is_array($ga) && isset($ga[0])) ? $ga[0] : null;
+                    if ($gr && isset($gr['settings']) && is_array($gr['settings'])) $cur = $gr['settings'];
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+            $tiersArr = [];
+            if (isset($cur['price_tiers']) && is_array($cur['price_tiers'])) $tiersArr = $cur['price_tiers'];
+            elseif (isset($cur['priceTiers']) && is_array($cur['priceTiers'])) $tiersArr = $cur['priceTiers'];
+            // Normalize the created/incoming tier into settings format
+            $copy = [
+                'id' => $created['id'] ?? ($incoming['id'] ?? ($incoming['name'] ?? null)),
+                'name' => $created['name'] ?? ($incoming['name'] ?? 'Tier'),
+                'description' => $created['description'] ?? ($incoming['description'] ?? ''),
+                'prices' => $created['prices'] ?? ($incoming['prices'] ?? []),
+                'custom_weights' => $created['custom_weights'] ?? ($incoming['custom_weights'] ?? ($incoming['customWeights'] ?? [])),
+                'is_active' => array_key_exists('is_active', $created) ? $created['is_active'] : ($incoming['is_active'] ?? ($incoming['isActive'] ?? true)),
+                'created_at' => $created['created_at'] ?? ($incoming['created_at'] ?? now()->toIso8601String()),
+                'updated_at' => $created['updated_at'] ?? now()->toIso8601String(),
+            ];
+            // Upsert into array by id or name
+            $didReplace = false;
+            foreach ($tiersArr as $i => $t) {
+                $tid = $t['id'] ?? null; $tname = isset($t['name']) ? strtolower(trim((string)$t['name'])) : null;
+                $cid = $copy['id'] ?? null; $cname = isset($copy['name']) ? strtolower(trim((string)$copy['name'])) : null;
+                if (($cid !== null && (string)$tid === (string)$cid) || ($cname && $tname === $cname)) {
+                    $tiersArr[$i] = $copy; $didReplace = true; break;
+                }
+            }
+            if (!$didReplace) { $tiersArr[] = $copy; }
+            $cur['price_tiers'] = $tiersArr;
+            \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+
+        ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                'id' => $storeId,
+                'store_name' => $cur['store_name'] ?? null,
+                'updated_at' => now()->toIso8601String(),
+            ]]);
+            } catch (\Throwable $e) { /* ignore */ }
+            return response()->json(['success' => true, 'tier' => $created], 201);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+Route::put('/price-tiers/{id}', function ($id, \Illuminate\Http\Request $request) {
+    \Illuminate\Support\Facades\Log::info('Price Tiers PUT', ['scope' => 'public', 'id' => $id, 'fields' => array_keys($request->all() ?? [])]);
+    $supabaseUrl = env('SUPABASE_URL');
+    $supabaseKey = env('SUPABASE_ANON_KEY');
+    if (!$supabaseUrl || !$supabaseKey) {
+        return response()->json(['success' => false, 'message' => 'Supabase not configured'], 503);
+    }
+    try {
+        $body = $request->all();
+        $url = rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers?id=eq.' . urlencode($id);
+        $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+        ])->patch($url, $body);
+        if ($resp->successful()) {
+            $updated = null;
+            // Fetch the updated row to ensure consistency
+            try {
+                $verify = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get(rtrim($supabaseUrl,'/') . '/rest/v1/price_tiers', [
+                    'id' => 'eq.' . $id,
+                    'select' => 'id,name,description,prices,custom_weights,is_active,created_at,updated_at,percentage,rules',
+                ]);
+                if ($verify->ok()) {
+                    $va = $verify->json();
+                    $vr = (is_array($va) && isset($va[0])) ? $va[0] : null;
+                    if ($vr) { $updated = $vr; }
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+            if ($updated === null) {
+                $arr = $resp->json();
+                $updated = is_array($arr) && isset($arr[0]) ? $arr[0] : $arr;
+            }
+            // Mirror into pos_settings.settings.price_tiers for resilience
+            try {
+                $storeId = $request->header('X-Store-ID');
+                $storeId = is_string($storeId) ? trim($storeId) : '';
+                if ($storeId === '' || $storeId === null) $storeId = 'default';
+                $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+                $cur = [];
+                try {
+                    $get = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                        'id' => 'eq.' . $storeId,
+                'select' => '*',
+                    ]);
+                    if ($get->ok()) {
+                        $ga = $get->json();
+                        $gr = (is_array($ga) && isset($ga[0])) ? $ga[0] : null;
+                        if ($gr && isset($gr['settings']) && is_array($gr['settings'])) $cur = $gr['settings'];
+                    }
+                } catch (\Throwable $e) { /* ignore */ }
+                $tiersArr = [];
+                if (isset($cur['price_tiers']) && is_array($cur['price_tiers'])) $tiersArr = $cur['price_tiers'];
+                elseif (isset($cur['priceTiers']) && is_array($cur['priceTiers'])) $tiersArr = $cur['priceTiers'];
+                $copy = [
+                    'id' => $updated['id'] ?? $id,
+                    'name' => $updated['name'] ?? ($body['name'] ?? 'Tier'),
+                    'description' => $updated['description'] ?? ($body['description'] ?? ''),
+                    'prices' => $updated['prices'] ?? ($body['prices'] ?? []),
+                    'custom_weights' => $updated['custom_weights'] ?? ($body['custom_weights'] ?? ($body['customWeights'] ?? [])),
+                    'is_active' => array_key_exists('is_active', $updated) ? $updated['is_active'] : ($body['is_active'] ?? ($body['isActive'] ?? true)),
+                    'created_at' => $updated['created_at'] ?? ($body['created_at'] ?? now()->toIso8601String()),
+                    'updated_at' => $updated['updated_at'] ?? now()->toIso8601String(),
+                ];
+                $didReplace = false;
+                foreach ($tiersArr as $i => $t) {
+                    $tid = $t['id'] ?? null; $tname = isset($t['name']) ? strtolower(trim((string)$t['name'])) : null;
+                    $cid = $copy['id'] ?? null; $cname = isset($copy['name']) ? strtolower(trim((string)$copy['name'])) : null;
+                    if (($cid !== null && (string)$tid === (string)$cid) || ($cname && $tname === $cname)) {
+                        $tiersArr[$i] = $copy; $didReplace = true; break;
+                    }
+                }
+                if (!$didReplace) { $tiersArr[] = $copy; }
+                $cur['price_tiers'] = $tiersArr;
+                \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+
+        ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                'id' => $storeId,
+                'store_name' => $cur['store_name'] ?? null,
+                'updated_at' => now()->toIso8601String(),
+            ]]);
+            } catch (\Throwable $e) { /* ignore */ }
+            return response()->json(['success' => true, 'tier' => $updated]);
+        }
+        return response()->json(['success' => false, 'message' => $resp->body()], 500);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+    }
+});
+
 // Authentication routes
 Route::prefix('auth')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/pin-login', [AuthController::class, 'pinLogin']);
     Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/self-register', [AuthController::class, 'selfRegister']);
 });
+
+// TEMP: Open POS payment endpoint for end-to-end testing (no auth, no CSRF under API middleware)
+Route::post('/pos/process-payment-open', [\App\Http\Controllers\POSController::class, 'processPayment']);
+
+// Public analytics read-only aliases (no auth required)
+Route::prefix('analytics')->group(function () {
+    Route::get('/overview-open', [\App\Http\Controllers\AnalyticsController::class, 'overview']);
+    Route::get('/end-of-day-open', [\App\Http\Controllers\AnalyticsController::class, 'endOfDay']);
+    Route::get('/company-open', [\App\Http\Controllers\AnalyticsController::class, 'companyView']);
+    // Public ASPD (pace) endpoint - always Month-To-Date
+    Route::get('/aspd-open', [\App\Http\Controllers\AnalyticsController::class, 'getASPDAnalyticsOpen']);
+});
+
+// Compatibility aliases (support clients using /api/* without /auth prefix)
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/pin-login', [AuthController::class, 'pinLogin']);
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/self-register', [AuthController::class, 'selfRegister']);
 
 /*
 |--------------------------------------------------------------------------
@@ -69,9 +1601,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/logout-all', [AuthController::class, 'logoutAll']);
         Route::post('/refresh', [AuthController::class, 'refresh']);
         Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/verify-pin', [AuthController::class, 'verifyPin']);
         Route::post('/verify-metrc', [AuthController::class, 'verifyMetrc'])
             ->middleware('permission:metrc:access');
+        Route::post('/email/verification-notification', [\App\Http\Controllers\Auth\EmailVerificationController::class, 'send'])
+            ->middleware('throttle:6,1')
+            ->name('api.verification.send');
     });
+
+    // Compatibility aliases for clients calling /api/logout and /api/refresh
+    Route::post('/logout', [AuthController::class, 'logout']);
+    Route::post('/logout-all', [AuthController::class, 'logoutAll']);
+    Route::post('/refresh', [AuthController::class, 'refresh']);
 
     // User management
     Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -83,22 +1624,107 @@ Route::middleware(['auth:sanctum'])->group(function () {
     | METRC Integration Routes
     |--------------------------------------------------------------------------
     */
-    Route::prefix('metrc')->middleware('permission:metrc:access')->group(function () {
+    // Admin debug route (no permission gate, still requires auth + role)
+    Route::get('/metrc/debug/packages', [MetrcController::class, 'debugPackages'])
+        ->middleware(['role:admin','throttle:10,1']);
+
+    Route::prefix('metrc')->middleware(['permission:metrc:access','throttle:60,1'])->group(function () {
+        Route::get('/status', function() {
+            $svc = app(\App\Services\MetrcService::class);
+            $configured = $svc->isConfigured();
+            $test = null; $ok = false;
+            try { $test = $svc->testConnection(); $ok = (bool)($test['success'] ?? false); } catch (\Throwable $e) { $ok = false; }
+            return response()->json([
+                'connected' => $configured && $ok,
+                'configured' => $configured,
+                'test' => $test,
+                'facility' => env('METRC_FACILITY') ?: (\Illuminate\Support\Facades\Cache::get('pos_settings')['metrc_facility'] ?? null),
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        });
         Route::get('/test-connection', [MetrcController::class, 'testConnection']);
         Route::get('/packages', [MetrcController::class, 'getAllPackages']);
+        Route::post('/import-packages', [MetrcController::class, 'importActivePackages'])
+            ->middleware('permission:products:write');
+        Route::post('/sync-inventory', [MetrcController::class, 'syncInventory']);
         Route::get('/packages/{packageTag}', [MetrcController::class, 'getPackageDetails']);
         Route::get('/packages/{packageTag}/history', [MetrcController::class, 'getPackageHistory']);
+        Route::get('/transfers/incoming', [MetrcController::class, 'getIncomingTransfers']);
+        Route::get('/products/summary', [MetrcController::class, 'getProductsSummary']);
         Route::post('/packages/update-status', [MetrcController::class, 'updatePackageStatus']);
         Route::post('/packages/change-location', [MetrcController::class, 'changePackageLocation']);
+    });
+
+    // POS hold/end sale for SPA (token-auth via Sanctum)
+    Route::prefix('pos')->group(function () {
+        Route::post('/save-sale', function(\Illuminate\Http\Request $request) {
+            $user = auth()->user();
+            $employee = $user?->employee;
+            $name = $request->input('name') ?: ('Held Sale - ' . now()->toDateTimeString());
+            $saved = \App\Models\SavedSale::create([
+                'name' => $name,
+                'employee_id' => $employee->id ?? $user?->id,
+                'employee_name' => $employee->full_name ?? ($user?->name ?? 'Employee'),
+                'customer_type' => $request->input('customer_type','rec'),
+                'customer_info' => $request->input('customer') ?: $request->input('customer_info', []),
+                'cart_items' => $request->input('cart_items', []),
+                'cart_discount' => $request->input('cart_discount'),
+                'selected_loyalty_customer' => $request->input('selected_loyalty_customer'),
+                'total_items' => (int)($request->input('total_items') ?? collect($request->input('cart_items', []))->sum('quantity')),
+                'total_amount' => (float)($request->input('total_amount') ?? 0),
+                'notes' => $request->input('notes','Held from SPA'),
+                'status' => 'active',
+            ]);
+            return response()->json(['success' => true, 'saved_sale_id' => $saved->id]);
+        })->middleware('permission:pos:*');
+
+        Route::post('/end-sale', function() {
+            // Stateless endpoint for SPA; nothing to clear server-side
+            return response()->json(['success' => true, 'message' => 'Sale ended']);
+        })->middleware('permission:pos:*');
+
+        // Saved sales management for SPA
+        Route::get('/saved-sales', function() {
+            $user = auth()->user();
+            $employeeId = optional($user?->employee)->id ?? $user?->id;
+            $list = \App\Models\SavedSale::active()->byEmployee($employeeId)->orderByDesc('created_at')->get();
+            return response()->json(['success' => true, 'saved_sales' => $list]);
+        })->middleware('permission:pos:*');
+        Route::get('/saved-sales/{id}', function($id){
+            $user = auth()->user();
+            $employeeId = optional($user?->employee)->id ?? $user?->id;
+            $sale = \App\Models\SavedSale::where('employee_id', $employeeId)->findOrFail($id);
+            return response()->json(['success' => true, 'saved_sale' => $sale]);
+        })->middleware('permission:pos:*');
+        Route::delete('/saved-sales/{id}', function($id){
+            $user = auth()->user();
+            $employeeId = optional($user?->employee)->id ?? $user?->id;
+            $sale = \App\Models\SavedSale::where('employee_id', $employeeId)->findOrFail($id);
+            $sale->delete();
+            return response()->json(['success' => true]);
+        })->middleware('permission:pos:*');
         Route::post('/packages/create', [MetrcController::class, 'createPackage'])
             ->middleware('permission:metrc:create');
         Route::post('/products/{product}/sync', [MetrcController::class, 'syncProduct'])
             ->middleware('permission:metrc:sync');
         Route::post('/sales/receipts', [MetrcController::class, 'createSalesReceipt'])
             ->middleware('permission:metrc:sales');
+        Route::post('/sales/receipts/from-sale/{sale}', [MetrcController::class, 'createReceiptFromSale'])
+            ->middleware('permission:metrc:sales');
         Route::get('/sales/receipts', [MetrcController::class, 'getSalesReceipts']);
+        // Sales Deliveries v2
+        Route::post('/sales/deliveries', [MetrcController::class, 'createSalesDeliveries'])
+            ->middleware('permission:metrc:sales');
+        Route::post('/sales/deliveries/from-sale/{sale}', [MetrcController::class, 'createDeliveriesFromSale'])
+            ->middleware('permission:metrc:sales');
         Route::get('/facility', [MetrcController::class, 'getFacilityDetails']);
         Route::get('/categories', [MetrcController::class, 'getItemCategories']);
+        Route::get('/tags/package/available', [MetrcController::class, 'getAvailablePackageTags']);
+        Route::get('/tags/plant/available', [MetrcController::class, 'getAvailablePlantTags']);
+        Route::get('/strains/{id}', [MetrcController::class, 'getStrain']);
+        Route::get('/items/{id}', [MetrcController::class, 'getItem']);
+        Route::get('/items/active', [MetrcController::class, 'getActiveItems']);
+        Route::post('/retailid/packages/info', [MetrcController::class, 'getRetailIdPackagesInfo']);
     });
 
     /*
@@ -184,6 +1810,14 @@ Route::middleware(['auth:sanctum'])->group(function () {
     | Sales Management Routes
     |--------------------------------------------------------------------------
     */
+    // Analytics API
+    Route::prefix('analytics')->group(function () {
+        Route::get('/overview', [AnalyticsController::class, 'overview']);
+        Route::get('/end-of-day', [AnalyticsController::class, 'endOfDay']);
+        Route::get('/company', [AnalyticsController::class, 'companyView']);
+        Route::get('/aspd', [AnalyticsController::class, 'getASPDAnalytics']);
+    });
+
     Route::prefix('sales')->group(function () {
         // Read operations
         Route::middleware('permission:sales:read')->group(function () {
@@ -223,15 +1857,25 @@ Route::middleware(['auth:sanctum'])->group(function () {
         
         // Management operations (admin/manager only)
         Route::middleware('role:admin,manager')->group(function () {
+            Route::get('/next-id', [EmployeesController::class, 'nextId']);
             Route::post('/', [EmployeesController::class, 'store']);
             Route::get('/{employee}', [EmployeesController::class, 'show']);
             Route::put('/{employee}', [EmployeesController::class, 'update']);
             Route::delete('/{employee}', [EmployeesController::class, 'destroy']);
             Route::get('/{employee}/performance', [EmployeesController::class, 'getPerformance']);
             Route::get('/schedule', [EmployeesController::class, 'getSchedule']);
+            // Resets
+            Route::post('/{employee}/reset-pin', [EmployeesController::class, 'resetPin']);
+            Route::post('/{employee}/reset-password', [EmployeesController::class, 'sendPasswordReset']);
+
+            // Time clock admin endpoints
+            Route::get('/time-entries', [EmployeesController::class, 'listTimeEntries']);
+            Route::post('/time-entries', [EmployeesController::class, 'createTimeEntry']);
+            Route::put('/time-entries/{entry}', [EmployeesController::class, 'updateTimeEntry']);
         });
 
         // Clock in/out (all employees)
+        Route::get('/{employee}/clock-status', [EmployeesController::class, 'clockStatus']);
         Route::post('/{employee}/clock-in', [EmployeesController::class, 'clockIn']);
         Route::post('/{employee}/clock-out', [EmployeesController::class, 'clockOut']);
     });
@@ -242,13 +1886,66 @@ Route::middleware(['auth:sanctum'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('analytics')->middleware('permission:analytics:read')->group(function () {
-        Route::get('/overview', [AnalyticsController::class, 'getOverview']);
-        Route::get('/products', [AnalyticsController::class, 'getProductAnalytics']);
-        Route::get('/customers', [AnalyticsController::class, 'getCustomerAnalytics']);
-        Route::get('/inventory', [AnalyticsController::class, 'getInventoryAnalytics']);
-        Route::get('/employees', [AnalyticsController::class, 'getEmployeeAnalytics']);
+        // Real-time JSON endpoints
+        Route::get('/overview', [AnalyticsController::class, 'overview']);
+        Route::get('/company', [AnalyticsController::class, 'companyView']);
+        Route::get('/end-of-day', [AnalyticsController::class, 'endOfDay']);
+        // Existing endpoints (keep for compatibility)
         Route::get('/aspd', [AnalyticsController::class, 'getASPDAnalytics']);
-        Route::get('/end-of-day', [AnalyticsController::class, 'getEndOfDayReport']);
+        Route::get('/aspd-open', [AnalyticsController::class, 'getASPDAnalyticsOpen']);
+
+    // Supabase-backed open reads (primary source)
+    Route::get('/customers-open', function(\Illuminate\Http\Request $request) {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        $search = trim((string)$request->query('search', ''));
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $params = [ 'select' => '*' ];
+                if ($search !== '') {
+                    $q = '*' . $search . '*';
+                    $params['or'] = '(name.ilike.' . $q . ',email.ilike.' . $q . ',phone.ilike.' . $q . ')';
+                }
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get($supabaseUrl . '/rest/v1/customers', $params);
+                if ($resp->ok()) {
+                    $rows = $resp->json() ?? [];
+                    return response()->json(['customers' => is_array($rows) ? $rows : []]);
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+        return response()->json(['customers' => []]);
+    });
+
+    Route::get('/products-open', function(\Illuminate\Http\Request $request) {
+        $supabaseUrl = rtrim(env('SUPABASE_URL'), '/');
+        $supabaseKey = env('SUPABASE_ANON_KEY');
+        $search = trim((string)$request->query('search', ''));
+        $category = trim((string)$request->query('category', ''));
+        if ($supabaseUrl && $supabaseKey) {
+            try {
+                $params = [ 'select' => '*' ];
+                if ($search !== '') {
+                    $q = '*' . $search . '*';
+                    $params['or'] = '(name.ilike.' . $q . ',sku.ilike.' . $q . ',metrc_tag.ilike.' . $q . ')';
+                }
+                if ($category !== '') { $params['category'] = 'eq.' . $category; }
+                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                    'apikey' => $supabaseKey,
+                    'Authorization' => 'Bearer ' . $supabaseKey,
+                    'Accept' => 'application/json',
+                ])->get($supabaseUrl . '/rest/v1/products', $params);
+                if ($resp->ok()) {
+                    $rows = $resp->json() ?? [];
+                    return response()->json(['products' => is_array($rows) ? $rows : []]);
+                }
+            } catch (\Throwable $e) { /* ignore */ }
+        }
+        return response()->json(['products' => []]);
+    });
     });
 
     /*
@@ -333,6 +2030,18 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/export', [App\Http\Controllers\EnhancedReportsController::class, 'exportReport'])
             ->middleware('permission:reports:export');
         Route::get('/available', [App\Http\Controllers\EnhancedReportsController::class, 'getAvailableReports']);
+
+        // Report templates (saved reports)
+        Route::get('/templates', [App\Http\Controllers\ReportTemplatesController::class, 'index'])
+            ->middleware('permission:reports:read');
+        Route::post('/templates', [App\Http\Controllers\ReportTemplatesController::class, 'store'])
+            ->middleware('permission:reports:read');
+        Route::get('/templates/{template}', [App\Http\Controllers\ReportTemplatesController::class, 'show'])
+            ->middleware('permission:reports:read');
+        Route::put('/templates/{template}', [App\Http\Controllers\ReportTemplatesController::class, 'update'])
+            ->middleware('permission:reports:read');
+        Route::delete('/templates/{template}', [App\Http\Controllers\ReportTemplatesController::class, 'destroy'])
+            ->middleware('permission:reports:read');
     });
 
     /*
@@ -343,16 +2052,341 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::prefix('settings')->group(function () {
         // Read settings (most users)
         Route::get('/pos', function() {
+            \Illuminate\Support\Facades\Log::info('Settings GET', ['scope' => 'protected', 'store' => (string)request()->header('X-Store-ID')]);
+            // Try Supabase REST first if configured
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+            $cached = null;
+            $storeId = request()->header('X-Store-ID');
+            if (!$storeId) { $storeId = request()->query('store'); }
+            $storeId = is_string($storeId) ? trim($storeId) : '';
+            if ($storeId === '' || $storeId === null) $storeId = 'default';
+            $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+            if ($supabaseUrl && $supabaseKey) {
+                try {
+                    $resp = null; $ok = false;
+                    for ($i=0; $i<3; $i++) {
+                        try {
+                            $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                                'id' => 'eq.' . $storeId,
+                'select' => '*',
+                            ]);
+                            if ($resp->ok()) { $ok = true; break; }
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Supabase settings fetch failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+                        }
+                        usleep(100000 * ($i+1));
+                    }
+                    if ($ok) {
+                        $arr = $resp->json();
+                        $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+                        if (is_array($row)) {
+                            $compose = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if (isset($r['store_name'])) $out['store_name']=$r['store_name']; return $out; };
+                            $cached = $compose($row);
+                            try { \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $cached, now()->addYears(5)); } catch (\Throwable $e) {}
+                        }
+                    }
+                } catch (\Throwable $e) { /* fall back */ }
+            }
+            if (!$cached) {
+                try {
+                    $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
+                    if ($row && isset($row->settings)) {
+                        $decoded = json_decode($row->settings, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $cached = $decoded;
+                            try { \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $cached, now()->addYears(5)); } catch (\Throwable $e) {}
+                        }
+                    }
+                } catch (\Throwable $e) {}
+            }
+            $defaults = [
+                // Taxes
+                'sales_tax' => 0.0,
+                'excise_tax' => 10.0,
+                'cannabis_tax' => 17.0,
+                'tax_inclusive' => false,
+
+                // Store info
+                'store_name' => 'Cannabest POS',
+                'store_address' => '',
+                'store_phone' => '',
+                'store_email' => '',
+                'website' => '',
+                'store_manager' => '',
+                'license_number' => '',
+                'receipt_footer' => "Thank you for your business!\nKeep receipt for returns and warranty.",
+
+                // Exit labels
+                'exit_label_categories' => ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
+
+                // Receipt & printing
+                'auto_print_receipt' => false,
+                'receipt_autoprint' => false,
+                'receipt_categories_autoprint' => [],
+                'receipt_show_tax_breakdown' => true,
+                'receipt_show_metrc' => true,
+                'receipt_show_loyalty' => true,
+                'receipt_show_qr_code' => false,
+                'default_receipt_printer' => '',
+                'receipt_paper_size' => '80mm',
+
+                // POS behavior / payments
+                'require_customer' => true,
+                'age_verification' => true,
+                'limit_enforcement' => true,
+                'accept_cash' => true,
+                'accept_debit' => true,
+                'accept_check' => false,
+                'round_to_nearest' => false,
+
+                // Pricing
+                'minimum_price_enabled' => false,
+                'minimum_price_amount' => 0.01,
+                'minimum_price_categories' => [],
+
+                // Display & inventory
+                'inventory_view_mode' => 'cards',
+                'expandable_cart' => true,
+
+                // Role-based permissions (defaults)
+                'role_permissions' => [
+                    'admin' => ['*'],
+                    'manager' => ['pos:*','products:*','customers:*','sales:*','analytics:read','deals:*','employees:read','metrc:access','metrc:sync','reports:read','reports:export','settings:write'],
+                    'inventory' => ['products:*','metrc:access','metrc:sync','analytics:read'],
+                    'budtender' => ['pos:*','products:read','customers:read','sales:create','analytics:read'],
+                    'cashier' => ['pos:*','products:read','sales:create','products:print','analytics:read','pos:scanner_only']
+                ],
+
+                // Auto delete
+                'auto_delete_zero_quantity' => false,
+                'auto_delete_zero_days' => 1,
+
+                // METRC
+                'metrc_enabled' => config('services.metrc.enabled', true),
+
+                // Appearance
+                'dark_mode' => false,
+                'theme_color' => 'green',
+                'font_size' => 'medium',
+                'high_contrast' => false,
+                'reduce_motion' => false,
+
+                // Business hours
+                'business_hours' => [
+                    ['day' => 'Monday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Tuesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Wednesday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Thursday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Friday', 'is_open' => true, 'open_time' => '09:00', 'close_time' => '21:00'],
+                    ['day' => 'Saturday', 'is_open' => true, 'open_time' => '10:00', 'close_time' => '20:00'],
+                    ['day' => 'Sunday', 'is_open' => true, 'open_time' => '11:00', 'close_time' => '19:00'],
+                ],
+            ];
+            $settings = array_merge($defaults, is_array($cached) ? $cached : []);
+            // Ensure METRC credentials are available to the settings UI (do not overwrite cached values)
+            // Prefer per-user METRC user key from linked employee when available
+            if (!array_key_exists('metrc_user_key', $settings) || empty($settings['metrc_user_key'])) {
+                $empKey = null;
+                try {
+                    $user = auth()->user();
+                    if ($user && $user->employee && !empty($user->employee->metrc_api_key)) {
+                        $empKey = $user->employee->metrc_api_key;
+                    }
+                } catch (\Throwable $e) {
+                    $empKey = null;
+                }
+                $settings['metrc_user_key'] = $empKey ?? env('METRC_USER_KEY', '');
+            }
+            if (!array_key_exists('metrc_vendor_key', $settings) || empty($settings['metrc_vendor_key'])) {
+                $settings['metrc_vendor_key'] = env('METRC_VENDOR_KEY', '');
+            }
+            if (!array_key_exists('metrc_facility', $settings) || empty($settings['metrc_facility'])) {
+                $settings['metrc_facility'] = env('METRC_FACILITY', '');
+            }
+            // Mask METRC keys in response
+            $settings['metrc_user_key'] = '';
+            $settings['metrc_vendor_key'] = '';
+            if (array_key_exists('metrc_vendor_key', $settings)) {
+                $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
+            }
             return response()->json([
-                'tax_rate' => config('services.pos.sales_tax', 20.0),
+                'success' => true,
+                'settings' => $settings,
+                'tax_rate' => $settings['sales_tax'] ?? 0.0,
                 'currency' => 'USD',
                 'timezone' => config('app.timezone'),
                 'features' => [
-                    'metrc_integration' => config('services.metrc.enabled', true),
+                    'metrc_integration' => (bool)($settings['metrc_enabled'] ?? true),
                     'loyalty_program' => true,
-                    'age_verification' => config('services.pos.age_verification', true)
+                    'age_verification' => (bool)($settings['age_verification'] ?? true)
                 ]
             ]);
+        });
+
+        // Save POS settings (persist to DB and cache)
+        Route::post('/pos', function(\Illuminate\Http\Request $request) {
+            \Illuminate\Support\Facades\Log::info('Settings POST', ['scope' => 'protected', 'store' => (string)$request->header('X-Store-ID'), 'fields' => array_keys($request->all() ?? [])]);
+            try {
+                $settings = $request->all();
+                // Basic validation for critical fields
+                $validator = \Illuminate\Support\Facades\Validator::make($settings, [
+                    'print_labels' => 'sometimes|boolean',
+                    'receipt_template' => 'sometimes|in:standard,detailed,minimal',
+                ]);
+                if ($validator->fails()) {
+                    return response()->json(['success'=>false,'message'=>'Validation failed','errors'=>$validator->errors()], 400);
+                }
+                // Initialize Supabase and store scope before any reads
+                $supabaseUrl = env('SUPABASE_URL');
+                $supabaseKey = env('SUPABASE_ANON_KEY');
+                $storeId = $request->header('X-Store-ID');
+                if (!$storeId) { $storeId = $request->query('store'); }
+                $storeId = is_string($storeId) ? trim($storeId) : '';
+                if ($storeId === '' || $storeId === null) $storeId = 'default';
+                $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+                // Merge with current to avoid overwriting other fields
+                try {
+                    $current = [];
+                    if ($supabaseUrl && $supabaseKey) {
+                        $resp0 = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $storeId,
+                'select' => '*',
+                        ]);
+                        if ($resp0->ok()) {
+                            $arr0 = $resp0->json();
+                            $row0 = (is_array($arr0) && isset($arr0[0])) ? $arr0[0] : null;
+                            if ($row0 && isset($row0['settings']) && is_array($row0['settings'])) $current = $row0['settings'];
+                        }
+                    } else {
+                        $row = \Illuminate\Support\Facades\DB::table('pos_settings')->where('id', $storeId)->first();
+                        if ($row && isset($row->settings)) {
+                            $decoded = json_decode($row->settings, true);
+                            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) $current = $decoded;
+                        }
+                    }
+                    if (is_array($current)) {
+                        // Preserve existing METRC keys if incoming is masked
+                        $maskPattern = '/^(?:[•*]+)$/u';
+                        foreach (['metrc_user_key','metrc_vendor_key'] as $k) {
+                            if (isset($settings[$k]) && is_string($settings[$k]) && preg_match($maskPattern, trim($settings[$k]))) {
+                                if (isset($current[$k])) { $settings[$k] = $current[$k]; }
+                            }
+                        }
+                        $settings = array_merge($current, $settings);
+                    }
+                } catch (\Throwable $e) { /* ignore */ }
+                foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','role_permissions'] as $field) {
+                    if (isset($settings[$field]) && is_string($settings[$field])) {
+                        $decoded = json_decode($settings[$field], true);
+                        if (json_last_error() === JSON_ERROR_NONE) $settings[$field] = $decoded;
+                    }
+                }
+                if (isset($settings['role_permissions']) && is_array($settings['role_permissions'])) {
+                    foreach ($settings['role_permissions'] as $role => $perms) {
+                        if (!is_array($perms)) $settings['role_permissions'][$role] = (array)$perms;
+                    }
+                }
+
+                $supabaseUrl = env('SUPABASE_URL');
+                $supabaseKey = env('SUPABASE_ANON_KEY');
+                $storeId = $request->header('X-Store-ID');
+                if (!$storeId) { $storeId = $request->query('store'); }
+                $storeId = is_string($storeId) ? trim($storeId) : '';
+                if ($storeId === '' || $storeId === null) $storeId = 'default';
+                $storeId = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $storeId);
+                $saved = false;
+                if ($supabaseUrl && $supabaseKey) {
+                    try {
+                        $resp = null; $success = false;
+                        $lastStatus = null; $lastBody = null;
+                        for ($i=0; $i<3; $i++) {
+                            try {
+                                $resp = \Illuminate\Support\Facades\Http::withHeaders([
+            'apikey' => $supabaseKey,
+            'Authorization' => 'Bearer ' . $supabaseKey,
+            'Accept' => 'application/json',
+            'Prefer' => 'resolution=merge-duplicates,return=representation',
+            'X-Store-ID' => $storeId,
+
+        ])->retry(3, 150)->timeout(10)->post(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings?on_conflict=id', [[
+                                    'id' => $storeId,
+                                    'store_name' => $settings['store_name'] ?? null,
+                                    'Store_Information' => (function($s){ $keys=['store_address','store_phone','store_email','website','store_manager','license_number','receipt_footer','business_hours']; $o=[]; foreach($keys as $k){ if(array_key_exists($k,$s)) $o[$k]=$s[$k]; } return $o; })($settings),
+                                    'Tax_Configuration' => (function($s){ $keys=['sales_tax','excise_tax','cannabis_tax','tax_inclusive']; $o=[]; foreach($keys as $k){ if(array_key_exists($k,$s)) $o[$k]=$s[$k]; } return $o; })($settings),
+                                    'Sales_&_Transaction_Settings' => (function($s){ $keys=['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']; $o=[]; foreach($keys as $k){ if(array_key_exists($k,$s)) $o[$k]=$s[$k]; } return $o; })($settings),
+                                    'Printing_Preferences' => (function($s){ $keys=['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels']; $o=[]; foreach($keys as $k){ if(array_key_exists($k,$s)) $o[$k]=$s[$k]; } return $o; })($settings),
+                                    'Metrc_Integration' => (function($s){ $keys=['metrc_enabled','metrc_facility','metrc_auto_push_sales']; $o=[]; foreach($keys as $k){ if(array_key_exists($k,$s)) $o[$k]=$s[$k]; } return $o; })($settings),
+                                    'Auto_Delete_Zero-Quantity_Products' => (function($s){ $keys=['auto_delete_zero_quantity','auto_delete_zero_days']; $o=[]; foreach($keys as $k){ if(array_key_exists($k,$s)) $o[$k]=$s[$k]; } return $o; })($settings),
+                                    'updated_at' => now()->toIso8601String(),
+                                ]]);
+                                if ($resp->successful()) { $success = true; break; }
+                                $lastStatus = $resp->status(); $lastBody = $resp->body();
+                            } catch (\Throwable $e) {
+                                \Illuminate\Support\Facades\Log::warning('Supabase settings save failed', ['attempt'=>$i+1,'error'=>$e->getMessage()]);
+                            }
+                            usleep(150000 * ($i+1));
+                        }
+                        if ($success) { $saved = true; } else { $msg = 'Supabase error'; $code = null; try { $dec = json_decode($lastBody, true); if (json_last_error() === JSON_ERROR_NONE && is_array($dec)) { $code = $dec['code'] ?? null; $msg = $dec['message'] ?? ($dec['hint'] ?? ($dec['details'] ?? $msg)); } else { $msg = $lastBody ?: $msg; } } catch (\Throwable $e) { $msg = $lastBody ?: $msg; } return response()->json(['success'=>false,'message'=>$msg,'supabase_status'=>$lastStatus,'supabase_error'=>$lastBody,'supabase_error_code'=>$code], $lastStatus ?: 502); }
+                    } catch (\Throwable $e) { /* fall back to DB */ }
+                }
+
+                // Do not write legacy blob to local DB when remote fails
+
+                // Read-after-write verification from Supabase when available
+                $fresh = $settings;
+                if ($supabaseUrl && $supabaseKey) {
+                    try {
+                        $verify = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                            'id' => 'eq.' . $storeId,
+                'select' => '*',
+                        ]);
+                        if ($verify->ok()) {
+                            $arr = $verify->json();
+                            $row = (is_array($arr) && isset($arr[0])) ? $arr[0] : null;
+                            if (is_array($row)) {
+                                $compose = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if (isset($r['store_name'])) $out['store_name']=$r['store_name']; return $out; };
+                                $fresh = $compose($row);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        \Illuminate\Support\Facades\Log::warning('Supabase verify after settings save failed', ['error'=>$e->getMessage()]);
+                    }
+                }
+
+                \Illuminate\Support\Facades\Cache::put('pos_settings:' . $storeId, $fresh, now()->addYears(5));
+
+                // Mask METRC keys in response
+                if (is_array($fresh)) {
+                    if (array_key_exists('metrc_user_key', $fresh)) {
+                        $fresh['metrc_user_key'] = !empty($fresh['metrc_user_key']) ? '••••••••' : '';
+                    }
+                    if (array_key_exists('metrc_vendor_key', $fresh)) {
+                        $fresh['metrc_vendor_key'] = !empty($fresh['metrc_vendor_key']) ? '••••��•••' : '';
+                    }
+                }
+                return response()->json(['success' => true, 'settings' => $fresh]);
+            } catch (\Throwable $e) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
         });
 
         // METRC settings (with permission check)
@@ -377,6 +2411,62 @@ Route::middleware(['auth:sanctum'])->group(function () {
 
         // Tax calculation (public within authenticated users)
         Route::post('/calculate-tax', [SettingsController::class, 'calculateTax']);
+
+        // List available stores (ids/names) for switcher
+        Route::get('/stores', function() {
+            $supabaseUrl = env('SUPABASE_URL');
+            $supabaseKey = env('SUPABASE_ANON_KEY');
+    $storeId = 'default';
+    $stores = [];
+            // Try Supabase first
+            if ($supabaseUrl && $supabaseKey) {
+                try {
+                    $resp = \Illuminate\Support\Facades\Http::withHeaders([
+                'apikey' => $supabaseKey,
+                'Authorization' => 'Bearer ' . $supabaseKey,
+                'Accept' => 'application/json',
+                'X-Store-ID' => $storeId,
+
+            ])->retry(3, 150)->timeout(10)->get(rtrim($supabaseUrl,'/') . '/rest/v1/pos_settings', [
+                'select' => '*',
+                        'order' => 'updated_at.desc'
+                    ]);
+                    if ($resp->ok()) {
+                        $arr = $resp->json();
+                        foreach ((array)$arr as $row) {
+                            $id = (string)($row['id'] ?? '');
+                            $name = $id;
+                    if (isset($row['store_name']) && is_string($row['store_name'])) {
+                        $name = (string)$row['store_name'];
+                    }
+                            $stores[] = [
+                                'id' => $id,
+                                'name' => $name,
+                                'updated_at' => $row['updated_at'] ?? null,
+                            ];
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Store list via Supabase failed', ['error'=>$e->getMessage()]);
+                }
+            }
+            // Fallback to local DB table
+            if (empty($stores)) {
+                try {
+                    $rows = \Illuminate\Support\Facades\DB::table('pos_settings')->select('id','settings','updated_at')->orderByDesc('updated_at')->limit(200)->get();
+                    foreach ($rows as $r) {
+                        $id = (string)$r->id;
+                        $name = $id;
+                        $settings = json_decode($r->settings ?? '{}', true);
+                        if (json_last_error() === JSON_ERROR_NONE && isset($settings['store_name'])) {
+                            $name = (string)$settings['store_name'];
+                        }
+                        $stores[] = [ 'id'=>$id, 'name'=>$name, 'updated_at'=>$r->updated_at ];
+                    }
+                } catch (\Throwable $e) { /* ignore */ }
+            }
+            return response()->json(['success' => true, 'stores' => $stores]);
+        });
     });
 
     /*

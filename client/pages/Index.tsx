@@ -6,11 +6,28 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   ShoppingCart,
   Search,
@@ -42,7 +59,7 @@ import {
   ArrowUpDown,
   ChevronDown,
   Grid3X3,
-  List
+  List,
 } from "lucide-react";
 
 interface Product {
@@ -79,8 +96,14 @@ interface Product {
     tested: boolean;
     labName?: string;
     testDate?: string;
-    cannabinoids?: { thc: number; cbd: number; cbg?: number; cbn?: number; cbc?: number; };
-    contaminants?: { passed: boolean; };
+    cannabinoids?: {
+      thc: number;
+      cbd: number;
+      cbg?: number;
+      cbn?: number;
+      cbc?: number;
+    };
+    contaminants?: { passed: boolean };
   };
   packagedDate?: string;
   expirationDate?: string;
@@ -92,7 +115,11 @@ interface Product {
 }
 
 // Edit Product Form Component
-const EditProductForm = ({ product, onSave, onCancel }: {
+const EditProductForm = ({
+  product,
+  onSave,
+  onCancel,
+}: {
   product: Product;
   onSave: (product: Product) => void;
   onCancel: () => void;
@@ -100,12 +127,29 @@ const EditProductForm = ({ product, onSave, onCancel }: {
   const [editedProduct, setEditedProduct] = useState<Product>({ ...product });
 
   const categories = [
-    "Flower", "Pre-Rolls", "Concentrates", "Extracts", "Edibles", "Topicals",
-    "Tinctures", "Vapes", "Inhalable Cannabinoids", "Clones", "Hemp", "Paraphernalia", "Accessories"
+    "Flower",
+    "Pre-Rolls",
+    "Concentrates",
+    "Extracts",
+    "Edibles",
+    "Topicals",
+    "Tinctures",
+    "Vapes",
+    "Inhalable Cannabinoids",
+    "Clones",
+    "Hemp",
+    "Paraphernalia",
+    "Accessories",
   ];
 
   const strains = [
-    "Sativa", "Indica", "Hybrid", "CBD-Dominant", "1:1 THC:CBD", "High-CBD", "Mixed"
+    "Sativa",
+    "Indica",
+    "Hybrid",
+    "CBD-Dominant",
+    "1:1 THC:CBD",
+    "High-CBD",
+    "Mixed",
   ];
 
   return (
@@ -116,19 +160,28 @@ const EditProductForm = ({ product, onSave, onCancel }: {
           <Input
             id="edit-name"
             value={editedProduct.name}
-            onChange={(e) => setEditedProduct(prev => ({...prev, name: e.target.value}))}
+            onChange={(e) =>
+              setEditedProduct((prev) => ({ ...prev, name: e.target.value }))
+            }
             placeholder="Enter product name"
           />
         </div>
         <div>
           <Label htmlFor="edit-category">Category *</Label>
-          <Select value={editedProduct.category} onValueChange={(value) => setEditedProduct(prev => ({...prev, category: value}))}>
+          <Select
+            value={editedProduct.category}
+            onValueChange={(value) =>
+              setEditedProduct((prev) => ({ ...prev, category: value }))
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
-              {categories.map(category => (
-                <SelectItem key={category} value={category}>{category}</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -143,7 +196,12 @@ const EditProductForm = ({ product, onSave, onCancel }: {
             type="number"
             step="0.01"
             value={editedProduct.price}
-            onChange={(e) => setEditedProduct(prev => ({...prev, price: parseFloat(e.target.value) || 0}))}
+            onChange={(e) =>
+              setEditedProduct((prev) => ({
+                ...prev,
+                price: parseFloat(e.target.value) || 0,
+              }))
+            }
             placeholder="0.00"
           />
         </div>
@@ -152,7 +210,9 @@ const EditProductForm = ({ product, onSave, onCancel }: {
           <Input
             id="edit-weight"
             value={editedProduct.weight || ""}
-            onChange={(e) => setEditedProduct(prev => ({...prev, weight: e.target.value}))}
+            onChange={(e) =>
+              setEditedProduct((prev) => ({ ...prev, weight: e.target.value }))
+            }
             placeholder="e.g., 1g, 100mg, 30ml"
           />
         </div>
@@ -162,7 +222,12 @@ const EditProductForm = ({ product, onSave, onCancel }: {
             id="edit-stock"
             type="number"
             value={editedProduct.stock}
-            onChange={(e) => setEditedProduct(prev => ({...prev, stock: parseInt(e.target.value) || 0}))}
+            onChange={(e) =>
+              setEditedProduct((prev) => ({
+                ...prev,
+                stock: parseInt(e.target.value) || 0,
+              }))
+            }
             placeholder="0"
           />
         </div>
@@ -174,19 +239,28 @@ const EditProductForm = ({ product, onSave, onCancel }: {
           <Input
             id="edit-sku"
             value={editedProduct.sku || ""}
-            onChange={(e) => setEditedProduct(prev => ({...prev, sku: e.target.value}))}
+            onChange={(e) =>
+              setEditedProduct((prev) => ({ ...prev, sku: e.target.value }))
+            }
             placeholder="Product SKU"
           />
         </div>
         <div>
           <Label htmlFor="edit-strain">Strain</Label>
-          <Select value={editedProduct.strain || ""} onValueChange={(value) => setEditedProduct(prev => ({...prev, strain: value}))}>
+          <Select
+            value={editedProduct.strain || ""}
+            onValueChange={(value) =>
+              setEditedProduct((prev) => ({ ...prev, strain: value }))
+            }
+          >
             <SelectTrigger>
               <SelectValue placeholder="Select strain type" />
             </SelectTrigger>
             <SelectContent>
-              {strains.map(strain => (
-                <SelectItem key={strain} value={strain}>{strain}</SelectItem>
+              {strains.map((strain) => (
+                <SelectItem key={strain} value={strain}>
+                  {strain}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -210,7 +284,9 @@ const EditProductForm = ({ product, onSave, onCancel }: {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => setEditedProduct(prev => ({...prev, image: ""}))}
+                    onClick={() =>
+                      setEditedProduct((prev) => ({ ...prev, image: "" }))
+                    }
                   >
                     Remove Image
                   </Button>
@@ -218,7 +294,9 @@ const EditProductForm = ({ product, onSave, onCancel }: {
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => document.getElementById('edit-file-upload')?.click()}
+                    onClick={() =>
+                      document.getElementById("edit-file-upload")?.click()
+                    }
                   >
                     Change Image
                   </Button>
@@ -231,7 +309,9 @@ const EditProductForm = ({ product, onSave, onCancel }: {
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => document.getElementById('edit-file-upload')?.click()}
+                    onClick={() =>
+                      document.getElementById("edit-file-upload")?.click()
+                    }
                   >
                     Choose Image
                   </Button>
@@ -250,7 +330,10 @@ const EditProductForm = ({ product, onSave, onCancel }: {
                 if (file) {
                   const reader = new FileReader();
                   reader.onload = (event) => {
-                    setEditedProduct(prev => ({...prev, image: event.target?.result as string}));
+                    setEditedProduct((prev) => ({
+                      ...prev,
+                      image: event.target?.result as string,
+                    }));
                   };
                   reader.readAsDataURL(file);
                 }
@@ -330,7 +413,7 @@ const navigationItems = [
   { icon: Plus, label: "Product Creation", path: "/products" },
   { icon: Home, label: "Rooms & Drawers", path: "/rooms" },
   { icon: Database, label: "Sales Management", path: "/sales" },
-  { icon: Settings, label: "Settings", path: "/settings" }
+  { icon: Settings, label: "Settings", path: "/settings" },
 ];
 
 // Oregon Logo Component
@@ -345,27 +428,34 @@ const OregonLogo = () => (
         strokeWidth="1"
       />
       {/* Cash register icon inside */}
-      <rect x="35" y="45" width="30" height="20" fill="#333" rx="2"/>
-      <rect x="40" y="50" width="20" height="8" fill="#fff" rx="1"/>
-      <circle cx="42" cy="62" r="1" fill="#fff"/>
-      <circle cx="48" cy="62" r="1" fill="#fff"/>
-      <circle cx="54" cy="62" r="1" fill="#fff"/>
-      <circle cx="58" cy="62" r="1" fill="#fff"/>
+      <rect x="35" y="45" width="30" height="20" fill="#333" rx="2" />
+      <rect x="40" y="50" width="20" height="8" fill="#fff" rx="1" />
+      <circle cx="42" cy="62" r="1" fill="#fff" />
+      <circle cx="48" cy="62" r="1" fill="#fff" />
+      <circle cx="54" cy="62" r="1" fill="#fff" />
+      <circle cx="58" cy="62" r="1" fill="#fff" />
 
       {/* American flag pattern */}
       <defs>
-        <pattern id="flag-pattern" patternUnits="userSpaceOnUse" width="100" height="100">
-          <rect width="100" height="100" fill="#B22234"/>
-          <rect y="0" width="100" height="7" fill="#fff"/>
-          <rect y="14" width="100" height="7" fill="#fff"/>
-          <rect y="28" width="100" height="7" fill="#fff"/>
-          <rect y="42" width="100" height="7" fill="#fff"/>
-          <rect y="56" width="100" height="7" fill="#fff"/>
-          <rect y="70" width="100" height="7" fill="#fff"/>
-          <rect y="84" width="100" height="7" fill="#fff"/>
-          <rect x="0" y="0" width="40" height="50" fill="#3C3B6E"/>
+        <pattern
+          id="flag-pattern"
+          patternUnits="userSpaceOnUse"
+          width="100"
+          height="100"
+        >
+          <rect width="100" height="100" fill="#B22234" />
+          <rect y="0" width="100" height="7" fill="#fff" />
+          <rect y="14" width="100" height="7" fill="#fff" />
+          <rect y="28" width="100" height="7" fill="#fff" />
+          <rect y="42" width="100" height="7" fill="#fff" />
+          <rect y="56" width="100" height="7" fill="#fff" />
+          <rect y="70" width="100" height="7" fill="#fff" />
+          <rect y="84" width="100" height="7" fill="#fff" />
+          <rect x="0" y="0" width="40" height="50" fill="#3C3B6E" />
           <g fill="white">
-            <text x="20" y="25" textAnchor="middle" fontSize="20">★</text>
+            <text x="20" y="25" textAnchor="middle" fontSize="20">
+              ★
+            </text>
           </g>
         </pattern>
       </defs>
@@ -376,13 +466,13 @@ const OregonLogo = () => (
 interface CartItem extends Product {
   quantity: number;
   discount: number; // Percentage discount (0-100)
-  discountType: 'percentage' | 'fixed';
+  discountType: "percentage" | "fixed";
   discountReasonCode?: string;
   autoAppliedDeal?: string;
 }
 
 interface CartDiscount {
-  type: 'percentage' | 'fixed';
+  type: "percentage" | "fixed";
   value: number;
   label: string;
   reasonCode?: string;
@@ -411,7 +501,7 @@ interface DebitTransaction {
 interface Room {
   id: string;
   name: string;
-  type: 'production' | 'storage' | 'processing' | 'sales';
+  type: "production" | "storage" | "processing" | "sales";
   isActive: boolean;
   maxCapacity?: number;
   currentStock?: number;
@@ -427,7 +517,7 @@ interface RoomTransfer {
   transferDate: string;
   employeeId: string;
   metrcTransferId?: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: "pending" | "completed" | "cancelled";
   reason: string;
 }
 
@@ -435,14 +525,14 @@ interface Deal {
   id: string;
   name: string;
   description: string;
-  type: 'percentage' | 'fixed' | 'bogo' | 'bulk';
+  type: "percentage" | "fixed" | "bogo" | "bulk";
   discountValue: number;
   categories: string[];
   specificItems: string[];
   startDate: string;
   endDate: string;
   isActive: boolean;
-  frequency: 'always' | 'daily' | 'weekly' | 'monthly' | 'custom';
+  frequency: "always" | "daily" | "weekly" | "monthly" | "custom";
   dayOfWeek?: string;
   dayOfMonth?: number;
   emailCustomers: boolean;
@@ -458,7 +548,7 @@ interface SavedSale {
   saveDate: string;
   employeeId: string;
   employeeName: string;
-  customerType: 'rec' | 'medical';
+  customerType: "rec" | "medical";
   customerInfo: any;
   cart: CartItem[];
   cartDiscount: CartDiscount | null;
@@ -486,9 +576,21 @@ const loyaltyCustomers = [
     dataRetentionConsent: true,
     lastVisit: "2024-01-14",
     salesHistory: [
-      { id: "p1", date: "2024-01-14", total: 85.50, pointsEarned: 8, items: ["Blue Dream", "Edible Gummies"] },
-      { id: "p2", date: "2024-01-10", total: 120.25, pointsEarned: 12, items: ["OG Kush", "Pre-Rolls"] }
-    ]
+      {
+        id: "p1",
+        date: "2024-01-14",
+        total: 85.5,
+        pointsEarned: 8,
+        items: ["Blue Dream", "Edible Gummies"],
+      },
+      {
+        id: "p2",
+        date: "2024-01-10",
+        total: 120.25,
+        pointsEarned: 12,
+        items: ["OG Kush", "Pre-Rolls"],
+      },
+    ],
   },
   {
     id: "2",
@@ -497,7 +599,7 @@ const loyaltyCustomers = [
     phone: "(555) 987-6543",
     email: "jane.smith@email.com",
     joinDate: "2023-11-20",
-    totalSpent: 2850.40,
+    totalSpent: 2850.4,
     totalVisits: 42,
     pointsBalance: 156,
     pointsEarned: 285,
@@ -506,9 +608,21 @@ const loyaltyCustomers = [
     dataRetentionConsent: true,
     lastVisit: "2024-01-13",
     salesHistory: [
-      { id: "p3", date: "2024-01-13", total: 95.00, pointsEarned: 9, items: ["Live Resin Cart", "Flower"] },
-      { id: "p4", date: "2024-01-08", total: 150.75, pointsEarned: 15, items: ["Premium Flower", "Concentrates"] }
-    ]
+      {
+        id: "p3",
+        date: "2024-01-13",
+        total: 95.0,
+        pointsEarned: 9,
+        items: ["Live Resin Cart", "Flower"],
+      },
+      {
+        id: "p4",
+        date: "2024-01-08",
+        total: 150.75,
+        pointsEarned: 15,
+        items: ["Premium Flower", "Concentrates"],
+      },
+    ],
   },
   {
     id: "3",
@@ -517,7 +631,7 @@ const loyaltyCustomers = [
     phone: "(555) 456-7890",
     email: "mike.johnson@email.com",
     joinDate: "2023-08-10",
-    totalSpent: 4200.90,
+    totalSpent: 4200.9,
     totalVisits: 68,
     pointsBalance: 328,
     pointsEarned: 420,
@@ -526,9 +640,15 @@ const loyaltyCustomers = [
     dataRetentionConsent: true,
     lastVisit: "2024-01-15",
     salesHistory: [
-      { id: "p5", date: "2024-01-15", total: 200.50, pointsEarned: 20, items: ["Premium Products", "Accessories"] }
-    ]
-  }
+      {
+        id: "p5",
+        date: "2024-01-15",
+        total: 200.5,
+        pointsEarned: 20,
+        items: ["Premium Products", "Accessories"],
+      },
+    ],
+  },
 ];
 
 // Sample deals/specials data
@@ -541,13 +661,13 @@ const currentDeals: Deal[] = [
     discountValue: 15,
     categories: ["Flower"],
     specificItems: [],
-    startDate: new Date().toISOString().split('T')[0], // Today
-    endDate: new Date().toISOString().split('T')[0], // Today
+    startDate: new Date().toISOString().split("T")[0], // Today
+    endDate: new Date().toISOString().split("T")[0], // Today
     isActive: true,
     frequency: "daily",
     emailCustomers: true,
     loyaltyOnly: false,
-    currentUses: 25
+    currentUses: 25,
   },
   {
     id: "2",
@@ -557,13 +677,13 @@ const currentDeals: Deal[] = [
     discountValue: 50,
     categories: ["Pre-Rolls"],
     specificItems: [],
-    startDate: new Date().toISOString().split('T')[0], // Today
-    endDate: new Date().toISOString().split('T')[0], // Today
+    startDate: new Date().toISOString().split("T")[0], // Today
+    endDate: new Date().toISOString().split("T")[0], // Today
     isActive: true,
     frequency: "daily",
     emailCustomers: false,
     loyaltyOnly: false,
-    currentUses: 12
+    currentUses: 12,
   },
   {
     id: "3",
@@ -573,233 +693,834 @@ const currentDeals: Deal[] = [
     discountValue: 2,
     categories: [],
     specificItems: ["4"], // Blue Dream product ID
-    startDate: new Date().toISOString().split('T')[0], // Today
-    endDate: new Date().toISOString().split('T')[0], // Today
+    startDate: new Date().toISOString().split("T")[0], // Today
+    endDate: new Date().toISOString().split("T")[0], // Today
     isActive: true,
     frequency: "daily",
     emailCustomers: true,
     loyaltyOnly: false,
-    currentUses: 8
-  }
+    currentUses: 8,
+  },
 ];
 
 const sampleProducts: Product[] = [
   // $30/oz Special Flower (approx $1.07/g) - GLS Product
   {
-    id: "1", name: "GLS Shake Special", price: 1.07, category: "Flower", image: "/placeholder.svg", stock: 500,
-    sku: "SHAKE-30OZ-1G", thc: 12, cbd: 0.1, cbg: 0.3, cbn: 0.1, cbc: 0.2, strain: "Mixed", weight: "1g",
-    metrcTag: "1A4000000000022000000123", batchId: "SK240115", harvestDate: "2024-01-10",
-    sourceHarvest: "Oregon Budget 2024", supplier: "Value Cannabis Supply", supplierUID: "1A4000000000022000000001", grower: "Budget Buds Farm", vendor: "Discount Cannabis Co", farm: "Budget Buds Farm", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-12", cannabinoids: { thc: 12, cbd: 0.1, cbg: 0.3, cbn: 0.1, cbc: 0.2 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-14", expirationDate: "2025-01-14",
-    minimumPrice: 0.01, weightThreshold: 0.2, isGLS: true, room: "Sales Floor"
+    id: "1",
+    name: "GLS Shake Special",
+    price: 1.07,
+    category: "Flower",
+    image: "/placeholder.svg",
+    stock: 500,
+    sku: "SHAKE-30OZ-1G",
+    thc: 12,
+    cbd: 0.1,
+    cbg: 0.3,
+    cbn: 0.1,
+    cbc: 0.2,
+    strain: "Mixed",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000123",
+    batchId: "SK240115",
+    harvestDate: "2024-01-10",
+    sourceHarvest: "Oregon Budget 2024",
+    supplier: "Value Cannabis Supply",
+    supplierUID: "1A4000000000022000000001",
+    grower: "Budget Buds Farm",
+    vendor: "Discount Cannabis Co",
+    farm: "Budget Buds Farm",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-12",
+      cannabinoids: { thc: 12, cbd: 0.1, cbg: 0.3, cbn: 0.1, cbc: 0.2 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-14",
+    expirationDate: "2025-01-14",
+    minimumPrice: 0.01,
+    weightThreshold: 0.2,
+    isGLS: true,
+    room: "Sales Floor",
   },
   // $50/oz Special Flower (approx $1.79/g) - GLS Product
   {
-    id: "2", name: "Green Leaf Special Outdoor", price: 1.79, category: "Flower", image: "/placeholder.svg", stock: 400,
-    sku: "OUT-50OZ-1G", thc: 16, cbd: 0.2, cbg: 0.4, cbn: 0.2, cbc: 0.3, strain: "Sativa", weight: "1g",
-    metrcTag: "1A4000000000022000000124", batchId: "OUT240115", harvestDate: "2024-01-08",
-    sourceHarvest: "Oregon Outdoor 2024", supplier: "Outdoor Cannabis Supply", supplierUID: "1A4000000000022000000002", grower: "Sunny Fields Farm", vendor: "Outdoor Specialists", farm: "Sunny Fields Farm", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-11", cannabinoids: { thc: 16, cbd: 0.2, cbg: 0.4, cbn: 0.2, cbc: 0.3 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-13", expirationDate: "2025-01-13",
-    minimumPrice: 0.01, weightThreshold: 0.2, isGLS: true, room: "Sales Floor"
+    id: "2",
+    name: "Green Leaf Special Outdoor",
+    price: 1.79,
+    category: "Flower",
+    image: "/placeholder.svg",
+    stock: 400,
+    sku: "OUT-50OZ-1G",
+    thc: 16,
+    cbd: 0.2,
+    cbg: 0.4,
+    cbn: 0.2,
+    cbc: 0.3,
+    strain: "Sativa",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000124",
+    batchId: "OUT240115",
+    harvestDate: "2024-01-08",
+    sourceHarvest: "Oregon Outdoor 2024",
+    supplier: "Outdoor Cannabis Supply",
+    supplierUID: "1A4000000000022000000002",
+    grower: "Sunny Fields Farm",
+    vendor: "Outdoor Specialists",
+    farm: "Sunny Fields Farm",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-11",
+      cannabinoids: { thc: 16, cbd: 0.2, cbg: 0.4, cbn: 0.2, cbc: 0.3 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-13",
+    expirationDate: "2025-01-13",
+    minimumPrice: 0.01,
+    weightThreshold: 0.2,
+    isGLS: true,
+    room: "Sales Floor",
   },
   // $4/g Tier
   {
-    id: "3", name: "House Blend", price: 4.00, category: "Flower", image: "/placeholder.svg", stock: 200,
-    sku: "HB-4G-1G", thc: 18, cbd: 0.3, cbg: 0.5, cbn: 0.1, cbc: 0.4, strain: "Hybrid", weight: "1g",
-    metrcTag: "1A4000000000022000000125", batchId: "HB240115", harvestDate: "2024-01-09",
-    sourceHarvest: "Indoor House 2024", supplier: "House Cannabis Supply", grower: "House Cultivation", vendor: "House Brand Co", farm: "House Cultivation", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-12", cannabinoids: { thc: 18, cbd: 0.3, cbg: 0.5, cbn: 0.1, cbc: 0.4 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-14", expirationDate: "2025-01-14", room: "Sales Floor"
+    id: "3",
+    name: "House Blend",
+    price: 4.0,
+    category: "Flower",
+    image: "/placeholder.svg",
+    stock: 200,
+    sku: "HB-4G-1G",
+    thc: 18,
+    cbd: 0.3,
+    cbg: 0.5,
+    cbn: 0.1,
+    cbc: 0.4,
+    strain: "Hybrid",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000125",
+    batchId: "HB240115",
+    harvestDate: "2024-01-09",
+    sourceHarvest: "Indoor House 2024",
+    supplier: "House Cannabis Supply",
+    grower: "House Cultivation",
+    vendor: "House Brand Co",
+    farm: "House Cultivation",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-12",
+      cannabinoids: { thc: 18, cbd: 0.3, cbg: 0.5, cbn: 0.1, cbc: 0.4 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-14",
+    expirationDate: "2025-01-14",
+    room: "Sales Floor",
   },
   // $7/g Tier
   {
-    id: "4", name: "Blue Dream", price: 7.00, category: "Flower", image: "/placeholder.svg", stock: 150,
-    sku: "BD-7G-1G", thc: 20, cbd: 0.1, cbg: 0.6, cbn: 0.2, cbc: 0.3, strain: "Hybrid", weight: "1g",
-    metrcTag: "1A4000000000022000000126", batchId: "BD240115", harvestDate: "2024-01-10",
-    sourceHarvest: "Premium Indoor 2024", supplier: "Green Valley Supply", grower: "Emerald Fields Farm", vendor: "Premium Cannabis Co", farm: "Emerald Fields Farm", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-12", cannabinoids: { thc: 20, cbd: 0.1, cbg: 0.6, cbn: 0.2, cbc: 0.3 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-14", expirationDate: "2025-01-14", room: "Sales Floor"
+    id: "4",
+    name: "Blue Dream",
+    price: 7.0,
+    category: "Flower",
+    image: "/placeholder.svg",
+    stock: 150,
+    sku: "BD-7G-1G",
+    thc: 20,
+    cbd: 0.1,
+    cbg: 0.6,
+    cbn: 0.2,
+    cbc: 0.3,
+    strain: "Hybrid",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000126",
+    batchId: "BD240115",
+    harvestDate: "2024-01-10",
+    sourceHarvest: "Premium Indoor 2024",
+    supplier: "Green Valley Supply",
+    grower: "Emerald Fields Farm",
+    vendor: "Premium Cannabis Co",
+    farm: "Emerald Fields Farm",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-12",
+      cannabinoids: { thc: 20, cbd: 0.1, cbg: 0.6, cbn: 0.2, cbc: 0.3 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-14",
+    expirationDate: "2025-01-14",
+    room: "Sales Floor",
   },
   // $12/g Tier
   {
-    id: "5", name: "OG Kush", price: 12.00, category: "Flower", image: "/placeholder.svg", stock: 100,
-    sku: "OG-12G-1G", thc: 24, cbd: 0.2, cbg: 0.4, cbn: 0.4, cbc: 0.2, strain: "Indica", weight: "1g",
-    metrcTag: "1A4000000000022000000127", batchId: "OG240115", harvestDate: "2024-01-08",
-    sourceHarvest: "Top Shelf Indoor 2024", supplier: "Pacific Coast Cannabis", grower: "High Grade Gardens", vendor: "West Coast Distributors", farm: "High Grade Gardens", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-11", cannabinoids: { thc: 24, cbd: 0.2, cbg: 0.4, cbn: 0.4, cbc: 0.2 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-13", expirationDate: "2025-01-13", room: "Secure Vault"
+    id: "5",
+    name: "OG Kush",
+    price: 12.0,
+    category: "Flower",
+    image: "/placeholder.svg",
+    stock: 100,
+    sku: "OG-12G-1G",
+    thc: 24,
+    cbd: 0.2,
+    cbg: 0.4,
+    cbn: 0.4,
+    cbc: 0.2,
+    strain: "Indica",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000127",
+    batchId: "OG240115",
+    harvestDate: "2024-01-08",
+    sourceHarvest: "Top Shelf Indoor 2024",
+    supplier: "Pacific Coast Cannabis",
+    grower: "High Grade Gardens",
+    vendor: "West Coast Distributors",
+    farm: "High Grade Gardens",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-11",
+      cannabinoids: { thc: 24, cbd: 0.2, cbg: 0.4, cbn: 0.4, cbc: 0.2 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-13",
+    expirationDate: "2025-01-13",
+    room: "Secure Vault",
   },
   // $14/g Tier
   {
-    id: "6", name: "Gelato", price: 14.00, category: "Flower", image: "/placeholder.svg", stock: 75,
-    sku: "GEL-14G-1G", thc: 26, cbd: 0.1, cbg: 0.7, cbn: 0.3, cbc: 0.4, strain: "Hybrid", weight: "1g",
-    metrcTag: "1A4000000000022000000128", batchId: "GEL240115", harvestDate: "2024-01-09",
-    sourceHarvest: "Craft Indoor 2024", supplier: "Artisan Cannabis Supply", grower: "Craft Cultivation", vendor: "Artisan Brands", farm: "Craft Cultivation", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-12", cannabinoids: { thc: 26, cbd: 0.1, cbg: 0.7, cbn: 0.3, cbc: 0.4 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-14", expirationDate: "2025-01-14", room: "Secure Vault"
+    id: "6",
+    name: "Gelato",
+    price: 14.0,
+    category: "Flower",
+    image: "/placeholder.svg",
+    stock: 75,
+    sku: "GEL-14G-1G",
+    thc: 26,
+    cbd: 0.1,
+    cbg: 0.7,
+    cbn: 0.3,
+    cbc: 0.4,
+    strain: "Hybrid",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000128",
+    batchId: "GEL240115",
+    harvestDate: "2024-01-09",
+    sourceHarvest: "Craft Indoor 2024",
+    supplier: "Artisan Cannabis Supply",
+    grower: "Craft Cultivation",
+    vendor: "Artisan Brands",
+    farm: "Craft Cultivation",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-12",
+      cannabinoids: { thc: 26, cbd: 0.1, cbg: 0.7, cbn: 0.3, cbc: 0.4 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-14",
+    expirationDate: "2025-01-14",
+    room: "Secure Vault",
   },
   // $16/g Tier
   {
-    id: "7", name: "Exotic Zkittlez", price: 16.00, category: "Flower", image: "/placeholder.svg", stock: 50,
-    sku: "ZK-16G-1G", thc: 28, cbd: 0.1, cbg: 0.8, cbn: 0.5, cbc: 0.3, strain: "Indica", weight: "1g",
-    metrcTag: "1A4000000000022000000129", batchId: "ZK240115", harvestDate: "2024-01-07",
-    sourceHarvest: "Exotic Premium 2024", supplier: "Exotic Cannabis Co", grower: "Elite Gardens", vendor: "Exotic Strains Inc", farm: "Elite Gardens", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-10", cannabinoids: { thc: 28, cbd: 0.1, cbg: 0.8, cbn: 0.5, cbc: 0.3 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-12", expirationDate: "2025-01-12"
+    id: "7",
+    name: "Exotic Zkittlez",
+    price: 16.0,
+    category: "Flower",
+    image: "/placeholder.svg",
+    stock: 50,
+    sku: "ZK-16G-1G",
+    thc: 28,
+    cbd: 0.1,
+    cbg: 0.8,
+    cbn: 0.5,
+    cbc: 0.3,
+    strain: "Indica",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000129",
+    batchId: "ZK240115",
+    harvestDate: "2024-01-07",
+    sourceHarvest: "Exotic Premium 2024",
+    supplier: "Exotic Cannabis Co",
+    grower: "Elite Gardens",
+    vendor: "Exotic Strains Inc",
+    farm: "Elite Gardens",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-10",
+      cannabinoids: { thc: 28, cbd: 0.1, cbg: 0.8, cbn: 0.5, cbc: 0.3 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-12",
+    expirationDate: "2025-01-12",
   },
   // Clone Products
   {
-    id: "8", name: "Blue Dream Clone", price: 15.00, category: "Clones", image: "/placeholder.svg", stock: 25,
-    sku: "BD-CLONE-1CT", thc: 0, cbd: 0, strain: "Hybrid", weight: "1 clone",
-    metrcTag: "1A4000000000022000000130", batchId: "BDC240115", harvestDate: "2024-01-15",
-    sourceHarvest: "Mother Plant BD-001", supplier: "Clone Masters", grower: "Clone Cultivation Co", vendor: "Clone Supply Inc", farm: "Clone Cultivation Co", administrativeHold: false,
+    id: "8",
+    name: "Blue Dream Clone",
+    price: 15.0,
+    category: "Clones",
+    image: "/placeholder.svg",
+    stock: 25,
+    sku: "BD-CLONE-1CT",
+    thc: 0,
+    cbd: 0,
+    strain: "Hybrid",
+    weight: "1 clone",
+    metrcTag: "1A4000000000022000000130",
+    batchId: "BDC240115",
+    harvestDate: "2024-01-15",
+    sourceHarvest: "Mother Plant BD-001",
+    supplier: "Clone Masters",
+    grower: "Clone Cultivation Co",
+    vendor: "Clone Supply Inc",
+    farm: "Clone Cultivation Co",
+    administrativeHold: false,
     testResults: { tested: false },
-    packagedDate: "2024-01-15", expirationDate: "2024-02-15", room: "Sales Floor"
+    packagedDate: "2024-01-15",
+    expirationDate: "2024-02-15",
+    room: "Sales Floor",
   },
   {
-    id: "9", name: "OG Kush Clone", price: 18.00, category: "Clones", image: "/placeholder.svg", stock: 20,
-    sku: "OG-CLONE-1CT", thc: 0, cbd: 0, strain: "Indica", weight: "1 clone",
-    metrcTag: "1A4000000000022000000131", batchId: "OGC240115", harvestDate: "2024-01-15",
-    sourceHarvest: "Mother Plant OG-002", supplier: "Clone Masters", grower: "Clone Cultivation Co", vendor: "Clone Supply Inc", farm: "Clone Cultivation Co", administrativeHold: false,
+    id: "9",
+    name: "OG Kush Clone",
+    price: 18.0,
+    category: "Clones",
+    image: "/placeholder.svg",
+    stock: 20,
+    sku: "OG-CLONE-1CT",
+    thc: 0,
+    cbd: 0,
+    strain: "Indica",
+    weight: "1 clone",
+    metrcTag: "1A4000000000022000000131",
+    batchId: "OGC240115",
+    harvestDate: "2024-01-15",
+    sourceHarvest: "Mother Plant OG-002",
+    supplier: "Clone Masters",
+    grower: "Clone Cultivation Co",
+    vendor: "Clone Supply Inc",
+    farm: "Clone Cultivation Co",
+    administrativeHold: false,
     testResults: { tested: false },
-    packagedDate: "2024-01-15", expirationDate: "2024-02-15"
+    packagedDate: "2024-01-15",
+    expirationDate: "2024-02-15",
   },
   {
-    id: "10", name: "Gelato Clone", price: 20.00, category: "Clones", image: "/placeholder.svg", stock: 15,
-    sku: "GEL-CLONE-1CT", thc: 0, cbd: 0, strain: "Hybrid", weight: "1 clone",
-    metrcTag: "1A4000000000022000000132", batchId: "GLC240115", harvestDate: "2024-01-15",
-    sourceHarvest: "Mother Plant GEL-001", supplier: "Clone Masters", grower: "Clone Cultivation Co", vendor: "Clone Supply Inc", farm: "Clone Cultivation Co", administrativeHold: false,
+    id: "10",
+    name: "Gelato Clone",
+    price: 20.0,
+    category: "Clones",
+    image: "/placeholder.svg",
+    stock: 15,
+    sku: "GEL-CLONE-1CT",
+    thc: 0,
+    cbd: 0,
+    strain: "Hybrid",
+    weight: "1 clone",
+    metrcTag: "1A4000000000022000000132",
+    batchId: "GLC240115",
+    harvestDate: "2024-01-15",
+    sourceHarvest: "Mother Plant GEL-001",
+    supplier: "Clone Masters",
+    grower: "Clone Cultivation Co",
+    vendor: "Clone Supply Inc",
+    farm: "Clone Cultivation Co",
+    administrativeHold: false,
     testResults: { tested: false },
-    packagedDate: "2024-01-15", expirationDate: "2024-02-15"
+    packagedDate: "2024-01-15",
+    expirationDate: "2024-02-15",
   },
   {
-    id: "11", name: "Gummy Bears", price: 25.00, category: "Edibles", image: "/placeholder.svg", stock: 100,
-    sku: "GB-001-100MG", thc: 10, cbd: 0, cbg: 0.5, cbn: 0.2, cbc: 0.3,
-    thcMg: 100, cbdMg: 0, cbgMg: 5, cbnMg: 2, cbcMg: 3, weight: "100mg",
-    metrcTag: "1A4000000000022000000133", batchId: "GB240115", harvestDate: "2024-01-05",
-    sourceHarvest: "Extraction Batch A", supplier: "Edible Creations Co", grower: "Source Cannabis Farm", vendor: "Sweet Treats Inc", farm: "Green Valley Farm", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-10", cannabinoids: { thc: 10, cbd: 0, cbg: 0.5, cbn: 0.2, cbc: 0.3 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-12", expirationDate: "2025-07-12", room: "Sales Floor"
+    id: "11",
+    name: "Gummy Bears",
+    price: 25.0,
+    category: "Edibles",
+    image: "/placeholder.svg",
+    stock: 100,
+    sku: "GB-001-100MG",
+    thc: 10,
+    cbd: 0,
+    cbg: 0.5,
+    cbn: 0.2,
+    cbc: 0.3,
+    thcMg: 100,
+    cbdMg: 0,
+    cbgMg: 5,
+    cbnMg: 2,
+    cbcMg: 3,
+    weight: "100mg",
+    metrcTag: "1A4000000000022000000133",
+    batchId: "GB240115",
+    harvestDate: "2024-01-05",
+    sourceHarvest: "Extraction Batch A",
+    supplier: "Edible Creations Co",
+    grower: "Source Cannabis Farm",
+    vendor: "Sweet Treats Inc",
+    farm: "Green Valley Farm",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-10",
+      cannabinoids: { thc: 10, cbd: 0, cbg: 0.5, cbn: 0.2, cbc: 0.3 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-12",
+    expirationDate: "2025-07-12",
+    room: "Sales Floor",
   },
   {
-    id: "12", name: "CBD Tincture", price: 65.00, category: "Tinctures", image: "/placeholder.svg", stock: 50,
-    sku: "CT-001-30ML", thc: 2, cbd: 25, weight: "30ml",
-    metrcTag: "1A4000000000022000000134", batchId: "CT240115", harvestDate: "2024-01-01",
-    sourceHarvest: "CBD Rich Harvest", supplier: "Wellness Products Inc", grower: "Therapeutic Gardens", vendor: "Wellness Co", farm: "Therapeutic Gardens", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-08", cannabinoids: { thc: 2, cbd: 25 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-10", expirationDate: "2026-01-10", room: "Sales Floor"
+    id: "12",
+    name: "CBD Tincture",
+    price: 65.0,
+    category: "Tinctures",
+    image: "/placeholder.svg",
+    stock: 50,
+    sku: "CT-001-30ML",
+    thc: 2,
+    cbd: 25,
+    weight: "30ml",
+    metrcTag: "1A4000000000022000000134",
+    batchId: "CT240115",
+    harvestDate: "2024-01-01",
+    sourceHarvest: "CBD Rich Harvest",
+    supplier: "Wellness Products Inc",
+    grower: "Therapeutic Gardens",
+    vendor: "Wellness Co",
+    farm: "Therapeutic Gardens",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-08",
+      cannabinoids: { thc: 2, cbd: 25 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-10",
+    expirationDate: "2026-01-10",
+    room: "Sales Floor",
   },
   {
-    id: "13", name: "Vape Cartridge", price: 55.00, category: "Vapes", image: "/placeholder.svg", stock: 40,
-    sku: "VC-001-1G", thc: 85, cbd: 0, strain: "Hybrid", weight: "1g",
-    metrcTag: "1A4000000000022000000135", batchId: "VC240115", harvestDate: "2024-01-03",
-    sourceHarvest: "Premium Extract Line", supplier: "Vapor Tech Solutions", grower: "Elite Extraction Co", vendor: "Vape World", farm: "Elite Extraction Co", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-09", cannabinoids: { thc: 85, cbd: 0 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-11", expirationDate: "2025-01-11", room: "Sales Floor"
+    id: "13",
+    name: "Vape Cartridge",
+    price: 55.0,
+    category: "Vapes",
+    image: "/placeholder.svg",
+    stock: 40,
+    sku: "VC-001-1G",
+    thc: 85,
+    cbd: 0,
+    strain: "Hybrid",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000135",
+    batchId: "VC240115",
+    harvestDate: "2024-01-03",
+    sourceHarvest: "Premium Extract Line",
+    supplier: "Vapor Tech Solutions",
+    grower: "Elite Extraction Co",
+    vendor: "Vape World",
+    farm: "Elite Extraction Co",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-09",
+      cannabinoids: { thc: 85, cbd: 0 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-11",
+    expirationDate: "2025-01-11",
+    room: "Sales Floor",
   },
   {
-    id: "14", name: "Hash", price: 80.00, category: "Concentrates", image: "/placeholder.svg", stock: 15,
-    sku: "HS-001-1G", thc: 60, cbd: 1, weight: "1g",
-    metrcTag: "1A4000000000022000000136", batchId: "HS240115", harvestDate: "2024-01-02",
-    sourceHarvest: "Artisan Hash Collection", supplier: "Craft Concentrates", grower: "Mountain View Farms", vendor: "Hash Masters", farm: "Mountain View Farms", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-07", cannabinoids: { thc: 60, cbd: 1 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-09", expirationDate: "2025-07-09"
+    id: "14",
+    name: "Hash",
+    price: 80.0,
+    category: "Concentrates",
+    image: "/placeholder.svg",
+    stock: 15,
+    sku: "HS-001-1G",
+    thc: 60,
+    cbd: 1,
+    weight: "1g",
+    metrcTag: "1A4000000000022000000136",
+    batchId: "HS240115",
+    harvestDate: "2024-01-02",
+    sourceHarvest: "Artisan Hash Collection",
+    supplier: "Craft Concentrates",
+    grower: "Mountain View Farms",
+    vendor: "Hash Masters",
+    farm: "Mountain View Farms",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-07",
+      cannabinoids: { thc: 60, cbd: 1 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-09",
+    expirationDate: "2025-07-09",
   },
   {
-    id: "15", name: "Pre-Roll Pack", price: 35.00, category: "Pre-Rolls", image: "/placeholder.svg", stock: 60,
-    sku: "PR-001-5PC", thc: 18, cbd: 0.2, strain: "Indica", weight: "5x0.5g",
-    metrcTag: "1A4000000000022000000137", batchId: "PR240115", harvestDate: "2024-01-06",
-    sourceHarvest: "Premium Indoor Batch", supplier: "Roll Masters", grower: "Indoor Excellence", vendor: "Roll Co", farm: "Indoor Excellence", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-11", cannabinoids: { thc: 18, cbd: 0.2 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-13", expirationDate: "2025-01-13", room: "Sales Floor"
+    id: "15",
+    name: "Pre-Roll Pack",
+    price: 35.0,
+    category: "Pre-Rolls",
+    image: "/placeholder.svg",
+    stock: 60,
+    sku: "PR-001-5PC",
+    thc: 18,
+    cbd: 0.2,
+    strain: "Indica",
+    weight: "5x0.5g",
+    metrcTag: "1A4000000000022000000137",
+    batchId: "PR240115",
+    harvestDate: "2024-01-06",
+    sourceHarvest: "Premium Indoor Batch",
+    supplier: "Roll Masters",
+    grower: "Indoor Excellence",
+    vendor: "Roll Co",
+    farm: "Indoor Excellence",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-11",
+      cannabinoids: { thc: 18, cbd: 0.2 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-13",
+    expirationDate: "2025-01-13",
+    room: "Sales Floor",
   },
   {
-    id: "16", name: "Chocolate Bar", price: 30.00, category: "Edibles", image: "/placeholder.svg", stock: 80,
-    sku: "CB-001-100MG", thc: 10, cbd: 0, cbg: 0.3, cbn: 0.1, cbc: 0.2,
-    thcMg: 100, cbdMg: 0, cbgMg: 3, cbnMg: 1, cbcMg: 2, weight: "100mg",
-    metrcTag: "1A4000000000022000000138", batchId: "CB240115", harvestDate: "2024-01-04",
-    sourceHarvest: "Cacao Infusion Series", supplier: "Sweet Relief Co", grower: "Organic Source Farm", vendor: "Chocolate Works", farm: "Organic Source Farm", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-09", cannabinoids: { thc: 10, cbd: 0, cbg: 0.3, cbn: 0.1, cbc: 0.2 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-11", expirationDate: "2025-07-11"
+    id: "16",
+    name: "Chocolate Bar",
+    price: 30.0,
+    category: "Edibles",
+    image: "/placeholder.svg",
+    stock: 80,
+    sku: "CB-001-100MG",
+    thc: 10,
+    cbd: 0,
+    cbg: 0.3,
+    cbn: 0.1,
+    cbc: 0.2,
+    thcMg: 100,
+    cbdMg: 0,
+    cbgMg: 3,
+    cbnMg: 1,
+    cbcMg: 2,
+    weight: "100mg",
+    metrcTag: "1A4000000000022000000138",
+    batchId: "CB240115",
+    harvestDate: "2024-01-04",
+    sourceHarvest: "Cacao Infusion Series",
+    supplier: "Sweet Relief Co",
+    grower: "Organic Source Farm",
+    vendor: "Chocolate Works",
+    farm: "Organic Source Farm",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-09",
+      cannabinoids: { thc: 10, cbd: 0, cbg: 0.3, cbn: 0.1, cbc: 0.2 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-11",
+    expirationDate: "2025-07-11",
   },
   {
-    id: "17", name: "Rosin", price: 95.00, category: "Concentrates", image: "/placeholder.svg", stock: 12,
-    sku: "RS-001-1G", thc: 75, cbd: 2, weight: "1g",
-    metrcTag: "1A4000000000022000000139", batchId: "RS240115", harvestDate: "2024-01-01",
-    sourceHarvest: "Solventless Premium", supplier: "Pure Extracts LLC", grower: "Artisan Cannabis Co", vendor: "Rosin Kings", farm: "Artisan Cannabis Co", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-06", cannabinoids: { thc: 75, cbd: 2 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-08", expirationDate: "2025-07-08"
+    id: "17",
+    name: "Rosin",
+    price: 95.0,
+    category: "Concentrates",
+    image: "/placeholder.svg",
+    stock: 12,
+    sku: "RS-001-1G",
+    thc: 75,
+    cbd: 2,
+    weight: "1g",
+    metrcTag: "1A4000000000022000000139",
+    batchId: "RS240115",
+    harvestDate: "2024-01-01",
+    sourceHarvest: "Solventless Premium",
+    supplier: "Pure Extracts LLC",
+    grower: "Artisan Cannabis Co",
+    vendor: "Rosin Kings",
+    farm: "Artisan Cannabis Co",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-06",
+      cannabinoids: { thc: 75, cbd: 2 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-08",
+    expirationDate: "2025-07-08",
   },
   {
-    id: "18", name: "Infused Blunt", price: 42.00, category: "Infused Pre-Rolls", image: "/placeholder.svg", stock: 35,
-    sku: "IB-001-1G", thc: 28, cbd: 0.5, strain: "Hybrid", weight: "1g",
-    metrcTag: "1A4000000000022000000140", batchId: "IB240115", harvestDate: "2024-01-05",
-    sourceHarvest: "Infused Premium Line", supplier: "Blunt Masters Inc", grower: "Enhanced Cannabis Co", vendor: "Infused Products Co", farm: "Enhanced Cannabis Co", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-10", cannabinoids: { thc: 28, cbd: 0.5 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-12", expirationDate: "2025-01-12"
+    id: "18",
+    name: "Infused Blunt",
+    price: 42.0,
+    category: "Infused Pre-Rolls",
+    image: "/placeholder.svg",
+    stock: 35,
+    sku: "IB-001-1G",
+    thc: 28,
+    cbd: 0.5,
+    strain: "Hybrid",
+    weight: "1g",
+    metrcTag: "1A4000000000022000000140",
+    batchId: "IB240115",
+    harvestDate: "2024-01-05",
+    sourceHarvest: "Infused Premium Line",
+    supplier: "Blunt Masters Inc",
+    grower: "Enhanced Cannabis Co",
+    vendor: "Infused Products Co",
+    farm: "Enhanced Cannabis Co",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-10",
+      cannabinoids: { thc: 28, cbd: 0.5 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-12",
+    expirationDate: "2025-01-12",
   },
   {
-    id: "19", name: "Delta-8 Disposable", price: 38.00, category: "Inhalable Cannabinoids", image: "/placeholder.svg", stock: 25,
-    sku: "D8-001-0.5G", thc: 8, cbd: 2, weight: "0.5g",
-    metrcTag: "1A4000000000022000000141", batchId: "D8240115", harvestDate: "2024-01-03",
-    sourceHarvest: "Cannabinoid Isolation Batch", supplier: "Alternative Cannabinoids", grower: "Research Cultivation", vendor: "Alt Cannabinoids Inc", farm: "Research Cultivation", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-08", cannabinoids: { thc: 8, cbd: 2 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-10", expirationDate: "2025-01-10"
+    id: "19",
+    name: "Delta-8 Disposable",
+    price: 38.0,
+    category: "Inhalable Cannabinoids",
+    image: "/placeholder.svg",
+    stock: 25,
+    sku: "D8-001-0.5G",
+    thc: 8,
+    cbd: 2,
+    weight: "0.5g",
+    metrcTag: "1A4000000000022000000141",
+    batchId: "D8240115",
+    harvestDate: "2024-01-03",
+    sourceHarvest: "Cannabinoid Isolation Batch",
+    supplier: "Alternative Cannabinoids",
+    grower: "Research Cultivation",
+    vendor: "Alt Cannabinoids Inc",
+    farm: "Research Cultivation",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-08",
+      cannabinoids: { thc: 8, cbd: 2 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-10",
+    expirationDate: "2025-01-10",
   },
   {
-    id: "20", name: "CBD Topical Balm", price: 45.00, category: "Topicals", image: "/placeholder.svg", stock: 40,
-    sku: "TB-001-50ML", thc: 0, cbd: 200, weight: "50ml",
-    metrcTag: "1A4000000000022000000142", batchId: "TB240115", harvestDate: "2024-01-02",
-    sourceHarvest: "CBD Topical Series", supplier: "Skin Care Solutions", grower: "Therapeutic Hemp Farm", vendor: "Topical Solutions Inc", farm: "Therapeutic Hemp Farm", administrativeHold: false,
-    testResults: { tested: true, labName: "Oregon Cannabis Lab", testDate: "2024-01-07", cannabinoids: { thc: 0, cbd: 200 }, contaminants: { passed: true } },
-    packagedDate: "2024-01-09", expirationDate: "2025-07-09"
+    id: "20",
+    name: "CBD Topical Balm",
+    price: 45.0,
+    category: "Topicals",
+    image: "/placeholder.svg",
+    stock: 40,
+    sku: "TB-001-50ML",
+    thc: 0,
+    cbd: 200,
+    weight: "50ml",
+    metrcTag: "1A4000000000022000000142",
+    batchId: "TB240115",
+    harvestDate: "2024-01-02",
+    sourceHarvest: "CBD Topical Series",
+    supplier: "Skin Care Solutions",
+    grower: "Therapeutic Hemp Farm",
+    vendor: "Topical Solutions Inc",
+    farm: "Therapeutic Hemp Farm",
+    administrativeHold: false,
+    testResults: {
+      tested: true,
+      labName: "Oregon Cannabis Lab",
+      testDate: "2024-01-07",
+      cannabinoids: { thc: 0, cbd: 200 },
+      contaminants: { passed: true },
+    },
+    packagedDate: "2024-01-09",
+    expirationDate: "2025-07-09",
   },
   {
-    id: "21", name: "Hemp Rolling Papers", price: 8.00, category: "Hemp", image: "/placeholder.svg", stock: 200,
-    sku: "HP-001-32CT", weight: "32 papers", isUntaxed: true,
-    metrcTag: "1A4000000000022000000143", batchId: "RP240115",
-    sourceHarvest: "Industrial Hemp", supplier: "Paper Products Co", grower: "Hemp Industrial Farm", vendor: "Hemp Supplies Inc", farm: "Hemp Industrial Farm", administrativeHold: false,
+    id: "21",
+    name: "Hemp Rolling Papers",
+    price: 8.0,
+    category: "Hemp",
+    image: "/placeholder.svg",
+    stock: 200,
+    sku: "HP-001-32CT",
+    weight: "32 papers",
+    isUntaxed: true,
+    metrcTag: "1A4000000000022000000143",
+    batchId: "RP240115",
+    sourceHarvest: "Industrial Hemp",
+    supplier: "Paper Products Co",
+    grower: "Hemp Industrial Farm",
+    vendor: "Hemp Supplies Inc",
+    farm: "Hemp Industrial Farm",
+    administrativeHold: false,
     testResults: { tested: false },
-    packagedDate: "2024-01-01", expirationDate: "2026-01-01"
+    packagedDate: "2024-01-01",
+    expirationDate: "2026-01-01",
   },
   {
-    id: "22", name: "Glass Pipe", price: 25.00, category: "Paraphernalia", image: "/placeholder.svg", stock: 50,
-    sku: "GP-001-SM", weight: "3oz", isUntaxed: true,
-    metrcTag: "1A4000000000022000000144", batchId: "GP240115",
-    sourceHarvest: "N/A", supplier: "Glass Art Accessories", grower: "N/A", vendor: "Smoke Shop Supply", farm: "N/A", administrativeHold: false,
+    id: "22",
+    name: "Glass Pipe",
+    price: 25.0,
+    category: "Paraphernalia",
+    image: "/placeholder.svg",
+    stock: 50,
+    sku: "GP-001-SM",
+    weight: "3oz",
+    isUntaxed: true,
+    metrcTag: "1A4000000000022000000144",
+    batchId: "GP240115",
+    sourceHarvest: "N/A",
+    supplier: "Glass Art Accessories",
+    grower: "N/A",
+    vendor: "Smoke Shop Supply",
+    farm: "N/A",
+    administrativeHold: false,
     testResults: { tested: false },
-    packagedDate: "2024-01-01", expirationDate: "2030-01-01"
+    packagedDate: "2024-01-01",
+    expirationDate: "2030-01-01",
   },
   {
-    id: "23", name: "Grinder", price: 15.00, category: "Accessories", image: "/placeholder.svg", stock: 75,
-    sku: "GR-001-4PC", weight: "2oz", isUntaxed: true,
-    metrcTag: "1A4000000000022000000145", batchId: "GR240115",
-    sourceHarvest: "N/A", supplier: "Metal Works Co", grower: "N/A", vendor: "Accessory World", farm: "N/A", administrativeHold: false,
+    id: "23",
+    name: "Grinder",
+    price: 15.0,
+    category: "Accessories",
+    image: "/placeholder.svg",
+    stock: 75,
+    sku: "GR-001-4PC",
+    weight: "2oz",
+    isUntaxed: true,
+    metrcTag: "1A4000000000022000000145",
+    batchId: "GR240115",
+    sourceHarvest: "N/A",
+    supplier: "Metal Works Co",
+    grower: "N/A",
+    vendor: "Accessory World",
+    farm: "N/A",
+    administrativeHold: false,
     testResults: { tested: false },
-    packagedDate: "2024-01-01", expirationDate: "2030-01-01"
+    packagedDate: "2024-01-01",
+    expirationDate: "2030-01-01",
   },
   {
-    id: "24", name: "Hemp Seed Oil", price: 12.00, category: "Hemp", image: "/placeholder.svg", stock: 100,
-    sku: "HSO-001-1OZ", weight: "1oz", isUntaxed: true,
-    metrcTag: "1A4000000000022000000146", batchId: "HSO240115",
-    sourceHarvest: "Organic Hemp Seeds", supplier: "Natural Hemp Co", grower: "Organic Hemp Farm", vendor: "Health Products Inc", farm: "Organic Hemp Farm", administrativeHold: false,
+    id: "24",
+    name: "Hemp Seed Oil",
+    price: 12.0,
+    category: "Hemp",
+    image: "/placeholder.svg",
+    stock: 100,
+    sku: "HSO-001-1OZ",
+    weight: "1oz",
+    isUntaxed: true,
+    metrcTag: "1A4000000000022000000146",
+    batchId: "HSO240115",
+    sourceHarvest: "Organic Hemp Seeds",
+    supplier: "Natural Hemp Co",
+    grower: "Organic Hemp Farm",
+    vendor: "Health Products Inc",
+    farm: "Organic Hemp Farm",
+    administrativeHold: false,
     testResults: { tested: false },
-    packagedDate: "2024-01-01", expirationDate: "2025-12-01", room: "Sales Floor"
+    packagedDate: "2024-01-01",
+    expirationDate: "2025-12-01",
+    room: "Sales Floor",
   },
 ];
 
-const categories = ["All", "Flower", "Clones", "Edibles", "Vapes", "Concentrates", "Pre-Rolls", "Infused Pre-Rolls", "Tinctures", "Inhalable Cannabinoids", "Topicals", "Hemp", "Paraphernalia", "Accessories"];
+const categories = [
+  "All",
+  "Flower",
+  "Clones",
+  "Edibles",
+  "Vapes",
+  "Concentrates",
+  "Pre-Rolls",
+  "Infused Pre-Rolls",
+  "Tinctures",
+  "Inhalable Cannabinoids",
+  "Topicals",
+  "Hemp",
+  "Paraphernalia",
+  "Accessories",
+];
 
 // Sample rooms data
 const availableRooms: Room[] = [
-  { id: "sales-floor", name: "Sales Floor", type: "sales", isActive: true, maxCapacity: 1000, currentStock: 750 },
-  { id: "storage-main", name: "Main Storage", type: "storage", isActive: true, maxCapacity: 5000, currentStock: 3200 },
-  { id: "production-1", name: "Production Room 1", type: "production", isActive: true, maxCapacity: 2000, currentStock: 850 },
-  { id: "processing-lab", name: "Processing Lab", type: "processing", isActive: true, maxCapacity: 500, currentStock: 200 },
-  { id: "vault-secure", name: "Secure Vault", type: "storage", isActive: true, maxCapacity: 1000, currentStock: 450 },
-  { id: "quarantine", name: "Quarantine Room", type: "storage", isActive: true, maxCapacity: 200, currentStock: 15 }
+  {
+    id: "sales-floor",
+    name: "Sales Floor",
+    type: "sales",
+    isActive: true,
+    maxCapacity: 1000,
+    currentStock: 750,
+  },
+  {
+    id: "storage-main",
+    name: "Main Storage",
+    type: "storage",
+    isActive: true,
+    maxCapacity: 5000,
+    currentStock: 3200,
+  },
+  {
+    id: "production-1",
+    name: "Production Room 1",
+    type: "production",
+    isActive: true,
+    maxCapacity: 2000,
+    currentStock: 850,
+  },
+  {
+    id: "processing-lab",
+    name: "Processing Lab",
+    type: "processing",
+    isActive: true,
+    maxCapacity: 500,
+    currentStock: 200,
+  },
+  {
+    id: "vault-secure",
+    name: "Secure Vault",
+    type: "storage",
+    isActive: true,
+    maxCapacity: 1000,
+    currentStock: 450,
+  },
+  {
+    id: "quarantine",
+    name: "Quarantine Room",
+    type: "storage",
+    isActive: true,
+    maxCapacity: 200,
+    currentStock: 15,
+  },
 ];
 
 export default function Index() {
@@ -807,23 +1528,31 @@ export default function Index() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<'name' | 'price' | 'category' | 'thc' | 'room'>('name');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [sortBy, setSortBy] = useState<
+    "name" | "price" | "category" | "thc" | "room"
+  >("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   const [cartDiscount, setCartDiscount] = useState<CartDiscount | null>(null);
   const [showDiscountDialog, setShowDiscountDialog] = useState(false);
   const [showCartDiscountDialog, setShowCartDiscountDialog] = useState(false);
-  const [selectedItemForDiscount, setSelectedItemForDiscount] = useState<string | null>(null);
+  const [selectedItemForDiscount, setSelectedItemForDiscount] = useState<
+    string | null
+  >(null);
   const [discountValue, setDiscountValue] = useState("");
-  const [discountType, setDiscountType] = useState<'percentage' | 'fixed'>('percentage');
+  const [discountType, setDiscountType] = useState<"percentage" | "fixed">(
+    "percentage",
+  );
   const [showCustomerDialog, setShowCustomerDialog] = useState(false);
   const [showMetrcDialog, setShowMetrcDialog] = useState(false);
-  const [selectedProductForMetrc, setSelectedProductForMetrc] = useState<Product | null>(null);
+  const [selectedProductForMetrc, setSelectedProductForMetrc] =
+    useState<Product | null>(null);
   const [showEnhancedMetrcDialog, setShowEnhancedMetrcDialog] = useState(false);
-  const [selectedProductForEnhancedMetrc, setSelectedProductForEnhancedMetrc] = useState<Product | null>(null);
+  const [selectedProductForEnhancedMetrc, setSelectedProductForEnhancedMetrc] =
+    useState<Product | null>(null);
   const [editingQuantity, setEditingQuantity] = useState<string | null>(null);
   const [quantityInput, setQuantityInput] = useState("");
   const [discountReasonCode, setDiscountReasonCode] = useState("");
-  const [customerType, setCustomerType] = useState<'rec' | 'medical'>('rec');
+  const [customerType, setCustomerType] = useState<"rec" | "medical">("rec");
   const [medicalCustomer, setMedicalCustomer] = useState<MedicalCustomer>({
     name: "",
     phone: "",
@@ -832,7 +1561,7 @@ export default function Index() {
     expirationDate: "",
     isPatient: true,
     notes: "",
-    salesHistory: []
+    salesHistory: [],
   });
   const [showMedicalDialog, setShowMedicalDialog] = useState(false);
   const [showPinDialog, setShowPinDialog] = useState(false);
@@ -841,29 +1570,33 @@ export default function Index() {
   const [debitLastFour, setDebitLastFour] = useState("");
   const [showBarcodeDialog, setShowBarcodeDialog] = useState(false);
   const [showExitLabelDialog, setShowExitLabelDialog] = useState(false);
-  const [selectedProductForPrint, setSelectedProductForPrint] = useState<Product | null>(null);
+  const [selectedProductForPrint, setSelectedProductForPrint] =
+    useState<Product | null>(null);
   const [showPaymentAmountDialog, setShowPaymentAmountDialog] = useState(false);
   const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<'cash' | 'debit'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "debit">("cash");
   const [showReceiptDialog, setShowReceiptDialog] = useState(false);
   const [lastTransaction, setLastTransaction] = useState<any>(null);
   const [showCustomerLookup, setShowCustomerLookup] = useState(false);
   const [customerSearchQuery, setCustomerSearchQuery] = useState("");
-  const [selectedLoyaltyCustomer, setSelectedLoyaltyCustomer] = useState<any>(null);
+  const [selectedLoyaltyCustomer, setSelectedLoyaltyCustomer] =
+    useState<any>(null);
 
   // New Sale Dialog State
   const [showNewSaleDialog, setShowNewSaleDialog] = useState(false);
-  const [newSaleCustomerType, setNewSaleCustomerType] = useState<"recreational" | "medical" | "">("");
+  const [newSaleCustomerType, setNewSaleCustomerType] = useState<
+    "recreational" | "medical" | ""
+  >("");
   const [medicalCardInfo, setMedicalCardInfo] = useState({
     number: "",
     issueDate: "",
-    expirationDate: ""
+    expirationDate: "",
   });
   const [caregiverCardInfo, setCaregiverCardInfo] = useState({
     number: "",
     issueDate: "",
     expirationDate: "",
-    patientName: ""
+    patientName: "",
   });
   const [dataRetentionConsent, setDataRetentionConsent] = useState(false);
 
@@ -872,8 +1605,10 @@ export default function Index() {
   const [queueOrder, setQueueOrder] = useState<any>(null);
   const [showQueueOrderDialog, setShowQueueOrderDialog] = useState(false);
   const [showRoomTransferDialog, setShowRoomTransferDialog] = useState(false);
-  const [selectedProductForTransfer, setSelectedProductForTransfer] = useState<Product | null>(null);
-  const [selectedProductForEdit, setSelectedProductForEdit] = useState<Product | null>(null);
+  const [selectedProductForTransfer, setSelectedProductForTransfer] =
+    useState<Product | null>(null);
+  const [selectedProductForEdit, setSelectedProductForEdit] =
+    useState<Product | null>(null);
   const [showEditProductDialog, setShowEditProductDialog] = useState(false);
   const [transferQuantity, setTransferQuantity] = useState("");
   const [selectedFromRoom, setSelectedFromRoom] = useState("");
@@ -889,81 +1624,72 @@ export default function Index() {
   const [showInventoryTab, setShowInventoryTab] = useState(false);
   const [showNavigationDropdown, setShowNavigationDropdown] = useState(false);
 
-  // Cashier view mode - connected to Settings page
-  const [cashierViewMode, setCashierViewMode] = useState<'cards' | 'list'>(() => {
-    // Try to get from localStorage or default to 'cards'
-    try {
-      const savedSettings = localStorage.getItem('cannabest-store-settings');
-      if (savedSettings) {
-        const settings = JSON.parse(savedSettings);
-        return settings.inventoryViewMode || 'cards';
-      }
-    } catch (error) {
-      console.warn('Could not load settings from localStorage:', error);
-    }
-    return 'cards';
-  });
+  // Cashier view mode - connected to Settings (via SettingsClient)
+  const [cashierViewMode, setCashierViewMode] = useState<"cards" | "list">(
+    "cards",
+  );
 
-  // Listen for changes to the settings for view mode synchronization
+  // Sync with SettingsClient and listen for updates
   useEffect(() => {
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'cannabest-store-settings' && e.newValue) {
-        try {
-          const settings = JSON.parse(e.newValue);
-          console.log('Index: Storage change detected, updating cashier view mode to:', settings.inventoryViewMode);
-          setCashierViewMode(settings.inventoryViewMode || 'cards');
-        } catch (error) {
-          console.warn('Could not parse settings from localStorage:', error);
-        }
-      }
-    };
-
-    // Listen for custom event for same-page updates
-    const handleSettingsUpdate = (e: CustomEvent) => {
-      console.log('Index: Settings update event received:', e.detail);
-      if (e.detail?.inventoryViewMode) {
-        setCashierViewMode(e.detail.inventoryViewMode);
-      }
-    };
-
-    const handleInventoryViewChange = (e: CustomEvent) => {
-      console.log('Index: Inventory view change event received:', e.detail);
-      if (e.detail?.viewMode) {
-        setCashierViewMode(e.detail.viewMode);
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('settings-updated', handleSettingsUpdate as EventListener);
-    window.addEventListener('inventory-view-changed', handleInventoryViewChange as EventListener);
-
-    // Check localStorage periodically for any missed updates
-    const checkSettingsInterval = setInterval(() => {
+    let mounted = true;
+    (async () => {
       try {
-        const savedSettings = localStorage.getItem('cannabest-store-settings');
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          const currentViewMode = settings.inventoryViewMode || 'cards';
-          if (currentViewMode !== cashierViewMode) {
-            console.log('Index: Periodic check found view mode change:', currentViewMode);
-            setCashierViewMode(currentViewMode);
-          }
+        const sc: any = (window as any).SettingsClient;
+        if (sc?.get) {
+          const resp = await sc.get(true);
+          const settings = resp?.settings || {};
+          const mode =
+            settings.inventory_view_mode === "list" ||
+            settings.inventory_view_mode === "cards"
+              ? settings.inventory_view_mode
+              : "cards";
+          if (mounted) setCashierViewMode(mode);
         }
-      } catch (error) {
-        // Silent fail for periodic check
-      }
-    }, 1000);
+      } catch (_) {}
+    })();
+
+    const handleSettingsUpdate = (e: any) => {
+      const s = e?.detail?.settings || e?.detail || {};
+      const m = s.inventory_view_mode || s.inventoryViewMode;
+      if (m === "cards" || m === "list") setCashierViewMode(m);
+    };
+    const handleInventoryViewChange = (e: any) => {
+      const m = e?.detail?.viewMode;
+      if (m === "cards" || m === "list") setCashierViewMode(m);
+    };
+
+    window.addEventListener(
+      "settings:updated",
+      handleSettingsUpdate as EventListener,
+    );
+    window.addEventListener(
+      "settings-updated",
+      handleSettingsUpdate as EventListener,
+    );
+    window.addEventListener(
+      "inventory-view-changed",
+      handleInventoryViewChange as EventListener,
+    );
 
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('settings-updated', handleSettingsUpdate as EventListener);
-      window.removeEventListener('inventory-view-changed', handleInventoryViewChange as EventListener);
-      clearInterval(checkSettingsInterval);
+      mounted = false;
+      window.removeEventListener(
+        "settings:updated",
+        handleSettingsUpdate as EventListener,
+      );
+      window.removeEventListener(
+        "settings-updated",
+        handleSettingsUpdate as EventListener,
+      );
+      window.removeEventListener(
+        "inventory-view-changed",
+        handleInventoryViewChange as EventListener,
+      );
     };
-  }, [cashierViewMode]);
+  }, []);
 
   // Customizable tax rate (default 20% for Oregon)
-  const [taxRate, setTaxRate] = useState(0.20);
+  const [taxRate, setTaxRate] = useState(0.2);
   const [showTaxRateDialog, setShowTaxRateDialog] = useState(false);
   const [customerInfo, setCustomerInfo] = useState({
     name: "",
@@ -980,8 +1706,8 @@ export default function Index() {
       inhalableCannabinoidsExtracts: 0, // grams
       topicals: 0, // grams
       infusedPreRolls: 0, // grams
-      clones: 0 // units
-    }
+      clones: 0, // units
+    },
   });
 
   // Oregon daily possession limits
@@ -992,29 +1718,37 @@ export default function Index() {
     tinctures: 72000, // 72oz (in ml for consistency, assuming 1oz = 1000ml)
     inhalableCannabinoidsExtracts: 10000, // 10g (in mg)
     topicals: 454000, // 454g (in mg) - no specific limit, using general product limit
-    clones: 4 // 4 clones max per day for recreational customers
+    clones: 4, // 4 clones max per day for recreational customers
   };
 
   const filteredProducts = sampleProducts
-    .filter(product => {
+    .filter((product) => {
       const searchLower = searchQuery.toLowerCase();
-      const matchesSearch = product.name.toLowerCase().includes(searchLower) ||
-                           product.farm?.toLowerCase().includes(searchLower) ||
-                           product.supplier?.toLowerCase().includes(searchLower) ||
-                           product.vendor?.toLowerCase().includes(searchLower) ||
-                           product.grower?.toLowerCase().includes(searchLower) ||
-                           product.metrcTag?.toLowerCase().includes(searchLower) ||
-                           product.sku?.toLowerCase().includes(searchLower) ||
-                           product.batchId?.toLowerCase().includes(searchLower);
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchLower) ||
+        product.farm?.toLowerCase().includes(searchLower) ||
+        product.supplier?.toLowerCase().includes(searchLower) ||
+        product.vendor?.toLowerCase().includes(searchLower) ||
+        product.grower?.toLowerCase().includes(searchLower) ||
+        product.metrcTag?.toLowerCase().includes(searchLower) ||
+        product.sku?.toLowerCase().includes(searchLower) ||
+        product.batchId?.toLowerCase().includes(searchLower);
 
       if (showInventoryTab) {
         // Show items NOT on sales floor when inventory tab is active
-        const isNotOnSalesFloor = product.room !== "Sales Floor" && product.room;
-        const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
-        return matchesSearch && isNotOnSalesFloor && (selectedCategory === "All" || matchesCategory);
+        const isNotOnSalesFloor =
+          product.room !== "Sales Floor" && product.room;
+        const matchesCategory =
+          selectedCategory === "All" || product.category === selectedCategory;
+        return (
+          matchesSearch &&
+          isNotOnSalesFloor &&
+          (selectedCategory === "All" || matchesCategory)
+        );
       } else {
         // Show ALL items in cashier mode (both sales floor and non-sales floor)
-        const matchesCategory = selectedCategory === "All" || product.category === selectedCategory;
+        const matchesCategory =
+          selectedCategory === "All" || product.category === selectedCategory;
         return matchesCategory && matchesSearch;
       }
     })
@@ -1022,49 +1756,51 @@ export default function Index() {
       let valueA: any, valueB: any;
 
       switch (sortBy) {
-        case 'name':
+        case "name":
           valueA = a.name.toLowerCase();
           valueB = b.name.toLowerCase();
           break;
-        case 'price':
+        case "price":
           valueA = a.price;
           valueB = b.price;
           break;
-        case 'category':
+        case "category":
           valueA = a.category.toLowerCase();
           valueB = b.category.toLowerCase();
           break;
-        case 'thc':
+        case "thc":
           valueA = a.thc || 0;
           valueB = b.thc || 0;
           break;
-        case 'room':
-          valueA = (a.room || '').toLowerCase();
-          valueB = (b.room || '').toLowerCase();
+        case "room":
+          valueA = (a.room || "").toLowerCase();
+          valueB = (b.room || "").toLowerCase();
           break;
         default:
           valueA = a.name.toLowerCase();
           valueB = b.name.toLowerCase();
       }
 
-      if (typeof valueA === 'string') {
+      if (typeof valueA === "string") {
         const comparison = valueA.localeCompare(valueB);
-        return sortOrder === 'asc' ? comparison : -comparison;
+        return sortOrder === "asc" ? comparison : -comparison;
       } else {
         const comparison = valueA - valueB;
-        return sortOrder === 'asc' ? comparison : -comparison;
+        return sortOrder === "asc" ? comparison : -comparison;
       }
     });
 
   // Deal Application Functions
   const checkApplicableDeals = (productId: string): Deal[] => {
-    const product = sampleProducts.find(p => p.id === productId);
+    const product = sampleProducts.find((p) => p.id === productId);
     if (!product) return [];
 
-    const today = new Date().toISOString().split('T')[0];
-    const dayOfWeek = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+    const today = new Date().toISOString().split("T")[0];
+    const dayOfWeek = new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+    });
 
-    return currentDeals.filter(deal => {
+    return currentDeals.filter((deal) => {
       // Must be active
       if (!deal.isActive) return false;
 
@@ -1075,15 +1811,24 @@ export default function Index() {
       if (deal.startDate > today || deal.endDate < today) return false;
 
       // Check frequency
-      if (deal.frequency === 'weekly' && deal.dayOfWeek !== dayOfWeek) return false;
-      if (deal.frequency === 'monthly' && deal.dayOfMonth !== new Date().getDate()) return false;
+      if (deal.frequency === "weekly" && deal.dayOfWeek !== dayOfWeek)
+        return false;
+      if (
+        deal.frequency === "monthly" &&
+        deal.dayOfMonth !== new Date().getDate()
+      )
+        return false;
 
       // Check loyalty requirement
       if (deal.loyaltyOnly && !selectedLoyaltyCustomer) return false;
 
       // Check if item matches deal criteria
-      const matchesCategory = deal.categories.length === 0 || deal.categories.includes(product.category);
-      const matchesSpecificItem = deal.specificItems.length === 0 || deal.specificItems.includes(product.id);
+      const matchesCategory =
+        deal.categories.length === 0 ||
+        deal.categories.includes(product.category);
+      const matchesSpecificItem =
+        deal.specificItems.length === 0 ||
+        deal.specificItems.includes(product.id);
 
       return matchesCategory || matchesSpecificItem;
     });
@@ -1094,22 +1839,33 @@ export default function Index() {
 
     // Apply the best deal (highest discount value)
     const bestDeal = deals.reduce((best, current) => {
-      const bestValue = best.type === 'percentage' ? best.discountValue : (best.discountValue / item.price) * 100;
-      const currentValue = current.type === 'percentage' ? current.discountValue : (current.discountValue / item.price) * 100;
+      const bestValue =
+        best.type === "percentage"
+          ? best.discountValue
+          : (best.discountValue / item.price) * 100;
+      const currentValue =
+        current.type === "percentage"
+          ? current.discountValue
+          : (current.discountValue / item.price) * 100;
       return currentValue > bestValue ? current : best;
     });
 
     return {
       ...item,
       discount: bestDeal.discountValue,
-      discountType: bestDeal.type === 'percentage' ? 'percentage' : 'fixed',
+      discountType: bestDeal.type === "percentage" ? "percentage" : "fixed",
       discountReasonCode: `AUTO-${bestDeal.id}`,
-      autoAppliedDeal: bestDeal.name
+      autoAppliedDeal: bestDeal.name,
     };
   };
 
   const createRoomTransfer = () => {
-    if (!selectedProductForTransfer || !transferQuantity || !selectedFromRoom || !selectedToRoom) {
+    if (
+      !selectedProductForTransfer ||
+      !transferQuantity ||
+      !selectedFromRoom ||
+      !selectedToRoom
+    ) {
       alert("Please fill in all required fields for the room transfer.");
       return;
     }
@@ -1136,7 +1892,7 @@ export default function Index() {
       employeeId: "current-employee", // In real app, get from auth
       metrcTransferId: `MTR${Date.now()}`,
       status: "completed",
-      reason: transferReason
+      reason: transferReason,
     };
 
     // Here you would normally send to your backend/API
@@ -1146,8 +1902,8 @@ export default function Index() {
 
 Product: ${selectedProductForTransfer.name}
 Quantity: ${quantity}
-From: ${availableRooms.find(r => r.id === selectedFromRoom)?.name}
-To: ${availableRooms.find(r => r.id === selectedToRoom)?.name}
+From: ${availableRooms.find((r) => r.id === selectedFromRoom)?.name}
+To: ${availableRooms.find((r) => r.id === selectedToRoom)?.name}
 Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
     // Reset form
@@ -1160,9 +1916,11 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   };
 
   const updateProduct = (updatedProduct: Product) => {
-    setProducts(prev => prev.map(product =>
-      product.id === updatedProduct.id ? updatedProduct : product
-    ));
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.id === updatedProduct.id ? updatedProduct : product,
+      ),
+    );
     setShowEditProductDialog(false);
     setSelectedProductForEdit(null);
     alert(`Product "${updatedProduct.name}" has been updated successfully!`);
@@ -1187,8 +1945,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         inhalableCannabinoidsExtracts: 0,
         topicals: 0,
         infusedPreRolls: 0,
-        clones: 0
-      }
+        clones: 0,
+      },
     });
     setSelectedLoyaltyCustomer(null);
     // Reset sale started state
@@ -1205,7 +1963,11 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
     }
 
     if (newSaleCustomerType === "medical") {
-      if (!medicalCardInfo.number || !medicalCardInfo.issueDate || !medicalCardInfo.expirationDate) {
+      if (
+        !medicalCardInfo.number ||
+        !medicalCardInfo.issueDate ||
+        !medicalCardInfo.expirationDate
+      ) {
         alert("Please fill in all medical card information");
         return;
       }
@@ -1218,28 +1980,38 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
     // Set customer info based on type
     if (newSaleCustomerType === "medical") {
       // Check if medical customer exists in loyalty program
-      const existingLoyaltyCustomer = loyaltyCustomers.find(customer =>
-        customer.phone === customerInfo.phone ||
-        customer.email === customerInfo.email ||
-        customer.name.toLowerCase().includes(medicalCardInfo.number.toLowerCase())
+      const existingLoyaltyCustomer = loyaltyCustomers.find(
+        (customer) =>
+          customer.phone === customerInfo.phone ||
+          customer.email === customerInfo.email ||
+          customer.name
+            .toLowerCase()
+            .includes(medicalCardInfo.number.toLowerCase()),
       );
 
       if (existingLoyaltyCustomer) {
         setSelectedLoyaltyCustomer(existingLoyaltyCustomer);
-        alert(`Medical patient found in loyalty program! ${existingLoyaltyCustomer.name} - ${existingLoyaltyCustomer.tier} tier with ${existingLoyaltyCustomer.pointsBalance} points.`);
+        alert(
+          `Medical patient found in loyalty program! ${existingLoyaltyCustomer.name} - ${existingLoyaltyCustomer.tier} tier with ${existingLoyaltyCustomer.pointsBalance} points.`,
+        );
       }
 
-      setCustomerInfo(prev => ({
+      setCustomerInfo((prev) => ({
         ...prev,
         medicalCard: medicalCardInfo.number,
-        isVerified: true // Assume verified for medical patients
+        isVerified: true, // Assume verified for medical patients
       }));
     }
 
     // Reset dialog state and mark sale as started
     setNewSaleCustomerType("");
     setMedicalCardInfo({ number: "", issueDate: "", expirationDate: "" });
-    setCaregiverCardInfo({ number: "", issueDate: "", expirationDate: "", patientName: "" });
+    setCaregiverCardInfo({
+      number: "",
+      issueDate: "",
+      expirationDate: "",
+      patientName: "",
+    });
     setDataRetentionConsent(false);
     setShowNewSaleDialog(false);
     setSaleStarted(true);
@@ -1262,9 +2034,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
     const totalAmount = cart.reduce((sum, item) => {
       const itemTotal = item.price * item.quantity;
-      const discountAmount = item.discountType === 'percentage'
-        ? itemTotal * (item.discount / 100)
-        : item.discount;
+      const discountAmount =
+        item.discountType === "percentage"
+          ? itemTotal * (item.discount / 100)
+          : item.discount;
       return sum + itemTotal - discountAmount;
     }, 0);
 
@@ -1281,10 +2054,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
       selectedLoyaltyCustomer: selectedLoyaltyCustomer,
       totalItems: cart.reduce((sum, item) => sum + item.quantity, 0),
       totalAmount: totalAmount,
-      notes: saleNotesToSave.trim()
+      notes: saleNotesToSave.trim(),
     };
 
-    setSavedSales(prev => [...prev, savedSale]);
+    setSavedSales((prev) => [...prev, savedSale]);
 
     // Clear current sale
     setCart([]);
@@ -1303,8 +2076,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         inhalableCannabinoidsExtracts: 0,
         topicals: 0,
         infusedPreRolls: 0,
-        clones: 0
-      }
+        clones: 0,
+      },
     });
     setSelectedLoyaltyCustomer(null);
     setCartDiscount(null);
@@ -1336,8 +2109,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         inhalableCannabinoidsExtracts: 0,
         topicals: 0,
         infusedPreRolls: 0,
-        clones: 0
-      }
+        clones: 0,
+      },
     });
     setSelectedLoyaltyCustomer(null);
     setCartDiscount(null);
@@ -1355,9 +2128,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   };
 
   const deleteSavedSale = (saleId: string) => {
-    const sale = savedSales.find(s => s.id === saleId);
-    if (sale && confirm(`Are you sure you want to delete the saved sale "${sale.name}"?`)) {
-      setSavedSales(prev => prev.filter(s => s.id !== saleId));
+    const sale = savedSales.find((s) => s.id === saleId);
+    if (
+      sale &&
+      confirm(`Are you sure you want to delete the saved sale "${sale.name}"?`)
+    ) {
+      setSavedSales((prev) => prev.filter((s) => s.id !== saleId));
       alert(`Saved sale "${sale.name}" has been deleted.`);
     }
   };
@@ -1365,7 +2141,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   const addToCart = (product: Product) => {
     // Require New Sale button to be clicked before adding items
     if (!saleStarted) {
-      alert("Please click 'New Sale' to start a transaction before adding items to cart.");
+      alert(
+        "Please click 'New Sale' to start a transaction before adding items to cart.",
+      );
       return;
     }
 
@@ -1373,12 +2151,18 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
     if (product.room && product.room !== "Sales Floor") {
       if (showInventoryTab) {
         // If adding from inventory tab, show room transfer warning
-        if (!confirm(`This item is currently in ${product.room}. Adding it to the cart will require a room transfer to Sales Floor. Continue?`)) {
+        if (
+          !confirm(
+            `This item is currently in ${product.room}. Adding it to the cart will require a room transfer to Sales Floor. Continue?`,
+          )
+        ) {
           return;
         }
       } else {
         // In regular cashier mode, don't allow adding non-sales floor items
-        alert(`This item cannot be added to cart as it is currently stored in ${product.room}. Only items on the Sales Floor are available for sale. Transfer this item to Sales Floor first or use the Inventory tab to transfer and add simultaneously.`);
+        alert(
+          `This item cannot be added to cart as it is currently stored in ${product.room}. Only items on the Sales Floor are available for sale. Transfer this item to Sales Floor first or use the Inventory tab to transfer and add simultaneously.`,
+        );
         return;
       }
     }
@@ -1386,7 +2170,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
     // Check limits if customer is verified
     if (customerInfo.isVerified) {
       const violations = wouldExceedLimits(product);
-      if (Object.values(violations).some(v => v)) {
+      if (Object.values(violations).some((v) => v)) {
         alert("Adding this item would exceed Oregon possession limits.");
         return;
       }
@@ -1397,36 +2181,42 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   };
 
   const confirmAddToCart = (product: Product) => {
-    setCart(prev => {
-      const existingItem = prev.find(item => item.id === product.id);
+    setCart((prev) => {
+      const existingItem = prev.find((item) => item.id === product.id);
       if (existingItem) {
         // For existing items, check if BOGO deals apply with increased quantity
         const applicableDeals = checkApplicableDeals(product.id);
-        const bogoDeals = applicableDeals.filter(deal => deal.type === 'bogo');
+        const bogoDeals = applicableDeals.filter(
+          (deal) => deal.type === "bogo",
+        );
 
         const updatedItem = {
           ...existingItem,
-          quantity: existingItem.quantity + 1
+          quantity: existingItem.quantity + 1,
         };
 
         // Apply BOGO if quantity >= 2 and not already applied
-        if (bogoDeals.length > 0 && updatedItem.quantity >= 2 && !existingItem.autoAppliedDeal) {
+        if (
+          bogoDeals.length > 0 &&
+          updatedItem.quantity >= 2 &&
+          !existingItem.autoAppliedDeal
+        ) {
           const bestBogo = bogoDeals[0]; // Take first BOGO deal
-          return prev.map(item =>
+          return prev.map((item) =>
             item.id === product.id
               ? {
                   ...updatedItem,
                   discount: bestBogo.discountValue,
-                  discountType: 'percentage',
+                  discountType: "percentage",
                   discountReasonCode: `AUTO-${bestBogo.id}`,
-                  autoAppliedDeal: bestBogo.name
+                  autoAppliedDeal: bestBogo.name,
                 }
-              : item
+              : item,
           );
         }
 
-        return prev.map(item =>
-          item.id === product.id ? updatedItem : item
+        return prev.map((item) =>
+          item.id === product.id ? updatedItem : item,
         );
       }
 
@@ -1436,20 +2226,25 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         ...product,
         quantity: 1,
         discount: 0,
-        discountType: 'percentage'
+        discountType: "percentage",
       };
 
       // Auto-apply the best deal if any are found (but not BOGO for single items)
-      const nonBogoDeals = applicableDeals.filter(deal => deal.type !== 'bogo');
-      const itemWithDeal = nonBogoDeals.length > 0
-        ? applyAutomaticDeal(newItem, nonBogoDeals)
-        : newItem;
+      const nonBogoDeals = applicableDeals.filter(
+        (deal) => deal.type !== "bogo",
+      );
+      const itemWithDeal =
+        nonBogoDeals.length > 0
+          ? applyAutomaticDeal(newItem, nonBogoDeals)
+          : newItem;
 
       // Show notification if deal was applied
       if (itemWithDeal.autoAppliedDeal) {
         setTimeout(() => {
           // Using alert for now - could be replaced with toast notification
-          console.log(`🎉 Auto-applied deal: ${itemWithDeal.autoAppliedDeal} to ${product.name}`);
+          console.log(
+            `🎉 Auto-applied deal: ${itemWithDeal.autoAppliedDeal} to ${product.name}`,
+          );
         }, 100);
       }
 
@@ -1460,27 +2255,34 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   };
 
   const updateQuantity = (id: string, change: number) => {
-    setCart(prev => {
-      return prev.map(item => {
-        if (item.id === id) {
-          let stepSize = 1;
-          let minQuantity = 1;
+    setCart((prev) => {
+      return prev
+        .map((item) => {
+          if (item.id === id) {
+            let stepSize = 1;
+            let minQuantity = 1;
 
-          if (item.category === "Flower") {
-            stepSize = 0.01; // 0.01g increments for flower
-            minQuantity = 0.01;
+            if (item.category === "Flower") {
+              stepSize = 0.01; // 0.01g increments for flower
+              minQuantity = 0.01;
+            }
+
+            const newQuantity =
+              Math.round((item.quantity + change * stepSize) * 100) / 100;
+            return newQuantity >= minQuantity
+              ? { ...item, quantity: newQuantity }
+              : item;
           }
-
-          const newQuantity = Math.round((item.quantity + (change * stepSize)) * 100) / 100;
-          return newQuantity >= minQuantity ? { ...item, quantity: newQuantity } : item;
-        }
-        return item;
-      }).filter(item => item.quantity >= (item.category === "Flower" ? 0.01 : 1));
+          return item;
+        })
+        .filter(
+          (item) => item.quantity >= (item.category === "Flower" ? 0.01 : 1),
+        );
     });
   };
 
   const setDirectQuantity = (id: string, quantity: number) => {
-    const cartItem = cart.find(item => item.id === id);
+    const cartItem = cart.find((item) => item.id === id);
     const minQuantity = cartItem?.category === "Flower" ? 0.01 : 1;
 
     if (quantity < minQuantity) {
@@ -1488,8 +2290,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
       return;
     }
 
-    setCart(prev => {
-      return prev.map(item => {
+    setCart((prev) => {
+      return prev.map((item) => {
         if (item.id === id) {
           return { ...item, quantity };
         }
@@ -1500,14 +2302,15 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
   const handleQuantityEdit = (item: CartItem) => {
     setEditingQuantity(item.id);
-    setQuantityInput(item.category === "Flower"
-      ? item.quantity.toFixed(2)
-      : item.quantity.toString()
+    setQuantityInput(
+      item.category === "Flower"
+        ? item.quantity.toFixed(2)
+        : item.quantity.toString(),
     );
   };
 
   const saveQuantityEdit = (id: string) => {
-    const cartItem = cart.find(item => item.id === id);
+    const cartItem = cart.find((item) => item.id === id);
     let newQuantity: number;
 
     if (cartItem?.category === "Flower") {
@@ -1525,23 +2328,43 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   };
 
   const removeFromCart = (id: string) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+    setCart((prev) => prev.filter((item) => item.id !== id));
   };
 
-  const applyItemDiscount = (itemId: string, discount: number, type: 'percentage' | 'fixed', reasonCode: string) => {
-    setCart(prev => prev.map(item =>
-      item.id === itemId
-        ? { ...item, discount, discountType: type, discountReasonCode: reasonCode }
-        : item
-    ));
+  const applyItemDiscount = (
+    itemId: string,
+    discount: number,
+    type: "percentage" | "fixed",
+    reasonCode: string,
+  ) => {
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              discount,
+              discountType: type,
+              discountReasonCode: reasonCode,
+            }
+          : item,
+      ),
+    );
   };
 
   const removeItemDiscount = (itemId: string) => {
-    setCart(prev => prev.map(item =>
-      item.id === itemId
-        ? { ...item, discount: 0, discountType: 'percentage', discountReasonCode: undefined, autoAppliedDeal: undefined }
-        : item
-    ));
+    setCart((prev) =>
+      prev.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              discount: 0,
+              discountType: "percentage",
+              discountReasonCode: undefined,
+              autoAppliedDeal: undefined,
+            }
+          : item,
+      ),
+    );
   };
 
   const applyCartDiscount = () => {
@@ -1550,8 +2373,11 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
       setCartDiscount({
         type: discountType,
         value: value,
-        label: discountType === 'percentage' ? `${value}% off` : `$${value.toFixed(2)} off`,
-        reasonCode: discountReasonCode
+        label:
+          discountType === "percentage"
+            ? `${value}% off`
+            : `$${value.toFixed(2)} off`,
+        reasonCode: discountReasonCode,
       });
       setShowCartDiscountDialog(false);
       setDiscountValue("");
@@ -1564,9 +2390,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   };
 
   const printBarcode = (product: Product) => {
-    const barcodeWindow = window.open('', '_blank');
+    const barcodeWindow = window.open("", "_blank");
     if (barcodeWindow) {
-      const metrcLast5 = product.metrcTag ? product.metrcTag.slice(-5) : 'N/A';
+      const metrcLast5 = product.metrcTag ? product.metrcTag.slice(-5) : "N/A";
       const qrData = `${product.name}|${metrcLast5}|$${product.price.toFixed(2)}`;
 
       barcodeWindow.document.write(`
@@ -1642,7 +2468,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   };
 
   const printExitLabel = (product: Product) => {
-    const exitLabelWindow = window.open('', '_blank');
+    const exitLabelWindow = window.open("", "_blank");
     if (exitLabelWindow) {
       exitLabelWindow.document.write(`
         <html>
@@ -1721,19 +2547,19 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                 <span class="field-label">Weight:</span> ${product.weight}
               </div>
 
-              ${product.thc ? `<div class="field"><span class="field-label">THC:</span> ${product.thc}%</div>` : ''}
-              ${product.cbd ? `<div class="field"><span class="field-label">CBD:</span> ${product.cbd}%</div>` : ''}
+              ${product.thc ? `<div class="field"><span class="field-label">THC:</span> ${product.thc}%</div>` : ""}
+              ${product.cbd ? `<div class="field"><span class="field-label">CBD:</span> ${product.cbd}%</div>` : ""}
 
               <div class="field">
                 <span class="field-label">Harvest:</span> ${product.harvestDate}
               </div>
 
               <div class="field">
-                <span class="field-label">Lab:</span> ${product.testResults?.labName || 'N/A'}
+                <span class="field-label">Lab:</span> ${product.testResults?.labName || "N/A"}
               </div>
 
               <div class="field">
-                <span class="field-label">Tested:</span> ${product.testResults?.testDate || 'N/A'}
+                <span class="field-label">Tested:</span> ${product.testResults?.testDate || "N/A"}
               </div>
 
               <div class="field">
@@ -1741,11 +2567,11 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
               </div>
 
               <div class="field">
-                <span class="field-label">Supplier:</span> ${product.supplier || 'N/A'}
+                <span class="field-label">Supplier:</span> ${product.supplier || "N/A"}
               </div>
 
               <div class="field">
-                <span class="field-label">Supplier UID:</span> ${product.supplierUID || 'N/A'}
+                <span class="field-label">Supplier UID:</span> ${product.supplierUID || "N/A"}
               </div>
 
               <div class="field metrc">
@@ -1767,37 +2593,49 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
   // Calculate current usage from cart
   const calculateCurrentUsage = () => {
-    return cart.reduce((usage, item) => {
-      const weightInMg = parseWeight(item.weight);
+    return cart.reduce(
+      (usage, item) => {
+        const weightInMg = parseWeight(item.weight);
 
-      if (item.category === "Flower" || item.category === "Pre-Rolls") {
-        usage.flower += weightInMg * item.quantity;
-      } else if (item.category === "Concentrates") {
-        usage.concentrates += weightInMg * item.quantity;
-      } else if (item.category === "Vapes") {
-        usage.inhalableCannabinoidsExtracts += weightInMg * item.quantity;
-      } else if (item.category === "Edibles") {
-        usage.edibles += weightInMg * item.quantity;
-      } else if (item.category === "Tinctures") {
-        const volumeInMl = parseTinctureVolume(item.weight);
-        usage.tinctures += volumeInMl * item.quantity;
-      } else if (item.category === "Topicals") {
-        usage.topicals += weightInMg * item.quantity;
-      } else if (item.category === "Infused Pre-Rolls") {
-        usage.infusedPreRolls += weightInMg * item.quantity;
-      } else if (item.category === "Clones") {
-        usage.clones += item.quantity; // Count clones as units, not weight
-      }
+        if (item.category === "Flower" || item.category === "Pre-Rolls") {
+          usage.flower += weightInMg * item.quantity;
+        } else if (item.category === "Concentrates") {
+          usage.concentrates += weightInMg * item.quantity;
+        } else if (item.category === "Vapes") {
+          usage.inhalableCannabinoidsExtracts += weightInMg * item.quantity;
+        } else if (item.category === "Edibles") {
+          usage.edibles += weightInMg * item.quantity;
+        } else if (item.category === "Tinctures") {
+          const volumeInMl = parseTinctureVolume(item.weight);
+          usage.tinctures += volumeInMl * item.quantity;
+        } else if (item.category === "Topicals") {
+          usage.topicals += weightInMg * item.quantity;
+        } else if (item.category === "Infused Pre-Rolls") {
+          usage.infusedPreRolls += weightInMg * item.quantity;
+        } else if (item.category === "Clones") {
+          usage.clones += item.quantity; // Count clones as units, not weight
+        }
 
-      return usage;
-    }, { flower: 0, concentrates: 0, edibles: 0, tinctures: 0, inhalableCannabinoidsExtracts: 0, topicals: 0, infusedPreRolls: 0, clones: 0 });
+        return usage;
+      },
+      {
+        flower: 0,
+        concentrates: 0,
+        edibles: 0,
+        tinctures: 0,
+        inhalableCannabinoidsExtracts: 0,
+        topicals: 0,
+        infusedPreRolls: 0,
+        clones: 0,
+      },
+    );
   };
 
   // Parse weight string to milligrams
   const parseWeight = (weight?: string): number => {
     if (!weight) return 0;
-    const num = parseFloat(weight.replace(/[^\d.]/g, ''));
-    if (weight.includes('g') && !weight.includes('mg')) {
+    const num = parseFloat(weight.replace(/[^\d.]/g, ""));
+    if (weight.includes("g") && !weight.includes("mg")) {
       return num * 1000; // convert grams to mg
     }
     return num; // assume mg
@@ -1806,11 +2644,11 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
   // Parse tincture volume string to milliliters
   const parseTinctureVolume = (weight?: string): number => {
     if (!weight) return 0;
-    const num = parseFloat(weight.replace(/[^\d.]/g, ''));
-    if (weight.includes('ml')) {
+    const num = parseFloat(weight.replace(/[^\d.]/g, ""));
+    if (weight.includes("ml")) {
       return num;
     }
-    if (weight.includes('oz')) {
+    if (weight.includes("oz")) {
       return num * 29.5735; // convert oz to ml
     }
     return num; // assume ml
@@ -1847,10 +2685,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
       concentrates: newUsage.concentrates > oregonLimits.concentrates,
       edibles: newUsage.edibles > oregonLimits.edibles,
       tinctures: newUsage.tinctures > oregonLimits.tinctures,
-      inhalableCannabinoidsExtracts: newUsage.inhalableCannabinoidsExtracts > oregonLimits.inhalableCannabinoidsExtracts,
+      inhalableCannabinoidsExtracts:
+        newUsage.inhalableCannabinoidsExtracts >
+        oregonLimits.inhalableCannabinoidsExtracts,
       topicals: newUsage.topicals > oregonLimits.topicals,
       infusedPreRolls: newUsage.infusedPreRolls > oregonLimits.infusedPreRolls,
-      clones: newUsage.clones > oregonLimits.clones
+      clones: newUsage.clones > oregonLimits.clones,
     };
   };
 
@@ -1864,7 +2704,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
     if (item.discount === 0) return baseTotal;
 
-    if (item.discountType === 'percentage') {
+    if (item.discountType === "percentage") {
       return baseTotal * (1 - item.discount / 100);
     } else {
       return Math.max(0, baseTotal - item.discount);
@@ -1884,37 +2724,39 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
     // Calculate subtotal of non-GLS items only (GLS products cannot have discounts)
     const nonGLSSubtotal = cart.reduce((sum, item) => {
-      const product = sampleProducts.find(p => p.id === item.id);
+      const product = sampleProducts.find((p) => p.id === item.id);
       return product?.isGLS ? sum : sum + getItemTotal(item);
     }, 0);
 
-    if (cartDiscount.type === 'percentage') {
+    if (cartDiscount.type === "percentage") {
       return nonGLSSubtotal * (cartDiscount.value / 100);
     }
     return Math.min(cartDiscount.value, nonGLSSubtotal);
   };
 
   const discountedSubtotal = subtotal - getCartDiscountAmount();
-  const discountedTaxableSubtotal = taxableSubtotal - (getCartDiscountAmount() * (taxableSubtotal / subtotal));
+  const discountedTaxableSubtotal =
+    taxableSubtotal - getCartDiscountAmount() * (taxableSubtotal / subtotal);
 
   // Check if customer is medical patient/caregiver - medical customers are tax exempt
-  const isMedicalCustomer = customerInfo.medicalCard && customerInfo.medicalCard.trim() !== "";
+  const isMedicalCustomer =
+    customerInfo.medicalCard && customerInfo.medicalCard.trim() !== "";
   const tax = isMedicalCustomer ? 0 : discountedTaxableSubtotal * taxRate;
   const total = discountedSubtotal + tax;
 
   // Check for queue orders and customer data on component mount
   useEffect(() => {
-    const queueOrderData = localStorage.getItem('queueOrder');
+    const queueOrderData = localStorage.getItem("queueOrder");
     if (queueOrderData) {
       const orderData = JSON.parse(queueOrderData);
       setQueueOrder(orderData);
       setShowQueueOrderDialog(true);
       // Clear the stored order so it doesn't show again
-      localStorage.removeItem('queueOrder');
+      localStorage.removeItem("queueOrder");
     }
 
     // Check for customer data from customer management
-    const customerData = localStorage.getItem('selectedCustomerForSale');
+    const customerData = localStorage.getItem("selectedCustomerForSale");
     if (customerData) {
       try {
         const customer = JSON.parse(customerData);
@@ -1923,8 +2765,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         setCustomerInfo({
           name: customer.name,
           phone: customer.phone,
-          medicalCard: customer.medicalCard || '',
-          caregiverCard: '',
+          medicalCard: customer.medicalCard || "",
+          caregiverCard: "",
           isVerified: true, // Customer from management is pre-verified
           isOregonResident: true,
           dailyPurchases: {
@@ -1935,8 +2777,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             inhalableCannabinoidsExtracts: 0,
             topicals: 0,
             infusedPreRolls: 0,
-            clones: 0
-          }
+            clones: 0,
+          },
         });
 
         // Set loyalty customer if available
@@ -1949,7 +2791,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             email: customer.email,
             tier: customer.loyaltyProgram.tier,
             pointsBalance: customer.loyaltyProgram.pointsBalance,
-            isVeteran: customer.isVeteran
+            isVeteran: customer.isVeteran,
           };
           setSelectedLoyaltyCustomer(loyaltyCustomer);
         }
@@ -1961,16 +2803,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         setSaleStarted(true);
 
         // Clear the stored customer data
-        localStorage.removeItem('selectedCustomerForSale');
+        localStorage.removeItem("selectedCustomerForSale");
 
         // Show notification
         setTimeout(() => {
-          alert(`Sale started for ${customer.name}${customer.loyaltyProgram ? ` (${customer.loyaltyProgram.tier} member)` : ''}`);
+          alert(
+            `Sale started for ${customer.name}${customer.loyaltyProgram ? ` (${customer.loyaltyProgram.tier} member)` : ""}`,
+          );
         }, 500);
-
       } catch (error) {
-        console.warn('Could not parse customer data from localStorage:', error);
-        localStorage.removeItem('selectedCustomerForSale');
+        console.warn("Could not parse customer data from localStorage:", error);
+        localStorage.removeItem("selectedCustomerForSale");
       }
     }
   }, []);
@@ -1986,19 +2829,21 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         isVerified: true, // Assume queue orders are verified
         isOregonResident: true,
         dailyPurchases: {
-        flower: 0,
-        concentrates: 0,
-        edibles: 0,
-        tinctures: 0,
-        inhalableCannabinoidsExtracts: 0,
-        topicals: 0,
-        infusedPreRolls: 0,
-        clones: 0
-      }
+          flower: 0,
+          concentrates: 0,
+          edibles: 0,
+          tinctures: 0,
+          inhalableCannabinoidsExtracts: 0,
+          topicals: 0,
+          infusedPreRolls: 0,
+          clones: 0,
+        },
       });
 
       // Note: In a real implementation, you would map order items to products and add to cart
-      alert(`Queue order ${queueOrder.orderNumber} loaded for ${queueOrder.customerName}. Please manually add items to cart.`);
+      alert(
+        `Queue order ${queueOrder.orderNumber} loaded for ${queueOrder.customerName}. Please manually add items to cart.`,
+      );
       setSaleStarted(true);
       setShowQueueOrderDialog(false);
       setQueueOrder(null);
@@ -2037,9 +2882,16 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             </DropdownMenu>
           </div>
           <div className="flex items-center space-x-4">
-            <Dialog open={showTaxRateDialog} onOpenChange={setShowTaxRateDialog}>
+            <Dialog
+              open={showTaxRateDialog}
+              onOpenChange={setShowTaxRateDialog}
+            >
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="header-button-visible">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="header-button-visible"
+                >
                   <Settings className="w-4 h-4 mr-2" />
                   Tax: {(taxRate * 100).toFixed(1)}%
                 </Button>
@@ -2058,39 +2910,70 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       min="0"
                       max="100"
                       value={(taxRate * 100).toFixed(1)}
-                      onChange={(e) => setTaxRate(parseFloat(e.target.value) / 100 || 0)}
+                      onChange={(e) =>
+                        setTaxRate(parseFloat(e.target.value) / 100 || 0)
+                      }
                       placeholder="20.0"
                     />
                     <p className="text-sm text-muted-foreground mt-1">
-                      Current rate: {(taxRate * 100).toFixed(1)}% (Oregon default: 20%)
+                      Current rate: {(taxRate * 100).toFixed(1)}% (Oregon
+                      default: 20%)
                     </p>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-sm font-medium">Quick Presets:</Label>
+                    <Label className="text-sm font-medium">
+                      Quick Presets:
+                    </Label>
                     <div className="flex gap-2 flex-wrap">
-                      <Button variant="outline" size="sm" onClick={() => setTaxRate(0.20)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTaxRate(0.2)}
+                      >
                         Oregon (20%)
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setTaxRate(0.0875)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTaxRate(0.0875)}
+                      >
                         Washington (8.75%)
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setTaxRate(0.15)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTaxRate(0.15)}
+                      >
                         California (15%)
                       </Button>
-                      <Button variant="outline" size="sm" onClick={() => setTaxRate(0.08)}>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setTaxRate(0.08)}
+                      >
                         Colorado (8%)
                       </Button>
                     </div>
                   </div>
                 </div>
-                <Button onClick={() => setShowTaxRateDialog(false)} className="w-full">
+                <Button
+                  onClick={() => setShowTaxRateDialog(false)}
+                  className="w-full"
+                >
                   Save Tax Rate
                 </Button>
               </DialogContent>
             </Dialog>
-            <Dialog open={showCustomerDialog} onOpenChange={setShowCustomerDialog}>
+            <Dialog
+              open={showCustomerDialog}
+              onOpenChange={setShowCustomerDialog}
+            >
               <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="header-button-visible">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="header-button-visible"
+                >
                   <Users className="w-4 h-4 mr-2" />
                   Customer Info
                 </Button>
@@ -2104,15 +2987,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     <Label>Customer Type</Label>
                     <div className="flex gap-2 mt-1">
                       <Button
-                        variant={customerType === 'rec' ? 'default' : 'outline'}
-                        onClick={() => setCustomerType('rec')}
+                        variant={customerType === "rec" ? "default" : "outline"}
+                        onClick={() => setCustomerType("rec")}
                         size="sm"
                       >
                         Recreational
                       </Button>
                       <Button
-                        variant={customerType === 'medical' ? 'default' : 'outline'}
-                        onClick={() => setCustomerType('medical')}
+                        variant={
+                          customerType === "medical" ? "default" : "outline"
+                        }
+                        onClick={() => setCustomerType("medical")}
                         size="sm"
                       >
                         Medical Patient/Caregiver
@@ -2120,16 +3005,21 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     </div>
                   </div>
 
-                  {customerType === 'rec' ? (
+                  {customerType === "rec" ? (
                     <>
                       <div>
                         <Label htmlFor="customer-name">Customer Name</Label>
                         <Input
                           id="customer-name"
                           value={customerInfo.name}
-                          onChange={(e) => setCustomerInfo(prev => ({...prev, name: e.target.value}))}
+                          onChange={(e) =>
+                            setCustomerInfo((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               setShowCustomerDialog(false);
                             }
                           }}
@@ -2141,9 +3031,14 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <Input
                           id="customer-phone"
                           value={customerInfo.phone}
-                          onChange={(e) => setCustomerInfo(prev => ({...prev, phone: e.target.value}))}
+                          onChange={(e) =>
+                            setCustomerInfo((prev) => ({
+                              ...prev,
+                              phone: e.target.value,
+                            }))
+                          }
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               setShowCustomerDialog(false);
                             }
                           }}
@@ -2155,14 +3050,25 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           type="checkbox"
                           id="verified"
                           checked={customerInfo.isVerified}
-                          onChange={(e) => setCustomerInfo(prev => ({...prev, isVerified: e.target.checked}))}
+                          onChange={(e) =>
+                            setCustomerInfo((prev) => ({
+                              ...prev,
+                              isVerified: e.target.checked,
+                            }))
+                          }
                           required
                         />
-                        <Label htmlFor="verified" className="text-red-600 font-medium">Customer ID Verified *</Label>
+                        <Label
+                          htmlFor="verified"
+                          className="text-red-600 font-medium"
+                        >
+                          Customer ID Verified *
+                        </Label>
                       </div>
                       {!customerInfo.isVerified && (
                         <div className="text-sm text-red-600 bg-red-50 p-2 rounded">
-                          Customer ID verification is required before completing the sale.
+                          Customer ID verification is required before completing
+                          the sale.
                         </div>
                       )}
                     </>
@@ -2173,9 +3079,14 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <Input
                           id="med-name"
                           value={medicalCustomer.name}
-                          onChange={(e) => setMedicalCustomer(prev => ({...prev, name: e.target.value}))}
+                          onChange={(e) =>
+                            setMedicalCustomer((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
+                          }
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               setShowCustomerDialog(false);
                             }
                           }}
@@ -2188,9 +3099,14 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <Input
                           id="med-phone"
                           value={medicalCustomer.phone}
-                          onChange={(e) => setMedicalCustomer(prev => ({...prev, phone: e.target.value}))}
+                          onChange={(e) =>
+                            setMedicalCustomer((prev) => ({
+                              ...prev,
+                              phone: e.target.value,
+                            }))
+                          }
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               setShowCustomerDialog(false);
                             }
                           }}
@@ -2202,9 +3118,14 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <Input
                           id="med-card"
                           value={medicalCustomer.medicalCardNumber}
-                          onChange={(e) => setMedicalCustomer(prev => ({...prev, medicalCardNumber: e.target.value}))}
+                          onChange={(e) =>
+                            setMedicalCustomer((prev) => ({
+                              ...prev,
+                              medicalCardNumber: e.target.value,
+                            }))
+                          }
                           onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
+                            if (e.key === "Enter") {
                               setShowCustomerDialog(false);
                             }
                           }}
@@ -2219,7 +3140,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             id="issue-date"
                             type="date"
                             value={medicalCustomer.issueDate}
-                            onChange={(e) => setMedicalCustomer(prev => ({...prev, issueDate: e.target.value}))}
+                            onChange={(e) =>
+                              setMedicalCustomer((prev) => ({
+                                ...prev,
+                                issueDate: e.target.value,
+                              }))
+                            }
                             required
                           />
                         </div>
@@ -2229,7 +3155,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             id="exp-date"
                             type="date"
                             value={medicalCustomer.expirationDate}
-                            onChange={(e) => setMedicalCustomer(prev => ({...prev, expirationDate: e.target.value}))}
+                            onChange={(e) =>
+                              setMedicalCustomer((prev) => ({
+                                ...prev,
+                                expirationDate: e.target.value,
+                              }))
+                            }
                             required
                           />
                         </div>
@@ -2239,16 +3170,28 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           type="checkbox"
                           id="is-patient"
                           checked={medicalCustomer.isPatient}
-                          onChange={(e) => setMedicalCustomer(prev => ({...prev, isPatient: e.target.checked}))}
+                          onChange={(e) =>
+                            setMedicalCustomer((prev) => ({
+                              ...prev,
+                              isPatient: e.target.checked,
+                            }))
+                          }
                         />
-                        <Label htmlFor="is-patient">Patient (uncheck for caregiver)</Label>
+                        <Label htmlFor="is-patient">
+                          Patient (uncheck for caregiver)
+                        </Label>
                       </div>
                       <div>
                         <Label htmlFor="notes">Personal Notes</Label>
                         <textarea
                           id="notes"
                           value={medicalCustomer.notes}
-                          onChange={(e) => setMedicalCustomer(prev => ({...prev, notes: e.target.value}))}
+                          onChange={(e) =>
+                            setMedicalCustomer((prev) => ({
+                              ...prev,
+                              notes: e.target.value,
+                            }))
+                          }
                           placeholder="Add personal notes about this customer..."
                           className="w-full p-2 border rounded-md text-sm"
                           rows={3}
@@ -2257,13 +3200,21 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     </>
                   )}
 
-                  <Button onClick={() => setShowCustomerDialog(false)} className="w-full">
+                  <Button
+                    onClick={() => setShowCustomerDialog(false)}
+                    className="w-full"
+                  >
                     Save Customer Info
                   </Button>
                 </div>
               </DialogContent>
             </Dialog>
-            <Button variant="outline" size="sm" className="header-button-visible" onClick={() => navigate("/queue")}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="header-button-visible"
+              onClick={() => navigate("/queue")}
+            >
               <Clock className="w-4 h-4 mr-2" />
               Order Queue
             </Button>
@@ -2279,63 +3230,122 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         {/* Sidebar - Hidden, replaced by header dropdown */}
         <aside className="w-64 pos-sidebar hidden">
           <nav className="p-4 space-y-2">
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/analytics")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/analytics")}
+            >
               <BarChart3 className="w-4 h-4 mr-3" />
               Analytics
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/customers")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/customers")}
+            >
               <Users className="w-4 h-4 mr-3" />
               Customers
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/reports")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/reports")}
+            >
               <FileText className="w-4 h-4 mr-3" />
               Custom Reports
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/inventory-report")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/inventory-report")}
+            >
               <BarChart3 className="w-4 h-4 mr-3" />
               Inventory Evaluation
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/deals")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/deals")}
+            >
               <Tag className="w-4 h-4 mr-3" />
               Deals & Specials
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/employees")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/employees")}
+            >
               <Users className="w-4 h-4 mr-3" />
               Employees
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/products?tab=inventory")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/products?tab=inventory")}
+            >
               <Package className="w-4 h-4 mr-3" />
               Inventory
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/loyalty")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/loyalty")}
+            >
               <Users className="w-4 h-4 mr-3" />
               Loyalty Program
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/queue")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/queue")}
+            >
               <Clock className="w-4 h-4 mr-3" />
               Order Queue
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button">
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+            >
               <ShoppingCart className="w-4 h-4 mr-3" />
               Point of Sale
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/price-tiers")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/price-tiers")}
+            >
               <DollarSign className="w-4 h-4 mr-3" />
               Price Tiers
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/products")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/products")}
+            >
               <Plus className="w-4 h-4 mr-3" />
               Product Creation
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/rooms")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/rooms")}
+            >
               <Home className="w-4 h-4 mr-3" />
               Rooms & Drawers
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/sales")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/sales")}
+            >
               <Database className="w-4 h-4 mr-3" />
               Sales Management
             </Button>
-            <Button variant="ghost" className="w-full justify-start pos-sidebar-button" onClick={() => navigate("/settings")}>
+            <Button
+              variant="ghost"
+              className="w-full justify-start pos-sidebar-button"
+              onClick={() => navigate("/settings")}
+            >
               <Settings className="w-4 h-4 mr-3" />
               Settings
             </Button>
@@ -2345,7 +3355,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         {/* Main Content */}
         <main className="flex-1 flex">
           {/* Product Catalog */}
-          <div className={`${saleStarted ? 'flex-[1_1_0]' : 'flex-1'} p-6 transition-all duration-300`}>
+          <div
+            className={`${saleStarted ? "flex-[1_1_0]" : "flex-1"} p-6 transition-all duration-300`}
+          >
             <div className="mb-6">
               <div className="flex items-center space-x-4 mb-4">
                 <div className="relative flex-1 max-w-md">
@@ -2358,13 +3370,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   />
                 </div>
               </div>
-              
+
               {/* Category Filters */}
               <div className="flex space-x-2 flex-wrap">
-                {categories.map(category => (
+                {categories.map((category) => (
                   <Button
                     key={category}
-                    variant={selectedCategory === category && !showInventoryTab ? "default" : "outline"}
+                    variant={
+                      selectedCategory === category && !showInventoryTab
+                        ? "default"
+                        : "outline"
+                    }
                     size="sm"
                     onClick={() => {
                       setSelectedCategory(category);
@@ -2393,11 +3409,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   <ArrowUpDown className="w-4 h-4 text-muted-foreground" />
                   <span className="text-sm font-medium">Sort by:</span>
                 </div>
-                <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
-                  const [field, order] = value.split('-') as [typeof sortBy, typeof sortOrder];
-                  setSortBy(field);
-                  setSortOrder(order);
-                }}>
+                <Select
+                  value={`${sortBy}-${sortOrder}`}
+                  onValueChange={(value) => {
+                    const [field, order] = value.split("-") as [
+                      typeof sortBy,
+                      typeof sortOrder,
+                    ];
+                    setSortBy(field);
+                    setSortOrder(order);
+                  }}
+                >
                   <SelectTrigger className="w-48">
                     <SelectValue placeholder="Sort products" />
                   </SelectTrigger>
@@ -2407,7 +3429,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     <SelectItem value="price-asc">Price (Low-High)</SelectItem>
                     <SelectItem value="price-desc">Price (High-Low)</SelectItem>
                     <SelectItem value="category-asc">Category (A-Z)</SelectItem>
-                    <SelectItem value="category-desc">Category (Z-A)</SelectItem>
+                    <SelectItem value="category-desc">
+                      Category (Z-A)
+                    </SelectItem>
                     <SelectItem value="thc-asc">THC (Low-High)</SelectItem>
                     <SelectItem value="thc-desc">THC (High-Low)</SelectItem>
                     <SelectItem value="room-asc">Room (A-Z)</SelectItem>
@@ -2417,59 +3441,49 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
                 {/* View Mode Toggle */}
                 <div className="flex items-center gap-2 ml-auto">
-                  <span className="text-sm font-medium text-muted-foreground">View:</span>
+                  <span className="text-sm font-medium text-muted-foreground">
+                    View:
+                  </span>
                   <div className="flex items-center gap-1 border rounded-lg p-1">
                     <Button
-                      variant={cashierViewMode === 'cards' ? 'default' : 'ghost'}
+                      variant={
+                        cashierViewMode === "cards" ? "default" : "ghost"
+                      }
                       size="sm"
-                      onClick={() => {
-                        setCashierViewMode('cards');
-                        // Update localStorage to keep settings in sync
+                      onClick={async () => {
+                        setCashierViewMode("cards");
+                        // Persist via SettingsClient
                         try {
-                          const savedSettings = localStorage.getItem('cannabest-store-settings');
-                          const settings = savedSettings ? JSON.parse(savedSettings) : {};
-                          const newSettings = { ...settings, inventoryViewMode: 'cards' };
-                          localStorage.setItem('cannabest-store-settings', JSON.stringify(newSettings));
-                          console.log('Index: Updated localStorage with cards view');
-
-                          // Dispatch events to notify other components
-                          window.dispatchEvent(new CustomEvent('settings-updated', {
-                            detail: newSettings
-                          }));
-                          window.dispatchEvent(new CustomEvent('inventory-view-changed', {
-                            detail: { viewMode: 'cards' }
-                          }));
-                        } catch (error) {
-                          console.warn('Could not update localStorage:', error);
-                        }
+                          const sc: any = (window as any).SettingsClient;
+                          if (sc?.save)
+                            await sc.save({ inventory_view_mode: "cards" });
+                          window.dispatchEvent(
+                            new CustomEvent("inventory-view-changed", {
+                              detail: { viewMode: "cards" },
+                            }),
+                          );
+                        } catch (_) {}
                       }}
                       className="px-3"
                     >
                       <Grid3X3 className="w-4 h-4" />
                     </Button>
                     <Button
-                      variant={cashierViewMode === 'list' ? 'default' : 'ghost'}
+                      variant={cashierViewMode === "list" ? "default" : "ghost"}
                       size="sm"
-                      onClick={() => {
-                        setCashierViewMode('list');
-                        // Update localStorage to keep settings in sync
+                      onClick={async () => {
+                        setCashierViewMode("list");
+                        // Persist via SettingsClient
                         try {
-                          const savedSettings = localStorage.getItem('cannabest-store-settings');
-                          const settings = savedSettings ? JSON.parse(savedSettings) : {};
-                          const newSettings = { ...settings, inventoryViewMode: 'list' };
-                          localStorage.setItem('cannabest-store-settings', JSON.stringify(newSettings));
-                          console.log('Index: Updated localStorage with list view');
-
-                          // Dispatch events to notify other components
-                          window.dispatchEvent(new CustomEvent('settings-updated', {
-                            detail: newSettings
-                          }));
-                          window.dispatchEvent(new CustomEvent('inventory-view-changed', {
-                            detail: { viewMode: 'list' }
-                          }));
-                        } catch (error) {
-                          console.warn('Could not update localStorage:', error);
-                        }
+                          const sc: any = (window as any).SettingsClient;
+                          if (sc?.save)
+                            await sc.save({ inventory_view_mode: "list" });
+                          window.dispatchEvent(
+                            new CustomEvent("inventory-view-changed", {
+                              detail: { viewMode: "list" },
+                            }),
+                          );
+                        } catch (_) {}
                       }}
                       className="px-3"
                     >
@@ -2481,20 +3495,29 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             </div>
 
             {/* Product Display - Conditional rendering based on view mode */}
-            <div className={`${cashierViewMode === 'list' ? 'space-y-2' : `grid gap-4 ${saleStarted ? 'grid-cols-1' : 'grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'}`} transition-all duration-300`}>
-              {filteredProducts.map(product => (
-                <Card key={product.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className={cashierViewMode === 'list' ? 'p-3' : 'p-4'}>
+            <div
+              className={`${cashierViewMode === "list" ? "space-y-2" : `grid gap-4 ${saleStarted ? "grid-cols-1" : "grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"}`} transition-all duration-300`}
+            >
+              {filteredProducts.map((product) => (
+                <Card
+                  key={product.id}
+                  className="hover:shadow-md transition-shadow"
+                >
+                  <CardContent
+                    className={cashierViewMode === "list" ? "p-3" : "p-4"}
+                  >
                     {/* Only show images in card view, not in list view */}
-                    {cashierViewMode === 'cards' && (
+                    {cashierViewMode === "cards" && (
                       <div className="aspect-square bg-gray-100 rounded-lg mb-3 overflow-hidden">
                         <img
                           src={product.image}
                           alt={product.name}
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                            e.currentTarget.style.display = "none";
+                            e.currentTarget.nextElementSibling?.classList.remove(
+                              "hidden",
+                            );
                           }}
                         />
                         <div className="hidden w-full h-full flex items-center justify-center">
@@ -2503,7 +3526,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       </div>
                     )}
                     {/* Product Info - Layout differs between card and list view */}
-                    {cashierViewMode === 'list' ? (
+                    {cashierViewMode === "list" ? (
                       /* List View Layout - Compact horizontal layout with small product image */
                       <div className="flex items-center justify-between gap-3">
                         <div className="flex gap-3 flex-1 min-w-0">
@@ -2514,8 +3537,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                               alt={product.name}
                               className="w-full h-full object-cover"
                               onError={(e) => {
-                                e.currentTarget.style.display = 'none';
-                                e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                e.currentTarget.style.display = "none";
+                                e.currentTarget.nextElementSibling?.classList.remove(
+                                  "hidden",
+                                );
                               }}
                             />
                             <div className="hidden w-full h-full flex items-center justify-center">
@@ -2525,10 +3550,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
-                              <h3 className="font-medium text-sm truncate">{product.name}</h3>
+                              <h3 className="font-medium text-sm truncate">
+                                {product.name}
+                              </h3>
                               {product.isGLS && <MarijuanaLeaf size="4" />}
                               {product.isUntaxed && (
-                                <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700 flex-shrink-0">Untaxed</Badge>
+                                <Badge
+                                  variant="outline"
+                                  className="text-xs bg-yellow-50 text-yellow-700 flex-shrink-0"
+                                >
+                                  Untaxed
+                                </Badge>
                               )}
                             </div>
 
@@ -2539,28 +3571,50 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                               {product.metrcTag && (
                                 <>
                                   <span>•</span>
-                                  <span className="font-mono">...{product.metrcTag.slice(-5)}</span>
+                                  <span className="font-mono">
+                                    ...{product.metrcTag.slice(-5)}
+                                  </span>
                                 </>
                               )}
                             </div>
 
                             {/* Room status in compact form */}
                             {product.room && (
-                              <div className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-xs ${
-                                product.room === "Sales Floor"
-                                  ? "bg-green-50 text-green-600"
-                                  : "bg-orange-50 text-orange-600"
-                              }`}>
+                              <div
+                                className={`inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded text-xs ${
+                                  product.room === "Sales Floor"
+                                    ? "bg-green-50 text-green-600"
+                                    : "bg-orange-50 text-orange-600"
+                                }`}
+                              >
                                 <Building className="w-3 h-3" />
-                                <span>{product.room === "Sales Floor" ? "On Sales Floor" : product.room}</span>
+                                <span>
+                                  {product.room === "Sales Floor"
+                                    ? "On Sales Floor"
+                                    : product.room}
+                                </span>
                               </div>
                             )}
 
                             {/* Cannabinoids in compact form */}
                             {(product.thc || product.cbd) && (
                               <div className="flex gap-1 mt-1">
-                                {product.thc && <Badge variant="secondary" className="text-xs px-1 py-0">THC: {product.thc}%</Badge>}
-                                {product.cbd && <Badge variant="outline" className="text-xs px-1 py-0">CBD: {product.cbd}%</Badge>}
+                                {product.thc && (
+                                  <Badge
+                                    variant="secondary"
+                                    className="text-xs px-1 py-0"
+                                  >
+                                    THC: {product.thc}%
+                                  </Badge>
+                                )}
+                                {product.cbd && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs px-1 py-0"
+                                  >
+                                    CBD: {product.cbd}%
+                                  </Badge>
+                                )}
                               </div>
                             )}
                           </div>
@@ -2634,39 +3688,59 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           <div className="flex items-center gap-2">
                             <div className="text-right">
                               <div className="font-semibold text-sm">
-                                {product.category === 'Flower' ? (() => {
-                                  if (product.price === 1.07) return '$30/oz Special';
-                                  if (product.price === 1.79) return '$50/oz Special';
-                                  if (product.price === 4.00) return '$4/g';
-                                  if (product.price === 7.00) return '$7/g';
-                                  if (product.price === 12.00) return '$12/g';
-                                  if (product.price === 14.00) return '$14/g';
-                                  if (product.price === 16.00) return '$16/g';
-                                  return `$${product.price.toFixed(2)}`;
-                                })() : `$${product.price.toFixed(2)}`}
+                                {product.category === "Flower"
+                                  ? (() => {
+                                      if (product.price === 1.07)
+                                        return "$30/oz Special";
+                                      if (product.price === 1.79)
+                                        return "$50/oz Special";
+                                      if (product.price === 4.0) return "$4/g";
+                                      if (product.price === 7.0) return "$7/g";
+                                      if (product.price === 12.0)
+                                        return "$12/g";
+                                      if (product.price === 14.0)
+                                        return "$14/g";
+                                      if (product.price === 16.0)
+                                        return "$16/g";
+                                      return `$${product.price.toFixed(2)}`;
+                                    })()
+                                  : `$${product.price.toFixed(2)}`}
                               </div>
                               {product.isGLS && (
-                                <div className="text-xs text-orange-600">Manual Discount Only</div>
+                                <div className="text-xs text-orange-600">
+                                  Manual Discount Only
+                                </div>
                               )}
                             </div>
 
                             {(() => {
                               const violations = wouldExceedLimits(product);
-                              const hasViolation = Object.values(violations).some(v => v);
+                              const hasViolation = Object.values(
+                                violations,
+                              ).some((v) => v);
 
                               if (!saleStarted) {
                                 return (
-                                  <Button size="sm" disabled className="bg-gray-100 text-gray-500">
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    className="bg-gray-100 text-gray-500"
+                                  >
                                     Start Sale First
                                   </Button>
                                 );
                               }
 
-                              const isNotOnSalesFloor = product.room && product.room !== "Sales Floor";
+                              const isNotOnSalesFloor =
+                                product.room && product.room !== "Sales Floor";
 
                               if (isNotOnSalesFloor && !showInventoryTab) {
                                 return (
-                                  <Button size="sm" disabled className="bg-orange-100 text-orange-700">
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    className="bg-orange-100 text-orange-700"
+                                  >
                                     <Lock className="w-4 h-4 mr-1" />
                                     Not on Sales Floor
                                   </Button>
@@ -2674,11 +3748,18 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                               }
 
                               return hasViolation && customerInfo.isVerified ? (
-                                <Button size="sm" disabled className="bg-red-100 text-red-700">
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="bg-red-100 text-red-700"
+                                >
                                   Limit Exceeded
                                 </Button>
                               ) : (
-                                <Button size="sm" onClick={() => addToCart(product)}>
+                                <Button
+                                  size="sm"
+                                  onClick={() => addToCart(product)}
+                                >
                                   <Plus className="w-4 h-4" />
                                 </Button>
                               );
@@ -2698,43 +3779,70 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                               </div>
                             )}
                           </div>
-                          {product.isGLS && (
-                            <MarijuanaLeaf size="6" />
-                          )}
+                          {product.isGLS && <MarijuanaLeaf size="6" />}
                         </div>
                         {product.isUntaxed && (
-                          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">Untaxed</Badge>
+                          <Badge
+                            variant="outline"
+                            className="text-xs bg-yellow-50 text-yellow-700"
+                          >
+                            Untaxed
+                          </Badge>
                         )}
                       </div>
                     )}
                     {/* Card View Content - Only shown in card mode */}
-                    {cashierViewMode === 'cards' && (
+                    {cashierViewMode === "cards" && (
                       <>
-                        <p className="text-sm text-muted-foreground mb-1">{product.category} • {product.weight}</p>
+                        <p className="text-sm text-muted-foreground mb-1">
+                          {product.category} • {product.weight}
+                        </p>
                         {product.room && (
-                          <div className={`flex items-center gap-1 mb-1 p-1 rounded ${
-                            product.room === "Sales Floor"
-                              ? "bg-green-50"
-                              : "bg-orange-50 border border-orange-200"
-                          }`}>
-                            <Building className={`w-3 h-3 ${
-                              product.room === "Sales Floor" ? "text-green-600" : "text-orange-600"
-                            }`} />
-                            <span className={`text-xs font-medium ${
-                              product.room === "Sales Floor" ? "text-green-600" : "text-orange-600"
-                            }`}>
-                              {product.room === "Sales Floor" ? "✓ On Sales Floor" : `📦 ${product.room}`}
+                          <div
+                            className={`flex items-center gap-1 mb-1 p-1 rounded ${
+                              product.room === "Sales Floor"
+                                ? "bg-green-50"
+                                : "bg-orange-50 border border-orange-200"
+                            }`}
+                          >
+                            <Building
+                              className={`w-3 h-3 ${
+                                product.room === "Sales Floor"
+                                  ? "text-green-600"
+                                  : "text-orange-600"
+                              }`}
+                            />
+                            <span
+                              className={`text-xs font-medium ${
+                                product.room === "Sales Floor"
+                                  ? "text-green-600"
+                                  : "text-orange-600"
+                              }`}
+                            >
+                              {product.room === "Sales Floor"
+                                ? "✓ On Sales Floor"
+                                : `📦 ${product.room}`}
                             </span>
                           </div>
                         )}
                         {(product.thc || product.cbd) && (
                           <div className="flex gap-2 mb-2">
-                            {product.thc && <Badge variant="secondary" className="text-xs">THC: {product.thc}%</Badge>}
-                            {product.cbd && <Badge variant="outline" className="text-xs">CBD: {product.cbd}%</Badge>}
+                            {product.thc && (
+                              <Badge variant="secondary" className="text-xs">
+                                THC: {product.thc}%
+                              </Badge>
+                            )}
+                            {product.cbd && (
+                              <Badge variant="outline" className="text-xs">
+                                CBD: {product.cbd}%
+                              </Badge>
+                            )}
                           </div>
                         )}
                         {product.strain && (
-                          <p className="text-xs text-muted-foreground mb-1">{product.strain}</p>
+                          <p className="text-xs text-muted-foreground mb-1">
+                            {product.strain}
+                          </p>
                         )}
 
                         {/* Print Buttons Row */}
@@ -2801,45 +3909,68 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
                         <div className="flex items-center gap-1 mb-2 flex-wrap">
                           {product.testResults?.tested && (
-                            <Badge variant="outline" className="text-xs bg-green-50 text-green-700">Lab Tested</Badge>
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-green-50 text-green-700"
+                            >
+                              Lab Tested
+                            </Badge>
                           )}
                           {product.isGLS && (
-                            <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
+                            <Badge
+                              variant="outline"
+                              className="text-xs bg-orange-50 text-orange-700 border-orange-300"
+                            >
                               GLS - Manual Discount Only
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="font-semibold">
-                            {product.category === 'Flower' ? (() => {
-                              if (product.price === 1.07) return '$30/oz Special';
-                              if (product.price === 1.79) return '$50/oz Special';
-                              if (product.price === 4.00) return '$4/g';
-                              if (product.price === 7.00) return '$7/g';
-                              if (product.price === 12.00) return '$12/g';
-                              if (product.price === 14.00) return '$14/g';
-                              if (product.price === 16.00) return '$16/g';
-                              return `$${product.price.toFixed(2)}`;
-                            })() : `$${product.price.toFixed(2)}`}
+                            {product.category === "Flower"
+                              ? (() => {
+                                  if (product.price === 1.07)
+                                    return "$30/oz Special";
+                                  if (product.price === 1.79)
+                                    return "$50/oz Special";
+                                  if (product.price === 4.0) return "$4/g";
+                                  if (product.price === 7.0) return "$7/g";
+                                  if (product.price === 12.0) return "$12/g";
+                                  if (product.price === 14.0) return "$14/g";
+                                  if (product.price === 16.0) return "$16/g";
+                                  return `$${product.price.toFixed(2)}`;
+                                })()
+                              : `$${product.price.toFixed(2)}`}
                           </span>
                           {(() => {
                             const violations = wouldExceedLimits(product);
-                            const hasViolation = Object.values(violations).some(v => v);
+                            const hasViolation = Object.values(violations).some(
+                              (v) => v,
+                            );
 
                             if (!saleStarted) {
                               return (
-                                <Button size="sm" disabled className="bg-gray-100 text-gray-500">
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="bg-gray-100 text-gray-500"
+                                >
                                   Start Sale First
                                 </Button>
                               );
                             }
 
                             // Check if item is not on sales floor
-                            const isNotOnSalesFloor = product.room && product.room !== "Sales Floor";
+                            const isNotOnSalesFloor =
+                              product.room && product.room !== "Sales Floor";
 
                             if (isNotOnSalesFloor && !showInventoryTab) {
                               return (
-                                <Button size="sm" disabled className="bg-orange-100 text-orange-700">
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="bg-orange-100 text-orange-700"
+                                >
                                   <Lock className="w-4 h-4 mr-1" />
                                   Not on Sales Floor
                                 </Button>
@@ -2847,11 +3978,18 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             }
 
                             return hasViolation && customerInfo.isVerified ? (
-                              <Button size="sm" disabled className="bg-red-100 text-red-700">
+                              <Button
+                                size="sm"
+                                disabled
+                                className="bg-red-100 text-red-700"
+                              >
                                 Limit Exceeded
                               </Button>
                             ) : (
-                              <Button size="sm" onClick={() => addToCart(product)}>
+                              <Button
+                                size="sm"
+                                onClick={() => addToCart(product)}
+                              >
                                 <Plus className="w-4 h-4" />
                               </Button>
                             );
@@ -2866,7 +4004,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
           </div>
 
           {/* Shopping Cart */}
-          <div className={`${saleStarted ? 'flex-[3_1_0] min-w-[600px]' : 'w-96'} bg-white border-l border-border p-6 sticky top-0 h-screen overflow-y-auto transition-all duration-300`}>
+          <div
+            className={`${saleStarted ? "flex-[3_1_0] min-w-[600px]" : "w-96"} bg-white border-l border-border p-6 sticky top-0 h-screen overflow-y-auto transition-all duration-300`}
+          >
             {/* New Sale Button */}
             <div className="mb-4">
               <Button
@@ -2905,7 +4045,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             )}
 
             <div className="mb-4">
-              <Dialog open={showSavedSalesDialog} onOpenChange={setShowSavedSalesDialog}>
+              <Dialog
+                open={showSavedSalesDialog}
+                onOpenChange={setShowSavedSalesDialog}
+              >
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full" size="sm">
                     <FileText className="w-4 h-4 mr-2" />
@@ -2917,7 +4060,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
             {/* Customer Lookup */}
             <div className="mb-4">
-              <Dialog open={showCustomerLookup} onOpenChange={setShowCustomerLookup}>
+              <Dialog
+                open={showCustomerLookup}
+                onOpenChange={setShowCustomerLookup}
+              >
                 <DialogTrigger asChild>
                   <Button variant="outline" className="w-full" size="sm">
                     <Search className="w-4 h-4 mr-2" />
@@ -2936,13 +4082,20 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     />
                     <div className="max-h-60 overflow-y-auto space-y-2">
                       {loyaltyCustomers
-                        .filter(customer =>
-                          customer.name.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-                          customer.phone.includes(customerSearchQuery) ||
-                          customer.email.toLowerCase().includes(customerSearchQuery.toLowerCase()) ||
-                          customer.memberId.toLowerCase().includes(customerSearchQuery.toLowerCase())
+                        .filter(
+                          (customer) =>
+                            customer.name
+                              .toLowerCase()
+                              .includes(customerSearchQuery.toLowerCase()) ||
+                            customer.phone.includes(customerSearchQuery) ||
+                            customer.email
+                              .toLowerCase()
+                              .includes(customerSearchQuery.toLowerCase()) ||
+                            customer.memberId
+                              .toLowerCase()
+                              .includes(customerSearchQuery.toLowerCase()),
                         )
-                        .map(customer => (
+                        .map((customer) => (
                           <div
                             key={customer.id}
                             className="p-3 border rounded cursor-pointer hover:bg-gray-50"
@@ -2956,36 +4109,52 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                                 isVerified: false,
                                 isOregonResident: true,
                                 dailyPurchases: {
-        flower: 0,
-        concentrates: 0,
-        edibles: 0,
-        tinctures: 0,
-        inhalableCannabinoidsExtracts: 0,
-        topicals: 0,
-        infusedPreRolls: 0,
-        clones: 0
-      }
+                                  flower: 0,
+                                  concentrates: 0,
+                                  edibles: 0,
+                                  tinctures: 0,
+                                  inhalableCannabinoidsExtracts: 0,
+                                  topicals: 0,
+                                  infusedPreRolls: 0,
+                                  clones: 0,
+                                },
                               });
                               setShowCustomerLookup(false);
                               setCustomerSearchQuery("");
 
                               // Show notification if customer has sales history
                               if (customer.salesHistory.length > 0) {
-                                alert(`${customer.name} found! Last visit: ${customer.lastVisit ? new Date(customer.lastVisit).toLocaleDateString() : 'Never'}. Total spent: $${customer.totalSpent.toFixed(2)}`);
+                                alert(
+                                  `${customer.name} found! Last visit: ${customer.lastVisit ? new Date(customer.lastVisit).toLocaleDateString() : "Never"}. Total spent: $${customer.totalSpent.toFixed(2)}`,
+                                );
                               }
                             }}
                           >
                             <div className="flex items-center justify-between">
                               <div>
-                                <div className="font-medium">{customer.name}</div>
-                                <div className="text-sm text-gray-600">{customer.phone}</div>
-                                <div className="text-sm text-gray-600">{customer.email}</div>
-                                <div className="text-xs text-blue-600">Member ID: {customer.memberId}</div>
+                                <div className="font-medium">
+                                  {customer.name}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {customer.phone}
+                                </div>
+                                <div className="text-sm text-gray-600">
+                                  {customer.email}
+                                </div>
+                                <div className="text-xs text-blue-600">
+                                  Member ID: {customer.memberId}
+                                </div>
                               </div>
                               <div className="text-right">
-                                <Badge variant="outline" className="text-xs">{customer.tier}</Badge>
-                                <div className="text-sm font-medium">{customer.pointsBalance} pts</div>
-                                <div className="text-xs text-gray-500">${customer.totalSpent.toFixed(2)} spent</div>
+                                <Badge variant="outline" className="text-xs">
+                                  {customer.tier}
+                                </Badge>
+                                <div className="text-sm font-medium">
+                                  {customer.pointsBalance} pts
+                                </div>
+                                <div className="text-xs text-gray-500">
+                                  ${customer.totalSpent.toFixed(2)} spent
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -2999,111 +4168,156 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             {/* Customer Info Display */}
             {customerInfo.name && (
               <div className="mb-4 p-3 bg-green-50 rounded-lg border border-green-200">
-                <div className="font-medium text-green-800">{customerInfo.name}</div>
-                <div className="text-sm text-green-600">{customerInfo.phone}</div>
+                <div className="font-medium text-green-800">
+                  {customerInfo.name}
+                </div>
+                <div className="text-sm text-green-600">
+                  {customerInfo.phone}
+                </div>
                 {customerInfo.medicalCard && (
-                  <div className="text-xs text-green-600">Medical: {customerInfo.medicalCard}</div>
+                  <div className="text-xs text-green-600">
+                    Medical: {customerInfo.medicalCard}
+                  </div>
                 )}
                 {customerInfo.caregiverCard && (
-                  <div className="text-xs text-green-600">Caregiver: {customerInfo.caregiverCard}</div>
+                  <div className="text-xs text-green-600">
+                    Caregiver: {customerInfo.caregiverCard}
+                  </div>
                 )}
                 {customerInfo.isVerified && (
-                  <Badge className="mt-1" variant="default">ID Verified</Badge>
+                  <Badge className="mt-1" variant="default">
+                    ID Verified
+                  </Badge>
                 )}
               </div>
             )}
 
             {/* Loyalty Points Redemption */}
-            {selectedLoyaltyCustomer && selectedLoyaltyCustomer.pointsBalance > 0 && (
-              <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <div className="font-medium text-purple-800">Loyalty Points</div>
-                    <div className="text-sm text-purple-600">Available: {selectedLoyaltyCustomer.pointsBalance} points</div>
-                  </div>
-                  <Badge variant="outline" className="text-purple-700">{selectedLoyaltyCustomer.tier}</Badge>
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs text-purple-600">
-                    100 points = $1.00 discount
-                  </div>
-                  {cart.some(item => item.autoAppliedDeal) && (
-                    <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-200">
-                      ⚠️ Cannot use points while automatic deals are active. Remove auto-deals to redeem points.
+            {selectedLoyaltyCustomer &&
+              selectedLoyaltyCustomer.pointsBalance > 0 && (
+                <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <div className="font-medium text-purple-800">
+                        Loyalty Points
+                      </div>
+                      <div className="text-sm text-purple-600">
+                        Available: {selectedLoyaltyCustomer.pointsBalance}{" "}
+                        points
+                      </div>
                     </div>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"
-                    onClick={() => {
-                      // Check if there are any automatic discounts already applied to cart items
-                      const hasAutoDiscounts = cart.some(item => item.autoAppliedDeal);
-
-                      if (hasAutoDiscounts) {
-                        alert("Loyalty points cannot be redeemed when automatic deals are already applied. Remove automatic discounts first to use points.");
-                        return;
-                      }
-
-                      if (!cartDiscount && selectedLoyaltyCustomer.pointsBalance >= 100) {
-                        // Calculate non-GLS subtotal for redemption (can't redeem against GLS products)
-                        const nonGLSSubtotal = cart.reduce((sum, item) => {
-                          const product = sampleProducts.find(p => p.id === item.id);
-                          return product?.isGLS ? sum : sum + getItemTotal(item);
-                        }, 0);
-
-                        const maxRedeemablePoints = Math.min(
-                          selectedLoyaltyCustomer.pointsBalance,
-                          Math.floor(nonGLSSubtotal * 100) // Can't redeem more than non-GLS subtotal
+                    <Badge variant="outline" className="text-purple-700">
+                      {selectedLoyaltyCustomer.tier}
+                    </Badge>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs text-purple-600">
+                      100 points = $1.00 discount
+                    </div>
+                    {cart.some((item) => item.autoAppliedDeal) && (
+                      <div className="text-xs text-orange-600 bg-orange-50 p-2 rounded border border-orange-200">
+                        ⚠️ Cannot use points while automatic deals are active.
+                        Remove auto-deals to redeem points.
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-purple-300 text-purple-700 hover:bg-purple-100"
+                      onClick={() => {
+                        // Check if there are any automatic discounts already applied to cart items
+                        const hasAutoDiscounts = cart.some(
+                          (item) => item.autoAppliedDeal,
                         );
-                        const redeemPoints = Math.floor(maxRedeemablePoints / 100) * 100; // Round down to nearest 100
-                        const discountAmount = redeemPoints / 100;
 
-                        setCartDiscount({
-                          type: 'fixed',
-                          value: discountAmount,
-                          label: `${redeemPoints} Points Redeemed`,
-                          reasonCode: 'LOYALTY_POINTS'
-                        });
+                        if (hasAutoDiscounts) {
+                          alert(
+                            "Loyalty points cannot be redeemed when automatic deals are already applied. Remove automatic discounts first to use points.",
+                          );
+                          return;
+                        }
 
-                        // Update customer points (this would be saved to database in real app)
-                        setSelectedLoyaltyCustomer(prev => prev ? {
-                          ...prev,
-                          pointsBalance: prev.pointsBalance - redeemPoints
-                        } : null);
+                        if (
+                          !cartDiscount &&
+                          selectedLoyaltyCustomer.pointsBalance >= 100
+                        ) {
+                          // Calculate non-GLS subtotal for redemption (can't redeem against GLS products)
+                          const nonGLSSubtotal = cart.reduce((sum, item) => {
+                            const product = sampleProducts.find(
+                              (p) => p.id === item.id,
+                            );
+                            return product?.isGLS
+                              ? sum
+                              : sum + getItemTotal(item);
+                          }, 0);
+
+                          const maxRedeemablePoints = Math.min(
+                            selectedLoyaltyCustomer.pointsBalance,
+                            Math.floor(nonGLSSubtotal * 100), // Can't redeem more than non-GLS subtotal
+                          );
+                          const redeemPoints =
+                            Math.floor(maxRedeemablePoints / 100) * 100; // Round down to nearest 100
+                          const discountAmount = redeemPoints / 100;
+
+                          setCartDiscount({
+                            type: "fixed",
+                            value: discountAmount,
+                            label: `${redeemPoints} Points Redeemed`,
+                            reasonCode: "LOYALTY_POINTS",
+                          });
+
+                          // Update customer points (this would be saved to database in real app)
+                          setSelectedLoyaltyCustomer((prev) =>
+                            prev
+                              ? {
+                                  ...prev,
+                                  pointsBalance:
+                                    prev.pointsBalance - redeemPoints,
+                                }
+                              : null,
+                          );
+                        }
+                      }}
+                      disabled={
+                        cartDiscount !== null ||
+                        selectedLoyaltyCustomer.pointsBalance < 100 ||
+                        cart.some((item) => item.autoAppliedDeal)
                       }
-                    }}
-                    disabled={
-                      cartDiscount !== null ||
-                      selectedLoyaltyCustomer.pointsBalance < 100 ||
-                      cart.some(item => item.autoAppliedDeal)
-                    }
-                  >
-                    {(() => {
-                      const hasAutoDiscounts = cart.some(item => item.autoAppliedDeal);
-                      if (hasAutoDiscounts) return "Auto-deals active";
-                      if (cartDiscount) return "Discount Applied";
-                      if (selectedLoyaltyCustomer.pointsBalance < 100) return "Need 100+ Points";
-                      return "Redeem Points";
-                    })()}
-                  </Button>
+                    >
+                      {(() => {
+                        const hasAutoDiscounts = cart.some(
+                          (item) => item.autoAppliedDeal,
+                        );
+                        if (hasAutoDiscounts) return "Auto-deals active";
+                        if (cartDiscount) return "Discount Applied";
+                        if (selectedLoyaltyCustomer.pointsBalance < 100)
+                          return "Need 100+ Points";
+                        return "Redeem Points";
+                      })()}
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {/* Sales Limits Tracking - Always Show for All Customers */}
             <div className="mb-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="font-medium text-blue-800">Sales Limits Tracker</h3>
-                <Badge variant={customerInfo.isVerified ? "default" : "secondary"}>
+                <h3 className="font-medium text-blue-800">
+                  Sales Limits Tracker
+                </h3>
+                <Badge
+                  variant={customerInfo.isVerified ? "default" : "secondary"}
+                >
                   {customerInfo.isVerified ? "Verified" : "Unverified"}
                 </Badge>
               </div>
               <div className="space-y-3 text-sm">
                 {(() => {
                   const currentUsage = calculateCurrentUsage();
-                  const isNearLimit = (current: number, limit: number) => (current / limit) > 0.8;
-                  const isOverLimit = (current: number, limit: number) => current >= limit;
+                  const isNearLimit = (current: number, limit: number) =>
+                    current / limit > 0.8;
+                  const isOverLimit = (current: number, limit: number) =>
+                    current >= limit;
 
                   return (
                     <>
@@ -3111,17 +4325,38 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <div className="flex justify-between mb-1">
                           <span className="flex items-center gap-1">
                             Flower/Pre-Rolls
-                            {isNearLimit(currentUsage.flower, oregonLimits.flower) && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">Near Limit</Badge>
+                            {isNearLimit(
+                              currentUsage.flower,
+                              oregonLimits.flower,
+                            ) && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0"
+                              >
+                                Near Limit
+                              </Badge>
                             )}
                           </span>
-                          <span className={isOverLimit(currentUsage.flower, oregonLimits.flower) ? "text-red-600 font-bold" : ""}>
-                            {(currentUsage.flower / 1000).toFixed(1)}g / {(oregonLimits.flower / 1000).toFixed(1)}g
+                          <span
+                            className={
+                              isOverLimit(
+                                currentUsage.flower,
+                                oregonLimits.flower,
+                              )
+                                ? "text-red-600 font-bold"
+                                : ""
+                            }
+                          >
+                            {(currentUsage.flower / 1000).toFixed(1)}g /{" "}
+                            {(oregonLimits.flower / 1000).toFixed(1)}g
                           </span>
                         </div>
                         <Progress
-                          value={Math.min((currentUsage.flower / oregonLimits.flower) * 100, 100)}
-                          className={`h-3 ${isOverLimit(currentUsage.flower, oregonLimits.flower) ? 'bg-red-100' : isNearLimit(currentUsage.flower, oregonLimits.flower) ? 'bg-yellow-100' : ''}`}
+                          value={Math.min(
+                            (currentUsage.flower / oregonLimits.flower) * 100,
+                            100,
+                          )}
+                          className={`h-3 ${isOverLimit(currentUsage.flower, oregonLimits.flower) ? "bg-red-100" : isNearLimit(currentUsage.flower, oregonLimits.flower) ? "bg-yellow-100" : ""}`}
                         />
                       </div>
 
@@ -3129,17 +4364,40 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <div className="flex justify-between mb-1">
                           <span className="flex items-center gap-1">
                             Concentrates/Extracts
-                            {isNearLimit(currentUsage.concentrates, oregonLimits.concentrates) && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">Near Limit</Badge>
+                            {isNearLimit(
+                              currentUsage.concentrates,
+                              oregonLimits.concentrates,
+                            ) && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0"
+                              >
+                                Near Limit
+                              </Badge>
                             )}
                           </span>
-                          <span className={isOverLimit(currentUsage.concentrates, oregonLimits.concentrates) ? "text-red-600 font-bold" : ""}>
-                            {(currentUsage.concentrates / 1000).toFixed(1)}g / {(oregonLimits.concentrates / 1000).toFixed(0)}g
+                          <span
+                            className={
+                              isOverLimit(
+                                currentUsage.concentrates,
+                                oregonLimits.concentrates,
+                              )
+                                ? "text-red-600 font-bold"
+                                : ""
+                            }
+                          >
+                            {(currentUsage.concentrates / 1000).toFixed(1)}g /{" "}
+                            {(oregonLimits.concentrates / 1000).toFixed(0)}g
                           </span>
                         </div>
                         <Progress
-                          value={Math.min((currentUsage.concentrates / oregonLimits.concentrates) * 100, 100)}
-                          className={`h-3 ${isOverLimit(currentUsage.concentrates, oregonLimits.concentrates) ? 'bg-red-100' : isNearLimit(currentUsage.concentrates, oregonLimits.concentrates) ? 'bg-yellow-100' : ''}`}
+                          value={Math.min(
+                            (currentUsage.concentrates /
+                              oregonLimits.concentrates) *
+                              100,
+                            100,
+                          )}
+                          className={`h-3 ${isOverLimit(currentUsage.concentrates, oregonLimits.concentrates) ? "bg-red-100" : isNearLimit(currentUsage.concentrates, oregonLimits.concentrates) ? "bg-yellow-100" : ""}`}
                         />
                       </div>
 
@@ -3147,17 +4405,38 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <div className="flex justify-between mb-1">
                           <span className="flex items-center gap-1">
                             Edibles
-                            {isNearLimit(currentUsage.edibles, oregonLimits.edibles) && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">Near Limit</Badge>
+                            {isNearLimit(
+                              currentUsage.edibles,
+                              oregonLimits.edibles,
+                            ) && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0"
+                              >
+                                Near Limit
+                              </Badge>
                             )}
                           </span>
-                          <span className={isOverLimit(currentUsage.edibles, oregonLimits.edibles) ? "text-red-600 font-bold" : ""}>
-                            {(currentUsage.edibles / 1000).toFixed(1)}g / {(oregonLimits.edibles / 1000).toFixed(0)}g
+                          <span
+                            className={
+                              isOverLimit(
+                                currentUsage.edibles,
+                                oregonLimits.edibles,
+                              )
+                                ? "text-red-600 font-bold"
+                                : ""
+                            }
+                          >
+                            {(currentUsage.edibles / 1000).toFixed(1)}g /{" "}
+                            {(oregonLimits.edibles / 1000).toFixed(0)}g
                           </span>
                         </div>
                         <Progress
-                          value={Math.min((currentUsage.edibles / oregonLimits.edibles) * 100, 100)}
-                          className={`h-3 ${isOverLimit(currentUsage.edibles, oregonLimits.edibles) ? 'bg-red-100' : isNearLimit(currentUsage.edibles, oregonLimits.edibles) ? 'bg-yellow-100' : ''}`}
+                          value={Math.min(
+                            (currentUsage.edibles / oregonLimits.edibles) * 100,
+                            100,
+                          )}
+                          className={`h-3 ${isOverLimit(currentUsage.edibles, oregonLimits.edibles) ? "bg-red-100" : isNearLimit(currentUsage.edibles, oregonLimits.edibles) ? "bg-yellow-100" : ""}`}
                         />
                       </div>
 
@@ -3165,17 +4444,39 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <div className="flex justify-between mb-1">
                           <span className="flex items-center gap-1">
                             Tinctures
-                            {isNearLimit(currentUsage.tinctures, oregonLimits.tinctures) && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">Near Limit</Badge>
+                            {isNearLimit(
+                              currentUsage.tinctures,
+                              oregonLimits.tinctures,
+                            ) && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0"
+                              >
+                                Near Limit
+                              </Badge>
                             )}
                           </span>
-                          <span className={isOverLimit(currentUsage.tinctures, oregonLimits.tinctures) ? "text-red-600 font-bold" : ""}>
-                            {(currentUsage.tinctures / 29.5735).toFixed(1)}oz / {(oregonLimits.tinctures / 1000).toFixed(0)}oz
+                          <span
+                            className={
+                              isOverLimit(
+                                currentUsage.tinctures,
+                                oregonLimits.tinctures,
+                              )
+                                ? "text-red-600 font-bold"
+                                : ""
+                            }
+                          >
+                            {(currentUsage.tinctures / 29.5735).toFixed(1)}oz /{" "}
+                            {(oregonLimits.tinctures / 1000).toFixed(0)}oz
                           </span>
                         </div>
                         <Progress
-                          value={Math.min((currentUsage.tinctures / oregonLimits.tinctures) * 100, 100)}
-                          className={`h-3 ${isOverLimit(currentUsage.tinctures, oregonLimits.tinctures) ? 'bg-red-100' : isNearLimit(currentUsage.tinctures, oregonLimits.tinctures) ? 'bg-yellow-100' : ''}`}
+                          value={Math.min(
+                            (currentUsage.tinctures / oregonLimits.tinctures) *
+                              100,
+                            100,
+                          )}
+                          className={`h-3 ${isOverLimit(currentUsage.tinctures, oregonLimits.tinctures) ? "bg-red-100" : isNearLimit(currentUsage.tinctures, oregonLimits.tinctures) ? "bg-yellow-100" : ""}`}
                         />
                       </div>
 
@@ -3183,40 +4484,107 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <div className="flex justify-between mb-1">
                           <span className="flex items-center gap-1">
                             Inhalable Cannabinoids
-                            {isNearLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts) && (
-                              <Badge variant="secondary" className="text-xs px-1 py-0">Near Limit</Badge>
+                            {isNearLimit(
+                              currentUsage.inhalableCannabinoidsExtracts,
+                              oregonLimits.inhalableCannabinoidsExtracts,
+                            ) && (
+                              <Badge
+                                variant="secondary"
+                                className="text-xs px-1 py-0"
+                              >
+                                Near Limit
+                              </Badge>
                             )}
                           </span>
-                          <span className={isOverLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts) ? "text-red-600 font-bold" : ""}>
-                            {(currentUsage.inhalableCannabinoidsExtracts / 1000).toFixed(1)}g / {(oregonLimits.inhalableCannabinoidsExtracts / 1000).toFixed(0)}g
+                          <span
+                            className={
+                              isOverLimit(
+                                currentUsage.inhalableCannabinoidsExtracts,
+                                oregonLimits.inhalableCannabinoidsExtracts,
+                              )
+                                ? "text-red-600 font-bold"
+                                : ""
+                            }
+                          >
+                            {(
+                              currentUsage.inhalableCannabinoidsExtracts / 1000
+                            ).toFixed(1)}
+                            g /{" "}
+                            {(
+                              oregonLimits.inhalableCannabinoidsExtracts / 1000
+                            ).toFixed(0)}
+                            g
                           </span>
                         </div>
                         <Progress
-                          value={Math.min((currentUsage.inhalableCannabinoidsExtracts / oregonLimits.inhalableCannabinoidsExtracts) * 100, 100)}
-                          className={`h-3 ${isOverLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts) ? 'bg-red-100' : isNearLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts) ? 'bg-yellow-100' : ''}`}
+                          value={Math.min(
+                            (currentUsage.inhalableCannabinoidsExtracts /
+                              oregonLimits.inhalableCannabinoidsExtracts) *
+                              100,
+                            100,
+                          )}
+                          className={`h-3 ${isOverLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts) ? "bg-red-100" : isNearLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts) ? "bg-yellow-100" : ""}`}
                         />
                       </div>
 
                       {/* Compliance Status */}
                       <div className="pt-2 border-t border-blue-200">
                         <div className="flex items-center justify-between">
-                          <span className="text-xs text-blue-700">Compliance Status:</span>
-                          <Badge variant={
-                            Object.values([
-                              isOverLimit(currentUsage.flower, oregonLimits.flower),
-                              isOverLimit(currentUsage.concentrates, oregonLimits.concentrates),
-                              isOverLimit(currentUsage.edibles, oregonLimits.edibles),
-                              isOverLimit(currentUsage.tinctures, oregonLimits.tinctures),
-                              isOverLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts)
-                            ]).some(Boolean) ? "destructive" : "default"
-                          }>
+                          <span className="text-xs text-blue-700">
+                            Compliance Status:
+                          </span>
+                          <Badge
+                            variant={
+                              Object.values([
+                                isOverLimit(
+                                  currentUsage.flower,
+                                  oregonLimits.flower,
+                                ),
+                                isOverLimit(
+                                  currentUsage.concentrates,
+                                  oregonLimits.concentrates,
+                                ),
+                                isOverLimit(
+                                  currentUsage.edibles,
+                                  oregonLimits.edibles,
+                                ),
+                                isOverLimit(
+                                  currentUsage.tinctures,
+                                  oregonLimits.tinctures,
+                                ),
+                                isOverLimit(
+                                  currentUsage.inhalableCannabinoidsExtracts,
+                                  oregonLimits.inhalableCannabinoidsExtracts,
+                                ),
+                              ]).some(Boolean)
+                                ? "destructive"
+                                : "default"
+                            }
+                          >
                             {Object.values([
-                              isOverLimit(currentUsage.flower, oregonLimits.flower),
-                              isOverLimit(currentUsage.concentrates, oregonLimits.concentrates),
-                              isOverLimit(currentUsage.edibles, oregonLimits.edibles),
-                              isOverLimit(currentUsage.tinctures, oregonLimits.tinctures),
-                              isOverLimit(currentUsage.inhalableCannabinoidsExtracts, oregonLimits.inhalableCannabinoidsExtracts)
-                            ]).some(Boolean) ? "OVER LIMIT" : "COMPLIANT"}
+                              isOverLimit(
+                                currentUsage.flower,
+                                oregonLimits.flower,
+                              ),
+                              isOverLimit(
+                                currentUsage.concentrates,
+                                oregonLimits.concentrates,
+                              ),
+                              isOverLimit(
+                                currentUsage.edibles,
+                                oregonLimits.edibles,
+                              ),
+                              isOverLimit(
+                                currentUsage.tinctures,
+                                oregonLimits.tinctures,
+                              ),
+                              isOverLimit(
+                                currentUsage.inhalableCannabinoidsExtracts,
+                                oregonLimits.inhalableCannabinoidsExtracts,
+                              ),
+                            ]).some(Boolean)
+                              ? "OVER LIMIT"
+                              : "COMPLIANT"}
                           </Badge>
                         </div>
                       </div>
@@ -3231,7 +4599,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{cart.length} items</Badge>
                 {cart.length > 0 && (
-                  <Dialog open={showCartDiscountDialog} onOpenChange={setShowCartDiscountDialog}>
+                  <Dialog
+                    open={showCartDiscountDialog}
+                    onOpenChange={setShowCartDiscountDialog}
+                  >
                     <DialogTrigger asChild>
                       <Button size="sm" variant="outline">
                         <Percent className="w-3 h-3 mr-1" />
@@ -3245,21 +4616,29 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       <div className="space-y-4">
                         <div className="flex gap-2">
                           <Button
-                            variant={discountType === 'percentage' ? 'default' : 'outline'}
-                            onClick={() => setDiscountType('percentage')}
+                            variant={
+                              discountType === "percentage"
+                                ? "default"
+                                : "outline"
+                            }
+                            onClick={() => setDiscountType("percentage")}
                           >
                             Percentage
                           </Button>
                           <Button
-                            variant={discountType === 'fixed' ? 'default' : 'outline'}
-                            onClick={() => setDiscountType('fixed')}
+                            variant={
+                              discountType === "fixed" ? "default" : "outline"
+                            }
+                            onClick={() => setDiscountType("fixed")}
                           >
                             Fixed Amount
                           </Button>
                         </div>
                         <div>
                           <Label htmlFor="discount-value">
-                            {discountType === 'percentage' ? 'Percentage (%)' : 'Amount ($)'}
+                            {discountType === "percentage"
+                              ? "Percentage (%)"
+                              : "Amount ($)"}
                           </Label>
                           <Input
                             id="discount-value"
@@ -3267,11 +4646,16 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             value={discountValue}
                             onChange={(e) => setDiscountValue(e.target.value)}
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' && discountReasonCode.trim()) {
+                              if (
+                                e.key === "Enter" &&
+                                discountReasonCode.trim()
+                              ) {
                                 applyCartDiscount();
                               }
                             }}
-                            placeholder={discountType === 'percentage' ? '10' : '5.00'}
+                            placeholder={
+                              discountType === "percentage" ? "10" : "5.00"
+                            }
                           />
                         </div>
                         <div>
@@ -3279,9 +4663,14 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           <Input
                             id="reason-code"
                             value={discountReasonCode}
-                            onChange={(e) => setDiscountReasonCode(e.target.value)}
+                            onChange={(e) =>
+                              setDiscountReasonCode(e.target.value)
+                            }
                             onKeyDown={(e) => {
-                              if (e.key === 'Enter' && discountReasonCode.trim()) {
+                              if (
+                                e.key === "Enter" &&
+                                discountReasonCode.trim()
+                              ) {
                                 applyCartDiscount();
                               }
                             }}
@@ -3311,25 +4700,41 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             ) : (
               <>
                 <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
-                  {cart.map(item => (
+                  {cart.map((item) => (
                     <div key={item.id} className="p-3 bg-gray-50 rounded-lg">
                       <div className="flex items-start justify-between mb-2">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{item.name}</h4>
                             {(() => {
-                              const product = sampleProducts.find(p => p.id === item.id);
-                              return product?.isGLS && <MarijuanaLeaf size="5" />;
+                              const product = sampleProducts.find(
+                                (p) => p.id === item.id,
+                              );
+                              return (
+                                product?.isGLS && <MarijuanaLeaf size="5" />
+                              );
                             })()}
                             {item.isUntaxed && (
-                              <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-700">Untaxed</Badge>
+                              <Badge
+                                variant="outline"
+                                className="text-xs bg-yellow-50 text-yellow-700"
+                              >
+                                Untaxed
+                              </Badge>
                             )}
                             {(() => {
-                              const product = sampleProducts.find(p => p.id === item.id);
-                              return product?.isGLS && (
-                                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-300">
-                                  GLS
-                                </Badge>
+                              const product = sampleProducts.find(
+                                (p) => p.id === item.id,
+                              );
+                              return (
+                                product?.isGLS && (
+                                  <Badge
+                                    variant="outline"
+                                    className="text-xs bg-orange-50 text-orange-700 border-orange-300"
+                                  >
+                                    GLS
+                                  </Badge>
+                                )
                               );
                             })()}
                           </div>
@@ -3340,20 +4745,29 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             <div className="flex items-center gap-1 mt-1">
                               <Tag className="w-3 h-3 text-success" />
                               <span className="text-xs text-success">
-                                {item.discountType === 'percentage'
+                                {item.discountType === "percentage"
                                   ? `${item.discount}% off`
                                   : `$${item.discount.toFixed(2)} off`}
                                 {item.autoAppliedDeal && (
-                                  <span className="font-medium"> - {item.autoAppliedDeal}</span>
+                                  <span className="font-medium">
+                                    {" "}
+                                    - {item.autoAppliedDeal}
+                                  </span>
                                 )}
-                                {item.discountReasonCode && !item.autoAppliedDeal && ` (${item.discountReasonCode})`}
+                                {item.discountReasonCode &&
+                                  !item.autoAppliedDeal &&
+                                  ` (${item.discountReasonCode})`}
                               </span>
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 onClick={() => removeItemDiscount(item.id)}
                                 className="h-4 w-4 p-0 ml-1"
-                                title={item.autoAppliedDeal ? "Remove automatic deal" : "Remove discount"}
+                                title={
+                                  item.autoAppliedDeal
+                                    ? "Remove automatic deal"
+                                    : "Remove discount"
+                                }
                               >
                                 <X className="w-2 h-2" />
                               </Button>
@@ -3374,7 +4788,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           )}
                         </div>
                         <div className="text-right">
-                          <div className="font-medium">${getItemTotal(item).toFixed(2)}</div>
+                          <div className="font-medium">
+                            ${getItemTotal(item).toFixed(2)}
+                          </div>
                           {item.discount > 0 && (
                             <div className="text-xs text-muted-foreground line-through">
                               ${(item.price * item.quantity).toFixed(2)}
@@ -3398,9 +4814,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                               onChange={(e) => setQuantityInput(e.target.value)}
                               onBlur={() => saveQuantityEdit(item.id)}
                               onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
+                                if (e.key === "Enter") {
                                   saveQuantityEdit(item.id);
-                                } else if (e.key === 'Escape') {
+                                } else if (e.key === "Escape") {
                                   setEditingQuantity(null);
                                   setQuantityInput("");
                                 }
@@ -3433,11 +4849,16 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           </Button>
                         </div>
                         <div className="flex items-center space-x-1">
-                          <Dialog open={showDiscountDialog && selectedItemForDiscount === item.id}
-                                 onOpenChange={(open) => {
-                                   setShowDiscountDialog(open);
-                                   if (!open) setSelectedItemForDiscount(null);
-                                 }}>
+                          <Dialog
+                            open={
+                              showDiscountDialog &&
+                              selectedItemForDiscount === item.id
+                            }
+                            onOpenChange={(open) => {
+                              setShowDiscountDialog(open);
+                              if (!open) setSelectedItemForDiscount(null);
+                            }}
+                          >
                             <DialogTrigger asChild>
                               <Button
                                 size="sm"
@@ -3448,8 +4869,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                                   setDiscountType(item.discountType);
                                 }}
                                 title={(() => {
-                                  const product = sampleProducts.find(p => p.id === item.id);
-                                  return product?.isGLS ? "Apply manual discount to Green Leaf Special product" : "Apply discount";
+                                  const product = sampleProducts.find(
+                                    (p) => p.id === item.id,
+                                  );
+                                  return product?.isGLS
+                                    ? "Apply manual discount to Green Leaf Special product"
+                                    : "Apply discount";
                                 })()}
                               >
                                 <Percent className="w-3 h-3" />
@@ -3457,55 +4882,97 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             </DialogTrigger>
                             <DialogContent>
                               <DialogHeader>
-                                <DialogTitle>Apply Item Discount - {item.name}</DialogTitle>
+                                <DialogTitle>
+                                  Apply Item Discount - {item.name}
+                                </DialogTitle>
                               </DialogHeader>
                               <div className="space-y-4">
                                 <div className="flex gap-2">
                                   <Button
-                                    variant={discountType === 'percentage' ? 'default' : 'outline'}
-                                    onClick={() => setDiscountType('percentage')}
+                                    variant={
+                                      discountType === "percentage"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    onClick={() =>
+                                      setDiscountType("percentage")
+                                    }
                                   >
                                     Percentage
                                   </Button>
                                   <Button
-                                    variant={discountType === 'fixed' ? 'default' : 'outline'}
-                                    onClick={() => setDiscountType('fixed')}
+                                    variant={
+                                      discountType === "fixed"
+                                        ? "default"
+                                        : "outline"
+                                    }
+                                    onClick={() => setDiscountType("fixed")}
                                   >
                                     Fixed Amount
                                   </Button>
                                 </div>
                                 <div>
                                   <Label htmlFor="item-discount-value">
-                                    {discountType === 'percentage' ? 'Percentage (%)' : 'Amount ($)'}
+                                    {discountType === "percentage"
+                                      ? "Percentage (%)"
+                                      : "Amount ($)"}
                                   </Label>
                                   <Input
                                     id="item-discount-value"
                                     type="number"
                                     value={discountValue}
-                                    onChange={(e) => setDiscountValue(e.target.value)}
+                                    onChange={(e) =>
+                                      setDiscountValue(e.target.value)
+                                    }
                                     onKeyDown={(e) => {
-                                      if (e.key === 'Enter' && discountReasonCode.trim()) {
-                                        const value = parseFloat(discountValue) || 0;
-                                        applyItemDiscount(item.id, value, discountType, discountReasonCode);
+                                      if (
+                                        e.key === "Enter" &&
+                                        discountReasonCode.trim()
+                                      ) {
+                                        const value =
+                                          parseFloat(discountValue) || 0;
+                                        applyItemDiscount(
+                                          item.id,
+                                          value,
+                                          discountType,
+                                          discountReasonCode,
+                                        );
                                         setShowDiscountDialog(false);
                                         setSelectedItemForDiscount(null);
                                         setDiscountValue("");
                                         setDiscountReasonCode("");
                                       }
                                     }}
-                                    placeholder={discountType === 'percentage' ? '10' : '5.00'}
+                                    placeholder={
+                                      discountType === "percentage"
+                                        ? "10"
+                                        : "5.00"
+                                    }
                                   />
                                 </div>
                                 <div>
-                                  <Label htmlFor="item-reason-code">Reason Code *</Label>
+                                  <Label htmlFor="item-reason-code">
+                                    Reason Code *
+                                  </Label>
                                   <Input
                                     id="item-reason-code"
                                     value={discountReasonCode}
-                                    onChange={(e) => setDiscountReasonCode(e.target.value)}
+                                    onChange={(e) =>
+                                      setDiscountReasonCode(e.target.value)
+                                    }
                                     onKeyDown={(e) => {
-                                      if (e.key === 'Enter' && discountReasonCode.trim()) {
-                                        const value = parseFloat(discountValue) || 0;
-                                        applyItemDiscount(item.id, value, discountType, discountReasonCode);
+                                      if (
+                                        e.key === "Enter" &&
+                                        discountReasonCode.trim()
+                                      ) {
+                                        const value =
+                                          parseFloat(discountValue) || 0;
+                                        applyItemDiscount(
+                                          item.id,
+                                          value,
+                                          discountType,
+                                          discountReasonCode,
+                                        );
                                         setShowDiscountDialog(false);
                                         setSelectedItemForDiscount(null);
                                         setDiscountValue("");
@@ -3517,23 +4984,36 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                                   />
                                 </div>
                                 <div className="flex gap-2">
-                                  <Button onClick={() => {
-                                    const value = parseFloat(discountValue) || 0;
-                                    if (discountReasonCode.trim()) {
-                                      applyItemDiscount(item.id, value, discountType, discountReasonCode);
-                                      setShowDiscountDialog(false);
-                                      setSelectedItemForDiscount(null);
-                                      setDiscountValue("");
-                                      setDiscountReasonCode("");
-                                    }
-                                  }} className="flex-1" disabled={!discountReasonCode.trim()}>
+                                  <Button
+                                    onClick={() => {
+                                      const value =
+                                        parseFloat(discountValue) || 0;
+                                      if (discountReasonCode.trim()) {
+                                        applyItemDiscount(
+                                          item.id,
+                                          value,
+                                          discountType,
+                                          discountReasonCode,
+                                        );
+                                        setShowDiscountDialog(false);
+                                        setSelectedItemForDiscount(null);
+                                        setDiscountValue("");
+                                        setDiscountReasonCode("");
+                                      }
+                                    }}
+                                    className="flex-1"
+                                    disabled={!discountReasonCode.trim()}
+                                  >
                                     Apply Discount
                                   </Button>
-                                  <Button variant="outline" onClick={() => {
-                                    removeItemDiscount(item.id);
-                                    setShowDiscountDialog(false);
-                                    setSelectedItemForDiscount(null);
-                                  }}>
+                                  <Button
+                                    variant="outline"
+                                    onClick={() => {
+                                      removeItemDiscount(item.id);
+                                      setShowDiscountDialog(false);
+                                      setSelectedItemForDiscount(null);
+                                    }}
+                                  >
                                     Remove
                                   </Button>
                                 </div>
@@ -3580,11 +5060,25 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     <div className="text-xs text-muted-foreground">
                       <div className="flex justify-between">
                         <span>Taxable Items:</span>
-                        <span>${(taxableSubtotal - (getCartDiscountAmount() * (taxableSubtotal / subtotal))).toFixed(2)}</span>
+                        <span>
+                          $
+                          {(
+                            taxableSubtotal -
+                            getCartDiscountAmount() *
+                              (taxableSubtotal / subtotal)
+                          ).toFixed(2)}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Untaxed Items:</span>
-                        <span>${(untaxedSubtotal - (getCartDiscountAmount() * (untaxedSubtotal / subtotal))).toFixed(2)}</span>
+                        <span>
+                          $
+                          {(
+                            untaxedSubtotal -
+                            getCartDiscountAmount() *
+                              (untaxedSubtotal / subtotal)
+                          ).toFixed(2)}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -3605,7 +5099,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       className="w-full"
                       size="lg"
                       onClick={() => {
-                        setPaymentMethod('cash');
+                        setPaymentMethod("cash");
                         setShowPaymentAmountDialog(true);
                       }}
                       disabled={cart.length === 0 || !saleStarted}
@@ -3617,7 +5111,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       className="w-full"
                       size="lg"
                       onClick={() => {
-                        setPaymentMethod('debit');
+                        setPaymentMethod("debit");
                         setShowDebitDialog(true);
                       }}
                       disabled={cart.length === 0 || !saleStarted}
@@ -3644,14 +5138,21 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             {selectedProductForMetrc && (
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold">{selectedProductForMetrc.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedProductForMetrc.category} • {selectedProductForMetrc.weight}</p>
+                  <h3 className="font-semibold">
+                    {selectedProductForMetrc.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedProductForMetrc.category} •{" "}
+                    {selectedProductForMetrc.weight}
+                  </p>
                 </div>
 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span>METRC Tag:</span>
-                    <span className="font-mono">{selectedProductForMetrc.metrcTag}</span>
+                    <span className="font-mono">
+                      {selectedProductForMetrc.metrcTag}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Batch ID:</span>
@@ -3659,24 +5160,46 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   </div>
                   <div className="flex justify-between">
                     <span>Test Status:</span>
-                    <Badge variant={selectedProductForMetrc.testResults?.tested ? "default" : "destructive"}>
-                      {selectedProductForMetrc.testResults?.tested ? "Lab Tested" : "Not Tested"}
+                    <Badge
+                      variant={
+                        selectedProductForMetrc.testResults?.tested
+                          ? "default"
+                          : "destructive"
+                      }
+                    >
+                      {selectedProductForMetrc.testResults?.tested
+                        ? "Lab Tested"
+                        : "Not Tested"}
                     </Badge>
                   </div>
                   {selectedProductForMetrc.testResults?.tested && (
                     <>
                       <div className="flex justify-between">
                         <span>Lab:</span>
-                        <span>{selectedProductForMetrc.testResults.labName}</span>
+                        <span>
+                          {selectedProductForMetrc.testResults.labName}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Test Date:</span>
-                        <span>{selectedProductForMetrc.testResults.testDate}</span>
+                        <span>
+                          {selectedProductForMetrc.testResults.testDate}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span>Contaminants:</span>
-                        <Badge variant={selectedProductForMetrc.testResults.contaminants?.passed ? "default" : "destructive"}>
-                          {selectedProductForMetrc.testResults.contaminants?.passed ? "Passed" : "Failed"}
+                        <Badge
+                          variant={
+                            selectedProductForMetrc.testResults.contaminants
+                              ?.passed
+                              ? "default"
+                              : "destructive"
+                          }
+                        >
+                          {selectedProductForMetrc.testResults.contaminants
+                            ?.passed
+                            ? "Passed"
+                            : "Failed"}
                         </Badge>
                       </div>
                     </>
@@ -3692,8 +5215,13 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                 </div>
 
                 <div className="p-3 bg-blue-50 rounded text-sm">
-                  <p className="font-medium text-blue-800">Oregon Compliance Check</p>
-                  <p className="text-blue-700">This product is compliant with Oregon OLCC regulations and tracked in Metrc.</p>
+                  <p className="font-medium text-blue-800">
+                    Oregon Compliance Check
+                  </p>
+                  <p className="text-blue-700">
+                    This product is compliant with Oregon OLCC regulations and
+                    tracked in Metrc.
+                  </p>
                 </div>
 
                 <div className="flex gap-2">
@@ -3717,7 +5245,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         </Dialog>
 
         {/* Enhanced Metrc Information Dialog */}
-        <Dialog open={showEnhancedMetrcDialog} onOpenChange={setShowEnhancedMetrcDialog}>
+        <Dialog
+          open={showEnhancedMetrcDialog}
+          onOpenChange={setShowEnhancedMetrcDialog}
+        >
           <DialogContent className="max-w-2xl" id="metrc-dialog-content">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
@@ -3726,9 +5257,11 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    const printContent = document.getElementById('metrc-dialog-content');
+                    const printContent = document.getElementById(
+                      "metrc-dialog-content",
+                    );
                     if (printContent) {
-                      const printWindow = window.open('', '_blank');
+                      const printWindow = window.open("", "_blank");
                       if (printWindow) {
                         printWindow.document.write(`
                           <html>
@@ -3765,61 +5298,97 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             {selectedProductForEnhancedMetrc && (
               <div className="space-y-6">
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-lg">{selectedProductForEnhancedMetrc.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedProductForEnhancedMetrc.category} • {selectedProductForEnhancedMetrc.weight}</p>
+                  <h3 className="font-semibold text-lg">
+                    {selectedProductForEnhancedMetrc.name}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedProductForEnhancedMetrc.category} ���{" "}
+                    {selectedProductForEnhancedMetrc.weight}
+                  </p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-6">
                   {/* Basic Information */}
                   <div className="space-y-3">
-                    <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">Basic Information</h4>
+                    <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">
+                      Basic Information
+                    </h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">METRC Tag:</span>
-                        <span className="font-mono text-xs">{selectedProductForEnhancedMetrc.metrcTag}</span>
+                        <span className="text-muted-foreground">
+                          METRC Tag:
+                        </span>
+                        <span className="font-mono text-xs">
+                          {selectedProductForEnhancedMetrc.metrcTag}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Batch ID:</span>
                         <span>{selectedProductForEnhancedMetrc.batchId}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Source Harvest:</span>
-                        <span className="text-right">{selectedProductForEnhancedMetrc.sourceHarvest}</span>
+                        <span className="text-muted-foreground">
+                          Source Harvest:
+                        </span>
+                        <span className="text-right">
+                          {selectedProductForEnhancedMetrc.sourceHarvest}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Supplier:</span>
-                        <span className="text-right">{selectedProductForEnhancedMetrc.supplier}</span>
+                        <span className="text-right">
+                          {selectedProductForEnhancedMetrc.supplier}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Grower:</span>
-                        <span className="text-right">{selectedProductForEnhancedMetrc.grower}</span>
+                        <span className="text-right">
+                          {selectedProductForEnhancedMetrc.grower}
+                        </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Harvest Date:</span>
-                        <span>{selectedProductForEnhancedMetrc.harvestDate}</span>
+                        <span className="text-muted-foreground">
+                          Harvest Date:
+                        </span>
+                        <span>
+                          {selectedProductForEnhancedMetrc.harvestDate}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* Test Results & Cannabinoids */}
                   <div className="space-y-3">
-                    <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">Test Results</h4>
+                    <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">
+                      Test Results
+                    </h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-muted-foreground">Test Date:</span>
-                        <span>{selectedProductForEnhancedMetrc.testResults?.testDate || 'N/A'}</span>
+                        <span className="text-muted-foreground">
+                          Test Date:
+                        </span>
+                        <span>
+                          {selectedProductForEnhancedMetrc.testResults
+                            ?.testDate || "N/A"}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Lab:</span>
-                        <span className="text-right">{selectedProductForEnhancedMetrc.testResults?.labName || 'N/A'}</span>
+                        <span className="text-right">
+                          {selectedProductForEnhancedMetrc.testResults
+                            ?.labName || "N/A"}
+                        </span>
                       </div>
                       <div className="space-y-1">
-                        <span className="text-muted-foreground text-xs">Cannabinoids:</span>
+                        <span className="text-muted-foreground text-xs">
+                          Cannabinoids:
+                        </span>
                         <div className="grid grid-cols-2 gap-1 text-xs">
                           <div className="flex justify-between">
                             <span>THC:</span>
                             <span>
-                              {selectedProductForEnhancedMetrc.category === 'Edibles'
+                              {selectedProductForEnhancedMetrc.category ===
+                              "Edibles"
                                 ? `${selectedProductForEnhancedMetrc.thcMg || 0}mg`
                                 : `${selectedProductForEnhancedMetrc.thc || 0}%`}
                             </span>
@@ -3827,7 +5396,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           <div className="flex justify-between">
                             <span>CBD:</span>
                             <span>
-                              {selectedProductForEnhancedMetrc.category === 'Edibles'
+                              {selectedProductForEnhancedMetrc.category ===
+                              "Edibles"
                                 ? `${selectedProductForEnhancedMetrc.cbdMg || 0}mg`
                                 : `${selectedProductForEnhancedMetrc.cbd || 0}%`}
                             </span>
@@ -3835,7 +5405,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           <div className="flex justify-between">
                             <span>CBG:</span>
                             <span>
-                              {selectedProductForEnhancedMetrc.category === 'Edibles'
+                              {selectedProductForEnhancedMetrc.category ===
+                              "Edibles"
                                 ? `${selectedProductForEnhancedMetrc.cbgMg || 0}mg`
                                 : `${selectedProductForEnhancedMetrc.cbg || 0}%`}
                             </span>
@@ -3843,7 +5414,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           <div className="flex justify-between">
                             <span>CBN:</span>
                             <span>
-                              {selectedProductForEnhancedMetrc.category === 'Edibles'
+                              {selectedProductForEnhancedMetrc.category ===
+                              "Edibles"
                                 ? `${selectedProductForEnhancedMetrc.cbnMg || 0}mg`
                                 : `${selectedProductForEnhancedMetrc.cbn || 0}%`}
                             </span>
@@ -3851,7 +5423,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           <div className="flex justify-between">
                             <span>CBC:</span>
                             <span>
-                              {selectedProductForEnhancedMetrc.category === 'Edibles'
+                              {selectedProductForEnhancedMetrc.category ===
+                              "Edibles"
                                 ? `${selectedProductForEnhancedMetrc.cbcMg || 0}mg`
                                 : `${selectedProductForEnhancedMetrc.cbc || 0}%`}
                             </span>
@@ -3864,24 +5437,61 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
                 {/* Status Information */}
                 <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">Status & Compliance</h4>
+                  <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">
+                    Status & Compliance
+                  </h4>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-3 bg-gray-50 rounded">
-                      <p className="text-xs text-muted-foreground">Test Status</p>
-                      <Badge variant={selectedProductForEnhancedMetrc.testResults?.tested ? "default" : "destructive"} className="mt-1">
-                        {selectedProductForEnhancedMetrc.testResults?.tested ? "Lab Tested" : "Not Tested"}
+                      <p className="text-xs text-muted-foreground">
+                        Test Status
+                      </p>
+                      <Badge
+                        variant={
+                          selectedProductForEnhancedMetrc.testResults?.tested
+                            ? "default"
+                            : "destructive"
+                        }
+                        className="mt-1"
+                      >
+                        {selectedProductForEnhancedMetrc.testResults?.tested
+                          ? "Lab Tested"
+                          : "Not Tested"}
                       </Badge>
                     </div>
                     <div className="text-center p-3 bg-gray-50 rounded">
-                      <p className="text-xs text-muted-foreground">Contaminants</p>
-                      <Badge variant={selectedProductForEnhancedMetrc.testResults?.contaminants?.passed ? "default" : "destructive"} className="mt-1">
-                        {selectedProductForEnhancedMetrc.testResults?.contaminants?.passed ? "Passed" : "Failed"}
+                      <p className="text-xs text-muted-foreground">
+                        Contaminants
+                      </p>
+                      <Badge
+                        variant={
+                          selectedProductForEnhancedMetrc.testResults
+                            ?.contaminants?.passed
+                            ? "default"
+                            : "destructive"
+                        }
+                        className="mt-1"
+                      >
+                        {selectedProductForEnhancedMetrc.testResults
+                          ?.contaminants?.passed
+                          ? "Passed"
+                          : "Failed"}
                       </Badge>
                     </div>
                     <div className="text-center p-3 bg-gray-50 rounded">
-                      <p className="text-xs text-muted-foreground">Administrative Hold</p>
-                      <Badge variant={selectedProductForEnhancedMetrc.administrativeHold ? "destructive" : "default"} className="mt-1">
-                        {selectedProductForEnhancedMetrc.administrativeHold ? "Yes" : "No"}
+                      <p className="text-xs text-muted-foreground">
+                        Administrative Hold
+                      </p>
+                      <Badge
+                        variant={
+                          selectedProductForEnhancedMetrc.administrativeHold
+                            ? "destructive"
+                            : "default"
+                        }
+                        className="mt-1"
+                      >
+                        {selectedProductForEnhancedMetrc.administrativeHold
+                          ? "Yes"
+                          : "No"}
                       </Badge>
                     </div>
                   </div>
@@ -3889,22 +5499,33 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
 
                 {/* Dates */}
                 <div className="space-y-3">
-                  <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">Important Dates</h4>
+                  <h4 className="font-medium text-sm text-gray-700 uppercase tracking-wide">
+                    Important Dates
+                  </h4>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Packaged:</span>
-                      <span>{selectedProductForEnhancedMetrc.packagedDate}</span>
+                      <span>
+                        {selectedProductForEnhancedMetrc.packagedDate}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Expires:</span>
-                      <span>{selectedProductForEnhancedMetrc.expirationDate}</span>
+                      <span>
+                        {selectedProductForEnhancedMetrc.expirationDate}
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 <div className="p-3 bg-blue-50 rounded text-sm">
-                  <p className="font-medium text-blue-800">Oregon OLCC Compliance</p>
-                  <p className="text-blue-700">This product is fully tracked in the Oregon Metrc system and compliant with all state regulations.</p>
+                  <p className="font-medium text-blue-800">
+                    Oregon OLCC Compliance
+                  </p>
+                  <p className="text-blue-700">
+                    This product is fully tracked in the Oregon Metrc system and
+                    compliant with all state regulations.
+                  </p>
                 </div>
 
                 <div className="flex justify-end">
@@ -3932,7 +5553,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   value={employeePin}
                   onChange={(e) => setEmployeePin(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && employeePin.length === 4) {
+                    if (e.key === "Enter" && employeePin.length === 4) {
                       // Complete transaction
                       setCart([]);
                       setCartDiscount(null);
@@ -3993,9 +5614,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   id="last-four"
                   type="text"
                   value={debitLastFour}
-                  onChange={(e) => setDebitLastFour(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                  onChange={(e) =>
+                    setDebitLastFour(
+                      e.target.value.replace(/\D/g, "").slice(0, 4),
+                    )
+                  }
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && debitLastFour.length === 4 && employeePin.length === 4) {
+                    if (
+                      e.key === "Enter" &&
+                      debitLastFour.length === 4 &&
+                      employeePin.length === 4
+                    ) {
                       navigate("/payment");
                       setShowDebitDialog(false);
                       setDebitLastFour("");
@@ -4021,7 +5650,11 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   value={employeePin}
                   onChange={(e) => setEmployeePin(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && debitLastFour.length === 4 && employeePin.length === 4) {
+                    if (
+                      e.key === "Enter" &&
+                      debitLastFour.length === 4 &&
+                      employeePin.length === 4
+                    ) {
                       navigate("/payment");
                       setShowDebitDialog(false);
                       setDebitLastFour("");
@@ -4036,7 +5669,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
               <div className="flex gap-2">
                 <Button
                   onClick={() => {
-                    if (debitLastFour.length === 4 && employeePin.length === 4) {
+                    if (
+                      debitLastFour.length === 4 &&
+                      employeePin.length === 4
+                    ) {
                       // Process debit payment
                       navigate("/payment");
                       setShowDebitDialog(false);
@@ -4045,7 +5681,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     }
                   }}
                   className="flex-1"
-                  disabled={debitLastFour.length !== 4 || employeePin.length !== 4}
+                  disabled={
+                    debitLastFour.length !== 4 || employeePin.length !== 4
+                  }
                 >
                   Complete Sale
                 </Button>
@@ -4065,18 +5703,35 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         </Dialog>
 
         {/* Payment Amount Dialog */}
-        <Dialog open={showPaymentAmountDialog} onOpenChange={setShowPaymentAmountDialog}>
+        <Dialog
+          open={showPaymentAmountDialog}
+          onOpenChange={setShowPaymentAmountDialog}
+        >
           <DialogContent className="max-w-sm">
             <DialogHeader>
               <DialogTitle>Enter Payment Amount</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-lg font-semibold">Total: ${total.toFixed(2)}</div>
+                <div className="text-lg font-semibold">
+                  Total: ${total.toFixed(2)}
+                </div>
                 {untaxedSubtotal > 0 && (
                   <div className="text-sm text-muted-foreground">
-                    <div>Taxable: ${(taxableSubtotal - (getCartDiscountAmount() * (taxableSubtotal / subtotal))).toFixed(2)}</div>
-                    <div>Untaxed: ${(untaxedSubtotal - (getCartDiscountAmount() * (untaxedSubtotal / subtotal))).toFixed(2)}</div>
+                    <div>
+                      Taxable: $
+                      {(
+                        taxableSubtotal -
+                        getCartDiscountAmount() * (taxableSubtotal / subtotal)
+                      ).toFixed(2)}
+                    </div>
+                    <div>
+                      Untaxed: $
+                      {(
+                        untaxedSubtotal -
+                        getCartDiscountAmount() * (untaxedSubtotal / subtotal)
+                      ).toFixed(2)}
+                    </div>
                   </div>
                 )}
               </div>
@@ -4089,7 +5744,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   value={paymentAmount}
                   onChange={(e) => setPaymentAmount(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && parseFloat(paymentAmount) >= total) {
+                    if (
+                      e.key === "Enter" &&
+                      parseFloat(paymentAmount) >= total
+                    ) {
                       const transaction = {
                         id: Date.now().toString(),
                         items: cart,
@@ -4101,10 +5759,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         paymentMethod,
                         discounts: {
                           cart: cartDiscount,
-                          items: cart.filter(item => item.discount > 0)
+                          items: cart.filter((item) => item.discount > 0),
                         },
                         date: new Date().toLocaleString(),
-                        employeePin
+                        employeePin,
                       };
                       setLastTransaction(transaction);
                       setShowPaymentAmountDialog(false);
@@ -4119,9 +5777,16 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
               {paymentAmount && (
                 <div className="p-3 bg-blue-50 rounded">
                   <div className="text-sm">
-                    <div>Amount Received: ${parseFloat(paymentAmount || '0').toFixed(2)}</div>
+                    <div>
+                      Amount Received: $
+                      {parseFloat(paymentAmount || "0").toFixed(2)}
+                    </div>
                     <div className="font-semibold">
-                      Change Due: ${Math.max(0, parseFloat(paymentAmount || '0') - total).toFixed(2)}
+                      Change Due: $
+                      {Math.max(
+                        0,
+                        parseFloat(paymentAmount || "0") - total,
+                      ).toFixed(2)}
                     </div>
                   </div>
                 </div>
@@ -4141,9 +5806,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         paymentMethod,
                         discounts: {
                           cart: cartDiscount,
-                          items: cart.filter(item => item.discount > 0)
+                          items: cart.filter((item) => item.discount > 0),
                         },
-                        date: new Date().toLocaleString()
+                        date: new Date().toLocaleString(),
                       };
                       setLastTransaction(transaction);
                       setShowPaymentAmountDialog(false);
@@ -4186,7 +5851,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       name="customerType"
                       value="recreational"
                       checked={newSaleCustomerType === "recreational"}
-                      onChange={(e) => setNewSaleCustomerType(e.target.value as "recreational")}
+                      onChange={(e) =>
+                        setNewSaleCustomerType(e.target.value as "recreational")
+                      }
                       className="w-4 h-4"
                     />
                     <Label htmlFor="recreational" className="font-normal">
@@ -4200,7 +5867,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       name="customerType"
                       value="medical"
                       checked={newSaleCustomerType === "medical"}
-                      onChange={(e) => setNewSaleCustomerType(e.target.value as "medical")}
+                      onChange={(e) =>
+                        setNewSaleCustomerType(e.target.value as "medical")
+                      }
                       className="w-4 h-4"
                     />
                     <Label htmlFor="medical" className="font-normal">
@@ -4218,17 +5887,26 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         type="checkbox"
                         id="customerIdVerified"
                         checked={customerInfo.isVerified}
-                        onChange={(e) => setCustomerInfo(prev => ({...prev, isVerified: e.target.checked}))}
+                        onChange={(e) =>
+                          setCustomerInfo((prev) => ({
+                            ...prev,
+                            isVerified: e.target.checked,
+                          }))
+                        }
                         className="mt-1 w-4 h-4"
                         required
                       />
-                      <Label htmlFor="customerIdVerified" className="text-sm font-medium text-red-600">
+                      <Label
+                        htmlFor="customerIdVerified"
+                        className="text-sm font-medium text-red-600"
+                      >
                         Customer ID Verified (Required) *
                       </Label>
                     </div>
                     {!customerInfo.isVerified && (
                       <div className="text-sm text-red-600 bg-red-50 p-2 rounded mt-2">
-                        You must verify the customer's ID before proceeding with the sale.
+                        You must verify the customer's ID before proceeding with
+                        the sale.
                       </div>
                     )}
                   </div>
@@ -4238,7 +5916,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
               {newSaleCustomerType === "medical" && (
                 <div className="space-y-4">
                   <div className="border-t pt-4">
-                    <Label className="text-base font-medium">Customer Information</Label>
+                    <Label className="text-base font-medium">
+                      Customer Information
+                    </Label>
                     <div className="mt-3 space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
@@ -4247,7 +5927,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             id="customerName"
                             placeholder="Enter customer name"
                             value={customerInfo.name}
-                            onChange={(e) => setCustomerInfo(prev => ({ ...prev, name: e.target.value }))}
+                            onChange={(e) =>
+                              setCustomerInfo((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
                           />
                         </div>
                         <div>
@@ -4258,16 +5943,22 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             value={customerInfo.phone}
                             onChange={(e) => {
                               const phone = e.target.value;
-                              setCustomerInfo(prev => ({ ...prev, phone }));
+                              setCustomerInfo((prev) => ({ ...prev, phone }));
 
                               // Auto-lookup loyalty customer by phone
                               if (phone.length >= 10) {
-                                const loyaltyMatch = loyaltyCustomers.find(customer =>
-                                  customer.phone.replace(/\D/g, '').includes(phone.replace(/\D/g, ''))
+                                const loyaltyMatch = loyaltyCustomers.find(
+                                  (customer) =>
+                                    customer.phone
+                                      .replace(/\D/g, "")
+                                      .includes(phone.replace(/\D/g, "")),
                                 );
                                 if (loyaltyMatch && !selectedLoyaltyCustomer) {
                                   setSelectedLoyaltyCustomer(loyaltyMatch);
-                                  setCustomerInfo(prev => ({ ...prev, name: loyaltyMatch.name }));
+                                  setCustomerInfo((prev) => ({
+                                    ...prev,
+                                    name: loyaltyMatch.name,
+                                  }));
                                 }
                               }
                             }}
@@ -4286,23 +5977,33 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           </span>
                         </div>
                         <div className="text-xs text-green-700 mt-1">
-                          {selectedLoyaltyCustomer.name} - {selectedLoyaltyCustomer.tier} tier
-                          ({selectedLoyaltyCustomer.pointsBalance} points)
+                          {selectedLoyaltyCustomer.name} -{" "}
+                          {selectedLoyaltyCustomer.tier} tier (
+                          {selectedLoyaltyCustomer.pointsBalance} points)
                         </div>
                       </div>
                     )}
                   </div>
 
                   <div className="border-t pt-4">
-                    <Label className="text-base font-medium">Medical Card Information</Label>
+                    <Label className="text-base font-medium">
+                      Medical Card Information
+                    </Label>
                     <div className="mt-3 space-y-3">
                       <div>
-                        <Label htmlFor="medicalCardNumber">Medical Card Number</Label>
+                        <Label htmlFor="medicalCardNumber">
+                          Medical Card Number
+                        </Label>
                         <Input
                           id="medicalCardNumber"
                           placeholder="Enter medical card number"
                           value={medicalCardInfo.number}
-                          onChange={(e) => setMedicalCardInfo(prev => ({ ...prev, number: e.target.value }))}
+                          onChange={(e) =>
+                            setMedicalCardInfo((prev) => ({
+                              ...prev,
+                              number: e.target.value,
+                            }))
+                          }
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -4312,16 +6013,28 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             id="issueDate"
                             type="date"
                             value={medicalCardInfo.issueDate}
-                            onChange={(e) => setMedicalCardInfo(prev => ({ ...prev, issueDate: e.target.value }))}
+                            onChange={(e) =>
+                              setMedicalCardInfo((prev) => ({
+                                ...prev,
+                                issueDate: e.target.value,
+                              }))
+                            }
                           />
                         </div>
                         <div>
-                          <Label htmlFor="expirationDate">Expiration Date</Label>
+                          <Label htmlFor="expirationDate">
+                            Expiration Date
+                          </Label>
                           <Input
                             id="expirationDate"
                             type="date"
                             value={medicalCardInfo.expirationDate}
-                            onChange={(e) => setMedicalCardInfo(prev => ({ ...prev, expirationDate: e.target.value }))}
+                            onChange={(e) =>
+                              setMedicalCardInfo((prev) => ({
+                                ...prev,
+                                expirationDate: e.target.value,
+                              }))
+                            }
                           />
                         </div>
                       </div>
@@ -4329,15 +6042,24 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   </div>
 
                   <div className="border-t pt-4">
-                    <Label className="text-base font-medium">Caregiver Information (Optional)</Label>
+                    <Label className="text-base font-medium">
+                      Caregiver Information (Optional)
+                    </Label>
                     <div className="mt-3 space-y-3">
                       <div>
-                        <Label htmlFor="caregiverCardNumber">Caregiver Card Number</Label>
+                        <Label htmlFor="caregiverCardNumber">
+                          Caregiver Card Number
+                        </Label>
                         <Input
                           id="caregiverCardNumber"
                           placeholder="Enter caregiver card number (if applicable)"
                           value={caregiverCardInfo.number}
-                          onChange={(e) => setCaregiverCardInfo(prev => ({ ...prev, number: e.target.value }))}
+                          onChange={(e) =>
+                            setCaregiverCardInfo((prev) => ({
+                              ...prev,
+                              number: e.target.value,
+                            }))
+                          }
                         />
                       </div>
                       <div className="grid grid-cols-2 gap-3">
@@ -4347,26 +6069,45 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                             id="caregiverIssueDate"
                             type="date"
                             value={caregiverCardInfo.issueDate}
-                            onChange={(e) => setCaregiverCardInfo(prev => ({ ...prev, issueDate: e.target.value }))}
+                            onChange={(e) =>
+                              setCaregiverCardInfo((prev) => ({
+                                ...prev,
+                                issueDate: e.target.value,
+                              }))
+                            }
                           />
                         </div>
                         <div>
-                          <Label htmlFor="caregiverExpirationDate">Expiration Date</Label>
+                          <Label htmlFor="caregiverExpirationDate">
+                            Expiration Date
+                          </Label>
                           <Input
                             id="caregiverExpirationDate"
                             type="date"
                             value={caregiverCardInfo.expirationDate}
-                            onChange={(e) => setCaregiverCardInfo(prev => ({ ...prev, expirationDate: e.target.value }))}
+                            onChange={(e) =>
+                              setCaregiverCardInfo((prev) => ({
+                                ...prev,
+                                expirationDate: e.target.value,
+                              }))
+                            }
                           />
                         </div>
                       </div>
                       <div>
-                        <Label htmlFor="patientName">Patient Name (if caregiver)</Label>
+                        <Label htmlFor="patientName">
+                          Patient Name (if caregiver)
+                        </Label>
                         <Input
                           id="patientName"
                           placeholder="Enter patient name"
                           value={caregiverCardInfo.patientName}
-                          onChange={(e) => setCaregiverCardInfo(prev => ({ ...prev, patientName: e.target.value }))}
+                          onChange={(e) =>
+                            setCaregiverCardInfo((prev) => ({
+                              ...prev,
+                              patientName: e.target.value,
+                            }))
+                          }
                         />
                       </div>
                     </div>
@@ -4378,11 +6119,15 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         type="checkbox"
                         id="dataConsent"
                         checked={dataRetentionConsent}
-                        onChange={(e) => setDataRetentionConsent(e.target.checked)}
+                        onChange={(e) =>
+                          setDataRetentionConsent(e.target.checked)
+                        }
                         className="mt-1 w-4 h-4"
                       />
                       <Label htmlFor="dataConsent" className="text-sm">
-                        I consent to the retention of my data and sales history for compliance and future visits as required by Oregon state law and regulations.
+                        I consent to the retention of my data and sales history
+                        for compliance and future visits as required by Oregon
+                        state law and regulations.
                       </Label>
                     </div>
                   </div>
@@ -4396,8 +6141,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   onClick={() => {
                     setShowNewSaleDialog(false);
                     setNewSaleCustomerType("");
-                    setMedicalCardInfo({ number: "", issueDate: "", expirationDate: "" });
-                    setCaregiverCardInfo({ number: "", issueDate: "", expirationDate: "", patientName: "" });
+                    setMedicalCardInfo({
+                      number: "",
+                      issueDate: "",
+                      expirationDate: "",
+                    });
+                    setCaregiverCardInfo({
+                      number: "",
+                      issueDate: "",
+                      expirationDate: "",
+                      patientName: "",
+                    });
                     setDataRetentionConsent(false);
                   }}
                 >
@@ -4406,9 +6160,16 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                 <Button
                   className="flex-1"
                   onClick={handleCustomerTypeSubmit}
-                  disabled={!newSaleCustomerType ||
-                    (newSaleCustomerType === "recreational" && !customerInfo.isVerified) ||
-                    (newSaleCustomerType === "medical" && (!medicalCardInfo.number || !medicalCardInfo.issueDate || !medicalCardInfo.expirationDate || !dataRetentionConsent))}
+                  disabled={
+                    !newSaleCustomerType ||
+                    (newSaleCustomerType === "recreational" &&
+                      !customerInfo.isVerified) ||
+                    (newSaleCustomerType === "medical" &&
+                      (!medicalCardInfo.number ||
+                        !medicalCardInfo.issueDate ||
+                        !medicalCardInfo.expirationDate ||
+                        !dataRetentionConsent))
+                  }
                 >
                   Start Sale
                 </Button>
@@ -4427,9 +6188,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   size="sm"
                   variant="outline"
                   onClick={() => {
-                    const printContent = document.getElementById('receipt-content');
+                    const printContent =
+                      document.getElementById("receipt-content");
                     if (printContent) {
-                      const printWindow = window.open('', '_blank');
+                      const printWindow = window.open("", "_blank");
                       if (printWindow) {
                         printWindow.document.write(`
                           <html>
@@ -4471,13 +6233,17 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     <h2 className="font-bold">CANNABEST POS</h2>
                     <div className="text-sm">Oregon Cannabis Retailer</div>
                     <div className="text-xs">{lastTransaction.date}</div>
-                    <div className="text-xs">Transaction: {lastTransaction.id}</div>
+                    <div className="text-xs">
+                      Transaction: {lastTransaction.id}
+                    </div>
                   </div>
 
                   {/* Medical Customer Information */}
                   {customerInfo.medicalCard && (
                     <div className="medical-info p-2 bg-blue-50 border border-blue-200 rounded text-xs">
-                      <div className="font-semibold text-blue-800">MEDICAL PATIENT</div>
+                      <div className="font-semibold text-blue-800">
+                        MEDICAL PATIENT
+                      </div>
                       <div>Medical Card #: {customerInfo.medicalCard}</div>
                       <div>Tax Status: EXEMPT</div>
                     </div>
@@ -4491,9 +6257,16 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                           <span>${getItemTotal(item).toFixed(2)}</span>
                         </div>
                         <div className="text-xs text-gray-600 ml-2">
-                          {item.quantity} × ${item.price.toFixed(2)} {item.weight}
+                          {item.quantity} × ${item.price.toFixed(2)}{" "}
+                          {item.weight}
                           {item.discount > 0 && (
-                            <div>Discount: {item.discountType === 'percentage' ? `${item.discount}%` : `$${item.discount}`} ({item.discountReasonCode})</div>
+                            <div>
+                              Discount:{" "}
+                              {item.discountType === "percentage"
+                                ? `${item.discount}%`
+                                : `$${item.discount}`}{" "}
+                              ({item.discountReasonCode})
+                            </div>
                           )}
                         </div>
                       </div>
@@ -4507,7 +6280,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                     </div>
                     {lastTransaction.discounts.cart && (
                       <div className="line-item text-sm">
-                        <span>Cart Discount ({lastTransaction.discounts.cart.label}):</span>
+                        <span>
+                          Cart Discount ({lastTransaction.discounts.cart.label}
+                          ):
+                        </span>
                         <span>-${getCartDiscountAmount().toFixed(2)}</span>
                       </div>
                     )}
@@ -4530,7 +6306,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   </div>
 
                   <div className="footer">
-                    <div className="text-xs">Thank you for shopping with us!</div>
+                    <div className="text-xs">
+                      Thank you for shopping with us!
+                    </div>
                     <div className="text-xs">Oregon OLCC Licensed Retailer</div>
                   </div>
                 </div>
@@ -4540,7 +6318,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         </Dialog>
 
         {/* Room Transfer Dialog */}
-        <Dialog open={showRoomTransferDialog} onOpenChange={setShowRoomTransferDialog}>
+        <Dialog
+          open={showRoomTransferDialog}
+          onOpenChange={setShowRoomTransferDialog}
+        >
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
@@ -4551,9 +6332,12 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             {selectedProductForTransfer && (
               <div className="space-y-4">
                 <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold">{selectedProductForTransfer.name}</h3>
+                  <h3 className="font-semibold">
+                    {selectedProductForTransfer.name}
+                  </h3>
                   <p className="text-sm text-muted-foreground">
-                    {selectedProductForTransfer.category} • {selectedProductForTransfer.weight}
+                    {selectedProductForTransfer.category} •{" "}
+                    {selectedProductForTransfer.weight}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     METRC: {selectedProductForTransfer.metrcTag}
@@ -4570,67 +6354,99 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                       min="0.01"
                       value={transferQuantity}
                       onChange={(e) => setTransferQuantity(e.target.value)}
-                      placeholder={selectedProductForTransfer.category === "Flower" ? "0.01" : "1"}
+                      placeholder={
+                        selectedProductForTransfer.category === "Flower"
+                          ? "0.01"
+                          : "1"
+                      }
                     />
                   </div>
 
                   <div>
                     <Label htmlFor="from-room">From Room</Label>
-                    <Select value={selectedFromRoom} onValueChange={setSelectedFromRoom}>
+                    <Select
+                      value={selectedFromRoom}
+                      onValueChange={setSelectedFromRoom}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select source room" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableRooms.filter(room => room.isActive).map(room => (
-                          <SelectItem key={room.id} value={room.id}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{room.name}</span>
-                              <span className="text-xs text-muted-foreground ml-2">
-                                ({room.currentStock}/{room.maxCapacity})
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {availableRooms
+                          .filter((room) => room.isActive)
+                          .map((room) => (
+                            <SelectItem key={room.id} value={room.id}>
+                              <div className="flex items-center justify-between w-full">
+                                <span>{room.name}</span>
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  ({room.currentStock}/{room.maxCapacity})
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
                     <Label htmlFor="to-room">To Room</Label>
-                    <Select value={selectedToRoom} onValueChange={setSelectedToRoom}>
+                    <Select
+                      value={selectedToRoom}
+                      onValueChange={setSelectedToRoom}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select destination room" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableRooms.filter(room => room.isActive && room.id !== selectedFromRoom).map(room => (
-                          <SelectItem key={room.id} value={room.id}>
-                            <div className="flex items-center justify-between w-full">
-                              <span>{room.name}</span>
-                              <span className="text-xs text-muted-foreground ml-2">
-                                ({room.currentStock}/{room.maxCapacity})
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {availableRooms
+                          .filter(
+                            (room) =>
+                              room.isActive && room.id !== selectedFromRoom,
+                          )
+                          .map((room) => (
+                            <SelectItem key={room.id} value={room.id}>
+                              <div className="flex items-center justify-between w-full">
+                                <span>{room.name}</span>
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  ({room.currentStock}/{room.maxCapacity})
+                                </span>
+                              </div>
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
 
                   <div>
-                    <Label htmlFor="transfer-reason">Transfer Reason (Optional)</Label>
-                    <Select value={transferReason} onValueChange={setTransferReason}>
+                    <Label htmlFor="transfer-reason">
+                      Transfer Reason (Optional)
+                    </Label>
+                    <Select
+                      value={transferReason}
+                      onValueChange={setTransferReason}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select transfer reason" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="inventory-adjustment">Inventory Adjustment</SelectItem>
-                        <SelectItem value="quality-control">Quality Control</SelectItem>
+                        <SelectItem value="inventory-adjustment">
+                          Inventory Adjustment
+                        </SelectItem>
+                        <SelectItem value="quality-control">
+                          Quality Control
+                        </SelectItem>
                         <SelectItem value="processing">Processing</SelectItem>
                         <SelectItem value="packaging">Packaging</SelectItem>
-                        <SelectItem value="storage-optimization">Storage Optimization</SelectItem>
-                        <SelectItem value="compliance-testing">Compliance Testing</SelectItem>
+                        <SelectItem value="storage-optimization">
+                          Storage Optimization
+                        </SelectItem>
+                        <SelectItem value="compliance-testing">
+                          Compliance Testing
+                        </SelectItem>
                         <SelectItem value="quarantine">Quarantine</SelectItem>
-                        <SelectItem value="sales-floor-restock">Sales Floor Restock</SelectItem>
+                        <SelectItem value="sales-floor-restock">
+                          Sales Floor Restock
+                        </SelectItem>
                         <SelectItem value="other">Other</SelectItem>
                       </SelectContent>
                     </Select>
@@ -4640,7 +6456,8 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                 <div className="p-3 bg-blue-50 rounded text-sm">
                   <p className="font-medium text-blue-800">Metrc Compliance</p>
                   <p className="text-blue-700 text-xs">
-                    This transfer will be automatically reported to Metrc with tracking ID.
+                    This transfer will be automatically reported to Metrc with
+                    tracking ID.
                   </p>
                 </div>
 
@@ -4648,7 +6465,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   <Button
                     onClick={createRoomTransfer}
                     className="flex-1"
-                    disabled={!transferQuantity || !selectedFromRoom || !selectedToRoom}
+                    disabled={
+                      !transferQuantity || !selectedFromRoom || !selectedToRoom
+                    }
                   >
                     <ArrowRightLeft className="w-4 h-4 mr-2" />
                     Complete Transfer
@@ -4674,7 +6493,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         </Dialog>
 
         {/* Queue Order Dialog */}
-        <Dialog open={showQueueOrderDialog} onOpenChange={setShowQueueOrderDialog}>
+        <Dialog
+          open={showQueueOrderDialog}
+          onOpenChange={setShowQueueOrderDialog}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Queue Order Ready</DialogTitle>
@@ -4682,16 +6504,25 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
             {queueOrder && (
               <div className="space-y-4">
                 <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <h3 className="font-semibold">Order #{queueOrder.orderNumber}</h3>
-                  <p className="text-sm text-gray-600">Customer: {queueOrder.customerName}</p>
-                  <p className="text-sm text-gray-600">Phone: {queueOrder.customerPhone}</p>
-                  <p className="text-sm text-gray-600">Total: ${queueOrder.total.toFixed(2)}</p>
+                  <h3 className="font-semibold">
+                    Order #{queueOrder.orderNumber}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Customer: {queueOrder.customerName}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Phone: {queueOrder.customerPhone}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Total: ${queueOrder.total.toFixed(2)}
+                  </p>
                 </div>
 
                 <div>
                   <p className="text-sm">
-                    This order is ready to be processed. Would you like to load the customer information
-                    and start the sale? You will need to manually add items to the cart.
+                    This order is ready to be processed. Would you like to load
+                    the customer information and start the sale? You will need
+                    to manually add items to the cart.
                   </p>
                 </div>
 
@@ -4717,10 +6548,15 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         </Dialog>
 
         {/* Edit Product Dialog */}
-        <Dialog open={showEditProductDialog} onOpenChange={setShowEditProductDialog}>
+        <Dialog
+          open={showEditProductDialog}
+          onOpenChange={setShowEditProductDialog}
+        >
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Edit Product - {selectedProductForEdit?.name}</DialogTitle>
+              <DialogTitle>
+                Edit Product - {selectedProductForEdit?.name}
+              </DialogTitle>
             </DialogHeader>
             {selectedProductForEdit && (
               <EditProductForm
@@ -4750,7 +6586,7 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                   onChange={(e) => setSaleNameToSave(e.target.value)}
                   placeholder="e.g., John's Order, Medical Patient #123"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && saleNameToSave.trim()) {
+                    if (e.key === "Enter" && saleNameToSave.trim()) {
                       confirmSaveSale();
                     }
                   }}
@@ -4767,17 +6603,27 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                 />
               </div>
               <div className="p-3 bg-blue-50 rounded-lg">
-                <div className="text-sm font-medium text-blue-800 mb-1">Sale Summary:</div>
+                <div className="text-sm font-medium text-blue-800 mb-1">
+                  Sale Summary:
+                </div>
                 <div className="text-xs text-blue-700">
-                  • Items: {cart.reduce((sum, item) => sum + item.quantity, 0)}
-                  • Customer: {customerType === 'medical' ? 'Medical' : 'Recreational'}
+                  • Items: {cart.reduce((sum, item) => sum + item.quantity, 0)}•
+                  Customer:{" "}
+                  {customerType === "medical" ? "Medical" : "Recreational"}
                   {selectedLoyaltyCustomer && (
-                    <div>• Loyalty: {selectedLoyaltyCustomer.name} ({selectedLoyaltyCustomer.tier})</div>
+                    <div>
+                      • Loyalty: {selectedLoyaltyCustomer.name} (
+                      {selectedLoyaltyCustomer.tier})
+                    </div>
                   )}
                 </div>
               </div>
               <div className="flex gap-2">
-                <Button onClick={confirmSaveSale} className="flex-1" disabled={!saleNameToSave.trim()}>
+                <Button
+                  onClick={confirmSaveSale}
+                  className="flex-1"
+                  disabled={!saleNameToSave.trim()}
+                >
                   <Database className="w-4 h-4 mr-2" />
                   Save Sale
                 </Button>
@@ -4798,7 +6644,10 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
         </Dialog>
 
         {/* Saved Sales Dialog */}
-        <Dialog open={showSavedSalesDialog} onOpenChange={setShowSavedSalesDialog}>
+        <Dialog
+          open={showSavedSalesDialog}
+          onOpenChange={setShowSavedSalesDialog}
+        >
           <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Saved Sales ({savedSales.length})</DialogTitle>
@@ -4808,7 +6657,9 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                 <div className="text-center py-8">
                   <Database className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                   <p className="text-muted-foreground">No saved sales found.</p>
-                  <p className="text-sm text-muted-foreground">Start a sale and save it for later to see it here.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Start a sale and save it for later to see it here.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -4818,41 +6669,62 @@ Metrc Transfer ID: ${transfer.metrcTransferId}`);
                         <div>
                           <h3 className="font-semibold">{sale.name}</h3>
                           <div className="text-sm text-muted-foreground">
-                            Saved by {sale.employeeName} on {new Date(sale.saveDate).toLocaleDateString()} at {new Date(sale.saveDate).toLocaleTimeString()}
+                            Saved by {sale.employeeName} on{" "}
+                            {new Date(sale.saveDate).toLocaleDateString()} at{" "}
+                            {new Date(sale.saveDate).toLocaleTimeString()}
                           </div>
                         </div>
                         <div className="text-right">
-                          <div className="font-semibold">${sale.totalAmount.toFixed(2)}</div>
-                          <div className="text-sm text-muted-foreground">{sale.totalItems} items</div>
+                          <div className="font-semibold">
+                            ${sale.totalAmount.toFixed(2)}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {sale.totalItems} items
+                          </div>
                         </div>
                       </div>
 
                       <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                         <div>
-                          <span className="font-medium">Customer:</span> {sale.customerType === 'medical' ? 'Medical' : 'Recreational'}
+                          <span className="font-medium">Customer:</span>{" "}
+                          {sale.customerType === "medical"
+                            ? "Medical"
+                            : "Recreational"}
                         </div>
                         <div>
-                          <span className="font-medium">Loyalty:</span> {sale.selectedLoyaltyCustomer ? `${sale.selectedLoyaltyCustomer.name} (${sale.selectedLoyaltyCustomer.tier})` : 'None'}
+                          <span className="font-medium">Loyalty:</span>{" "}
+                          {sale.selectedLoyaltyCustomer
+                            ? `${sale.selectedLoyaltyCustomer.name} (${sale.selectedLoyaltyCustomer.tier})`
+                            : "None"}
                         </div>
                       </div>
 
                       {sale.notes && (
                         <div className="p-2 bg-gray-50 rounded text-sm mb-3">
-                          <span className="font-medium">Notes:</span> {sale.notes}
+                          <span className="font-medium">Notes:</span>{" "}
+                          {sale.notes}
                         </div>
                       )}
 
                       <div className="border-t pt-3">
-                        <div className="text-sm font-medium mb-2">Items in Sale:</div>
+                        <div className="text-sm font-medium mb-2">
+                          Items in Sale:
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
                           {sale.cart.slice(0, 6).map((item, index) => (
                             <div key={index} className="flex justify-between">
-                              <span>{item.name} x{item.quantity}</span>
-                              <span>${(item.price * item.quantity).toFixed(2)}</span>
+                              <span>
+                                {item.name} x{item.quantity}
+                              </span>
+                              <span>
+                                ${(item.price * item.quantity).toFixed(2)}
+                              </span>
                             </div>
                           ))}
                           {sale.cart.length > 6 && (
-                            <div className="text-muted-foreground">+ {sale.cart.length - 6} more items...</div>
+                            <div className="text-muted-foreground">
+                              + {sale.cart.length - 6} more items...
+                            </div>
                           )}
                         </div>
                       </div>

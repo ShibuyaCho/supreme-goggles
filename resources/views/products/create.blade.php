@@ -59,19 +59,9 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">Category *</label>
                             <select x-model="product.category" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                                 <option value="">Select Category</option>
-                                <option value="Flower">Flower</option>
-                                <option value="Pre-Rolls">Pre-Rolls</option>
-                                <option value="Concentrates">Concentrates</option>
-                                <option value="Extracts">Extracts</option>
-                                <option value="Edibles">Edibles</option>
-                                <option value="Topicals">Topicals</option>
-                                <option value="Tinctures">Tinctures</option>
-                                <option value="Vapes">Vapes</option>
-                                <option value="Inhalable Cannabinoids">Inhalable Cannabinoids</option>
-                                <option value="Clones">Clones</option>
-                                <option value="Hemp">Hemp</option>
-                                <option value="Paraphernalia">Paraphernalia</option>
-                                <option value="Accessories">Accessories</option>
+                                @foreach(($categories ?? []) as $cat)
+                                    <option value="{{ $cat }}">{{ $cat }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div>
@@ -81,6 +71,15 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Weight/Size</label>
                             <input type="text" x-model="product.weight" placeholder="e.g., 3.5g, 1oz, 30ml" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Unit of Measure *</nlabel>
+                            <select x-model="product.unit" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                                <option value="Each">each</option>
+                                <option value="Grams">grams</option>
+                                <option value="Fluid Ounces">fluid oz.</option>
+                                <option value="Milliliters">Milliliters</option>
+                            </select>
                         </div>
                     </div>
 
@@ -459,6 +458,7 @@ function productCreator() {
             category: '',
             brand: '',
             weight: '',
+            unit: 'Each',
             description: '',
             cost: 0,
             price: 0,
@@ -504,7 +504,7 @@ function productCreator() {
         },
 
         isCannabisProduct() {
-            const cannabisCategories = ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Tinctures', 'Vapes', 'Inhalable Cannabinoids', 'Clones'];
+            const cannabisCategories = ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Patches', 'Tinctures', 'Vapes', 'Inhalable Cannabinoid', 'Inhalable Cannabinoids', 'Plants (Clones)', 'Clones', 'Seeds'];
             return cannabisCategories.includes(this.product.category);
         },
 

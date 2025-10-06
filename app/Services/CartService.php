@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Models\Product;
 use App\Models\Deal;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class CartService
 {
@@ -56,8 +58,19 @@ class CartService
             // Auto-apply non-BOGO deals
             $nonBogoDeals = collect($applicableDeals)->where('type', '!=', 'bogo');
             if ($nonBogoDeals->isNotEmpty()) {
-                $bestDeal = $nonBogoDeals->sortByDesc('discount_value')->first();
-                $newItem = $this->applyAutomaticDeal($newItem, $bestDeal);
+                // Enforce minimum purchase conditions where applicable
+                $amount = ($product->price ?? 0) * $quantity;
+                $nonBogoDeals = $nonBogoDeals->filter(function($d) use ($amount, $quantity) {
+                    if (!isset($d->minimum_purchase) || !$d->minimum_purchase) return true;
+                    if (($d->minimum_purchase_type ?? 'dollars') === 'grams') {
+                        return $quantity >= $d->minimum_purchase;
+                    }
+                    return $amount >= $d->minimum_purchase;
+                });
+                if ($nonBogoDeals->isNotEmpty()) {
+                    $bestDeal = $nonBogoDeals->sortByDesc('value')->first();
+                    $newItem = $this->applyAutomaticDeal($newItem, $bestDeal);
+                }
             }
 
             $cart[$productId] = $newItem;
@@ -139,7 +152,23 @@ class CartService
     {
         $cart = $cart ?? $this->getCart();
         $cartDiscount = Session::get('cart_discount');
-        $taxRate = config('pos.tax_rate', 0.20);
+        // Unified tax rate from POS settings (sales_tax percent)
+        $sid = (string)request()->header('X-Store-ID', 'default');
+        $sid = preg_replace('/[^A-Za-z0-9_\.-]/', '', $sid);
+        if ($sid === 'defaultstore') { $sid = 'default'; }
+        $settings = Cache::get('pos_settings:' . $sid, Cache::get('pos_settings', []));
+        if (!is_array($settings) || empty($settings)) {
+            try {
+                $row = DB::table('pos_settings')->where('id', $sid)->first();
+                if (!$row && $sid !== 'default') { $row = DB::table('pos_settings')->where('id', 'default')->first(); }
+                if ($row && isset($row->settings)) {
+                    $decoded = json_decode($row->settings, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) { $settings = $decoded; }
+                }
+            } catch (\Throwable $e) { $settings = []; }
+        }
+        $percent = isset($settings['sales_tax']) && is_numeric($settings['sales_tax']) ? (float)$settings['sales_tax'] : 0.0;
+        $taxRate = $percent / 100.0;
 
         $subtotal = 0;
         $taxableSubtotal = 0;
@@ -224,13 +253,13 @@ class CartService
         $dayOfWeek = now()->format('l'); // Monday, Tuesday, etc.
         $selectedLoyaltyCustomer = Session::get('selected_loyalty_customer');
 
-        return Deal::where('is_active', true)
-            ->where('start_date', '<=', $today)
-            ->where('end_date', '>=', $today)
-            ->where(function ($query) use ($product, $dayOfWeek, $selectedLoyaltyCustomer) {
+        $isMedical = (bool) (!empty(Session::get('customer_info')['medical_card']));
+
+        return Deal::active()
+            ->where(function ($query) use ($product, $dayOfWeek, $selectedLoyaltyCustomer, $isMedical) {
                 // Skip GLS products for automatic deals
                 if ($product->is_gls) {
-                    $query->whereRaw('1 = 0'); // No results
+                    $query->whereRaw('1 = 0');
                     return;
                 }
 
@@ -248,17 +277,22 @@ class CartService
                       });
                 });
 
-                // Check loyalty requirement
+                // Loyalty-only filter when no loyalty customer selected
                 if (!$selectedLoyaltyCustomer) {
                     $query->where('loyalty_only', false);
                 }
 
-                // Check category or specific items
+                // Medical-only filter
+                if (!$isMedical) {
+                    $query->where('medical_only', false);
+                }
+
+                // Category or specific items
                 $query->where(function ($itemQuery) use ($product) {
-                    $itemQuery->whereJsonContains('categories', $product->category)
+                    $itemQuery->whereJsonContains('applicable_categories', $product->category)
                              ->orWhereJsonContains('specific_items', $product->id)
-                             ->orWhere('categories', '[]')
-                             ->orWhereNull('categories');
+                             ->orWhere('applicable_categories', '[]')
+                             ->orWhereNull('applicable_categories');
                 });
             })
             ->get();
@@ -266,8 +300,8 @@ class CartService
 
     protected function applyAutomaticDeal($item, $deal)
     {
-        $item['discount'] = $deal->discount_value;
-        $item['discount_type'] = $deal->type === 'percentage' ? 'percentage' : 'fixed';
+        $item['discount'] = $deal->value;
+        $item['discount_type'] = $deal->type === 'fixed_amount' ? 'fixed' : 'percentage';
         $item['discount_reason_code'] = 'AUTO-' . $deal->id;
         $item['auto_applied_deal'] = $deal->name;
 

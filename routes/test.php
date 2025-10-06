@@ -12,6 +12,11 @@ use Illuminate\Http\Request;
 | RESTRICTED TO ADMIN USERS ONLY IN PRODUCTION
 */
 
+// Do not register any test routes in production unless explicitly enabled
+if (env('APP_ENV') === 'production' && !env('ENABLE_TEST_ROUTES', false)) {
+    return;
+}
+
 // Middleware group for admin-only test endpoints
 Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
     
@@ -29,11 +34,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
             // Test basic configuration
             $config = [
                 'base_url' => config('services.metrc.base_url'),
-                'user_key' => config('services.metrc.user_key') ? 'Set (***' . substr(config('services.metrc.user_key'), -4) . ')' : 'Not Set',
-                'vendor_key' => config('services.metrc.vendor_key') ? 'Set (***' . substr(config('services.metrc.vendor_key'), -4) . ')' : 'Not Set',
-                'username' => config('services.metrc.username') ? 'Set (' . config('services.metrc.username') . ')' : 'Not Set',
+                'user_key' => config('services.metrc.user_key') ? 'Set' : 'Not Set',
+                'vendor_key' => config('services.metrc.vendor_key') ? 'Set' : 'Not Set',
+                'username' => config('services.metrc.username') ? 'Set' : 'Not Set',
                 'password' => config('services.metrc.password') ? 'Set (****)' : 'Not Set',
-                'facility' => config('services.metrc.facility_license') ?: 'Not Set',
+                'facility' => config('services.metrc.facility_license') ? 'Set' : 'Not Set',
                 'enabled' => config('services.metrc.enabled'),
             ];
             
@@ -141,11 +146,11 @@ Route::middleware(['auth:sanctum', 'role:admin'])->group(function () {
             'DB_DATABASE' => env('DB_DATABASE'),
             'METRC_ENABLED' => env('METRC_ENABLED') ? 'true' : 'false',
             'METRC_BASE_URL' => env('METRC_BASE_URL'),
-            'METRC_USER_KEY' => env('METRC_USER_KEY') ? 'Set (***' . substr(env('METRC_USER_KEY'), -4) . ')' : 'Not Set',
-            'METRC_VENDOR_KEY' => env('METRC_VENDOR_KEY') ? 'Set (***' . substr(env('METRC_VENDOR_KEY'), -4) . ')' : 'Not Set',
-            'METRC_USERNAME' => env('METRC_USERNAME') ? 'Set (' . env('METRC_USERNAME') . ')' : 'Not Set',
+            'METRC_USER_KEY' => env('METRC_USER_KEY') ? 'Set' : 'Not Set',
+            'METRC_VENDOR_KEY' => env('METRC_VENDOR_KEY') ? 'Set' : 'Not Set',
+            'METRC_USERNAME' => env('METRC_USERNAME') ? 'Set' : 'Not Set',
             'METRC_PASSWORD' => env('METRC_PASSWORD') ? 'Set (****)' : 'Not Set',
-            'METRC_FACILITY' => env('METRC_FACILITY') ? 'Set (' . env('METRC_FACILITY') . ')' : 'Not Set',
+            'METRC_FACILITY' => env('METRC_FACILITY') ? 'Set' : 'Not Set',
         ];
         
         return response()->json([

@@ -7,6 +7,7 @@
 
     <title>@yield('title', 'Cannabis POS System')</title>
 
+    <script>window["_fs_namespace"] = window["_fs_namespace"] || "FS_cpos";</script>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
@@ -18,6 +19,9 @@
     @stack('styles')
     
     <style>
+        /* Alpine x-cloak */
+        [x-cloak] { display: none !important; }
+
         /* Custom POS Styles */
         .transition-all { transition: all 0.2s ease-in-out; }
         .shadow-sm { box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05); }
@@ -56,7 +60,10 @@
         .text-cannabis-green { color: #16a34a; }
         .bg-cannabis-green { background-color: #16a34a; }
         .border-cannabis-green { border-color: #16a34a; }
-        
+
+        /* Hide legacy store label (replaced by button text) */
+        #header-store-label { display: none !important; }
+
         /* POS specific utilities */
         .product-card:hover {
             transform: translateY(-1px);
@@ -135,6 +142,138 @@
             }
         }
     </style>
+    <!-- Core libraries -->
+    <script src="{{ asset('lib/axios/axios.min.js') }}"></script>
+    <script>
+      (function(){
+        try {
+          window.__SUPABASE_URL = window.__SUPABASE_URL || "{{ env('SUPABASE_URL') }}" || "";
+          window.__SUPABASE_ANON_KEY = window.__SUPABASE_ANON_KEY || "{{ env('SUPABASE_ANON_KEY') }}" || "";
+        } catch(_) {}
+        // Safe public fallbacks to ensure POS can read settings when envs are unset
+        if(!window.__SUPABASE_URL){ window.__SUPABASE_URL = "https://yyitwchajkruipsjvifn.supabase.co"; }
+        if(!window.__SUPABASE_ANON_KEY){ window.__SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5aXR3Y2hhamtydWlwc2p2aWZuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc2OTQwNDUsImV4cCI6MjA3MzI3MDA0NX0.-fKS2ODSPNjLEx6HPrTlvXSV6hZqjdyFweIz8_f2ao8"; }
+        // Expose via meta for early access by deferred scripts
+        try {
+          let m1 = document.querySelector('meta[name="supabase-url"]'); if(!m1){ m1 = document.createElement('meta'); m1.setAttribute('name','supabase-url'); document.head.appendChild(m1); }
+          m1.setAttribute('content', window.__SUPABASE_URL);
+          let m2 = document.querySelector('meta[name="supabase-anon-key"]'); if(!m2){ m2 = document.createElement('meta'); m2.setAttribute('name','supabase-anon-key'); document.head.appendChild(m2); }
+          m2.setAttribute('content', window.__SUPABASE_ANON_KEY);
+        } catch(_) {}
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+    <script src="{{ asset('js/realtime.js') }}" defer></script>
+    <script src="{{ asset('js/settings-client.js') }}"></script>
+    <script src="{{ asset('js/auth.js') }}" defer></script>
+    <script>
+      (function(){
+        function getCookie(name){ try{ const m=document.cookie.match(new RegExp('(?:^|; )'+name.replace(/([.$?*|{}()\[\]\\\/+^])/g,'\\$1')+'=([^;]*)')); return m?decodeURIComponent(m[1]):null; }catch(_){ return null; } }
+        try{
+          const raw = localStorage.getItem('pos_store');
+          let sid = '';
+          let sname = '';
+          if (raw) { try { const s=JSON.parse(raw); sid = s && s.id ? String(s.id) : ''; sname = s && (s.name||s.store_name) ? String(s.name||s.store_name) : ''; } catch(_){} }
+          if (!sid) { const ck = getCookie('cpos_store_id'); if (ck) sid = ck; }
+          if ((window.axios||axios)){
+            if (sname) (window.axios||axios).defaults.headers.common['X-Store-Name']=sname;
+            if (sid) (window.axios||axios).defaults.headers.common['X-Store-ID']=sid;
+          }
+        }catch(_){ }
+      })();
+    </script>
+    <script src="{{ asset('js/pos.js') }}" defer></script>
+    <script src="{{ asset('js/modal-keyboard-handler.js') }}" defer></script>
+    <script src="{{ asset('js/store-manager.js') }}" defer></script>
+    <!-- Global fallbacks to satisfy Alpine expressions on pages that reference reportFilters/currentReport -->
+    <script>
+      (function(){
+        try {
+          if (typeof window.reportFilters === 'undefined') window.reportFilters = { store: '', dateRange: '', category: '', room: '' };
+          if (typeof window.currentReport === 'undefined') window.currentReport = null;
+        } catch (e) {}
+      })();
+    </script>
+    <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+      (function(){
+        function readStore(){
+          try{ const raw=localStorage.getItem('pos_store'); return raw?JSON.parse(raw):null; }catch(e){ return null; }
+        }
+        function updateLabel(){
+          try{
+            const btn=document.getElementById('header-store-button');
+            const text=document.getElementById('header-store-button-text') || (btn ? btn.querySelector('span') : null);
+            const s=readStore();
+            const name = s && (s.name||s.id) ? (s.name||s.id) : 'default';
+            if(text){ text.textContent = name; }
+            if(btn){ btn.title = 'Current ' + name; }
+          }catch(e){}
+        }
+        window.updateStoreHeaderLabel = updateLabel;
+        document.addEventListener('DOMContentLoaded', updateLabel);
+      })();
+    </script>
+    <script>
+      (function(){
+        function setTaxLabel(val){
+          try {
+            const el = document.getElementById('tax-display');
+            if (!el) return;
+            const n = Number(val);
+            if (Number.isFinite(n)) el.textContent = `Tax: ${n}%`;
+          } catch(_) {}
+        }
+        function readLocalTax(){
+          try {
+            let sid = 'default';
+            try { sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ const raw=localStorage.getItem('pos_store'); if(raw){ try{ const o=JSON.parse(raw)||{}; return String(o.id||'default'); }catch(e){} } return 'default'; })(); } catch(_){}
+            const ts = JSON.parse((localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem('cannabisPOS-taxSettings') || '{}'));
+            if (ts && typeof ts === 'object') {
+              const v = ts.stateRate != null ? ts.stateRate : (ts.recreationalRate != null ? ts.recreationalRate : null);
+              return v != null ? Number(v) : null;
+            }
+          } catch(_) {}
+          return null;
+        }
+        document.addEventListener('DOMContentLoaded', function(){
+          try {
+            const localVal = readLocalTax();
+            if (localVal != null && Number.isFinite(localVal)) setTaxLabel(localVal);
+          } catch(_) {}
+          try {
+            if (window.SettingsClient && typeof SettingsClient.get === 'function'){
+              SettingsClient.get(true).then(function(res){
+                try {
+                  const s = (res && res.settings) || {};
+                  let v = null;
+                  try {
+                    const st = Number(s.sales_tax);
+                    const rec = Number(s.cannabis_tax);
+                    if (Number.isFinite(st) && st > 0) v = st; else if (Number.isFinite(rec) && rec >= 0) v = rec; else if (Number.isFinite(st)) v = st;
+                  } catch(_) {}
+                  if (v != null && Number.isFinite(Number(v))) setTaxLabel(Number(v));
+                } catch(_) {}
+              }).catch(function(){});
+            }
+          } catch(_) {}
+        });
+        try {
+          window.addEventListener('settings:updated', function(e){
+            try {
+              const s = e && e.detail && e.detail.settings ? e.detail.settings : {};
+              let v = null;
+              try {
+                const st = Number(s.sales_tax);
+                const rec = Number(s.cannabis_tax);
+                if (Number.isFinite(st) && st > 0) v = st; else if (Number.isFinite(rec) && rec >= 0) v = rec; else if (Number.isFinite(st)) v = st;
+              } catch(_) {}
+              if (v != null && Number.isFinite(Number(v))) setTaxLabel(Number(v));
+            } catch(_) {}
+          });
+        } catch(_) {}
+      })();
+    </script>
 </head>
 
 <body class="font-sans antialiased bg-gray-50">
@@ -144,13 +283,27 @@
             <div class="flex justify-between items-center h-16">
                 <!-- Logo and Navigation -->
                 <div class="flex items-center">
-                    <div class="flex-shrink-0">
-                        <h1 class="text-xl font-bold text-cannabis-green">Cannabis POS</h1>
+                    <div class="flex-shrink-0 relative" x-data="{ open:false }">
+                        <button @click="open=!open" class="flex items-center text-xl font-bold text-cannabis-green hover:text-green-700">
+                            <span>Cannabis POS</span>
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                        </button>
+                        <div x-show="open" @click.outside="open=false" class="absolute z-50 mt-2 w-56 bg-white shadow-lg rounded-md ring-1 ring-black ring-opacity-5">
+                            <div class="py-1">
+                                <a href="/" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Point of Sale</a>
+                                <a href="{{ route('customers.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Customers</a>
+                                <a href="{{ route('products.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Inventory</a>
+                                <a href="{{ route('analytics.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Analytics</a>
+                                <a href="{{ route('sales.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Sales</a>
+                                <a href="{{ route('roles-permissions.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Roles &amp; Permissions</a>
+                                <a href="{{ route('settings.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Settings</a>
+                            </div>
+                        </div>
                     </div>
                     <div class="hidden md:block ml-10">
                         <div class="flex items-baseline space-x-4">
-                            <a href="{{ route('pos.index') }}" 
-                               class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('pos.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
+                            <a href="/"
+                               class="px-3 py-2 rounded-md text-sm font-medium {{ request()->is('/') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                                 Point of Sale
                             </a>
                             <a href="{{ route('customers.index') }}" 
@@ -165,9 +318,13 @@
                                class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('analytics.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                                 Analytics
                             </a>
-                            <a href="{{ route('sales.index') }}" 
+                            <a href="{{ route('sales.index') }}"
                                class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('sales.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                                 Sales
+                            </a>
+                            <a href="{{ route('roles-permissions.index') }}"
+                               class="px-3 py-2 rounded-md text-sm font-medium {{ request()->routeIs('roles-permissions.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
+                                Roles & Permissions
                             </a>
                         </div>
                     </div>
@@ -175,12 +332,80 @@
 
                 <!-- User Menu -->
                 <div class="flex items-center space-x-4">
+                    <!-- Quick Actions -->
+                    <button id="global-refresh-metrc" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-cannabis-green hover:bg-green-700 rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/></svg>
+                        Refresh METRC
+                    </button>
+                    <a href="{{ route('rooms-drawers.index') }}" class="hidden md:inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/></svg>
+                        Create Room
+                    </a>
+                    <a href="{{ route('rooms-drawers.index') }}" class="hidden md:inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-gray-700 hover:bg-gray-800 rounded-md transition-colors">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0V1a1 1 0 011-1h2a1 1 0 011 1v3M7 4H5a1 1 0 00-1 1v16a1 1 0 001 1h14a1 1 0 001-1V5a1 1 0 00-1-1h-2M9 9h6m-6 4h6m-3 4h3"/></svg>
+                        Create Drawer
+                    </a>
+                    <!-- Store selector -->
+                    <div class="hidden md:flex items-center space-x-2">
+                                                <button id="header-store-button" class="inline-flex items-center px-3 py-2 text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-colors" onclick="(function(e){try{e&&e.preventDefault&&e.preventDefault();}catch(_){} try{ if(window.switchStoreModal){window.switchStoreModal(); return;} if(window.addOrSwitchStore){window.addOrSwitchStore(); return;} }catch(_){} var s=document.createElement('script'); s.src='{{ asset('js/store-manager.js') }}?v='+Date.now(); s.onload=function(){ try{ if(window.switchStoreModal) window.switchStoreModal(); else if(window.addOrSwitchStore) window.addOrSwitchStore(); }catch(_){}}; document.head.appendChild(s); })(event)">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7l1 12a2 2 0 002 2h12a2 2 0 002-2l1-12M4 7h16M9 7V5a3 3 0 013-3h0a3 3 0 013 3v2"/></svg>
+                            <span id="header-store-button-text"></span>
+                        </button>
+                    </div>
+                    <script>
+                      (function(){
+                        function setLabel(name){
+                          try{ var t=document.getElementById('header-store-button-text'); if(t) t.textContent = name || 'default'; var b=document.getElementById('header-store-button'); if(b) b.title = name || 'default'; }catch(_){}}
+                        function initial(){
+                          try{
+                            let sid = 'default';
+                            try { sid = (window.SettingsClient && typeof SettingsClient.currentStoreId==='function') ? SettingsClient.currentStoreId() : (function(){ const raw=localStorage.getItem('pos_store'); if(raw){ try{ const o=JSON.parse(raw)||{}; return String(o.id||'default'); }catch(e){} } return 'default'; })(); } catch(_){ sid='default'; }
+                            const raw = localStorage.getItem(`cannabisPOS-storeSettings_${sid}`) || localStorage.getItem('cannabisPOS-storeSettings');
+                            if(raw){ const s = JSON.parse(raw||'{}'); if(s && (s.name||s.store_name)) setLabel(s.name||s.store_name); }
+                          }catch(_){}
+                        }
+                        function trySettingsClient(){
+                          if (window.SettingsClient && typeof SettingsClient.get==='function') {
+                            SettingsClient.get(true).then(g=>{
+                              const s = g && g.settings ? g.settings : {};
+                              const n = s.store_name || s.storeName || '';
+                              if(n) setLabel(n);
+                            }).catch(()=>{});
+                            return true;
+                          }
+                          return false;
+                        }
+                        document.addEventListener('DOMContentLoaded', function(){
+                          initial();
+                          if (!trySettingsClient()) {
+                            let tries=0; const t=setInterval(function(){ tries++; if (trySettingsClient() || tries>20) clearInterval(t); }, 150);
+                          }
+                        });
+                        window.addEventListener('settings:updated', function(e){
+                          try{ const s=e && e.detail && e.detail.settings ? e.detail.settings : {}; const n=s.store_name||s.storeName||''; if(n) setLabel(n); }catch(_){}}
+                        );
+                      })();
+                    </script>
                     <!-- Current Employee -->
-                    <div class="hidden md:flex items-center text-sm text-gray-700">
-                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
-                        {{ auth()->user()->name ?? 'Employee' }}
+                    <div class="hidden md:flex items-center text-sm text-gray-700 relative" id="user-menu-container" data-employee-id="{{ auth()->user()->employee->id ?? '' }}">
+                        <!-- Always-visible quick clock buttons (desktop) -->
+                        <button id="header-clock-in" class="mr-2 px-3 py-1 rounded-md text-xs font-medium text-white bg-green-600 hover:bg-green-700">Clock In</button>
+                        <button id="header-clock-out" class="mr-2 px-3 py-1 rounded-md text-xs font-medium text-white bg-orange-600 hover:bg-orange-700 hidden">Clock Out</button>
+                        <!-- User dropdown trigger -->
+                        <button id="user-menu-button" class="flex items-center hover:text-cannabis-green">
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            <span>{{ auth()->user()->name ?? 'Employee' }}</span>
+                            <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="user-menu-dropdown" class="hidden absolute right-0 top-full mt-2 w-44 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                            <button id="clock-in-button" class="w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-50">Clock In</button>
+                            <button id="clock-out-button" class="w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-gray-50 hidden">Clock Out</button>
+                            <a href="{{ route('roles-permissions.index') }}" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Roles & Permissions</a>
+                            <div class="my-1 border-t"></div>
+                            <button id="logout-button" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50">Log Out</button>
+                        </div>
                     </div>
 
                     <!-- Tax Display and Settings -->
@@ -189,7 +414,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                         </svg>
-                        <span id="tax-display">Tax: 20.0%</span>
+                        <span id="tax-display">Tax: 0%</span>
                     </button>
 
                     <!-- Customer Info -->
@@ -238,9 +463,13 @@
                    class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('analytics.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                     Analytics
                 </a>
-                <a href="{{ route('sales.index') }}" 
+                <a href="{{ route('sales.index') }}"
                    class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('sales.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
                     Sales
+                </a>
+                <a href="{{ route('roles-permissions.index') }}"
+                   class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('roles-permissions.*') ? 'bg-cannabis-green text-white' : 'text-gray-700 hover:text-cannabis-green hover:bg-gray-50' }}">
+                    Roles & Permissions
                 </a>
             </div>
         </div>
@@ -326,16 +555,197 @@
             }
         };
 
+        // Generic dialog helpers
+        (function(){
+            try {
+                if (typeof window.openDialog !== 'function') {
+                    window.openDialog = function(id){
+                        try {
+                            var token = String(id||'').replace(/-/g,'');
+                            var key = 'openDialog' + (token.charAt(0).toUpperCase() + token.slice(1));
+                            var fn = window[key];
+                            if (typeof fn === 'function') return fn();
+                            var el = document.getElementById(id);
+                            if (el) { el.classList.remove('hidden'); el.classList.add('flex'); document.body.style.overflow='hidden'; }
+                        } catch(e) {}
+                    };
+                }
+                if (typeof window.closeDialog !== 'function') {
+                    window.closeDialog = function(id){
+                        try {
+                            var token = String(id||'').replace(/-/g,'');
+                            var key = 'closeDialog' + (token.charAt(0).toUpperCase() + token.slice(1));
+                            var fn = window[key];
+                            if (typeof fn === 'function') return fn();
+                            var el = document.getElementById(id);
+                            if (el) { el.classList.add('hidden'); el.classList.remove('flex'); document.body.style.overflow=''; }
+                        } catch(e) {}
+                    };
+                }
+            } catch(_) {}
+        })();
+
         // Mobile menu toggle
         document.addEventListener('DOMContentLoaded', function() {
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
-            
+
             if (mobileMenuButton && mobileMenu) {
                 mobileMenuButton.addEventListener('click', function() {
                     mobileMenu.classList.toggle('hidden');
                 });
             }
+
+            // User menu dropdown + logout
+            const userBtn = document.getElementById('user-menu-button');
+            const userDropdown = document.getElementById('user-menu-dropdown');
+            const logoutBtn = document.getElementById('logout-button');
+            if (userBtn && userDropdown) {
+                userBtn.addEventListener('click', function(e){
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+                document.addEventListener('click', function(){
+                    userDropdown.classList.add('hidden');
+                });
+            }
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', async function(){
+                    try {
+                        if (window.posAuth && typeof window.posAuth.logout === 'function') {
+                            await window.posAuth.logout();
+                        }
+                    } catch (e) {}
+                    window.location.reload();
+                });
+            }
+
+            // Clock In/Out wiring
+            const container = document.getElementById('user-menu-container');
+            let empId = container?.dataset?.employeeId || '';
+
+            function ensureClockButtons(){
+                const dropdown = document.getElementById('user-menu-dropdown');
+                if (!dropdown) return { dropdown: null, clkInBtn: null, clkOutBtn: null };
+                let clkInBtn = document.getElementById('clock-in-button');
+                let clkOutBtn = document.getElementById('clock-out-button');
+                if (!clkInBtn) {
+                    clkInBtn = document.createElement('button');
+                    clkInBtn.id = 'clock-in-button';
+                    clkInBtn.className = 'w-full text-left px-4 py-2 text-sm text-green-700 hover:bg-gray-50';
+                    clkInBtn.textContent = 'Clock In';
+                    dropdown.insertBefore(clkInBtn, dropdown.firstChild);
+                }
+                if (!clkOutBtn) {
+                    clkOutBtn = document.createElement('button');
+                    clkOutBtn.id = 'clock-out-button';
+                    clkOutBtn.className = 'w-full text-left px-4 py-2 text-sm text-orange-700 hover:bg-gray-50 hidden';
+                    clkOutBtn.textContent = 'Clock Out';
+                    dropdown.insertBefore(clkOutBtn, dropdown.firstChild?.nextSibling || null);
+                }
+                if (!dropdown.querySelector('.clock-divider')){
+                    const divider = document.createElement('div');
+                    divider.className = 'clock-divider my-1 border-t';
+                    const logoutBtn = dropdown.querySelector('#logout-button');
+                    if (logoutBtn) dropdown.insertBefore(divider, logoutBtn);
+                    else dropdown.appendChild(divider);
+                }
+                return { dropdown, clkInBtn, clkOutBtn };
+            }
+
+            // Observe dropdown for dynamic rebuilds
+            const mo = new MutationObserver(() => ensureClockButtons());
+            const dd = document.getElementById('user-menu-dropdown');
+            if (dd) mo.observe(dd, { childList: true });
+
+            // Also ensure on menu open
+            document.getElementById('user-menu-button')?.addEventListener('click', ensureClockButtons);
+
+            function setButtons(state){
+                const { clkInBtn, clkOutBtn } = ensureClockButtons();
+                const hIn = document.getElementById('header-clock-in');
+                const hOut = document.getElementById('header-clock-out');
+                if (state === 'in') {
+                    clkInBtn?.classList.add('hidden');
+                    clkOutBtn?.classList.remove('hidden');
+                    hIn?.classList.add('hidden');
+                    hOut?.classList.remove('hidden');
+                } else {
+                    clkOutBtn?.classList.add('hidden');
+                    clkInBtn?.classList.remove('hidden');
+                    hOut?.classList.add('hidden');
+                    hIn?.classList.remove('hidden');
+                }
+            }
+
+            async function resolveEmpId(){
+                if (empId) return empId;
+                try {
+                    const cached = window.posAuth?.user || null;
+                    if (cached?.employee?.id) { empId = cached.employee.id; return empId; }
+                    const refreshed = await window.posAuth?.refreshUser?.();
+                    if (refreshed?.employee?.id) { empId = refreshed.employee.id; return empId; }
+                } catch (e) {}
+                return '';
+            }
+
+            async function refreshClock(){
+                try {
+                    const id = await resolveEmpId();
+                    if (!id) return;
+                    const res = await posAuth.apiRequest('get', `/employees/${id}/clock-status`);
+                    if (res.success) {
+                        const clocked = !!res.data?.clocked_in;
+                        setButtons(clocked ? 'in' : 'out');
+                    }
+                } catch (e) {}
+            }
+
+            (async () => {
+                ensureClockButtons();
+                await refreshClock();
+                function bindClockHandlers(btnInId, btnOutId){
+                    document.getElementById(btnInId)?.addEventListener('click', async function(){
+                        try {
+                            const id = await resolveEmpId();
+                            if (!id) throw new Error('No employee id');
+                            const r = await posAuth.apiRequest('post', `/employees/${id}/clock-in`);
+                            if (r.success) { setButtons('in'); window.POS?.showToast?.('Clocked in', 'success'); }
+                            else { window.POS?.showToast?.(r.message || 'Clock in failed', 'error'); }
+                        } catch (e) { window.POS?.showToast?.('Clock in failed', 'error'); }
+                    });
+                    document.getElementById(btnOutId)?.addEventListener('click', async function(){
+                        try {
+                            const id = await resolveEmpId();
+                            if (!id) throw new Error('No employee id');
+                            const r = await posAuth.apiRequest('post', `/employees/${id}/clock-out`);
+                            if (r.success) { setButtons('out'); window.POS?.showToast?.('Clocked out', 'success'); }
+                            else { window.POS?.showToast?.(r.message || 'Clock out failed', 'error'); }
+                        } catch (e) { window.POS?.showToast?.('Clock out failed', 'error'); }
+                    });
+                }
+                bindClockHandlers('clock-in-button', 'clock-out-button');
+                bindClockHandlers('header-clock-in', 'header-clock-out');
+
+                // Mobile fallback: inject into mobile menu if present
+                const mobileMenu = document.getElementById('mobile-menu');
+                if (mobileMenu && !document.getElementById('mobile-clock-area')) {
+                    const wrap = document.createElement('div');
+                    wrap.id = 'mobile-clock-area';
+                    wrap.className = 'px-3 py-2 space-y-1 bg-white border-t';
+                    wrap.innerHTML = `
+                        <button id="mobile-clock-in" class="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-green-700 hover:bg-gray-50">Clock In</button>
+                        <button id="mobile-clock-out" class="hidden w-full text-left px-3 py-2 rounded-md text-base font-medium text-orange-700 hover:bg-gray-50">Clock Out</button>
+                    `;
+                    mobileMenu.appendChild(wrap);
+                    const mIn = document.getElementById('mobile-clock-in');
+                    const mOut = document.getElementById('mobile-clock-out');
+                    const setMob = (state)=>{ if(state==='in'){mIn.classList.add('hidden');mOut.classList.remove('hidden');}else{mOut.classList.add('hidden');mIn.classList.remove('hidden');} };
+                    try { await refreshClock(); const id = await resolveEmpId(); if (id){ const st = await posAuth.apiRequest('get', `/employees/${id}/clock-status`); if (st.success){ setMob(st.data?.clocked_in?'in':'out'); } } } catch(e){}
+                    mIn?.addEventListener('click', async ()=>{ try{ const id=await resolveEmpId(); const r=await posAuth.apiRequest('post', `/employees/${id}/clock-in`); if(r.success){ setMob('in'); window.POS?.showToast?.('Clocked in','success'); } }catch(e){ window.POS?.showToast?.('Clock in failed','error'); }});
+                    mOut?.addEventListener('click', async ()=>{ try{ const id=await resolveEmpId(); const r=await posAuth.apiRequest('post', `/employees/${id}/clock-out`); if(r.success){ setMob('out'); window.POS?.showToast?.('Clocked out','success'); } }catch(e){ window.POS?.showToast?.('Clock out failed','error'); }});
+                }
+            })();
         });
 
         // CSRF token setup for AJAX requests
@@ -346,6 +756,85 @@
                 'X-Requested-With': 'XMLHttpRequest'
             }
         };
+    </script>
+
+    <script>
+    // POS product-card tweaks applied globally
+    (function(){
+      // Hide "category / sold by" info lines on product cards (robust)
+      const style = document.createElement('style');
+      style.textContent = `.product-card h3 + p{display:none!important}`;
+      document.head.appendChild(style);
+      function hideSoldByLines(){
+        document.querySelectorAll('.product-card').forEach(card => {
+          card.querySelectorAll('p, .text-sm, .text-xs').forEach(el => {
+            const t = (el.textContent || '').toLowerCase();
+            if (t.includes('sold by') || t.includes('sold-by') || t.includes('sold•by') || t.includes('???') || /flower\s*•/i.test(t)) {
+              el.style.display = 'none';
+            }
+          });
+        });
+      }
+      document.addEventListener('DOMContentLoaded', hideSoldByLines);
+      const mo = new MutationObserver(hideSoldByLines);
+      mo.observe(document.documentElement, { subtree: true, childList: true });
+
+      function injectDeleteButtons(){
+        const cards = document.querySelectorAll('.product-card');
+        cards.forEach(card => {
+          if (card.querySelector('.delete-product')) return;
+          const id = card.getAttribute('data-product-id') || card.dataset.id;
+          const nameEl = card.querySelector('h3, h4');
+          const name = nameEl ? nameEl.textContent.trim() : 'this product';
+          if (!id) return; // skip if no id on card
+          const btn = document.createElement('button');
+          btn.className = 'delete-product absolute top-2 right-2 p-1 rounded bg-white/80 hover:bg-white text-red-600 shadow border border-red-200';
+          btn.setAttribute('data-product-id', id);
+          btn.setAttribute('data-product-name', name);
+          btn.title = 'Delete Product';
+          btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>';
+          card.style.position = 'relative';
+          card.appendChild(btn);
+        });
+      }
+
+      document.addEventListener('DOMContentLoaded', function(){
+        injectDeleteButtons();
+        setTimeout(injectDeleteButtons, 500);
+        setTimeout(injectDeleteButtons, 1500);
+      });
+
+      // Delegated delete handler
+      document.addEventListener('click', function(e){
+        const btn = e.target.closest('.delete-product');
+        if (!btn) return;
+        e.preventDefault();
+        const id = btn.getAttribute('data-product-id');
+        const name = btn.getAttribute('data-product-name') || 'this product';
+        if (!id) return;
+        if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+        window.POS?.showLoading?.();
+        (window.axios || axios).delete(`/api/products/${id}/delete`)
+          .then(res => {
+            const ok = res.status >= 200 && res.status < 300;
+            const data = res.data || {};
+            if (ok && (data.success ?? true)) {
+              window.POS?.showToast?.('Product deleted', 'success');
+              const card = btn.closest('.product-card, .product-row');
+              if (card) card.remove();
+            } else {
+              const msg = data?.message || data?.error || 'Failed to delete product';
+              window.POS?.showToast?.(msg, 'error');
+            }
+          })
+          .catch((err) => {
+            const msg = err?.response?.data?.message || 'Failed to delete product';
+            window.POS?.showToast?.(msg, 'error')
+          })
+          .finally(() => window.POS?.hideLoading?.());
+      });
+
+    })();
     </script>
 
     @stack('scripts')

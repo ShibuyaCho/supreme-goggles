@@ -11,17 +11,24 @@
                 <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
                 <p class="text-sm text-gray-600">Configure store operations and preferences</p>
             </div>
-            <div class="flex items-center gap-4" x-data="{ currentStore: 'main' }">
-                <select x-model="currentStore" class="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green text-gray-900">
-                    <option value="main">Cannabest POS - Main Store</option>
-                    <option value="downtown">Cannabest POS - Downtown</option>
-                    <option value="eastside">Cannabest POS - Eastside</option>
+            <div class="flex items-center gap-4">
+                <select x-model="currentStoreSelect" @change="onSelectStoreChange" class="px-3 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green text-gray-900">
+                    <template x-for="s in stores" :key="s.id">
+                        <option :value="s.id" x-text="s.name"></option>
+                    </template>
+                    <option value="default" x-show="stores.length === 0">Default Store</option>
                 </select>
                 <button id="save-settings-btn" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h2m0-4h9m4 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     Save Settings
+                </button>
+                <button id="settings-refresh-metrc" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v6h6M20 20v-6h-6M5 19A9 9 0 0019 5"/>
+                    </svg>
+                    Refresh METRC
                 </button>
             </div>
         </div>
@@ -104,7 +111,7 @@
                             <input type="url" x-model="settings.website" placeholder="https://yourstore.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Cannabis License Number</label>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Business License Number</label>
                             <input type="text" x-model="settings.license_number" placeholder="OR-RET-####" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                         </div>
                     </div>
@@ -237,8 +244,8 @@
                         </p>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             <template x-for="category in categories" :key="category">
-                                <label class="flex items-center gap-2">
-                                    <input type="checkbox" :value="category" x-model="settings.exit_label_categories" class="rounded text-cannabis-green focus:ring-cannabis-green">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" :value="category" x-model="settings.exit_label_categories" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer">
                                     <span class="text-sm" x-text="category"></span>
                                 </label>
                             </template>
@@ -284,8 +291,8 @@
                         </p>
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                             <template x-for="category in categories" :key="category">
-                                <label class="flex items-center gap-2">
-                                    <input type="checkbox" :value="category" x-model="settings.receipt_categories_autoprint" class="rounded text-cannabis-green focus:ring-cannabis-green">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" :value="category" x-model="settings.receipt_categories_autoprint" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer">
                                     <span class="text-sm" x-text="category"></span>
                                 </label>
                             </template>
@@ -406,8 +413,8 @@
                                     </p>
                                     <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                         <template x-for="category in categories" :key="category">
-                                            <label class="flex items-center gap-2">
-                                                <input type="checkbox" :value="category" x-model="settings.minimum_price_categories" class="rounded text-cannabis-green focus:ring-cannabis-green">
+                                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                                <input type="checkbox" :value="category" x-model="settings.minimum_price_categories" class="rounded text-cannabis-green focus:ring-cannabis-green cursor-pointer">
                                                 <span class="text-sm" x-text="category"></span>
                                             </label>
                                         </template>
@@ -558,6 +565,17 @@
                                     </p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div class="p-4 border rounded-lg space-y-4">
+                        <div>
+                            <h4 class="font-medium mb-2">Weight Threshold (grams)</h4>
+                            <p class="text-sm text-gray-600 mb-3">Minimum detected weight change before prompting scale-related actions.</p>
+                            <div class="max-w-xs">
+                                <input type="number" x-model.number="settings.weight_threshold" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Saved per store and used across POS.</p>
                         </div>
                     </div>
 
@@ -721,8 +739,25 @@
                         <input type="password" x-model="settings.metrc_vendor_key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Facility License</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Facility License Number</label>
                         <input type="text" x-model="settings.metrc_facility" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                    </div>
+                    <div class="md:col-span-3">
+                        <label class="inline-flex items-center gap-2 text-sm text-gray-700 select-none">
+                            <input type="checkbox" x-model="settings.metrc_auto_push_sales" class="rounded border-gray-300 text-cannabis-green focus:ring-cannabis-green">
+                            <span>Automatically push completed sales to METRC</span>
+                        </label>
+                    </div>
+                    <div class="md:col-span-3 flex items-center gap-3">
+                        <button @click="syncMetrcNow" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-700">
+                            Sync Now
+                        </button>
+                        <button @click="testMetrcConnection" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                            Test Connection
+                        </button>
+                        <button @click="window.__refreshMetrc && window.__refreshMetrc()" class="px-4 py-2 bg-gray-700 text-white rounded-lg hover:bg-gray-800">
+                            Refresh METRC
+                        </button>
                     </div>
                 </div>
             </div>
@@ -734,13 +769,11 @@
 function settingsManager() {
     return {
         activeTab: 'general',
-        categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Tinctures', 'Vapes', 'Inhalable Cannabinoids', 'Clones', 'Hemp', 'Paraphernalia', 'Accessories'],
+        categories: ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
         settings: @json($settings ?? {}),
-        stores: [
-            { id: 'main', name: 'Cannabest POS - Main Store', address: '123 Cannabis St, Portland, OR 97201', phone: '(503) 555-0123', status: 'active', is_current: true },
-            { id: 'downtown', name: 'Cannabest POS - Downtown', address: '456 Main St, Portland, OR 97202', phone: '(503) 555-0124', status: 'active', is_current: false },
-            { id: 'eastside', name: 'Cannabest POS - Eastside', address: '789 Division St, Portland, OR 97203', phone: '(503) 555-0125', status: 'inactive', is_current: false }
-        ],
+        stores: [],
+        currentStoreSelect: '',
+        hydrated: false,
 
         init() {
             // Initialize default settings if empty
@@ -753,18 +786,103 @@ function settingsManager() {
                 this.settings.business_hours = this.getDefaultBusinessHours();
             }
 
+            // Coerce array settings for Alpine reactivity
+            this.settings.exit_label_categories = Array.isArray(this.settings.exit_label_categories) ? this.settings.exit_label_categories : [];
+            this.settings.receipt_categories_autoprint = Array.isArray(this.settings.receipt_categories_autoprint) ? this.settings.receipt_categories_autoprint : [];
+            this.settings.minimum_price_categories = Array.isArray(this.settings.minimum_price_categories) ? this.settings.minimum_price_categories : [];
+
             // Load settings from localStorage if available
             this.loadSettingsFromStorage();
+            // Backfill tax from header display if both are zero/empty (align with topbar)
+            try {
+                const el = document.getElementById('tax-display');
+                if (el) {
+                    const txt = String(el.textContent || '');
+                    const m = txt.match(/([0-9]+(?:\.[0-9]+)?)/);
+                    if (m) {
+                        const v = Number(m[1]);
+                        if (Number.isFinite(v)) {
+                            const hasSales = Object.prototype.hasOwnProperty.call(this.settings, 'sales_tax');
+                            const hasCann  = Object.prototype.hasOwnProperty.call(this.settings, 'cannabis_tax');
+                            if (!hasSales || this.settings.sales_tax === null || typeof this.settings.sales_tax === 'undefined') {
+                                this.settings.sales_tax = v;
+                            }
+                            if (!hasCann || this.settings.cannabis_tax === null || typeof this.settings.cannabis_tax === 'undefined') {
+                                this.settings.cannabis_tax = v;
+                            }
+                        }
+                    }
+                }
+            } catch (_) {}
+            // Snapshot to avoid pushing defaults to server before hydration
+            try { this._lastPersistedJSON = JSON.stringify(this.settings); } catch (_) {}
+
+            // Delay autosave until server hydration completes
+            this.hydrated = false;
+
+            // Merge server settings (authorizes via posAuth)
+            this.fetchServerSettings();
+            // Load store list and align selector to current store id
+            try { this.fetchStores && this.fetchStores(); } catch (_) {}
+            try {
+                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
+                this.currentStoreSelect = sid;
+            } catch (_) {}
+            try {
+                window.addEventListener('realtime:table-changed', (e) => {
+                    if (e && e.detail && e.detail.table === 'pos_settings') {
+                        // Rehydrate from server when settings table changes anywhere
+                        this.fetchServerSettings();
+                    }
+                });
+            } catch (_) {}
+            // React to store switches from other tabs/windows
+            try {
+                window.addEventListener('storage', (e) => {
+                    if (e && e.key === 'pos_store') {
+                        try {
+                            const ps = JSON.parse(localStorage.getItem('pos_store') || '{}');
+                            if (ps && ps.id) {
+                                this.currentStoreSelect = String(ps.id);
+                                this.switchStore({ id: String(ps.id), name: ps.name || String(ps.id) });
+                            }
+                        } catch (_) {}
+                    }
+                });
+            } catch (_) {}
+            // Merge in external settings updates without clobbering local unsaved inputs
+            try {
+                window.addEventListener('settings:updated', (e) => {
+                    try {
+                        const s = e && e.detail && e.detail.settings ? e.detail.settings : null;
+                        if (s && typeof s === 'object') {
+                            const merged = Object.assign({}, this.settings || {}, s);
+                            this.settings = merged;
+                            this.saveSettingsToStorage();
+                        }
+                    } catch (_) {}
+                });
+            } catch (_) {}
+            // Ensure local persistence on page unload
+            try {
+                window.addEventListener('beforeunload', () => { try { this.saveSettingsToStorage(); } catch (_) {} });
+            } catch (_) {}
 
             // Set up save button listener
             document.getElementById('save-settings-btn').addEventListener('click', () => {
                 this.saveSettings();
             });
+            // Wire Refresh METRC header button
+            try {
+                const btn = document.getElementById('settings-refresh-metrc');
+                if (btn) btn.addEventListener('click', () => { try { this.syncMetrcNow(); } catch(_) {} });
+            } catch(_) {}
 
-            // Auto-save on change
+            // Auto-save on change (persist locally and to server, debounced)
             this.$watch('settings', () => {
                 this.saveSettingsToStorage();
                 this.dispatchSettingsUpdate();
+                this._saveSettingsDebounced();
             }, { deep: true });
         },
 
@@ -786,8 +904,8 @@ function settingsManager() {
                 cannabis_tax: 17,
                 tax_inclusive: false,
 
-                // Exit Label Categories
-                exit_label_categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Edibles'],
+                // Exit Label Categories (match API defaults)
+                exit_label_categories: ['Flower','Pre-Rolls','Infused','Edibles','Concentrates','Vape Products','Tinctures','Topicals','Capsules','Beverages','Suppositories','Clones/Seeds','Immature Plants','Mature Plants','Hemp','Accessories','Inhalable Cannabinoids','Clones','Seeds'],
 
                 // Receipt Printing
                 receipt_autoprint: false,
@@ -807,6 +925,7 @@ function settingsManager() {
                 // Display & Inventory
                 inventory_view_mode: 'cards',
                 expandable_cart: true,
+                weight_threshold: 0,
 
                 // Auto Delete
                 auto_delete_zero_quantity: false,
@@ -817,6 +936,7 @@ function settingsManager() {
                 metrc_user_key: '',
                 metrc_vendor_key: '',
                 metrc_facility: '',
+                metrc_auto_push_sales: false,
 
                 // Appearance
                 dark_mode: false,
@@ -844,7 +964,30 @@ function settingsManager() {
 
         loadSettingsFromStorage() {
             try {
-                const stored = localStorage.getItem('cannabest-pos-settings');
+                if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
+                    const sid = SettingsClient.currentStoreId();
+                    const local = SettingsClient.loadLocal(sid);
+                    if (local && typeof local === 'object') {
+                        this.settings = { ...this.settings, ...local };
+                        return;
+                    }
+                    // Fallback: read namespaced global keys for this store
+                    try {
+                        const nsLegacy = localStorage.getItem(`cannabest-pos-settings_${sid}`);
+                        const nsCurrent = localStorage.getItem(`cannabisPOS-settings_${sid}`);
+                        const nsStored = nsCurrent || nsLegacy;
+                        if (nsStored) {
+                            const parsed = JSON.parse(nsStored);
+                            this.settings = { ...this.settings, ...parsed };
+                            return;
+                        }
+                    } catch (_) {}
+                }
+            } catch (_) {}
+            try {
+                const legacy = localStorage.getItem('cannabest-pos-settings');
+                const current = localStorage.getItem('cannabisPOS-settings');
+                const stored = current || legacy;
                 if (stored) {
                     const parsedSettings = JSON.parse(stored);
                     this.settings = { ...this.settings, ...parsedSettings };
@@ -855,19 +998,38 @@ function settingsManager() {
         },
 
         saveSettingsToStorage() {
+            // Always persist locally (even before server hydration) to avoid losing early edits
             try {
-                localStorage.setItem('cannabest-pos-settings', JSON.stringify(this.settings));
+                if (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') {
+                    const sid = SettingsClient.currentStoreId();
+                    SettingsClient.saveLocal(sid, this.settings);
+                    // Also write namespaced globals for this store (keep legacy globals too), scrubbing secrets
+                    try {
+                        const s = (function(src){ try{ const o=JSON.parse(JSON.stringify(src||{})); delete o.metrc_user_key; delete o.metrc_vendor_key; return o; }catch(_){ return src; } })(this.settings);
+                        const json = JSON.stringify(s);
+                        localStorage.setItem(`cannabisPOS-settings_${sid}`, json);
+                        localStorage.setItem(`cannabest-pos-settings_${sid}`, json);
+                    } catch (_) {}
+                }
+            } catch (_) {}
+            try {
+                const s = (function(src){ try{ const o=JSON.parse(JSON.stringify(src||{})); delete o.metrc_user_key; delete o.metrc_vendor_key; return o; }catch(_){ return src; } })(this.settings);
+                const json = JSON.stringify(s);
+                localStorage.setItem('cannabisPOS-settings', json);
+                localStorage.setItem('cannabest-pos-settings', json);
             } catch (error) {
                 console.warn('Could not save settings to localStorage:', error);
             }
         },
 
         dispatchSettingsUpdate() {
+            if (!this.hydrated) return;
             // Dispatch custom event to notify other components
             const event = new CustomEvent('settings-updated', {
-                detail: this.settings
+                detail: { settings: this.settings }
             });
             window.dispatchEvent(event);
+            try { window.dispatchEvent(new CustomEvent('settings:updated', { detail: { settings: this.settings } })); } catch (_) {}
 
             // Dispatch specific events for certain settings
             if (this.settings.inventory_view_mode) {
@@ -878,34 +1040,282 @@ function settingsManager() {
             }
         },
 
-        async saveSettings() {
+        _saveTimer: null,
+        _lastPersistedJSON: '',
+        _saveSeq: 0,
+        _saveSettingsDebounced() {
+            if (!this.hydrated) return;
+            try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
+            const seq = ++this._saveSeq;
+            this._saveTimer = setTimeout(() => this._persistSettings(seq), 500);
+        },
+        _computePatch(cur, prev) {
+            const patch = {};
             try {
-                const response = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(this.settings)
+                const a = cur || {};
+                const b = prev || {};
+                const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+                keys.forEach((k) => {
+                    const va = a[k];
+                    const vb = b[k];
+                    const same = JSON.stringify(va) === JSON.stringify(vb);
+                    if (!same) patch[k] = va;
                 });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    this.showToast('Settings saved successfully!', 'success');
-                } else {
-                    this.showToast('Error saving settings: ' + result.message, 'error');
+            } catch (_) {}
+            return patch;
+        },
+        async _persistSettings(seq) {
+            if (!this.hydrated) return;
+            const isLatest = () => seq === this._saveSeq;
+            const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
+            const patch = this._computePatch(this.settings, prev);
+            if (Object.keys(patch).length === 0) return;
+            const before = JSON.parse(JSON.stringify(this.settings));
+            try {
+                const v = Number(this.settings && this.settings.settings_version != null ? this.settings.settings_version : 0);
+                const res = await (window.SettingsClient ? SettingsClient.save(Object.assign({}, patch, { settings_version: v })) : Promise.resolve({ success:false }));
+                if (res && res.success && res.settings) {
+                    this.settings = Object.assign({}, this.settings, res.settings);
+                    this.saveSettingsToStorage();
+                } else if (res && res.success === false) {
+                    // Verify if server actually has the changes; suppress false error if it does
+                    try {
+                        const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                        const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                        const numericKeys = new Set(['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold']);
+                        const booleanKeys = new Set(['tax_inclusive','receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','expandable_cart','metrc_enabled','metrc_auto_push_sales','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion']);
+                        const coerce = (k,v)=>{ if (numericKeys.has(k)) { const n=Number(v); return Number.isFinite(n)?n:v; } if (booleanKeys.has(k)) { if (typeof v==='boolean') return v; const s=String(v).toLowerCase(); if (s==='true'||s==='1') return true; if (s==='false'||s==='0') return false; } return v; };
+                        const persistable = new Set([
+                        'store_name','license_number','store_address','store_phone','store_email','business_hours',
+                        'sales_tax','excise_tax','cannabis_tax','tax_inclusive',
+                        'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+                        'minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold',
+                        'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+                        'default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer',
+                        'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales',
+                        'auto_delete_zero_quantity','auto_delete_zero_days'
+                    ]);
+                        const keys = Object.keys(patch).filter(k => persistable.has(k));
+                        const persisted = keys.length === 0 || keys.every(k => JSON.stringify(coerce(k,srv[k])) === JSON.stringify(coerce(k,before[k])));
+                        if (!persisted && isLatest()) this.showToast((res?.supabase_error || res?.message || res?.error) || 'Autosave failed', 'error');
+                    } catch(_) {
+                        if (isLatest()) this.showToast((res?.supabase_error || res?.message || res?.error) || 'Autosave failed', 'error');
+                    }
                 }
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                this.showToast('Error saving settings', 'error');
+            } catch (e) {
+                // Network/soft failure: verify DB before toasting
+                try {
+                    const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                    const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                    const persistable = new Set([
+                        'store_name','license_number','store_address','store_phone','store_email','business_hours',
+                        'sales_tax','excise_tax','cannabis_tax','tax_inclusive',
+                        'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+                        'minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold',
+                        'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+                        'default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer',
+                        'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales',
+                        'auto_delete_zero_quantity','auto_delete_zero_days'
+                    ]);
+                    const keys = Object.keys(patch).filter(k => persistable.has(k));
+                    const persisted = keys.length === 0 || keys.every(k => JSON.stringify(srv[k]) === JSON.stringify(before[k]));
+                    if (!persisted && isLatest()) {
+                        const msg = (e?.response?.data?.supabase_error) || (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
+                        this.showToast(msg, 'error');
+                    }
+                } catch(_) {
+                    if (isLatest()) {
+                        const msg = (e?.response?.data?.supabase_error) || (e?.response?.data?.message) || (e?.response?.data?.error) || e?.message || 'Autosave failed';
+                        this.showToast(msg, 'error');
+                    }
+                }
+            } finally {
+                if (isLatest()) this._lastPersistedJSON = JSON.stringify(this.settings);
             }
         },
 
-        switchStore(store) {
-            this.stores.forEach(s => s.is_current = false);
-            store.is_current = true;
-            this.showToast(`Switched to ${store.name}`, 'success');
+        async saveSettings() {
+            // Cancel any pending autosave and advance sequence so older requests won't toast
+            try { if (this._saveTimer) clearTimeout(this._saveTimer); } catch (_) {}
+            this._saveSeq++;
+            const snapshot = JSON.parse(JSON.stringify(this.settings));
+            const prev = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {};
+            const changedKeys = (()=>{ try{ const ks=new Set([...Object.keys(snapshot),...Object.keys(prev)]); const out=[]; ks.forEach(k=>{ if (JSON.stringify(snapshot[k]) !== JSON.stringify(prev[k])) out.push(k); }); return out; }catch(_){ return Object.keys(snapshot||{}); } })();
+            try {
+                const v = Number(this.settings && this.settings.settings_version != null ? this.settings.settings_version : 0);
+                const res = await (window.SettingsClient ? SettingsClient.save(Object.assign({}, this.settings, { settings_version: v })) : Promise.resolve({ success:false }));
+                if (res && res.success) {
+                    this._lastPersistedJSON = JSON.stringify(this.settings);
+                    this.showToast('Settings saved successfully!', 'success');
+                } else {
+                    // Verify server before showing failure toast
+                    try {
+                        const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                        const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                        const numericKeys = new Set(['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold']);
+                        const booleanKeys = new Set(['tax_inclusive','receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','expandable_cart','metrc_enabled','metrc_auto_push_sales','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion']);
+                        const coerce = (k,v)=>{ if (numericKeys.has(k)) { const n=Number(v); return Number.isFinite(n)?n:v; } if (booleanKeys.has(k)) { if (typeof v==='boolean') return v; const s=String(v).toLowerCase(); if (s==='true'||s==='1') return true; if (s==='false'||s==='0') return false; } return v; };
+                        const persistable = new Set([
+                            'store_name','license_number','store_address','store_phone','store_email','business_hours',
+                            'sales_tax','excise_tax','cannabis_tax','tax_inclusive',
+                            'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+                            'minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold',
+                            'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+                            'default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer',
+                            'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales',
+                            'auto_delete_zero_quantity','auto_delete_zero_days'
+                        ]);
+                        const keys = changedKeys.filter(k => persistable.has(k));
+                        const persisted = keys.length === 0 || keys.every(k => JSON.stringify(coerce(k,srv[k])) === JSON.stringify(coerce(k,snapshot[k])));
+                        if (persisted) {
+                            this._lastPersistedJSON = JSON.stringify(srv);
+                            this.settings = { ...this.settings, ...srv };
+                            this.saveSettingsToStorage();
+                            this.showToast('Settings saved successfully!', 'success');
+                        } else {
+                            const msg = (res?.supabase_error) || (res && (res.message || res.error) ? (res.message || res.error) : '') || 'Error saving settings';
+                            this.showToast(msg, 'error');
+                        }
+                    } catch(_) {
+                        const msg = (res?.supabase_error) || (res && (res.message || res.error) ? (res.message || res.error) : '') || 'Error saving settings';
+                        this.showToast(msg, 'error');
+                    }
+                }
+            } catch (error) {
+                // Network/soft error: verify if DB has our snapshot before toasting
+                try {
+                    const ver = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                    const srv = (ver && (ver.settings || ver.data)) ? (ver.settings || ver.data) : {};
+                    const numericKeys = new Set(['sales_tax','excise_tax','cannabis_tax','minimum_price_amount','auto_delete_zero_days','weight_threshold']);
+                    const booleanKeys = new Set(['tax_inclusive','receipt_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','expandable_cart','metrc_enabled','metrc_auto_push_sales','auto_delete_zero_quantity','dark_mode','high_contrast','reduce_motion']);
+                    const coerce = (k,v)=>{ if (numericKeys.has(k)) { const n=Number(v); return Number.isFinite(n)?n:v; } if (booleanKeys.has(k)) { if (typeof v==='boolean') return v; const s=String(v).toLowerCase(); if (s==='true'||s==='1') return true; if (s==='false'||s==='0') return false; } return v; };
+                    const persistable = new Set([
+                        'store_name','license_number','store_address','store_phone','store_email','business_hours',
+                        'sales_tax','excise_tax','cannabis_tax','tax_inclusive',
+                        'require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest',
+                        'minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold',
+                        'receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code',
+                        'default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer',
+                        'metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales',
+                        'auto_delete_zero_quantity','auto_delete_zero_days'
+                    ]);
+                    const keys = changedKeys.filter(k => persistable.has(k));
+                    const persisted = keys.length === 0 || keys.every(k => JSON.stringify(coerce(k,srv[k])) === JSON.stringify(coerce(k,snapshot[k])));
+                    if (persisted) {
+                        this._lastPersistedJSON = JSON.stringify(srv);
+                        this.settings = { ...this.settings, ...srv };
+                        this.saveSettingsToStorage();
+                        this.showToast('Settings saved successfully!', 'success');
+                    } else {
+                        const msg = (error?.response?.data?.supabase_error) || (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
+                        console.error('Error saving settings:', error);
+                        this.showToast(msg, 'error');
+                    }
+                } catch(_) {
+                    const msg = (error?.response?.data?.supabase_error) || (error?.response?.data?.message) || (error?.response?.data?.error) || error?.message || 'Error saving settings';
+                    console.error('Error saving settings:', error);
+                    this.showToast(msg, 'error');
+                }
+            } finally {
+                this.saveSettingsToStorage();
+            }
+        },
+
+        async testMetrcConnection() {
+            try {
+                const res = await (window.posAuth ? posAuth.apiRequest('get', '/metrc/test-connection') : Promise.resolve({ success: false }));
+                if (res.success) {
+                    const ok = !!(res.data?.connection_test?.success);
+                    this.showToast(ok ? 'METRC connection successful' : 'METRC not configured or connection failed', ok ? 'success' : 'error');
+                } else {
+                    this.showToast('Failed to test METRC connection', 'error');
+                }
+            } catch (e) {
+                this.showToast('Failed to test METRC connection', 'error');
+            }
+        },
+
+        async syncMetrcNow() {
+            try {
+                // Persist current settings to server and local storage before syncing
+                try {
+                    await (window.SettingsClient ? SettingsClient.save(this.settings) : (window.posAuth ? posAuth.apiRequest('post', '/api/settings/pos', this.settings) : Promise.resolve({ success: false })));
+                    this.saveSettingsToStorage();
+                } catch (_) {}
+                // Trigger server-side import (excludes zero-qty)
+                const res = await (window.posAuth ? posAuth.apiRequest('post', '/metrc/import-packages') : Promise.resolve({ success: false }));
+                if (res.success && res.data?.success) {
+                    const { imported, updated, skipped } = res.data;
+                    this.showToast(`Imported ${imported}, updated ${updated}. Skipped ${skipped} zero-qty packages.`, 'success');
+                } else if (res.success) {
+                    // Fallback shape
+                    const { imported = 0, updated = 0, skipped = 0 } = res.data || {};
+                    this.showToast(`Imported ${imported}, updated ${updated}. Skipped ${skipped} zero-qty packages.`, 'success');
+                } else {
+                    const msg = res.message || 'Failed to sync METRC packages';
+                    this.showToast(msg, 'error');
+                }
+            } catch (e) {
+                const msg = e?.response?.data?.message || e?.message || 'Failed to sync METRC packages';
+                this.showToast(msg, 'error');
+            }
+        },
+
+        async fetchStores() {
+            try {
+                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
+                const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function') ? SettingsClient.currentStoreName() : '';
+                const client = window.axios || axios;
+                const res = await client.get('/api/settings/stores/open', { headers: { Accept: 'application/json', 'X-Store-ID': String(sid||'default'), ...(sname?{ 'X-Store-Name': String(sname) }: {}) } });
+                const list = (res && res.data && Array.isArray(res.data.stores)) ? res.data.stores : [];
+                const normalized = list.map(r => ({ id: String(r.id), name: String(r.name || r.id), address: r.address || '', phone: r.phone || '', status: 'active', is_current: String(r.id) === sid }));
+                if (!normalized.find(s => s.id === sid)) {
+                    normalized.unshift({ id: sid, name: sname || sid, address: '', phone: '', status: 'active', is_current: true });
+                }
+                this.stores = normalized;
+                this.currentStoreSelect = sid;
+            } catch (_) {
+                const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
+                const sname = (window.SettingsClient && typeof SettingsClient.currentStoreName === 'function') ? SettingsClient.currentStoreName() : '';
+                this.stores = [{ id: sid, name: sname || sid, address: '', phone: '', status: 'active', is_current: true }];
+                this.currentStoreSelect = sid;
+            }
+        },
+        onSelectStoreChange() {
+            try {
+                const id = this.currentStoreSelect;
+                const s = (this.stores || []).find(x => String(x.id) === String(id)) || { id, name: id };
+                this.switchStore(s);
+            } catch (_) {}
+        },
+
+        async switchStore(store) {
+            try {
+                (this.stores || []).forEach(s => s.is_current = false);
+                store.is_current = true;
+                this.currentStoreSelect = String(store.id);
+                try {
+                    localStorage.setItem('pos_store', JSON.stringify({ id: String(store.id), name: store.name || String(store.id) }));
+                    if (typeof window.updateStoreHeaderLabel === 'function') window.updateStoreHeaderLabel();
+                } catch (_) {}
+                try {
+                    const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                    if (resp && (resp.settings || resp.data)) {
+                        const srv = resp.settings || resp.data || {};
+                        if (srv && typeof srv === 'object') {
+                            const merged = Object.assign({}, this.getDefaultSettings(), srv);
+                        this.settings = merged;
+                            this.saveSettingsToStorage();
+                            this._lastPersistedJSON = JSON.stringify(this.settings);
+                            this.hydrated = true;
+                            this.dispatchSettingsUpdate();
+                        }
+                    }
+                } catch (_) {}
+                this.showToast(`Switched to ${store.name || store.id}`, 'success');
+            } catch (_) {
+                this.showToast('Failed to switch store', 'error');
+            }
         },
 
         testReceipt(type) {
@@ -928,6 +1338,99 @@ function settingsManager() {
             setTimeout(() => {
                 this.showToast('Test receipt printed successfully!', 'success');
             }, 2000);
+        },
+
+        async fetchServerSettings() {
+            try {
+                const resp = await (window.SettingsClient ? SettingsClient.get(true) : Promise.resolve({ success:false }));
+                if (resp && (resp.success || resp.settings)) {
+                    const srv = resp.settings || {};
+                    if (srv && typeof srv === 'object') {
+                        const sensitive = new Set(['metrc_user_key','metrc_vendor_key','metrc_facility']);
+                        const merged = { ...this.settings };
+                        // Determine keys the user has modified since the last persisted snapshot
+                        let prevSnap = {};
+                        try { prevSnap = this._lastPersistedJSON ? JSON.parse(this._lastPersistedJSON) : {}; } catch(_) { prevSnap = {}; }
+                        const dirty = new Set();
+                        try {
+                            const keys = new Set([...Object.keys(this.settings || {}), ...Object.keys(prevSnap || {})]);
+                            keys.forEach((k)=>{ if (JSON.stringify((this.settings||{})[k]) !== JSON.stringify((prevSnap||{})[k])) dirty.add(k); });
+                        } catch(_) {}
+                        // Merge server values but NEVER overwrite dirty keys
+                        Object.keys(srv).forEach((k) => {
+                            if (dirty.has(k)) return; // preserve user edits
+                            const v = srv[k];
+                            const isNullish = v === null || v === undefined;
+                            const isEmptyStr = typeof v === 'string' && v.trim() === '';
+                            if (sensitive.has(k)) {
+                                if (!isNullish && !isEmptyStr) merged[k] = v;
+                            } else {
+                                if (!isNullish) merged[k] = v;
+                            }
+                        });
+                        // If API provides tax_rate but sales_tax is unset AND not dirty, sync it
+                        try {
+                            if (!dirty.has('sales_tax')) {
+                                const apiTax = Number(resp.tax_rate ?? srv.sales_tax ?? NaN);
+                                if (isFinite(apiTax) && apiTax >= 0 && (!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0)) {
+                                    merged.sales_tax = apiTax;
+                                }
+                            }
+                        } catch (_) {}
+                        // Backfill from local tax cache if server returned zeros and fields are not dirty
+                        try {
+                            const sid = (window.SettingsClient && typeof SettingsClient.currentStoreId === 'function') ? SettingsClient.currentStoreId() : 'default';
+                            const tsRaw = localStorage.getItem(`cannabisPOS-taxSettings_${sid}`) || localStorage.getItem('cannabisPOS-taxSettings');
+                            if (tsRaw) {
+                                const ts = JSON.parse(tsRaw);
+                                const rec = Number(ts.recreationalRate || 0);
+                                const loc = Number(ts.localRate || 0);
+                                const st  = Number(ts.stateRate || 0);
+                                if (!dirty.has('cannabis_tax') && ((!isFinite(Number(merged.cannabis_tax)) || Number(merged.cannabis_tax) === 0) && isFinite(rec) && rec > 0)) merged.cannabis_tax = rec;
+                                if (!dirty.has('excise_tax') && ((!isFinite(Number(merged.excise_tax)) || Number(merged.excise_tax) === 0) && isFinite(loc) && loc > 0)) merged.excise_tax = loc;
+                                if (!dirty.has('sales_tax') && ((!isFinite(Number(merged.sales_tax)) || Number(merged.sales_tax) === 0) && isFinite(st) && st >= 0)) merged.sales_tax = st;
+                            }
+                        } catch(_) {}
+                        // Mirror sales_tax to cannabis_tax when recreational is zero (UI fallback) if not dirty
+                        try {
+                            if (!dirty.has('cannabis_tax')) {
+                                const st = Number(merged.sales_tax);
+                                const rec = Number(merged.cannabis_tax);
+                                if (isFinite(st) && st > 0 && (!isFinite(rec) || rec === 0)) merged.cannabis_tax = st;
+                            }
+                        } catch(_) {}
+                        // Map legacy keys (do not overwrite dirty)
+                        if (!dirty.has('receipt_autoprint') && Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt') && !Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint')) {
+                            merged.receipt_autoprint = !!merged.auto_print_receipt;
+                        }
+                        if (!dirty.has('auto_print_receipt') && Object.prototype.hasOwnProperty.call(merged, 'receipt_autoprint') && !Object.prototype.hasOwnProperty.call(merged, 'auto_print_receipt')) {
+                            merged.auto_print_receipt = !!merged.receipt_autoprint;
+                        }
+                        // Coerce arrays for Alpine reactivity
+                        const arrayKeys = ['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours'];
+                        arrayKeys.forEach((key) => {
+                            if (dirty.has(key)) return; // preserve user edits
+                            const val = merged[key];
+                            if (typeof val === 'string') {
+                                try { const parsed = JSON.parse(val); merged[key] = Array.isArray(parsed) ? parsed : []; } catch (_) { merged[key] = []; }
+                            } else if (!Array.isArray(val)) {
+                                merged[key] = key === 'business_hours' ? this.getDefaultBusinessHours() : [];
+                            }
+                        });
+                        this.settings = merged;
+                        this.saveSettingsToStorage();
+                        // Do not advance snapshot here if user has dirty edits; keep last persisted snapshot for diffing
+                        if (dirty.size === 0) {
+                            this._lastPersistedJSON = JSON.stringify(this.settings);
+                        }
+                        // First successful server hydration complete; enable autosave
+                        this.hydrated = true;
+                            this.dispatchSettingsUpdate();
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not fetch server settings', e);
+            }
         },
 
         showToast(message, type = 'info') {

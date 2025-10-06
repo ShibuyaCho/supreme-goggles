@@ -66,13 +66,20 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
                             </svg>
                         </button>
-                        <input 
-                            type="number" 
-                            class="quantity-input w-12 text-center text-sm border-0 focus:ring-0" 
-                            value="{{ $item['quantity'] }}" 
-                            min="1" 
+                        @php
+                            $cat = strtolower($item['category'] ?? '');
+                            $wt = isset($item['weight']) ? strtolower((string)$item['weight']) : '';
+                            $isFlower = $cat === 'flower' || ($wt !== '' && strpos($wt, 'g') !== false);
+                        @endphp
+                        <input
+                            type="number"
+                            step="{{ $isFlower ? '0.01' : '1' }}"
+                            class="quantity-input w-16 text-center text-sm border-0 focus:ring-0"
+                            value="{{ $isFlower ? number_format((float)$item['quantity'], 2, '.', '') : (int)$item['quantity'] }}"
+                            min="{{ $isFlower ? '0.01' : '1' }}"
                             max="{{ $item['stock'] ?? 999 }}"
                             data-item-id="{{ $item['id'] }}"
+                            data-is-flower="{{ $isFlower ? '1' : '0' }}"
                         >
                         <button class="increase-quantity p-1.5 text-gray-600 hover:text-gray-800 border-l" 
                                 data-item-id="{{ $item['id'] }}">

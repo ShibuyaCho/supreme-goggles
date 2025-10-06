@@ -11,42 +11,10 @@
                 <h1 class="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
                 
                 <!-- Time Range Selector -->
-                <div class="flex items-center space-x-4">
-                    <select id="timeframe-selector" class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-500">
-                        <option value="today" {{ $timeframe === 'today' ? 'selected' : '' }}>Today</option>
-                        <option value="week" {{ $timeframe === 'week' ? 'selected' : '' }}>This Week</option>
-                        <option value="month" {{ $timeframe === 'month' ? 'selected' : '' }}>This Month</option>
-                        <option value="custom" {{ $timeframe === 'custom' ? 'selected' : '' }}>Custom Range</option>
-                    </select>
-                    
-                    <!-- Export/Print Buttons -->
-                    <div class="flex space-x-2">
-                        <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                            Export
-                        </button>
-                        <button onclick="printReport()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                            Print
-                        </button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
-    <!-- Custom Date Range (Hidden by default) -->
-    <div id="custom-date-range" class="bg-white border-b border-gray-200 px-4 py-3 {{ $timeframe !== 'custom' ? 'hidden' : '' }}">
-        <div class="max-w-7xl mx-auto">
-            <div class="flex items-center space-x-4">
-                <label class="text-sm font-medium text-gray-700">From:</label>
-                <input type="date" id="start-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <label class="text-sm font-medium text-gray-700">To:</label>
-                <input type="date" id="end-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
-                <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-sm">
-                    Apply
-                </button>
-            </div>
-        </div>
-    </div>
 
     <!-- Tab Navigation -->
     <div class="bg-white border-b border-gray-200">
@@ -72,10 +40,6 @@
                         data-tab="employees">
                     Employees
                 </button>
-                <button class="analytics-tab py-4 px-1 border-b-2 font-medium text-sm {{ $selectedTab === 'aspd' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}" 
-                        data-tab="aspd">
-                    ASPD
-                </button>
                 <button class="analytics-tab py-4 px-1 border-b-2 font-medium text-sm {{ $selectedTab === 'end-of-day' ? 'border-green-500 text-green-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }}" 
                         data-tab="end-of-day">
                     End of Day
@@ -88,6 +52,25 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Overview Tab -->
         <div id="overview-tab" class="tab-content {{ $selectedTab !== 'overview' ? 'hidden' : '' }}">
+            <!-- Business Analytics Dashboard Toolbar -->
+            <div class="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6 flex flex-wrap items-center justify-between gap-2">
+                <div class="min-w-[200px]">
+                    <h2 class="text-sm font-semibold text-blue-900">Business Analytics Dashboard</h2>
+                    <p class="text-xs text-blue-700">Comprehensive metrics with company-wide and individual store analysis.</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <label for="analytics-start-date" class="text-sm text-gray-600">From</label>
+                    <input type="date" id="analytics-start-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                    <label for="analytics-end-date" class="text-sm text-gray-600">To</label>
+                    <input type="date" id="analytics-end-date" class="border border-gray-300 rounded px-3 py-2 text-sm">
+                    <button onclick="applyCustomRange()" class="bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">Apply</button>
+                    <select id="export-format" class="border border-gray-300 rounded px-2 py-2 text-sm">
+                        <option value="pdf" selected>PDF</option>
+                        <option value="csv">CSV</option>
+                    </select>
+                    <button onclick="exportOverview()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">Export Report</button>
+                </div>
+            </div>
             <!-- Key Metrics Cards -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <!-- Revenue Card -->
@@ -95,7 +78,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Total Revenue</p>
-                            <p class="text-3xl font-bold text-gray-900">${{ number_format($salesData['revenue'], 2) }}</p>
+                            <p id="metric-revenue" class="text-3xl font-bold text-gray-900">${{ number_format($salesData['revenue'], 2) }}</p>
                             <p class="text-sm {{ $salesData['change']['revenue'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['revenue'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['revenue'], 1) }}% from previous period
                             </p>
@@ -113,7 +96,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Transactions</p>
-                            <p class="text-3xl font-bold text-gray-900">{{ number_format($salesData['transactions']) }}</p>
+                            <p id="metric-transactions" class="text-3xl font-bold text-gray-900">{{ number_format($salesData['transactions']) }}</p>
                             <p class="text-sm {{ $salesData['change']['transactions'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['transactions'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['transactions'], 1) }}% from previous period
                             </p>
@@ -131,7 +114,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Customers Served</p>
-                            <p class="text-3xl font-bold text-gray-900">{{ number_format($salesData['customers']) }}</p>
+                            <p id="metric-customers" class="text-3xl font-bold text-gray-900">{{ number_format($salesData['customers']) }}</p>
                             <p class="text-sm {{ $salesData['change']['customers'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['customers'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['customers'], 1) }}% from previous period
                             </p>
@@ -149,7 +132,7 @@
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-600">Avg Order Value</p>
-                            <p class="text-3xl font-bold text-gray-900">${{ number_format($salesData['avgOrderValue'], 2) }}</p>
+                            <p id="metric-avgorder" class="text-3xl font-bold text-gray-900">${{ number_format($salesData['avgOrderValue'], 2) }}</p>
                             <p class="text-sm {{ $salesData['change']['avgOrderValue'] >= 0 ? 'text-green-600' : 'text-red-600' }}">
                                 {{ $salesData['change']['avgOrderValue'] >= 0 ? '+' : '' }}{{ number_format($salesData['change']['avgOrderValue'], 1) }}% from previous period
                             </p>
@@ -164,11 +147,11 @@
             </div>
 
             <!-- Charts Row -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
                 <!-- Category Breakdown Chart -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4">Sales by Category</h3>
-                    <div class="space-y-4">
+                    <div id="category-breakdown" class="space-y-4">
                         @foreach($productData['categoryData'] as $category)
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
@@ -205,6 +188,44 @@
                             </div>
                         </div>
                         @endforeach
+                    </div>
+                </div>
+
+                <!-- Company-wide View -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Company-wide View</h3>
+                    <div class="overflow-x-auto">
+                      <table class="min-w-full text-sm">
+                        <thead>
+                          <tr class="text-gray-600">
+                            <th class="text-left py-2 pr-4">Store</th>
+                            <th class="text-right py-2 px-4">Visits</th>
+                            <th class="text-right py-2 px-4">Revenue</th>
+                            <th class="text-right py-2 pl-4">Avg Sale</th>
+                          </tr>
+                        </thead>
+                        <tbody id="company-stats-body"></tbody>
+                      </table>
+                    </div>
+                    <p id="company-stats-note" class="text-xs text-gray-500 mt-2 hidden">Store-level metrics require a store_id on sales.</p>
+                </div>
+
+                <!-- Open Carts Metrics -->
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Open Carts</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <div class="text-sm text-gray-600">Total Open</div>
+                            <div id="open-carts-total" class="text-2xl font-bold text-gray-900">0</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-600">Avg Minutes</div>
+                            <div id="open-carts-avg" class="text-2xl font-bold text-gray-900">0</div>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-600">Max Minutes</div>
+                            <div id="open-carts-max" class="text-2xl font-bold text-gray-900">0</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -258,7 +279,7 @@
                             </svg>
                             <div>
                                 <div class="text-sm font-medium text-gray-900">{{ $alert['product'] }}</div>
-                                <div class="text-xs text-gray-600">Current stock: {{ $alert['stock'] }} | Reorder at: {{ $alert['reorderPoint'] }}</div>
+                                <div class="text-xs text-gray-600">Current quantity: {{ $alert['stock'] }} | Reorder at: {{ $alert['reorderPoint'] }}</div>
                             </div>
                         </div>
                         <span class="px-2 py-1 text-xs font-medium rounded-full {{ $alert['status'] === 'critical' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800' }}">
@@ -277,7 +298,7 @@
         <div id="employees-tab" class="tab-content {{ $selectedTab !== 'employees' ? 'hidden' : '' }}">
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Employee Performance</h3>
-                <div class="space-y-4">
+                <div id="employee-stats" class="space-y-4">
                     @foreach($employeeData as $employee)
                     <div class="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                         <div>
@@ -294,36 +315,6 @@
             </div>
         </div>
 
-        <!-- ASPD Tab -->
-        <div id="aspd-tab" class="tab-content {{ $selectedTab !== 'aspd' ? 'hidden' : '' }}">
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">Average Sales Per Day (ASPD)</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Sold</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ASPD</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            @foreach($aspdData->take(10) as $item)
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ $item['name'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item['category'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ number_format($item['totalSold'], 2) }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $item['daysInRange'] }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">{{ number_format($item['aspd'], 2) }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
 
         <!-- End of Day Tab -->
         <div id="end-of-day-tab" class="tab-content {{ $selectedTab !== 'end-of-day' ? 'hidden' : '' }}">
@@ -333,25 +324,31 @@
                     <p class="text-gray-600">End of Day Report - {{ now()->format('F j, Y') }}</p>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Today's Sales -->
                     <div class="text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Today's Sales</h3>
-                        <p class="text-3xl font-bold text-green-600">${{ number_format($endOfDayData['totalSales'], 2) }}</p>
-                        <p class="text-sm text-gray-600">{{ $endOfDayData['customerCount'] }} customers</p>
+                        <p id="eod-total-sales" class="text-3xl font-bold text-green-600">${{ number_format($endOfDayData['totalSales'], 2) }}</p>
+                        <p class="text-sm text-gray-600"><span id="eod-customer-count">{{ $endOfDayData['customerCount'] }}</span> customers</p>
                     </div>
 
                     <!-- Tax Collected -->
                     <div class="text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Tax Collected</h3>
-                        <p class="text-3xl font-bold text-blue-600">${{ number_format($endOfDayData['totalTax'], 2) }}</p>
+                        <p id="eod-total-tax" class="text-3xl font-bold text-blue-600">${{ number_format($endOfDayData['totalTax'], 2) }}</p>
+                    </div>
+
+                    <!-- Total Discounts -->
+                    <div class="text-center">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-2">Total Discounts</h3>
+                        <p id="eod-total-discounts" class="text-3xl font-bold text-red-600">$0.00</p>
                     </div>
 
                     <!-- Monthly Progress -->
                     <div class="text-center">
                         <h3 class="text-lg font-semibold text-gray-900 mb-2">Monthly Sales</h3>
-                        <p class="text-3xl font-bold text-purple-600">${{ number_format($endOfDayData['monthlySalesTotal'], 2) }}</p>
-                        <p class="text-sm text-gray-600">Day {{ $endOfDayData['dayOfMonth'] }} of {{ $endOfDayData['daysInMonth'] }}</p>
+                        <p id="eod-monthly-total" class="text-3xl font-bold text-purple-600">${{ number_format($endOfDayData['monthlySalesTotal'], 2) }}</p>
+                        <p class="text-sm text-gray-600">Day <span id="eod-day">{{ $endOfDayData['dayOfMonth'] }}</span> of <span id="eod-days">{{ $endOfDayData['daysInMonth'] }}</span></p>
                     </div>
                 </div>
 
@@ -361,15 +358,15 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <h4 class="text-sm font-medium text-gray-700">Cash</h4>
-                            <p class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['cashSales'], 2) }}</p>
+                            <p id="eod-cash" class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['cashSales'], 2) }}</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <h4 class="text-sm font-medium text-gray-700">Debit</h4>
-                            <p class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['debitSales'], 2) }}</p>
+                            <p id="eod-debit" class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['debitSales'], 2) }}</p>
                         </div>
                         <div class="bg-gray-50 p-4 rounded-lg">
                             <h4 class="text-sm font-medium text-gray-700">Credit</h4>
-                            <p class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['creditSales'], 2) }}</p>
+                            <p id="eod-credit" class="text-xl font-bold text-gray-900">${{ number_format($endOfDayData['creditSales'], 2) }}</p>
                         </div>
                     </div>
                 </div>
@@ -396,16 +393,190 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Timeframe selector
-    document.getElementById('timeframe-selector').addEventListener('change', function() {
-        const timeframe = this.value;
-        if (timeframe === 'custom') {
-            document.getElementById('custom-date-range').classList.remove('hidden');
-        } else {
-            document.getElementById('custom-date-range').classList.add('hidden');
-            window.location.href = `{{ route('analytics.index') }}?timeframe=${timeframe}`;
+    // Timeframe selector (guard if missing)
+    (function(){
+        const tfSel = document.getElementById('timeframe-selector');
+        if (!tfSel) return;
+        tfSel.addEventListener('change', function() {
+            const timeframe = this.value || 'today';
+            if (timeframe !== 'custom') {
+                const url = new URL(`{{ route('analytics.index') }}`, window.location.origin);
+                url.searchParams.set('timeframe', timeframe);
+                window.location.href = url.toString();
+            }
+        });
+    })();
+    // Prefill custom date inputs from query on load
+    try {
+      const params = new URL(window.location.href).searchParams;
+      const s = params.get('start_date'); const e = params.get('end_date');
+      const sd = document.getElementById('analytics-start-date');
+      const ed = document.getElementById('analytics-end-date');
+      if (sd && s) sd.value = s;
+      if (ed && e) ed.value = e;
+    } catch(_) {}
+    // Real-time analytics polling
+    (function(){
+      const fmtMoney = (n)=>`$${Number(n||0).toFixed(2)}`;
+      const setText = (id, v)=>{ const el=document.getElementById(id); if(el) el.textContent=v; };
+      const getHttp = ()=>{ try { if (window.axios) return window.axios; } catch(_) {}
+        try { if (typeof axios !== 'undefined') return axios; } catch(_) {}
+        return null; };
+      async function fetchOverview(){
+        try{
+          const urlParams = new URL(window.location.href).searchParams;
+          const timeframe = (document.getElementById('timeframe-selector')?.value) || urlParams.get('timeframe') || 'today';
+          const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+          let params = { timeframe, tz };
+          if (timeframe === 'custom') {
+            try {
+              const p = new URL(window.location.href).searchParams;
+              const start = p.get('start_date') || document.getElementById('analytics-start-date')?.value;
+              const end = p.get('end_date') || document.getElementById('analytics-end-date')?.value;
+              if (start && end) { params.start_date = start; params.end_date = end; }
+            } catch(_) {}
+          }
+          const http = getHttp();
+          let res;
+          if (http) { res = await http.get('/api/analytics/overview-open', { params }); }
+          else { const q = new URL('/api/analytics/overview-open', window.location.origin); Object.entries(params).forEach(([k,v])=>{ if(v!=null) q.searchParams.set(k, v); }); res = await fetch(q.toString(), { headers:{'Accept':'application/json'} }); if (!res.ok) throw new Error('fetch failed'); res = { data: await res.json() }; }
+          const data = res?.data || {};
+          // Headline metrics
+          const m = data.sales || {};
+          setText('metric-revenue', fmtMoney(m.revenue));
+          setText('metric-transactions', (m.transactions||0).toLocaleString());
+          setText('metric-customers', (m.customers||0).toLocaleString());
+          setText('metric-avgorder', fmtMoney(m.avgOrderValue));
+          // Categories
+          const catWrap = document.getElementById('category-breakdown');
+          if (catWrap && Array.isArray(data.categories)){
+            catWrap.innerHTML = '';
+            data.categories.forEach(cat=>{
+              const row = document.createElement('div');
+              row.className = 'flex items-center justify-between';
+              row.innerHTML = `<div class="flex items-center space-x-3"><div class="w-4 h-4 bg-green-500 rounded-full"></div><span class="cat-name text-sm font-medium text-gray-900"></span></div><div class="text-right"><div class="rev text-sm font-semibold text-gray-900"></div><div class="perc text-xs text-gray-500"></div></div>`;
+              row.querySelector('.cat-name').textContent = String(cat.category||'Uncategorized');
+              row.querySelector('.rev').textContent = fmtMoney(cat.revenue||0);
+              row.querySelector('.perc').textContent = `${Number(cat.percentage||0).toFixed(1)}%`;
+              catWrap.appendChild(row);
+            });
+          }
+          // Employees
+          const empWrap = document.getElementById('employee-stats');
+          if (empWrap && Array.isArray(data.employees)){
+            empWrap.innerHTML='';
+            data.employees.forEach(e=>{
+              const row = document.createElement('div');
+              row.className='flex items-center justify-between p-4 border border-gray-200 rounded-lg';
+              row.innerHTML = `<div><div class="emp-name text-sm font-medium text-gray-900"></div><div class="emp-tx text-xs text-gray-600"></div></div><div class="text-right"><div class="emp-sales text-sm font-semibold text-gray-900"></div><div class="emp-avg text-xs text-gray-600"></div></div>`;
+              row.querySelector('.emp-name').textContent = String(e.name||'Employee');
+              row.querySelector('.emp-tx').textContent = `${(e.transactions||0).toLocaleString()} transactions`;
+              row.querySelector('.emp-sales').textContent = fmtMoney(e.sales||0);
+              row.querySelector('.emp-avg').textContent = `Avg: ${fmtMoney(e.avgOrder||0)}`;
+              empWrap.appendChild(row);
+            });
+          }
+          // Company-wide
+          const company = data.company || {};
+          const body = document.getElementById('company-stats-body');
+          const note = document.getElementById('company-stats-note');
+          if (body && company && Array.isArray(company.stores)){
+            body.innerHTML = '';
+            company.stores.forEach(s=>{
+              const tr = document.createElement('tr');
+              const tdStore = document.createElement('td'); tdStore.className = 'py-2 pr-4'; tdStore.textContent = String(s.store_id ?? '');
+              const tdTx = document.createElement('td'); tdTx.className = 'text-right py-2 px-4'; tdTx.textContent = (s.transactions||0).toLocaleString();
+              const tdRev = document.createElement('td'); tdRev.className = 'text-right py-2 px-4'; tdRev.textContent = fmtMoney(s.revenue||0);
+              const tdAvg = document.createElement('td'); tdAvg.className = 'text-right py-2 pl-4'; tdAvg.textContent = fmtMoney(s.avg||0);
+              tr.appendChild(tdStore); tr.appendChild(tdTx); tr.appendChild(tdRev); tr.appendChild(tdAvg);
+              body.appendChild(tr);
+            });
+            if (note) note.classList.toggle('hidden', !!company.hasStoreDimension);
+          }
+          // Open carts
+          const oc = data.openCarts || {};
+          setText('open-carts-total', String(oc.total||0));
+          setText('open-carts-avg', String(oc.avgMinutes||0));
+          setText('open-carts-max', String(oc.maxMinutes||0));
+        } catch(err) {
+          // Fallback: derive minimal metrics from recent sales endpoint
+          try {
+            const http = getHttp();
+            const urlParams2 = new URL(window.location.href).searchParams;
+            const tf = document.getElementById('timeframe-selector')?.value || urlParams2.get('timeframe') || 'today';
+            const now = new Date();
+            const toISO = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+            let start = toISO(now), end = toISO(now);
+            if (tf === 'week') { const first=new Date(now); first.setDate(now.getDate()-6); start=toISO(first); }
+            if (tf === 'month') { const first=new Date(now.getFullYear(),now.getMonth(),1); const last=new Date(now.getFullYear(),now.getMonth()+1,0); start=toISO(first); end=toISO(last); }
+            const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+            const res2 = await http.get('/api/sales/recent', { params: { status:'completed', limit: 500, date_from: start, date_to: end, tz }, headers:{Accept:'application/json'} });
+            let list = Array.isArray(res2?.data) ? res2.data : (Array.isArray(res2?.data?.data) ? res2.data.data : []);
+            let revenue = 0, tx = 0, customers = new Set();
+            list.forEach(s=>{ const amt = Number(s.total_amount ?? s.total ?? 0); revenue += amt; tx += 1; if (s.customer_id) customers.add(s.customer_id); });
+            setText('metric-revenue', fmtMoney(revenue));
+            setText('metric-transactions', tx.toLocaleString());
+            setText('metric-customers', customers.size.toLocaleString());
+            setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
+          } catch(_1) {
+            try {
+              const urlParams3 = new URL(window.location.href).searchParams;
+              const tf2 = document.getElementById('timeframe-selector')?.value || urlParams3.get('timeframe') || 'today';
+              const now2 = new Date();
+              const toISO2 = (d)=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+              let start2 = toISO2(now2), end2 = toISO2(now2);
+              if (tf2 === 'week') { const first=new Date(now2); first.setDate(now2.getDate()-6); start2=toISO2(first); }
+              if (tf2 === 'month') { const first=new Date(now2.getFullYear(),now2.getMonth(),1); const last=new Date(now2.getFullYear(),now2.getMonth()+1,0); start2=toISO2(first); end2=toISO2(last); }
+              const tz3 = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+              const res3 = await fetch(`/sales/recent-json?status=completed&limit=500&date_from=${start2}&date_to=${end2}&tz=${encodeURIComponent(tz3)}` , { headers: { 'Accept': 'application/json' } });
+              if (res3.ok) {
+                const data3 = await res3.json();
+                const list = Array.isArray(data3) ? data3 : (Array.isArray(data3?.data) ? data3.data : []);
+                let revenue = 0, tx = 0, customers = new Set();
+                list.forEach(s=>{ const amt = Number(s.total_amount ?? s.total ?? 0); revenue += amt; tx += 1; });
+                setText('metric-revenue', fmtMoney(revenue));
+                setText('metric-transactions', tx.toLocaleString());
+                setText('metric-customers', customers.size.toLocaleString());
+                setText('metric-avgorder', fmtMoney(tx>0?revenue/tx:0));
+              }
+            } catch(_2) {}
+          }
         }
-    });
+      }
+      try { if (window.__analyticsTimer) clearInterval(window.__analyticsTimer); } catch(_) {}
+      window.fetchOverview = fetchOverview;
+      fetchOverview();
+      window.__analyticsTimer = setInterval(fetchOverview, 10000);
+      document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) fetchOverview(); });
+      window.addEventListener('storage', (e)=>{ if (!e) return; if (e.key === 'pos_last_sale_id' || e.key === 'pos_last_sale_event') fetchOverview(); });
+      document.addEventListener('pos-sale-completed', fetchOverview);
+      window.addEventListener('pos-sale-completed', fetchOverview);
+      window.addEventListener('pos-cart-updated', fetchOverview);
+    })();
+
+    // Hydrate End of Day from Supabase-backed API
+    try {
+        (function(){ const tz=(Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone)||''; fetch(`/api/analytics/end-of-day-open?tz=${encodeURIComponent(tz)}`, { headers: { 'Accept': 'application/json' }})
+            .then(r => r.ok ? r.json() : null)
+            .then(data => {
+                if (!data) return;
+                const fmt = (n) => `$${Number(n || 0).toFixed(2)}`;
+                const setText = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+                setText('eod-total-sales', fmt(data.totalSales));
+                setText('eod-customer-count', String(data.customerCount));
+                setText('eod-total-tax', fmt(data.totalTax));
+                setText('eod-total-discounts', fmt(data.totalDiscounts));
+                setText('eod-monthly-total', fmt(data.monthlySalesTotal));
+                setText('eod-day', String(data.dayOfMonth));
+                setText('eod-days', String(data.daysInMonth));
+                setText('eod-cash', fmt(data.cashSales));
+                setText('eod-debit', fmt(data.debitSales));
+                setText('eod-credit', fmt(data.creditSales));
+            })
+            .catch(() => {});
+    })();
+    } catch(_) {}
+
 });
 
 function switchTab(tabName) {
@@ -435,17 +606,48 @@ function switchTab(tabName) {
 }
 
 function applyCustomRange() {
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
-    
-    if (startDate && endDate) {
+    const startDate = document.getElementById('analytics-start-date')?.value;
+    const endDate = document.getElementById('analytics-end-date')?.value;
+    if (!startDate || !endDate) return;
+    try {
+        const tfSel = document.getElementById('timeframe-selector');
+        if (tfSel) tfSel.value = 'custom';
+        const url = new URL(window.location.href);
+        url.searchParams.set('timeframe','custom');
+        url.searchParams.set('start_date', startDate);
+        url.searchParams.set('end_date', endDate);
+        window.history.replaceState({}, '', url.toString());
+        if (typeof window.fetchOverview === 'function') window.fetchOverview();
+    } catch {
         window.location.href = `{{ route('analytics.index') }}?timeframe=custom&start_date=${startDate}&end_date=${endDate}`;
     }
 }
 
 function exportOverview() {
-    const timeframe = document.getElementById('timeframe-selector').value;
-    window.location.href = `{{ route('analytics.export-overview') }}?timeframe=${timeframe}`;
+    const paramsNow = new URL(window.location.href).searchParams;
+    const timeframe = (document.getElementById('timeframe-selector')?.value) || (paramsNow.get('timeframe') || 'today');
+    const formatSel = document.getElementById('export-format');
+    const format = (formatSel && formatSel.value) ? formatSel.value : 'pdf';
+    const url = new URL(`{{ route('analytics.export-overview') }}`, window.location.origin);
+    url.searchParams.set('timeframe', timeframe);
+    url.searchParams.set('format', format);
+    const tz = (Intl.DateTimeFormat && Intl.DateTimeFormat().resolvedOptions().timeZone) || '';
+    if (tz) url.searchParams.set('tz', tz);
+    if (timeframe === 'custom') {
+        const s = document.getElementById('analytics-start-date')?.value;
+        const e = document.getElementById('analytics-end-date')?.value;
+        if (s && e) {
+            url.searchParams.set('start_date', s);
+            url.searchParams.set('end_date', e);
+        } else {
+            try {
+                const p = new URL(window.location.href).searchParams;
+                const ps = p.get('start_date'); const pe = p.get('end_date');
+                if (ps && pe) { url.searchParams.set('start_date', ps); url.searchParams.set('end_date', pe); }
+            } catch(_) {}
+        }
+    }
+    window.location.href = url.toString();
 }
 
 function printReport() {
