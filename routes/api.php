@@ -529,13 +529,9 @@ Route::get('/settings/pos', function() {
         }
     } catch (\Throwable $e) {}
 
-    // Mask METRC keys in response
-    if (array_key_exists('metrc_user_key', $settings)) {
-        $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '••••••••' : '';
-    }
-    if (array_key_exists('metrc_vendor_key', $settings)) {
-        $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
-    }
+    // Do not return or store METRC secrets
+    $settings['metrc_user_key'] = '';
+    $settings['metrc_vendor_key'] = '';
     // Ensure a version field exists for optimistic coordination
     if (!isset($settings['settings_version'])) { $settings['settings_version'] = 0; }
     return response()->json([
