@@ -224,16 +224,8 @@ class SettingsController extends Controller
                 }
             } catch (\Throwable $e) { /* ignore */ }
 
-            // Handle per-user METRC user key (also persist globally per store)
-            if (!empty($settings['metrc_user_key'])) {
-                $user = auth()->user();
-                if ($user && $user->employee) {
-                    $emp = $user->employee;
-                    $emp->metrc_api_key = $settings['metrc_user_key'];
-                    $emp->save();
-                }
-                // Keep metrc_user_key in store-scoped settings as requested
-            }
+            // Do not persist METRC API keys anywhere
+            unset($settings['metrc_user_key'], $settings['metrc_vendor_key']);
 
             // Compose final merged settings (defaults -> existing -> incoming)
             $existing = $this->getCurrentSettings();
@@ -305,7 +297,7 @@ class SettingsController extends Controller
             $responseSettings = $merged;
             if (is_array($responseSettings)) {
                 if (array_key_exists('metrc_user_key', $responseSettings)) {
-                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '•••••••���' : '';
+                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
                 }
                 if (array_key_exists('metrc_vendor_key', $responseSettings)) {
                     $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••••' : '';
