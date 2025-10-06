@@ -31,12 +31,8 @@ class SettingsController extends Controller
             // Mask sensitive fields in response
             $responseSettings = $settings;
             if (is_array($responseSettings)) {
-                if (array_key_exists('metrc_user_key', $responseSettings)) {
-                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
-                }
-                if (array_key_exists('metrc_vendor_key', $responseSettings)) {
-                    $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••••' : '';
-                }
+                $responseSettings['metrc_user_key'] = '';
+                $responseSettings['metrc_vendor_key'] = '';
             }
             return response()->json([
                 'success' => true,
@@ -297,12 +293,8 @@ class SettingsController extends Controller
             // Mask sensitive fields in response
             $responseSettings = $merged;
             if (is_array($responseSettings)) {
-                if (array_key_exists('metrc_user_key', $responseSettings)) {
-                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
-                }
-                if (array_key_exists('metrc_vendor_key', $responseSettings)) {
-                    $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••••' : '';
-                }
+                $responseSettings['metrc_user_key'] = '';
+                $responseSettings['metrc_vendor_key'] = '';
             }
             return response()->json([
                 'success' => true,
