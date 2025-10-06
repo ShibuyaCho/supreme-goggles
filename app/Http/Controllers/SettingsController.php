@@ -571,8 +571,8 @@ class SettingsController extends Controller
 
             // METRC Integration
             'metrc_enabled' => true,
-            'metrc_user_key' => env('METRC_USER_KEY', ''),
-            'metrc_vendor_key' => env('METRC_VENDOR_KEY', ''),
+            'metrc_user_key' => '',
+            'metrc_vendor_key' => '',
             'metrc_facility' => env('METRC_FACILITY', ''),
             'metrc_auto_push_sales' => false,
 
