@@ -18,43 +18,21 @@ class MetrcService
     public function __construct()
     {
         $this->baseUrl = config('services.metrc.base_url', 'https://api-or.metrc.com');
-        $this->userKey = env('METRC_USER_KEY');
-        $this->vendorKey = env('METRC_INTEGRATOR_KEY') ?: env('METRC_VENDOR_KEY');
+        // Do not load METRC API keys from env or cache; require ephemeral input per request
+        $this->userKey = null;
+        $this->vendorKey = null;
         $this->facilityLicense = env('METRC_FACILITY');
 
-        // Prefer per-store cached settings over env to honor user-entered keys per store
+        // Allow ephemeral keys via headers or request payload
         try {
-            $sid = null;
-            try { $sid = request()->header('X-Store-ID'); } catch (\Throwable $e) { $sid = null; }
-            $sid = is_string($sid) ? trim($sid) : '';
-            if ($sid === '' || $sid === null) $sid = 'default';
-            $sid = preg_replace('/[^A-Za-z0-9_\-\.]/', '', $sid);
-            if ($sid === 'defaultstore') $sid = 'default';
-            $cached = Cache::get('pos_settings:' . $sid, Cache::get('pos_settings', []));
-            $isMasked = function($v){
-                return is_string($v) && (trim($v) === '••••••••' || preg_match('/^[•*]+$/u', trim($v)) === 1);
-            };
-            if (is_array($cached)) {
-                $uk = $cached['metrc_user_key'] ?? null;
-                $vk = $cached['metrc_vendor_key'] ?? null;
-                $fl = $cached['metrc_facility'] ?? null;
-                if (!empty($uk) && !$isMasked($uk)) { $this->userKey = $uk; }
-                if (!empty($vk) && !$isMasked($vk)) { $this->vendorKey = $vk; }
-                if (!empty($fl)) { $this->facilityLicense = $fl; }
-            }
-        } catch (\Throwable $e) { /* ignore cache issues */ }
-
-        // Prefer per-user METRC key from authenticated employee when available
-        try {
-            if (Auth::check()) {
-                $emp = optional(Auth::user())->employee;
-                if ($emp && !empty($emp->metrc_api_key)) {
-                    $this->userKey = $emp->metrc_api_key;
-                }
-            }
-        } catch (\Throwable $e) {
-            // Ignore if auth is not available in context
-        }
+            $req = request();
+            $uk = $req->header('X-Metrc-User-Key') ?: ($req->input('metrc_user_key') ?? null);
+            $vk = $req->header('X-Metrc-Vendor-Key') ?: ($req->input('metrc_vendor_key') ?? null);
+            $fl = $req->header('X-Metrc-Facility') ?: ($req->input('metrc_facility') ?? null);
+            if (!empty($uk)) { $this->userKey = $uk; }
+            if (!empty($vk)) { $this->vendorKey = $vk; }
+            if (!empty($fl)) { $this->facilityLicense = $fl; }
+        } catch (\Throwable $e) { /* ignore */ }
     }
 
     /**
