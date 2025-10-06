@@ -2215,9 +2215,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
                 $settings['metrc_facility'] = env('METRC_FACILITY', '');
             }
             // Mask METRC keys in response
-            if (array_key_exists('metrc_user_key', $settings)) {
-                $settings['metrc_user_key'] = !empty($settings['metrc_user_key']) ? '��•••••••' : '';
-            }
+            $settings['metrc_user_key'] = '';
+            $settings['metrc_vendor_key'] = '';
             if (array_key_exists('metrc_vendor_key', $settings)) {
                 $settings['metrc_vendor_key'] = !empty($settings['metrc_vendor_key']) ? '••••••••' : '';
             }
