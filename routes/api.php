@@ -689,6 +689,8 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         $merged = array_merge(is_array($current)?$current:[], is_array($incoming)?$incoming:[]);
         // Bump a simple settings_version to coordinate multi-tab saves
         $merged['settings_version'] = (int)($current['settings_version'] ?? 0) + 1;
+        // Strip METRC secrets from persisted settings
+        unset($merged['metrc_user_key'], $merged['metrc_vendor_key']);
         // Normalize array fields sent as JSON strings and ensure correct types
         foreach (['exit_label_categories','receipt_categories_autoprint','minimum_price_categories','business_hours','role_permissions'] as $field) {
             if (isset($merged[$field]) && is_string($merged[$field])) {
@@ -822,7 +824,7 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
                 'Tax_Configuration' => $pick($merged, ['sales_tax','excise_tax','cannabis_tax','tax_inclusive']),
                 'Sales_&_Transaction_Settings' => $pick($merged, ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold']),
                 'Printing_Preferences' => $pick($merged, ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer']),
-                'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales']),
+                'Metrc_Integration' => $pick($merged, ['metrc_enabled','metrc_facility','metrc_auto_push_sales']),
                 'Auto_Delete_Zero-Quantity_Products' => $pick($merged, ['auto_delete_zero_quantity','auto_delete_zero_days']),
             ];
             // Coerce numeric/boolean types for stable equality
@@ -1072,12 +1074,9 @@ Route::post('/settings/pos', function(\Illuminate\Http\Request $request) {
         if ($savedRemote) {
             $respSettings = $merged;
             if (!isset($respSettings['settings_version'])) { $respSettings['settings_version'] = (int)($current['settings_version'] ?? 0) + 1; }
-            if (array_key_exists('metrc_user_key', $respSettings)) {
-                $respSettings['metrc_user_key'] = !empty($respSettings['metrc_user_key']) ? '••••••••' : '';
-            }
-            if (array_key_exists('metrc_vendor_key', $respSettings)) {
-                $respSettings['metrc_vendor_key'] = !empty($respSettings['metrc_vendor_key']) ? '••••••••' : '';
-            }
+            // Always return blanks for METRC secrets
+            $respSettings['metrc_user_key'] = '';
+            $respSettings['metrc_vendor_key'] = '';
             return response()->json(['success' => true, 'settings' => $respSettings, 'store_id' => $storeId, 'store_name' => (string)($respSettings['store_name'] ?? '')])
                 ->header('Vary','X-Store-ID, X-Store-Name')
                 ->header('Cache-Control','no-store, no-cache, must-revalidate, max-age=0');
