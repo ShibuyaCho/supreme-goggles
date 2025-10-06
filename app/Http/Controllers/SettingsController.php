@@ -260,7 +260,7 @@ class SettingsController extends Controller
                     $sec_Tax_Configuration = ['sales_tax','excise_tax','cannabis_tax','tax_inclusive'];
                     $sec_Sales_Settings = ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold'];
                     $sec_Printing = ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer'];
-                    $sec_Metrc = ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales'];
+                    $sec_Metrc = ['metrc_enabled','metrc_facility','metrc_auto_push_sales'];
                     $sec_AutoDelete = ['auto_delete_zero_quantity','auto_delete_zero_days'];
                     $payload = [[
                         'id' => $storeId,
@@ -305,7 +305,7 @@ class SettingsController extends Controller
             $responseSettings = $merged;
             if (is_array($responseSettings)) {
                 if (array_key_exists('metrc_user_key', $responseSettings)) {
-                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '••••••••' : '';
+                    $responseSettings['metrc_user_key'] = $responseSettings['metrc_user_key'] ? '•••••••���' : '';
                 }
                 if (array_key_exists('metrc_vendor_key', $responseSettings)) {
                     $responseSettings['metrc_vendor_key'] = $responseSettings['metrc_vendor_key'] ? '••••••••' : '';
@@ -353,7 +353,7 @@ class SettingsController extends Controller
                     $sec_Tax_Configuration = ['sales_tax','excise_tax','cannabis_tax','tax_inclusive'];
                     $sec_Sales_Settings = ['require_customer','age_verification','limit_enforcement','accept_cash','accept_debit','accept_check','round_to_nearest','minimum_price_enabled','minimum_price_amount','minimum_price_categories','inventory_view_mode','expandable_cart','weight_threshold'];
                     $sec_Printing = ['receipt_autoprint','receipt_categories_autoprint','receipt_show_tax_breakdown','receipt_show_metrc','receipt_show_loyalty','receipt_show_qr_code','default_receipt_printer','receipt_paper_size','exit_label_categories','receipt_template','print_labels','receipt_footer'];
-                    $sec_Metrc = ['metrc_enabled','metrc_user_key','metrc_vendor_key','metrc_facility','metrc_auto_push_sales'];
+                    $sec_Metrc = ['metrc_enabled','metrc_facility','metrc_auto_push_sales'];
                     $sec_AutoDelete = ['auto_delete_zero_quantity','auto_delete_zero_days'];
                     $payload = [[
                         'id' => $storeId,
