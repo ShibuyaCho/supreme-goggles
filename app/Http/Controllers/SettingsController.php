@@ -463,6 +463,7 @@ class SettingsController extends Controller
                         if (is_array($row)) {
                             $compose = function(array $r){ $out=[]; foreach(['Store_Information','Tax_Configuration','Sales_&_Transaction_Settings','Printing_Preferences','Metrc_Integration','Auto_Delete_Zero-Quantity_Products'] as $col){ if(isset($r[$col]) && is_array($r[$col])) $out = array_merge($out,$r[$col]); } if(isset($r['store_name']) && is_string($r['store_name'])) $out['store_name'] = $r['store_name']; return $out; };
                             $composed = $compose($row);
+                            unset($composed['metrc_user_key'], $composed['metrc_vendor_key']);
                             if (isset($row['settings']) && is_array($row['settings'])) {
                                 foreach (['settings_version'] as $vk) { if (!isset($composed[$vk]) && isset($row['settings'][$vk])) $composed[$vk] = $row['settings'][$vk]; }
                             }
