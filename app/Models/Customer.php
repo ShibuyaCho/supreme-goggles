@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Carbon\Carbon;
 
 class Customer extends Model
@@ -213,5 +214,47 @@ class Customer extends Model
         
         $progress = (($this->total_spent - $currentTierThreshold) / ($nextTier - $currentTierThreshold)) * 100;
         return max(0, min(100, $progress));
+    }
+
+    public function medicalCard()
+    {
+        return $this->hasOne(\App\Models\MedicalCard::class);
+    }
+
+    /**
+     * Customers who are in the loyalty program.
+     * Usage: Customer::loyaltyMembers()->get()
+     */
+    public function scopeLoyaltyMembers(Builder $query): Builder
+    {
+        return $query->whereNotNull('loyalty_member_id');
+    }
+
+    /**
+     * Convenience scope for active customers.
+     * Usage: Customer::active()->get()
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * (Optional) Simple search scope across common fields.
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+        if ($term === '') return $query;
+
+        $like = '%' . addcslashes($term, '%_') . '%';
+        return $query->where(function (Builder $q) use ($like) {
+            $q->where('name', 'LIKE', $like)
+              ->orWhere('first_name', 'LIKE', $like)
+              ->orWhere('last_name', 'LIKE', $like)
+              ->orWhere('email', 'LIKE', $like)
+              ->orWhere('phone', 'LIKE', $like)
+              ->orWhere('loyalty_member_id', 'LIKE', $like);
+        });
     }
 }

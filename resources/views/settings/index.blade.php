@@ -17,8 +17,9 @@
                     <option value="downtown">Cannabest POS - Downtown</option>
                     <option value="eastside">Cannabest POS - Eastside</option>
                 </select>
-                <button id="save-settings-btn" class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button id="save-settings-btn" @click="window.dispatchEvent(new CustomEvent('save-settings'))"
+                    class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h2m0-4h9m4 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     Save Settings
@@ -27,7 +28,11 @@
         </div>
     </header>
 
-    <div class="container mx-auto p-6" x-data="settingsManager()">
+    <div class="container mx-auto p-6"
+         x-data="settingsManager(window.__settingsPayload)"
+         x-on:save-settings.window="saveSettings()"
+         x-init="init()"
+         x-cloak>
         <!-- Tabs -->
         <div class="mb-6">
             <nav class="flex space-x-8 overflow-x-auto">
@@ -65,7 +70,7 @@
         <div x-show="activeTab === 'general'" class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h2M7 7h10M7 11h10M7 15h10"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Store Information</h3>
@@ -122,7 +127,7 @@
         <div x-show="activeTab === 'hours'" class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Hours of Operation</h3>
@@ -154,7 +159,7 @@
             <!-- Tax Configuration -->
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Tax Configuration</h3>
@@ -164,7 +169,7 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Sales Tax (%)</label>
                             <input type="number" x-model.number="settings.sales_tax" step="0.01" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
-                            <p class="text-xs text-gray-600 mt-1">Oregon typical: 0-10%</p>
+                            <p class="text-xs text-gray-600 mt-1">Oregon typical: 0–10%</p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Excise Tax (%)</label>
@@ -176,28 +181,6 @@
                             <input type="number" x-model.number="settings.cannabis_tax" step="0.01" min="0" max="100" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
                             <p class="text-xs text-gray-600 mt-1">Oregon standard: 17%</p>
                         </div>
-                    </div>
-
-                    <!-- Tax Exemptions -->
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                        <h4 class="font-medium text-yellow-900 mb-3">Tax Exemptions</h4>
-                        <div class="space-y-2">
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" checked disabled class="h-4 w-4 text-cannabis-green focus:ring-cannabis-green rounded">
-                                <span class="text-sm text-yellow-800">Medical/Caregiver customers (Tax Exempt)</span>
-                            </label>
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" checked disabled class="h-4 w-4 text-cannabis-green focus:ring-cannabis-green rounded">
-                                <span class="text-sm text-yellow-800">Hemp products (Tax Exempt)</span>
-                            </label>
-                            <label class="flex items-center space-x-3">
-                                <input type="checkbox" checked disabled class="h-4 w-4 text-cannabis-green focus:ring-cannabis-green rounded">
-                                <span class="text-sm text-yellow-800">Accessories & Paraphernalia (Tax Exempt)</span>
-                            </label>
-                        </div>
-                        <p class="text-xs text-yellow-700 mt-2">
-                            These exemptions are automatically applied based on customer type and product category.
-                        </p>
                     </div>
 
                     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -224,7 +207,7 @@
             <!-- Exit Label Categories -->
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.99 1.99 0 013 12V7a4 4 0 014-4z"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Exit Label Categories</h3>
@@ -258,7 +241,7 @@
         <div x-show="activeTab === 'receipts'" class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Automatic Receipt Printing</h3>
@@ -369,7 +352,7 @@
         <div x-show="activeTab === 'pricing'" class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Minimum Price Protection</h3>
@@ -416,7 +399,7 @@
 
                                 <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                     <p class="text-sm text-blue-800">
-                                        <strong>Current Setting:</strong> Products in <span x-text="settings.minimum_price_categories.length"></span> selected <span x-text="settings.minimum_price_categories.length === 1 ? 'category' : 'categories'"></span> cannot be sold below <strong x-text="'$' + settings.minimum_price_amount.toFixed(2)"></strong>
+                                        <strong>Current Setting:</strong> Products in <span x-text="settings.minimum_price_categories.length"></span> selected <span x-text="settings.minimum_price_categories.length === 1 ? 'category' : 'categories'"></span> cannot be sold below <strong x-text="'$' + Number(settings.minimum_price_amount || 0).toFixed(2)"></strong>
                                     </p>
                                     <p x-show="settings.minimum_price_categories.length > 0" class="text-sm text-blue-700 mt-1">
                                         Protected categories: <span x-text="settings.minimum_price_categories.join(', ')"></span>
@@ -439,7 +422,7 @@
         <div x-show="activeTab === 'inventory'" class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Inventory Display Preferences</h3>
@@ -454,11 +437,11 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div :class="settings.inventory_view_mode === 'cards' ? 'border-cannabis-green bg-green-50' : 'border-gray-200 hover:border-gray-300'" class="p-4 border rounded-lg cursor-pointer transition-all" @click="settings.inventory_view_mode = 'cards'">
                                     <div class="flex items-center gap-3 mb-2">
-                                        <svg class="w-5 h-5 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
                                         </svg>
                                         <span class="font-medium">Card View</span>
-                                        <svg x-show="settings.inventory_view_mode === 'cards'" class="w-4 h-4 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg x-show="settings.inventory_view_mode === 'cards'" class="w-4 h-4 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
@@ -470,11 +453,11 @@
 
                                 <div :class="settings.inventory_view_mode === 'list' ? 'border-cannabis-green bg-green-50' : 'border-gray-200 hover:border-gray-300'" class="p-4 border rounded-lg cursor-pointer transition-all" @click="settings.inventory_view_mode = 'list'">
                                     <div class="flex items-center gap-3 mb-2">
-                                        <svg class="w-5 h-5 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-5 h-5 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
                                         </svg>
                                         <span class="font-medium">List View</span>
-                                        <svg x-show="settings.inventory_view_mode === 'list'" class="w-4 h-4 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg x-show="settings.inventory_view_mode === 'list'" class="w-4 h-4 text-cannabis-green" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
@@ -523,7 +506,7 @@
         <div x-show="activeTab === 'management'" class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Inventory Management</h3>
@@ -574,7 +557,7 @@
         <div x-show="activeTab === 'appearance'" class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center gap-2">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
                     </svg>
                     <h3 class="text-lg font-semibold">Theme & Display Settings</h3>
@@ -645,13 +628,13 @@
             <div class="bg-white rounded-lg shadow-sm">
                 <div class="p-6 border-b flex items-center justify-between">
                     <div class="flex items-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-4m-5 0H3m2 0h2M7 7h10M7 11h10M7 15h10"/>
                         </svg>
                         <h3 class="text-lg font-semibold">Franchise Management</h3>
                     </div>
                     <button class="px-4 py-2 bg-cannabis-green text-white rounded-lg hover:bg-green-600 transition-colors flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
                         Add Store
@@ -663,7 +646,7 @@
                             <h4 class="font-medium mb-3">Store Locations</h4>
                             <p class="text-sm text-gray-600 mb-4">Manage multiple store locations</p>
                         </div>
-                        
+
                         <div class="space-y-3">
                             <template x-for="store in stores" :key="store.id">
                                 <div class="flex items-center justify-between p-4 border rounded-lg">
@@ -678,8 +661,8 @@
                                     </div>
                                     <div class="flex items-center gap-2">
                                         <button @click="switchStore(store)" :disabled="store.is_current" class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" x-text="store.is_current ? 'Current' : 'Switch To'"></button>
-                                        <button class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors">
-                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <button class="px-3 py-1 text-sm border border-gray-300 rounded hover:bg-gray-50 transition-colors" title="Edit store">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                             </svg>
                                         </button>
@@ -695,7 +678,7 @@
         <!-- METRC Integration Settings -->
         <div class="bg-white rounded-lg shadow-sm">
             <div class="p-6 border-b flex items-center gap-2">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
                 </svg>
                 <h3 class="text-lg font-semibold">METRC Integration</h3>
@@ -714,11 +697,11 @@
                 <div x-show="settings.metrc_enabled" class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">User Key</label>
-                        <input type="password" x-model="settings.metrc_user_key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                        <input type="password" x-model="settings.metrc_user_key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" autocomplete="off">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Vendor Key</label>
-                        <input type="password" x-model="settings.metrc_vendor_key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green">
+                        <input type="password" x-model="settings.metrc_vendor_key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cannabis-green" autocomplete="off">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Facility License</label>
@@ -730,218 +713,232 @@
     </div>
 </div>
 
+{{-- Alpine component (valid JS; no PHP-in-JS) --}}
 <script>
 function settingsManager() {
-    return {
-        activeTab: 'general',
-        categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Extracts', 'Edibles', 'Topicals', 'Tinctures', 'Vapes', 'Inhalable Cannabinoids', 'Clones', 'Hemp', 'Paraphernalia', 'Accessories'],
-        settings: @json($settings ?? {}),
-        stores: [
-            { id: 'main', name: 'Cannabest POS - Main Store', address: '123 Cannabis St, Portland, OR 97201', phone: '(503) 555-0123', status: 'active', is_current: true },
-            { id: 'downtown', name: 'Cannabest POS - Downtown', address: '456 Main St, Portland, OR 97202', phone: '(503) 555-0124', status: 'active', is_current: false },
-            { id: 'eastside', name: 'Cannabest POS - Eastside', address: '789 Division St, Portland, OR 97203', phone: '(503) 555-0125', status: 'inactive', is_current: false }
-        ],
+  return {
+    // --- state ---
+    activeTab: 'general',
+    categories: [
+      'Flower','Pre-Rolls','Concentrates','Extracts','Edibles','Topicals','Tinctures',
+      'Vapes','Inhalable Cannabinoids','Clones','Hemp','Paraphernalia','Accessories'
+    ],
+    // server-provided settings (safe default to {})
+    settings: @json($settings ?? []),
+    stores: [
+      { id: 'main', name: 'Cannabest POS - Main Store', address: '123 Cannabis St, Portland, OR 97201', phone: '(503) 555-0123', status: 'active', is_current: true },
+      { id: 'downtown', name: 'Cannabest POS - Downtown', address: '456 Main St, Portland, OR 97202', phone: '(503) 555-0124', status: 'active', is_current: false },
+      { id: 'eastside', name: 'Cannabest POS - Eastside', address: '789 Division St, Portland, OR 97203', phone: '(503) 555-0125', status: 'inactive', is_current: false }
+    ],
 
-        init() {
-            // Initialize default settings if empty
-            if (!this.settings || Object.keys(this.settings).length === 0) {
-                this.settings = this.getDefaultSettings();
+    // --- lifecycle ---
+    init() {
+      // ensure object
+      if (!this.settings || typeof this.settings !== 'object' || Array.isArray(this.settings)) {
+        this.settings = {};
+      }
+
+      // start with defaults merged with server
+      this.settings = { ...this.defaultSettings(), ...this.settings };
+
+      // Only load from localStorage if DB data is empty
+      const hasServerData = Object.keys(this.settings).length > 0 && this.settings.store_name;
+      if (!hasServerData) {
+        this.loadSettingsFromStorage();
+      }
+
+      if (!this.settings.business_hours) {
+        this.settings.business_hours = this.defaultBusinessHours();
+      }
+
+      // Watch and persist
+      this.$watch(() => JSON.stringify(this.settings), () => {
+        this.saveSettingsToStorage();
+        this.dispatchSettingsUpdate();
+      });
+    },
+
+    // --- defaults (JS objects, not PHP arrays) ---
+    defaultSettings() {
+      return {
+        // Taxes
+        sales_tax: 20.0,
+        excise_tax: 10.0,
+        cannabis_tax: 17.0,
+        tax_inclusive: false,
+
+        // Store info
+        store_name: 'Cannabis POS',
+        store_manager: '',
+        store_address: '',
+        store_phone: '',
+        store_email: '',
+        website: '',
+        license_number: '',
+
+        // Receipt
+        receipt_footer: "Thank you for your business!\nKeep receipt for returns and warranty.",
+        receipt_autoprint: false,
+        receipt_categories_autoprint: [],
+        receipt_show_tax_breakdown: true,
+        receipt_show_metrc: true,
+        receipt_show_loyalty: true,
+        receipt_show_qr_code: false,
+        default_receipt_printer: '',
+        receipt_paper_size: '80mm',
+
+        // Pricing
+        minimum_price_enabled: false,
+        minimum_price_amount: 0.01,
+        minimum_price_categories: [],
+
+        // Display & inventory
+        inventory_view_mode: 'cards',
+        expandable_cart: true,
+        auto_delete_zero_quantity: false,
+        auto_delete_zero_days: 1,
+
+        // Exit labels
+        exit_label_categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Edibles'],
+
+        // Appearance
+        dark_mode: false,
+        theme_color: 'green',
+        font_size: 'medium',
+        high_contrast: false,
+        reduce_motion: false,
+
+        // Business hours
+        business_hours: this.defaultBusinessHours(),
+
+        // Legacy POS prefs (if used elsewhere)
+        require_customer: true,
+        age_verification: true,
+        limit_enforcement: true,
+        accept_cash: true,
+        accept_debit: true,
+        accept_check: false,
+        round_to_nearest: false,
+
+        // METRC integration (browser cannot read PHP env; default to empty)
+        metrc_enabled: true,
+        metrc_user_key: '',
+        metrc_vendor_key: '',
+        metrc_facility: '',
+      };
+    },
+
+    defaultBusinessHours() {
+      return [
+        { day: "Monday", is_open: true, open_time: "09:00", close_time: "21:00" },
+        { day: "Tuesday", is_open: true, open_time: "09:00", close_time: "21:00" },
+        { day: "Wednesday", is_open: true, open_time: "09:00", close_time: "21:00" },
+        { day: "Thursday", is_open: true, open_time: "09:00", close_time: "21:00" },
+        { day: "Friday", is_open: true, open_time: "09:00", close_time: "21:00" },
+        { day: "Saturday", is_open: true, open_time: "10:00", close_time: "20:00" },
+        { day: "Sunday", is_open: true, open_time: "11:00", close_time: "19:00" }
+      ];
+    },
+
+    // --- storage + events ---
+    loadSettingsFromStorage() {
+      try {
+        const stored = localStorage.getItem('cannabest-pos-settings');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          // Only merge missing fields (do NOT override DB values)
+          for (const [key, val] of Object.entries(parsed)) {
+            if (this.settings[key] === undefined || this.settings[key] === null) {
+              this.settings[key] = val;
             }
-
-            // Initialize business hours if not set
-            if (!this.settings.business_hours) {
-                this.settings.business_hours = this.getDefaultBusinessHours();
-            }
-
-            // Load settings from localStorage if available
-            this.loadSettingsFromStorage();
-
-            // Set up save button listener
-            document.getElementById('save-settings-btn').addEventListener('click', () => {
-                this.saveSettings();
-            });
-
-            // Auto-save on change
-            this.$watch('settings', () => {
-                this.saveSettingsToStorage();
-                this.dispatchSettingsUpdate();
-            }, { deep: true });
-        },
-
-        getDefaultSettings() {
-            return {
-                // Store Information
-                store_name: 'Cannabest POS',
-                store_address: '',
-                store_phone: '',
-                store_email: '',
-                website: '',
-                store_manager: '',
-                license_number: '',
-                receipt_footer: 'Thank you for your business!\nKeep receipt for returns and warranty.',
-
-                // Tax Configuration
-                sales_tax: 0,
-                excise_tax: 10,
-                cannabis_tax: 17,
-                tax_inclusive: false,
-
-                // Exit Label Categories
-                exit_label_categories: ['Flower', 'Pre-Rolls', 'Concentrates', 'Edibles'],
-
-                // Receipt Printing
-                receipt_autoprint: false,
-                receipt_categories_autoprint: [],
-                receipt_show_tax_breakdown: true,
-                receipt_show_metrc: true,
-                receipt_show_loyalty: true,
-                receipt_show_qr_code: false,
-                default_receipt_printer: '',
-                receipt_paper_size: '80mm',
-
-                // Pricing
-                minimum_price_enabled: false,
-                minimum_price_amount: 0.01,
-                minimum_price_categories: [],
-
-                // Display & Inventory
-                inventory_view_mode: 'cards',
-                expandable_cart: true,
-
-                // Auto Delete
-                auto_delete_zero_quantity: false,
-                auto_delete_zero_days: 1,
-
-                // METRC Integration
-                metrc_enabled: true,
-                metrc_user_key: '',
-                metrc_vendor_key: '',
-                metrc_facility: '',
-
-                // Appearance
-                dark_mode: false,
-                theme_color: 'green',
-                font_size: 'medium',
-                high_contrast: false,
-                reduce_motion: false,
-
-                // Business Hours
-                business_hours: this.getDefaultBusinessHours()
-            };
-        },
-
-        getDefaultBusinessHours() {
-            return [
-                { day: "Monday", is_open: true, open_time: "09:00", close_time: "21:00" },
-                { day: "Tuesday", is_open: true, open_time: "09:00", close_time: "21:00" },
-                { day: "Wednesday", is_open: true, open_time: "09:00", close_time: "21:00" },
-                { day: "Thursday", is_open: true, open_time: "09:00", close_time: "21:00" },
-                { day: "Friday", is_open: true, open_time: "09:00", close_time: "21:00" },
-                { day: "Saturday", is_open: true, open_time: "10:00", close_time: "20:00" },
-                { day: "Sunday", is_open: true, open_time: "11:00", close_time: "19:00" }
-            ];
-        },
-
-        loadSettingsFromStorage() {
-            try {
-                const stored = localStorage.getItem('cannabest-pos-settings');
-                if (stored) {
-                    const parsedSettings = JSON.parse(stored);
-                    this.settings = { ...this.settings, ...parsedSettings };
-                }
-            } catch (error) {
-                console.warn('Could not load settings from localStorage:', error);
-            }
-        },
-
-        saveSettingsToStorage() {
-            try {
-                localStorage.setItem('cannabest-pos-settings', JSON.stringify(this.settings));
-            } catch (error) {
-                console.warn('Could not save settings to localStorage:', error);
-            }
-        },
-
-        dispatchSettingsUpdate() {
-            // Dispatch custom event to notify other components
-            const event = new CustomEvent('settings-updated', {
-                detail: this.settings
-            });
-            window.dispatchEvent(event);
-
-            // Dispatch specific events for certain settings
-            if (this.settings.inventory_view_mode) {
-                const inventoryEvent = new CustomEvent('inventory-view-changed', {
-                    detail: { viewMode: this.settings.inventory_view_mode }
-                });
-                window.dispatchEvent(inventoryEvent);
-            }
-        },
-
-        async saveSettings() {
-            try {
-                const response = await fetch('/api/settings', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(this.settings)
-                });
-
-                const result = await response.json();
-
-                if (response.ok) {
-                    this.showToast('Settings saved successfully!', 'success');
-                } else {
-                    this.showToast('Error saving settings: ' + result.message, 'error');
-                }
-            } catch (error) {
-                console.error('Error saving settings:', error);
-                this.showToast('Error saving settings', 'error');
-            }
-        },
-
-        switchStore(store) {
-            this.stores.forEach(s => s.is_current = false);
-            store.is_current = true;
-            this.showToast(`Switched to ${store.name}`, 'success');
-        },
-
-        testReceipt(type) {
-            let message = '';
-            switch(type) {
-                case 'sample':
-                    message = 'Printing sample receipt with demo transaction...';
-                    break;
-                case 'medical':
-                    message = 'Printing medical patient receipt example...';
-                    break;
-                case 'alignment':
-                    message = 'Printing alignment test pattern...';
-                    break;
-            }
-            
-            this.showToast(message, 'info');
-            
-            // Simulate printing
-            setTimeout(() => {
-                this.showToast('Test receipt printed successfully!', 'success');
-            }, 2000);
-        },
-
-        showToast(message, type = 'info') {
-            // Simple toast implementation
-            const toast = document.createElement('div');
-            toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 ${type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`;
-            toast.textContent = message;
-            document.body.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
+          }
         }
-    };
+      } catch (e) {
+        console.warn('Could not load settings from localStorage:', e);
+      }
+    },
+
+    saveSettingsToStorage() {
+      try {
+        localStorage.setItem('cannabest-pos-settings', JSON.stringify(this.settings));
+      } catch (e) {
+        console.warn('Could not save settings to localStorage:', e);
+      }
+    },
+
+    dispatchSettingsUpdate() {
+      window.dispatchEvent(new CustomEvent('settings-updated', { detail: this.settings }));
+      if (this.settings.inventory_view_mode) {
+        window.dispatchEvent(new CustomEvent('inventory-view-changed', {
+          detail: { viewMode: this.settings.inventory_view_mode }
+        }));
+      }
+    },
+
+    // --- actions ---
+    async saveSettings() {
+      try {
+        const response = await fetch('/api/settings', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('api_token') || ''}`
+          },
+          body: JSON.stringify(this.settings)
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (response.ok) this.showToast('Settings saved successfully!', 'success');
+        else if (response.status === 401) this.showToast('Unauthorized: sign in as admin.', 'error');
+        else this.showToast(`Error: ${result.message ?? response.status}`, 'error');
+      } catch (e) {
+        console.error(e);
+        this.showToast('Error saving settings', 'error');
+      }
+    },
+
+    async loginAndStoreToken(email, password) {
+      const r = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Accept':'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok && data.token) {
+        localStorage.setItem('api_token', data.token);
+        this.showToast('Signed in successfully', 'success');
+      } else {
+        this.showToast('Login failed', 'error');
+      }
+    },
+
+    switchStore(store) {
+      this.stores.forEach(s => s.is_current = false);
+      store.is_current = true;
+      this.showToast(`Switched to ${store.name}`, 'success');
+    },
+
+    testReceipt(type) {
+      const map = {
+        sample: 'Printing sample receipt with demo transaction...',
+        medical: 'Printing medical patient receipt example...',
+        alignment: 'Printing alignment test pattern...'
+      };
+      this.showToast(map[type] || 'Printing...', 'info');
+      setTimeout(() => this.showToast('Test receipt printed successfully!', 'success'), 1200);
+    },
+
+    showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white z-50 ${
+        type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+      }`;
+      toast.textContent = message;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  };
 }
 </script>
 @endsection

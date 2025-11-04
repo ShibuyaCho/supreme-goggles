@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('saved_sales', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('employee_id')->constrained('users')->onDelete('cascade');
+            $table->foreignId('employee_id')->constrained('employees')->onDelete('cascade');
             $table->string('employee_name');
             $table->enum('customer_type', ['rec', 'medical'])->default('rec');
             $table->json('customer_info')->nullable();

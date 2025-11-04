@@ -1,23 +1,39 @@
+@props([
+    'name'     => 'radio-'.uniqid(),
+    'options'  => [],            // array of strings or ['label'=>..,'value'=>..]
+    'value'    => '',
+    'disabled' => false,
+    'class'    => '',
+])
+
 @php
-    $name = $name ?? 'radio-' . uniqid();
-    $options = $options ?? [];
-    $value = $value ?? '';
-    $disabled = $disabled ?? false;
-    
-    $classes = cn('space-y-2', $class ?? '');
+    // normalize options
+    $normalized = collect($options)->map(function ($opt) {
+        if (is_array($opt)) {
+            return [
+                'value' => (string)($opt['value'] ?? ''),
+                'label' => (string)($opt['label'] ?? ($opt['value'] ?? '')),
+            ];
+        }
+        return ['value' => (string)$opt, 'label' => (string)$opt];
+    });
+
+    $containerClass = trim('space-y-2 '.(string)$class);
 @endphp
 
-<div {{ $attributes->merge(['class' => $classes]) }}>
-    @foreach($options as $option)
+{{-- IMPORTANT: options/value/etc are declared as props above,
+     so they are NOT in $attributes (prevents array→string crash) --}}
+<div {{ $attributes->merge(['class' => $containerClass]) }}>
+    @foreach($normalized as $opt)
         @php
-            $optionValue = is_array($option) ? $option['value'] : $option;
-            $optionLabel = is_array($option) ? $option['label'] : $option;
-            $optionId = $name . '-' . str_replace(' ', '-', strtolower($optionValue));
-            $isChecked = $value === $optionValue;
+            $optionValue = $opt['value'];
+            $optionLabel = $opt['label'];
+            $optionId    = $name.'-'.str_replace(' ', '-', strtolower($optionValue));
+            $isChecked   = (string)$value === (string)$optionValue;
         @endphp
-        
+
         <div class="flex items-center">
-            <input 
+            <input
                 type="radio"
                 id="{{ $optionId }}"
                 name="{{ $name }}"
@@ -26,7 +42,9 @@
                 {{ $disabled ? 'disabled' : '' }}
                 class="h-4 w-4 border-gray-300 text-blue-600 focus:ring-blue-500"
             />
-            <label for="{{ $optionId }}" class="ml-2 text-sm text-gray-700">{{ $optionLabel }}</label>
+            <label for="{{ $optionId }}" class="ml-2 text-sm text-gray-700">
+                {{ $optionLabel }}
+            </label>
         </div>
     @endforeach
 </div>

@@ -8,10 +8,6 @@ class Kernel extends HttpKernel
 {
     /**
      * The application's global HTTP middleware stack.
-     *
-     * These middleware are run during every request to your application.
-     *
-     * @var array<int, class-string|string>
      */
     protected $middleware = [
         // \App\Http\Middleware\TrustHosts::class,
@@ -21,15 +17,12 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
-        
-        // Security middleware
+        // Custom security middleware
         \App\Http\Middleware\SecurityHeaders::class,
     ];
 
     /**
      * The application's route middleware groups.
-     *
-     * @var array<string, array<int, class-string|string>>
      */
     protected $middlewareGroups = [
         'web' => [
@@ -42,27 +35,39 @@ class Kernel extends HttpKernel
         ],
 
         'api' => [
-            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
-            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            /*
+            |--------------------------------------------------------------------------
+            | Sanctum Integration for SPA + API
+            |--------------------------------------------------------------------------
+            | This ensures that stateful frontend requests share the same session cookies
+            | and CSRF protection as 'web' routes when appropriate.
+            */
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
-        // Cannabis POS specific middleware groups
+        // Server-rendered POS pages -> session guard
         'pos' => [
             'web',
-            'auth:sanctum',
+            'auth', // <— changed from auth:sanctum
             'throttle:pos',
+            // Use the variant your RoleMiddleware expects:
             'role:cashier,budtender,manager,admin',
+            // If your RoleMiddleware expects a single piped string, use this instead:
+            // 'role:cashier|budtender|manager|admin',
         ],
 
+        // Server-rendered Admin pages -> session guard
         'admin' => [
             'web',
-            'auth:sanctum', 
+            'auth', // <— changed from auth:sanctum
             'throttle:admin',
             'role:admin',
             'ip_whitelist',
         ],
 
+        // Lock down API routes with Sanctum
         'secure_api' => [
             'api',
             'auth:sanctum',
@@ -71,11 +76,7 @@ class Kernel extends HttpKernel
     ];
 
     /**
-     * The application's middleware aliases.
-     *
-     * Aliases may be used instead of class names to conveniently assign middleware to routes and groups.
-     *
-     * @var array<string, class-string|string>
+     * Middleware aliases for routes.
      */
     protected $middlewareAliases = [
         'auth' => \App\Http\Middleware\Authenticate::class,
@@ -90,8 +91,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
-        // Cannabis POS custom middleware
-        'role' => \App\Http\Middleware\CheckRole::class,
+        // Custom
+        'role' => \App\Http\Middleware\RoleMiddleware::class,
         'permission' => \App\Http\Middleware\CheckPermission::class,
         'auth_rate_limit' => \App\Http\Middleware\AuthRateLimit::class,
         'ip_whitelist' => \App\Http\Middleware\IpWhitelist::class,
@@ -99,14 +100,11 @@ class Kernel extends HttpKernel
     ];
 
     /**
-     * The priority-sorted list of middleware.
-     *
-     * Forces non-global middleware to always be in the given order.
-     *
-     * @var array<int, class-string|string>
+     * Priority-sorted middleware execution order.
      */
     protected $middlewarePriority = [
         \App\Http\Middleware\SecurityHeaders::class,
+        \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
         \Illuminate\Foundation\Http\Middleware\HandlePrecognitiveRequests::class,
         \Illuminate\Cookie\Middleware\EncryptCookies::class,
         \Illuminate\Session\Middleware\StartSession::class,
@@ -115,7 +113,7 @@ class Kernel extends HttpKernel
         \Illuminate\Routing\Middleware\ThrottleRequests::class,
         \Illuminate\Session\Middleware\AuthenticateSession::class,
         \Illuminate\Routing\Middleware\SubstituteBindings::class,
-        \App\Http\Middleware\CheckRole::class,
+        \App\Http\Middleware\RoleMiddleware::class,
         \App\Http\Middleware\CheckPermission::class,
         \Illuminate\Auth\Middleware\Authorize::class,
     ];

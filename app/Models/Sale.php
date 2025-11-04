@@ -108,6 +108,16 @@ class Sale extends Model
         return $this->total - $this->change_given;
     }
 
+    public function getTotalAmountAttribute()
+    {
+        return $this->attributes['total'] ?? null;
+    }
+
+    public function getTaxAmountAttribute()
+    {
+        return $this->attributes['tax']   ?? null;
+    }
+
     public function canBeVoided()
     {
         return $this->status === 'completed' && 

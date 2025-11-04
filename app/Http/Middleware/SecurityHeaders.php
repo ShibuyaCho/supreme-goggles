@@ -15,139 +15,145 @@ class SecurityHeaders
     {
         $response = $next($request);
 
-        // Only apply security headers to non-API routes in production
-        if (config('app.env') === 'production' || config('security.force_headers', true)) {
-            $this->addSecurityHeaders($response);
+        // Apply in production, or when explicitly forced via config('security.force_headers', false)
+        $force = (bool) config('security.force_headers', false);
+        $shouldApply = app()->environment('production') || $force;
+
+        if ($shouldApply) {
+            $this->addSecurityHeaders($response, $request);
         }
 
         return $response;
     }
 
     /**
-     * Add comprehensive security headers
+     * Add comprehensive security headers WITHOUT touching Set-Cookie.
      */
-    private function addSecurityHeaders(Response $response): void
+    private function addSecurityHeaders(Response $response, Request $request): void
     {
-        $headers = [
-            // Prevent page from being displayed in a frame/iframe (clickjacking protection)
-            'X-Frame-Options' => 'DENY',
-            
-            // Prevent MIME type sniffing
-            'X-Content-Type-Options' => 'nosniff',
-            
-            // Enable XSS filtering
-            'X-XSS-Protection' => '1; mode=block',
-            
-            // Referrer policy - only send origin when crossing origins
-            'Referrer-Policy' => 'strict-origin-when-cross-origin',
-            
-            // Don't send server information
-            'Server' => '',
-            
-            // Remove PHP version info
-            'X-Powered-By' => '',
-            
-            // Prevent caching of sensitive pages
-            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-            'Pragma' => 'no-cache',
-            'Expires' => 'Sat, 01 Jan 2000 00:00:00 GMT',
-        ];
+        $headers = (array) config('security.headers', []);
 
-        // HTTPS-only headers
-        if ($this->isSecureConnection()) {
-            $headers = array_merge($headers, [
-                // Strict Transport Security - force HTTPS for 1 year
-                'Strict-Transport-Security' => 'max-age=31536000; includeSubDomains; preload',
-                
-                // Expect-CT header for certificate transparency
-                'Expect-CT' => 'max-age=86400, enforce',
-            ]);
+        // --- Simple headers (only set if provided, otherwise use safe defaults) ---
+        $response->headers->set(
+            'X-Frame-Options',
+            $headers['x_frame_options'] ?? 'SAMEORIGIN',
+            false
+        );
+
+        $response->headers->set(
+            'X-Content-Type-Options',
+            $headers['x_content_type_options'] ?? 'nosniff',
+            false
+        );
+
+        $response->headers->set(
+            'Referrer-Policy',
+            $headers['referrer_policy'] ?? 'strict-origin-when-cross-origin',
+            false
+        );
+
+        // Note: modern browsers ignore X-XSS-Protection; set to "0" to disable legacy filtering.
+        $response->headers->set(
+            'X-XSS-Protection',
+            $headers['x_xss_protection'] ?? '0',
+            false
+        );
+
+        $response->headers->set(
+            'Permissions-Policy',
+            $headers['permissions_policy'] ?? $this->buildPermissionsPolicy(),
+            false
+        );
+
+        // --- CSP ---
+        $csp = $headers['csp'] ?? $this->buildContentSecurityPolicy();
+        if (!empty($csp)) {
+            $response->headers->set('Content-Security-Policy', $csp, false);
         }
 
-        // Content Security Policy
-        $headers['Content-Security-Policy'] = $this->buildContentSecurityPolicy();
-
-        // Permissions Policy (formerly Feature Policy)
-        $headers['Permissions-Policy'] = $this->buildPermissionsPolicy();
-
-        // Apply headers to response
-        foreach ($headers as $name => $value) {
-            if ($value !== '') {
-                $response->headers->set($name, $value);
-            } else {
-                // Remove header if value is empty
-                $response->headers->remove($name);
+        // --- HSTS (only when secure) ---
+        $hsts = (array) ($headers['hsts'] ?? []);
+        if (!empty($hsts['enable']) && $this->isSecureConnection($request)) {
+            $value = 'max-age=' . intval($hsts['max_age'] ?? 31536000);
+            if (!empty($hsts['include_subdomains'])) {
+                $value .= '; includeSubDomains';
             }
+            if (!empty($hsts['preload'])) {
+                $value .= '; preload';
+            }
+            $response->headers->set('Strict-Transport-Security', $value, false);
         }
+
+        // IMPORTANT: Never modify Set-Cookie / SameSite / Secure here
+        // to avoid breaking Laravel session cookies.
     }
 
     /**
-     * Build Content Security Policy header
+     * Build Content Security Policy header (sane defaults; dev-friendly).
      */
     private function buildContentSecurityPolicy(): string
     {
-        $domain = config('app.url') ? parse_url(config('app.url'), PHP_URL_HOST) : "'self'";
-        
+        $isProd = app()->environment('production');
+
+        // Base directives
         $directives = [
             "default-src 'self'",
-            "script-src 'self' 'unsafe-inline'", // Allow inline scripts for Alpine.js
-            "style-src 'self' 'unsafe-inline'", // Allow inline styles
             "img-src 'self' data: https:",
-            "font-src 'self'",
-            "connect-src 'self'",
+            "font-src 'self' data:",
             "media-src 'self'",
             "object-src 'none'",
             "child-src 'none'",
             "frame-src 'none'",
-            "worker-src 'none'",
+            "worker-src 'self'",
             "frame-ancestors 'none'",
             "form-action 'self'",
             "base-uri 'self'",
             "manifest-src 'self'",
         ];
 
-        // In development, be more permissive
-        if (config('app.env') !== 'production') {
-            $directives = array_map(function($directive) {
-                if (strpos($directive, 'script-src') === 0) {
-                    return "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
-                }
-                return $directive;
-            }, $directives);
+        // Script/style/connect loosening
+        if ($isProd) {
+            $directives[] = "script-src 'self' 'unsafe-inline'";   // allow inline for e.g. Alpine
+            $directives[] = "style-src 'self' 'unsafe-inline'";
+            $directives[] = "connect-src 'self'";
+        } else {
+            // Development: allow eval + ws for Vite, etc.
+            $directives[] = "script-src 'self' 'unsafe-inline' 'unsafe-eval'";
+            $directives[] = "style-src 'self' 'unsafe-inline'";
+            $directives[] = "connect-src 'self' ws: http://localhost:* http://127.0.0.1:*";
         }
 
         return implode('; ', $directives);
     }
 
     /**
-     * Build Permissions Policy header
+     * Build Permissions-Policy header (restrictive by default).
      */
     private function buildPermissionsPolicy(): string
     {
+        // Key-value comments are explanatory only; header uses just keys.
         $policies = [
-            'camera=()' => 'Disable camera access',
-            'microphone=()' => 'Disable microphone access',
-            'geolocation=()' => 'Disable geolocation',
-            'interest-cohort=()' => 'Disable FLoC tracking',
-            'payment=()' => 'Disable payment API',
-            'usb=()' => 'Disable USB API',
-            'vr=()' => 'Disable VR API',
-            'accelerometer=()' => 'Disable accelerometer',
-            'gyroscope=()' => 'Disable gyroscope',
-            'magnetometer=()' => 'Disable magnetometer',
-            'fullscreen=(self)' => 'Allow fullscreen for same origin only',
+            'geolocation=()',
+            'camera=()',
+            'microphone=()',
+            'payment=()',
+            'usb=()',
+            'vr=()',
+            'accelerometer=()',
+            'gyroscope=()',
+            'magnetometer=()',
+            'fullscreen=(self)',
         ];
 
-        return implode(', ', array_keys($policies));
+        return implode(', ', $policies);
     }
 
     /**
-     * Check if the connection is secure (HTTPS)
+     * Check if the current request should be considered secure for HSTS.
      */
-    private function isSecureConnection(): bool
+    private function isSecureConnection(Request $request): bool
     {
-        return request()->isSecure() || 
-               config('app.env') === 'production' || 
-               config('security.force_https', false);
+        // Trust proxy headers if configured via TrustProxies
+        return $request->isSecure();
     }
 }

@@ -292,4 +292,22 @@ return [
         'encrypt_credentials' => true,
     ],
 
+    'headers' => [
+            'x_frame_options'         => 'SAMEORIGIN',
+            'x_content_type_options'  => 'nosniff',
+            'referrer_policy'         => 'no-referrer',
+            // Modern browsers ignore X-XSS-Protection; keep off to avoid false sense of security
+            'x_xss_protection'        => '0',
+            // Example Permissions-Policy; adjust to your needs
+            'permissions_policy'      => "geolocation=(), microphone=(), camera=()",
+
+            'csp' => "default-src 'self'; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'self';",
+
+            'hsts' => [
+                'enable'             => env('SECURITY_HSTS', false), // true only behind HTTPS
+                'max_age'            => 31536000,                    // 1 year
+                'include_subdomains' => true,
+                'preload'            => false,
+            ],
+        ],
 ];

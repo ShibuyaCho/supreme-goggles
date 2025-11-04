@@ -1,6 +1,8 @@
 // Cannabis POS Application Entry Point
 // Consolidated JavaScript dependencies for production
 
+import '../css/app.css'
+
 // Import Alpine.js
 import Alpine from 'alpinejs';
 
@@ -59,6 +61,112 @@ Alpine.store('app', {
     apiBaseUrl: '/api',
     debug: false
 });
+
+// Register the component using Alpine.data so you can reference it by name in Blade
+Alpine.data('settingsManager', (initial = {}) => ({
+  // ----- STATE -----
+  activeTab: 'general',
+  settings: {
+    // hydrate from Blade-injected initial settings
+    ...({
+      // reasonable safe defaults so bindings don't explode before hydration
+      store_name: 'Cannabis POS',
+      store_manager: '',
+      store_phone: '',
+      store_email: '',
+      store_address: '',
+      website: '',
+      license_number: '',
+      receipt_footer: "Thank you for your business!\nKeep receipt for returns and warranty.",
+      business_hours: [],
+      sales_tax: 0, excise_tax: 0, cannabis_tax: 0, tax_inclusive: false,
+      exit_label_categories: [],
+      receipt_autoprint: false,
+      receipt_categories_autoprint: [],
+      receipt_show_tax_breakdown: true,
+      receipt_show_metrc: true,
+      receipt_show_loyalty: true,
+      receipt_show_qr_code: false,
+      default_receipt_printer: '',
+      receipt_paper_size: '80mm',
+      minimum_price_enabled: false,
+      minimum_price_amount: 0.01,
+      minimum_price_categories: [],
+      inventory_view_mode: 'cards',
+      expandable_cart: true,
+      auto_delete_zero_quantity: false,
+      auto_delete_zero_days: 1,
+      dark_mode: false,
+      theme_color: 'green',
+      font_size: 'medium',
+      high_contrast: false,
+      reduce_motion: false,
+      metrc_enabled: true,
+      metrc_user_key: '',
+      metrc_vendor_key: '',
+      metrc_facility: ''
+    }),
+    ...(initial.settings || {})
+  },
+
+  categories: initial.categories || [
+    'Flower','Pre-Rolls','Concentrates','Edibles','Vape','Topicals','Tinctures','Gear'
+  ],
+  stores: initial.stores || [],
+
+  // ----- LIFECYCLE -----
+  boot() {
+    // nothing fancy here, but you can pull latest from API if you want
+    // this.hydrateFromApi();
+  },
+
+  // ----- ACTIONS -----
+  selectTab(tab) { this.activeTab = tab; },
+
+  toggleInArray(key, value) {
+    const arr = this.settings[key] || [];
+    const idx = arr.indexOf(value);
+    if (idx === -1) arr.push(value); else arr.splice(idx, 1);
+    this.settings[key] = arr;
+  },
+
+  async hydrateFromApi() {
+    try {
+      const r = await fetch('/api/settings', { headers: { 'Accept': 'application/json' }, credentials: 'include' });
+      if (!r.ok) return;
+      const js = await r.json();
+      if (js?.success && js.settings) this.settings = { ...this.settings, ...js.settings };
+    } catch(e) { console.error(e); }
+  },
+
+  async saveSettings() {
+    try {
+      const r = await fetch('/api/settings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        credentials: 'include', // if using Sanctum cookie; remove if you use Bearer
+        body: JSON.stringify(this.settings)
+      });
+      const js = await r.json().catch(() => ({}));
+      if (r.ok && js.success) {
+        this.toast('Settings saved', 'success');
+      } else {
+        this.toast(js.message || `Save failed (${r.status})`, 'error');
+      }
+    } catch(e) {
+      console.error(e);
+      this.toast('Unexpected error saving settings', 'error');
+    }
+  },
+
+  toast(msg, type='info') {
+    // replace with your real toast
+    console[type === 'error' ? 'error' : 'log']('[Toast]', type.toUpperCase(), msg);
+  }
+}));
 
 // Start Alpine.js
 Alpine.start();

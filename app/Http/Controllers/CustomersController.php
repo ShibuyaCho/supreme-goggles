@@ -118,13 +118,30 @@ class CustomersController extends Controller
                         ->with('success', 'Customer created successfully');
     }
     
-    public function show($id)
+//     public function show($id)
+//     {
+//         $customer = Customer::findOrFail($id);
+//         $customer->loadPurchaseHistory();
+//
+//         return view('customers.show', compact('customer'));
+//     }
+
+    // CustomersController@show
+    public function show(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
-        $customer->loadPurchaseHistory();
-        
+        // if you have a relation method; otherwise remove this line
+        if (method_exists($customer, 'loadPurchaseHistory')) {
+            $customer->loadPurchaseHistory();
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json($customer);
+        }
+
         return view('customers.show', compact('customer'));
     }
+
     
     public function edit($id)
     {

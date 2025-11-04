@@ -20,7 +20,7 @@ USE cannabis_pos_production;
 -- Set optimal MySQL settings for the application
 SET GLOBAL innodb_buffer_pool_size = 134217728; -- 128MB
 SET GLOBAL max_connections = 100;
-SET GLOBAL innodb_log_file_size = 67108864; -- 64MB
+-- SET GLOBAL innodb_log_file_size = 67108864; -- 64MB
 
 -- Create basic health check table
 CREATE TABLE IF NOT EXISTS health_check (
