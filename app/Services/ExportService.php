@@ -308,7 +308,7 @@ class ExportService
         return [
             'report_type' => $reportType,
             'generated_at' => now()->toISOString(),
-            'generated_by' => auth()->user()->name ?? 'System',
+            'generated_by' => auth()->user()?->name?? 'System',
             'company' => 'Cannabis POS System',
             'filters' => $options['filters'] ?? [],
             'date_range' => $options['date_range'] ?? null,

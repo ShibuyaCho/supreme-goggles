@@ -81,8 +81,8 @@ class AnalyticsController extends Controller
                 ];
             case 'custom':
                 return [
-                    'start' => Carbon::parse($request->get('start_date', Carbon::today())),
-                    'end' => Carbon::parse($request->get('end_date', Carbon::today()))
+                    'start' => Carbon::parse($request->get('start_date', Carbon::today()))->startOfDay(),
+                    'end'   => Carbon::parse($request->get('end_date', Carbon::today()))->endOfDay(),
                 ];
             default:
                 return [
@@ -131,7 +131,7 @@ class AnalyticsController extends Controller
                 'products.name',
                 'products.category',
                 DB::raw('SUM(sale_items.quantity) as sales'),
-                DB::raw('SUM(sale_items.total) as revenue')
+                DB::raw('SUM(COALESCE(sale_items.total_price, (sale_items.unit_price * sale_items.quantity) - sale_items.discount_amount + sale_items.tax_amount)) as revenue')
             )
             ->groupBy('products.id', 'products.name', 'products.category')
             ->orderBy('revenue', 'desc')
@@ -146,7 +146,7 @@ class AnalyticsController extends Controller
             ->select(
                 'products.category',
                 DB::raw('SUM(sale_items.quantity) as sales'),
-                DB::raw('SUM(sale_items.total) as revenue')
+                DB::raw('SUM(COALESCE(sale_items.total_price, (sale_items.unit_price * sale_items.quantity) - sale_items.discount_amount + sale_items.tax_amount)) as revenue')
             )
             ->groupBy('products.category')
             ->get();
@@ -177,7 +177,7 @@ class AnalyticsController extends Controller
         $caregivers = Customer::whereHas('medicalCard', function($query) {
             $query->where('is_patient', false);
         })->count();
-        
+
         return [
             'newCustomers' => $newCustomers,
             'returningCustomers' => $returningCustomers,
@@ -242,8 +242,7 @@ class AnalyticsController extends Controller
                 'products.name',
                 'products.category',
                 DB::raw('SUM(sale_items.quantity) as totalSold'),
-                DB::raw('SUM(sale_items.total) as totalRevenue')
-            )
+                DB::raw('SUM(COALESCE(sale_items.total_price, (sale_items.unit_price * sale_items.quantity) - sale_items.discount_amount + sale_items.tax_amount)) as totalRevenue')            )
             ->groupBy('products.id', 'products.name', 'products.category')
             ->get()
             ->map(function($item) use ($daysInRange) {
@@ -268,28 +267,57 @@ class AnalyticsController extends Controller
     private function getEndOfDayData()
     {
         $today = Carbon::today();
-        $todaysSales = Sale::whereDate('created_at', $today)
-                          ->where('status', 'completed')
-                          ->get();
-        
-        $totalSales = $todaysSales->sum('total');
-        $totalTax = $todaysSales->sum('tax');
-        $customerCount = $todaysSales->whereNotNull('customer_id')->count();
-        
-        // Payment method breakdown
-        $cashSales = $todaysSales->where('payment_method', 'cash')->sum('total');
-        $debitSales = $todaysSales->where('payment_method', 'debit')->sum('total');
-        $creditSales = $todaysSales->where('payment_method', 'credit')->sum('total');
-        
-        // Monthly data
-        $monthlySales = Sale::whereMonth('created_at', $today->month)
-                           ->whereYear('created_at', $today->year)
-                           ->where('status', 'completed')
-                           ->sum('total');
-        
+
+        $todaysRevenue = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereDate('sales.created_at', $today)
+            ->where('sales.status', 'completed')
+            ->sum(DB::raw('(sale_items.total_price + sale_items.tax_amount - sale_items.discount_amount)'));
+
+        $todaysTax = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereDate('sales.created_at', $today)
+            ->where('sales.status', 'completed')
+            ->sum('sale_items.tax_amount');
+
+        $customerCount = Sale::whereDate('created_at', $today)
+            ->where('status', 'completed')
+            ->whereNotNull('customer_id')
+            ->count();
+
+        // Payment method splits (aggregate by method from items)
+        $cashSales = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereDate('sales.created_at', $today)
+            ->where('sales.status', 'completed')
+            ->where('sales.payment_method', 'cash')
+            ->sum(DB::raw('(sale_items.total_price + sale_items.tax_amount - sale_items.discount_amount)'));
+
+        $debitSales = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereDate('sales.created_at', $today)
+            ->where('sales.status', 'completed')
+            ->where('sales.payment_method', 'debit')
+            ->sum(DB::raw('(sale_items.total_price + sale_items.tax_amount - sale_items.discount_amount)'));
+
+        $creditSales = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereDate('sales.created_at', $today)
+            ->where('sales.status', 'completed')
+            ->where('sales.payment_method', 'credit')
+            ->sum(DB::raw('(sale_items.total_price + sale_items.tax_amount - sale_items.discount_amount)'));
+
+        // Monthly total
+        $monthlySales = DB::table('sale_items')
+            ->join('sales', 'sale_items.sale_id', '=', 'sales.id')
+            ->whereMonth('sales.created_at', $today->month)
+            ->whereYear('sales.created_at', $today->year)
+            ->where('sales.status', 'completed')
+            ->sum(DB::raw('(sale_items.total_price + sale_items.tax_amount - sale_items.discount_amount)'));
+
         return [
-            'totalSales' => $totalSales,
-            'totalTax' => $totalTax,
+            'totalSales' => $todaysRevenue,
+            'totalTax' => $todaysTax,
             'customerCount' => $customerCount,
             'cashSales' => $cashSales,
             'debitSales' => $debitSales,
@@ -298,7 +326,7 @@ class AnalyticsController extends Controller
             'dayOfMonth' => $today->day,
             'daysInMonth' => $today->daysInMonth,
             'storeName' => config('app.store_name', 'Cannabis Dispensary'),
-            'generatedBy' => auth()->user()->name ?? 'System'
+            'generatedBy' => auth()->user()?->name ?? 'System',
         ];
     }
     

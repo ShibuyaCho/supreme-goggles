@@ -1,14 +1,14 @@
 <?php
+ namespace App\Models;
 
-namespace App\Models;
+ use Illuminate\Database\Eloquent\Factories\HasFactory;
+ use Illuminate\Database\Eloquent\Model;
+ use Illuminate\Database\Eloquent\Builder;
+ use Carbon\Carbon;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-use Carbon\Carbon;
-
-class Product extends Model
-{
-    use HasFactory;
+ class Product extends Model
+ {
+     use HasFactory;
 
     protected $fillable = [
         'name',
@@ -202,7 +202,7 @@ class Product extends Model
                    ->whereHas('sale', function($query) {
                        $query->where('status', 'completed');
                    })
-                   ->sum('total');
+                   ->sum('total_price');
     }
 
     public function getPopularityScoreAttribute()
@@ -238,6 +238,94 @@ class Product extends Model
         return max(0, $safetyStock - $this->quantity);
     }
 
+    /**
+     * Provide `stock` as an alias to `quantity` for POSController.
+     */
+    public function getStockAttribute(): int
+    {
+        return (int) ($this->quantity ?? 0);
+    }
+
+    /**
+     * Minimal canAddToCart used by POSController.
+     * (Keep simple; reuse your existing business rules.)
+     */
+    public function canAddToCart(): bool
+    {
+        return $this->isAvailableForSale();
+    }
+
+    /**
+     * List of distinct categories as a flat array of strings.
+     */
+    public static function getCategories(): array
+    {
+        return static::query()
+            ->select('category')
+            ->whereNotNull('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category')
+            ->filter(fn ($c) => trim((string)$c) !== '')
+            ->values()
+            ->all();
+    }
+
+    /* -----------------------
+     | Query Scopes
+     |------------------------*/
+
+    /**
+     * LIKE-based search across common columns.
+     *
+     * Usage: Product::query()->search($term)
+     */
+    public function scopeSearch(Builder $query, ?string $term): Builder
+    {
+        $term = trim((string) $term);
+        if ($term === '') {
+            return $query;
+        }
+
+        // Escape % and _ so user terms don't act as wildcards
+        $escaped = addcslashes($term, '%_');
+        $like = "%{$escaped}%";
+
+        return $query->where(function (Builder $q) use ($like) {
+            $q->where('name', 'LIKE', $like)
+              ->orWhere('sku', 'LIKE', $like)
+              ->orWhere('category', 'LIKE', $like)
+              ->orWhere('description', 'LIKE', $like)
+              ->orWhere('vendor', 'LIKE', $like)
+              ->orWhere('metrc_tag', 'LIKE', $like);
+        });
+    }
+
+    /**
+     * Filter by category; pass "All" or empty to disable.
+     */
+    public function scopeByCategory(Builder $query, ?string $category): Builder
+    {
+        $category = trim((string) $category);
+        if ($category === '' || strcasecmp($category, 'All') === 0) {
+            return $query;
+        }
+        return $query->where('category', $category);
+    }
+
+    /**
+     * Example scope to exclude sales-floor items.
+     * Adjust the condition to match your domain (column/values).
+     */
+    public function scopeNotOnSalesFloor(Builder $query): Builder
+    {
+        // If your "room" column holds the location label:
+        return $query->where(function (Builder $q) {
+            $q->whereNull('room')
+              ->orWhere('room', '!=', 'Sales Floor');
+        });
+    }
+
     public function scopeInStock($query)
     {
         return $query->where('quantity', '>', 0);
@@ -260,11 +348,6 @@ class Product extends Model
                         $q->whereNull('expiration_date')
                           ->orWhere('expiration_date', '>', now());
                     });
-    }
-
-    public function scopeByCategory($query, $category)
-    {
-        return $query->where('category', $category);
     }
 
     public function scopeByRoom($query, $room)

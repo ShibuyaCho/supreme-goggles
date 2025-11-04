@@ -137,7 +137,7 @@
                     required
                 />
                 <div class="mt-2 text-xs text-blue-800">
-                    Employee: {{ auth()->user()->name ?? 'Current User' }}
+                    Employee: {{ auth()->user()?->name?? 'Current User' }}
                 </div>
             </div>
         </form>
@@ -242,7 +242,7 @@ async function approveVerification() {
     
     // Add employee info
     verificationData.employee_id = '{{ auth()->id() }}';
-    verificationData.employee_name = '{{ auth()->user()->name ?? "Current User" }}';
+    verificationData.employee_name = '{{ auth()->user()?->name?? "Current User" }}';
     verificationData.verification_timestamp = new Date().toISOString();
     
     try {
@@ -273,7 +273,7 @@ async function logVerificationAttempt(approved, reason, data = {}) {
             reason: reason,
             timestamp: new Date().toISOString(),
             employee_id: '{{ auth()->id() }}',
-            employee_name: '{{ auth()->user()->name ?? "Current User" }}',
+            employee_name: '{{ auth()->user()?->name?? "Current User" }}',
             ...data
         };
         

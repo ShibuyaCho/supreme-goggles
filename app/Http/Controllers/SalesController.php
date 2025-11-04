@@ -395,25 +395,41 @@ class SalesController extends Controller
         return $originalSaleNumber . '-R' . now()->format('His');
     }
     
-    private function getSalesAnalytics($request)
+    private function getSalesAnalytics(Request $request)
     {
-        $dateFrom = $request->get('date_from', Carbon::today()->format('Y-m-d'));
-        $dateTo = $request->get('date_to', Carbon::today()->format('Y-m-d'));
-        
-        $sales = Sale::whereBetween('created_at', [$dateFrom, $dateTo])
+        $start = \Carbon\Carbon::parse($request->get('date_from', now()->toDateString()))->startOfDay();
+        $end   = \Carbon\Carbon::parse($request->get('date_to',   now()->toDateString()))->endOfDay();
+
+        $base = \App\Models\Sale::whereBetween('created_at', [$start, $end])
             ->where('status', 'completed');
-        
+
+        // Use your real column names: total_amount, tax_amount
+        $totalSales        = (clone $base)->sum('total_amount');
+        $totalTransactions = (clone $base)->count();
+        $averageOrderValue = $totalTransactions > 0 ? $totalSales / $totalTransactions : 0;
+        $totalTax          = (clone $base)->sum('tax_amount');
+
+        // Items sold: sum from SaleItem with whereHas on the Sale date/status
+        $totalItems = \App\Models\SaleItem::whereHas('sale', function ($q) use ($start, $end) {
+                $q->whereBetween('created_at', [$start, $end])
+                  ->where('status', 'completed');
+            })
+            ->sum('quantity');
+
+        // Payment breakdown — sum total_amount
+        $paymentBreakdown = [
+            'cash'   => (clone $base)->where('payment_method', 'cash')->sum('total_amount'),
+            'debit'  => (clone $base)->where('payment_method', 'debit')->sum('total_amount'),
+            'credit' => (clone $base)->where('payment_method', 'credit')->sum('total_amount'),
+        ];
+
         return [
-            'totalSales' => $sales->sum('total_amount'),
-            'totalTransactions' => $sales->count(),
-            'averageOrderValue' => $sales->avg('total_amount'),
-            'totalTax' => $sales->sum('tax_amount'),
-            'totalItems' => $sales->withSum('saleItems', 'quantity')->sum('sale_items_sum_quantity'),
-            'paymentBreakdown' => [
-                'cash' => $sales->where('payment_method', 'cash')->sum('total_amount'),
-                'debit' => $sales->where('payment_method', 'debit')->sum('total_amount'),
-                'credit' => $sales->where('payment_method', 'credit')->sum('total_amount')
-            ]
+            'totalSales'        => $totalSales,
+            'totalTransactions' => $totalTransactions,
+            'averageOrderValue' => $averageOrderValue,
+            'totalTax'          => $totalTax,
+            'totalItems'        => $totalItems,
+            'paymentBreakdown'  => $paymentBreakdown,
         ];
     }
     

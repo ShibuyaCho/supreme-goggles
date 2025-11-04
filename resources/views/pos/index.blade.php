@@ -217,8 +217,14 @@
 
 <!-- Modals -->
 @include('pos.modals.new-sale')
-@include('pos.modals.checkout')
-@include('pos.modals.save-sale')
+@includeIf('pos.modals.checkout', [
+    'cartTotals' => $cartTotals ?? [],
+    'customerInfo' => $customerInfo ?? [],
+])
+@includeIf('pos.modals.save-sale', [
+    'cart' => $cart ?? [],
+    'cartTotals' => $cartTotals ?? [],
+])
 @include('pos.modals.apply-discount')
 @include('pos.modals.product-details')
 

@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Models\User;
 use App\Http\Controllers\Api\DemoController;
 use App\Http\Controllers\Api\POSController;
 use App\Http\Controllers\Api\AuthController;
@@ -341,6 +342,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     |--------------------------------------------------------------------------
     */
     Route::prefix('settings')->group(function () {
+
         // Read settings (most users)
         Route::get('/pos', function() {
             return response()->json([
@@ -439,6 +441,40 @@ Route::get('/docs', function () {
             'inventory' => 'Inventory management'
         ]
     ]);
+});
+
+Route::post('/auth/login', function (Request $request) {
+    $validated = $request->validate([
+        'email'    => ['required','email'],
+        'password' => ['required'],
+    ]);
+
+    if (!Auth::attempt($validated)) {
+        return response()->json(['message' => 'Invalid credentials'], 401);
+    }
+
+    /** @var User $user */
+    $user = User::where('email', $validated['email'])->first();
+
+    // OPTIONAL: Revoke old tokens to keep 1 active at a time
+    $user->tokens()->delete();
+
+    $token = $user->createToken('cannabest-pos')->plainTextToken;
+
+    return response()->json([
+        'token' => $token,
+        'user'  => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+        ],
+    ]);
+});
+
+Route::middleware('auth:sanctum')->post('/auth/logout', function (Request $request) {
+    // Revoke the token that was used to authenticate the current request
+    $request->user()->currentAccessToken()?->delete();
+    return response()->json(['ok' => true]);
 });
 
 // Catch-all for undefined API routes

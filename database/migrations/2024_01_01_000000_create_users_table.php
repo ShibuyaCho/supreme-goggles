@@ -17,7 +17,6 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->foreignId('employee_id')->nullable()->constrained('employees')->onDelete('set null');
             $table->enum('role', ['admin', 'manager', 'cashier', 'budtender', 'inventory'])->default('cashier');
             $table->json('permissions')->nullable();
             $table->boolean('is_active')->default(true);

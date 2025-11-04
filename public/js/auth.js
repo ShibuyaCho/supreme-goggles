@@ -11,6 +11,23 @@ class POSAuth {
      * Setup Axios interceptors for authentication and error handling
      */
     setupAxiosInterceptors() {
+        axios.interceptors.response.use(
+          (response) => response,
+          (error) => {
+            const status = error?.response?.status;
+            if (status === 401) {
+              // Do not redirect if we're already on the login page (or a page that opted out)
+              const path = window.location.pathname.replace(/\/+$/, '');
+              const isLoginPage = window.IS_LOGIN_PAGE === true || path === '' || path === '/login';
+              if (!isLoginPage) {
+                window.location.replace('/login');
+                return; // Stop promise chain
+              }
+            }
+            return Promise.reject(error);
+          }
+        );
+
         // Request interceptor to add auth token
         axios.interceptors.request.use(
             (config) => {
@@ -343,3 +360,5 @@ document.addEventListener('DOMContentLoaded', () => {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = POSAuth;
 }
+
+

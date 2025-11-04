@@ -1,11 +1,14 @@
+@props([
+  'id' => 'dropdown-'.uniqid(),
+  'trigger' => 'Menu',
+  'items' => [],
+  'align' => 'left',
+])
+
 @php
-    $id = $id ?? 'dropdown-' . uniqid();
-    $trigger = $trigger ?? 'Menu';
-    $items = $items ?? [];
-    $align = $align ?? 'left';
-    
-    $alignClasses = $align === 'right' ? 'right-0' : 'left-0';
+  $alignClasses = $align === 'right' ? 'right-0' : 'left-0';
 @endphp
+
 
 <div class="relative inline-block text-left" data-dropdown-id="{{ $id }}">
     <!-- Trigger Button -->

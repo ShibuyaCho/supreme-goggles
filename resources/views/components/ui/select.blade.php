@@ -1,25 +1,33 @@
+@props([
+  'id' => null,
+  'name' => null,
+  'options' => [],      // array<string>|array<['label'=>..., 'value'=>...]>
+  'value' => null,
+  'placeholder' => null,
+  'disabled' => false,
+  'class' => '',
+])
+
 @php
-    $disabled = $disabled ?? false;
-    $required = $required ?? false;
-    $error = $error ?? false;
-    
-    $baseClasses = 'flex h-10 w-full items-center justify-between rounded-md border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-    
-    $borderClasses = $error 
-        ? 'border-red-300 focus:ring-red-500' 
-        : 'border-gray-300 focus:ring-blue-500';
-    
-    $classes = cn($baseClasses, $borderClasses);
-    
-    if (isset($class)) {
-        $classes = cn($classes, $class);
-    }
+  $classes = cn(
+    'block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+    (string)$class
+  );
+
+  $normalized = collect($options)->map(function ($opt) {
+    return is_array($opt)
+      ? ['value' => (string)($opt['value'] ?? ''), 'label' => (string)($opt['label'] ?? ($opt['value'] ?? ''))]
+      : ['value' => (string)$opt, 'label' => (string)$opt];
+  });
 @endphp
 
-<select 
-    {{ $disabled ? 'disabled' : '' }}
-    {{ $required ? 'required' : '' }}
-    {{ $attributes->merge(['class' => $classes]) }}
->
-    {{ $slot }}
+<select {{ $attributes->merge(['id'=>$id, 'name'=>$name, 'class'=>$classes]) }} @if($disabled) disabled @endif>
+  @if($placeholder !== null)
+    <option value="">{{ $placeholder }}</option>
+  @endif
+  @foreach($normalized as $opt)
+    <option value="{{ $opt['value'] }}" @selected((string)$value === (string)$opt['value'])>
+      {{ $opt['label'] }}
+    </option>
+  @endforeach
 </select>

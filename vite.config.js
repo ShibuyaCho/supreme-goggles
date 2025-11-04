@@ -1,26 +1,18 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vite'
+import laravel from 'laravel-vite-plugin'
 
 export default defineConfig({
-    plugins: [],
-    root: '.',
-    server: {
-        host: '0.0.0.0',
-        port: 3000,
-        open: false,
-        cors: {
-            origin: true,
-            credentials: true,
-            methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-            allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-        },
-    },
-    publicDir: 'public',
-    build: {
-        rollupOptions: {
-            input: 'index.html',
-            output: {
-                manualChunks: undefined,
-            },
-        },
-    },
-});
+  plugins: [
+    laravel({
+      // match what you actually import in Blade
+      input: ['resources/css/app.css', 'resources/js/app.js'],
+      refresh: true,
+    }),
+  ],
+  build: {
+    outDir: 'public/build',
+    manifest: 'manifest.json',
+    // IMPORTANT: ensure no custom manifestDir is set
+    // (remove it if present). We want: public/build/manifest.json
+  },
+})

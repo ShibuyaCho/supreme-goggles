@@ -1,7 +1,8 @@
-@php
-    $classes = cn('text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70', $class ?? '');
-@endphp
+@props([
+  'for' => null,
+  'class' => '',
+])
 
-<label {{ $attributes->merge(['class' => $classes]) }}>
-    {{ $slot }}
-</label>
+@php
+  $classes = cn('block text-sm font-medium text-gray-700', (string)$class);
+@endphp

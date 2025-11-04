@@ -1,23 +1,20 @@
+@props([
+  'id' => null,
+  'name' => null,
+  'rows' => 4,
+  'value' => '',
+  'placeholder' => '',
+  'disabled' => false,
+  'class' => '',
+])
+
 @php
-    $disabled = $disabled ?? false;
-    $required = $required ?? false;
-    $error = $error ?? false;
-    
-    $baseClasses = 'flex min-h-[80px] w-full rounded-md border px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50';
-    
-    $borderClasses = $error 
-        ? 'border-red-300 focus-visible:ring-red-500' 
-        : 'border-gray-300 focus-visible:ring-blue-500';
-    
-    $classes = cn($baseClasses, $borderClasses);
-    
-    if (isset($class)) {
-        $classes = cn($classes, $class);
-    }
+  $classes = cn(
+    'block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500',
+    (string)$class
+  );
 @endphp
 
-<textarea 
-    {{ $disabled ? 'disabled' : '' }}
-    {{ $required ? 'required' : '' }}
-    {{ $attributes->merge(['class' => $classes]) }}
->{{ $slot }}</textarea>
+<textarea {{ $attributes->merge(['id'=>$id, 'name'=>$name, 'rows'=>$rows, 'class'=>$classes]) }}
+  @if($disabled) disabled @endif
+>{{ $value }}</textarea>
